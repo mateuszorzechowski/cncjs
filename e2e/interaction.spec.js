@@ -124,6 +124,30 @@ test.describe('interaction', () => {
 
     await cncjs.page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(dialog(cncjs.page)).toBeHidden();
+    cncjs.expectNoPageErrors();
+  });
+
+  /**
+   * A dialog mounted through its own React root rather than rendered into the
+   * page's tree.
+   *
+   * Three places do this — `lib/portal`, the widget manager, and the app's
+   * entry point — and all three call `ReactDOM.render` into a detached
+   * element. That is the API React 18 replaces, so this is the behaviour a
+   * root migration has to preserve, and it is worth having a test of it that
+   * predates the migration rather than one written to match whatever the
+   * migration produced.
+   */
+  test('opens a dialog mounted on its own root, and closes it', async ({ cncjs }) => {
+    await cncjs.gotoWorkspace();
+
+    await cncjs.page.getByRole('button', { name: /Manage Widgets/ }).first().click();
+
+    const widgets = cncjs.page.getByText('Widgets', { exact: true });
+    await expect(widgets).toBeVisible();
+
+    await cncjs.page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(widgets).toBeHidden();
 
     cncjs.expectNoPageErrors();
   });
