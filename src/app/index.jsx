@@ -5,7 +5,7 @@ import moment from 'moment';
 import pubsub from 'pubsub-js';
 import qs from 'qs';
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import {
   HashRouter as Router,
   Route
@@ -41,7 +41,7 @@ const renderPage = () => {
   const container = document.createElement('div');
   document.body.appendChild(container);
 
-  ReactDOM.render(
+  createRoot(container).render(
     <GridSystemProvider
       breakpoints={[576, 768, 992, 1200]}
       containerWidths={[540, 720, 960, 1140]}
@@ -55,8 +55,7 @@ const renderPage = () => {
           <ProtectedRoute path="/" component={App} />
         </div>
       </Router>
-    </GridSystemProvider>,
-    container
+    </GridSystemProvider>
   );
 };
 
