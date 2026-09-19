@@ -16,6 +16,21 @@ const IGNORED_CONSOLE = [
   /WebGL/i,
   // React 15 deprecation chatter that predates this suite.
   /componentWill(Mount|ReceiveProps|Update) has been renamed/i,
+  // React 18 deprecation warnings, every one of them raised by a third-party
+  // component: react-router 4.3, react-bootstrap 0.32, react-select 1.2,
+  // react-transition-group, styled-components 3, @trendmicro/react-buttons,
+  // @trendmicro/react-grid-system and @trendmicro/react-validation. None of
+  // our own code raises any of these any more.
+  //
+  // They are filtered here rather than fixed because fixing them means
+  // replacing those packages. react-deprecations.spec.js keeps the list
+  // honest: it collects the same warnings without this filter and fails if a
+  // component outside the known inventory ever appears, so a new one -- ours
+  // especially -- cannot hide behind these four lines.
+  /uses the legacy childContextTypes API/,
+  /uses the legacy contextTypes API/,
+  /Support for defaultProps will be removed from function components/,
+  /contains the string ref/,
   // Carries no URL, so it says nothing the response listener below does not
   // already report — and report with enough detail to act on.
   /Failed to load resource/i,
