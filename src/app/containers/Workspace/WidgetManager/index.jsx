@@ -2,7 +2,7 @@ import difference from 'lodash/difference';
 import includes from 'lodash/includes';
 import union from 'lodash/union';
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { GRBL, MARLIN, SMOOTHIE, TINYG } from 'app/constants';
 import controller from 'app/lib/controller';
 import store from 'app/store';
@@ -67,12 +67,15 @@ export const getInactiveWidgets = () => {
 // @param {string} targetContainer The target container: primary|secondary
 export const show = (callback) => {
   const el = document.body.appendChild(document.createElement('div'));
+  const root = createRoot(el);
   const handleClose = (e) => {
-    ReactDOM.unmountComponentAtNode(el);
+    // Deferred a tick: React 18 warns if a root is unmounted while it is
+    // rendering, and this is called from inside the dialog it unmounts.
     setTimeout(() => {
+      root.unmount();
       el.remove();
     }, 0);
   };
 
-  ReactDOM.render(<WidgetManager onSave={callback} onClose={handleClose} />, el);
+  root.render(<WidgetManager onSave={callback} onClose={handleClose} />);
 };
