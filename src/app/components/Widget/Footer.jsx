@@ -1,12 +1,6 @@
-import classNames from 'classnames';
 import React from 'react';
-import styles from './index.styl';
+import { Footer as Root } from './styles';
 
-const Footer = ({ className, ...props }) => (
-  <div
-    {...props}
-    className={classNames(className, styles.widgetFooter)}
-  />
-);
+const Footer = (props) => <Root {...props} />;
 
 export default Footer;

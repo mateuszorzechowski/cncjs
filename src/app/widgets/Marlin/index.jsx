@@ -294,7 +294,7 @@ class MarlinWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="Marlin widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

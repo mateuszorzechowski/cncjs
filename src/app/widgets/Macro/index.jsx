@@ -340,7 +340,7 @@ class MacroWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="Macro widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

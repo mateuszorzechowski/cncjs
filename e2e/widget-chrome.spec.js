@@ -59,23 +59,19 @@ test.describe('widget chrome', () => {
   const NOT_A_PANEL = ['visualizer'];
 
   /**
-   * KNOWN GAP, recorded rather than skipped.
+   * CLOSED, and the note is kept because the shape of the fix is the point.
    *
-   * `autolevel` carries exactly the same chrome as its neighbours and none of
-   * its accessible names: no `aria-label` on the region, none on the collapse
-   * button or the menu, no `aria-expanded`. Every other widget got those in an
-   * earlier pass and this one was missed, so today it is the one panel in the
-   * workspace that cannot be reached by name at all.
+   * `autolevel` used to be the one panel in the workspace that could not be
+   * reached by name at all: it carried exactly the same chrome as its
+   * neighbours and none of its accessible names, because each widget spelled
+   * its own `aria-label` out and this one was missed. Seventeen widgets meant
+   * seventeen chances to forget.
    *
-   * It is listed here so the exception is visible in the assertion instead of
-   * hiding in a filter nobody reads. The chrome swap is where it closes: the
-   * labelling moves into the shared header and stops being seventeen separate
-   * chances to forget.
+   * The name now comes from the panel's own title through the shared header,
+   * so there is nothing left to forget — and the assertion below covers every
+   * panel rather than every panel but one.
    */
-  const UNREACHABLE_BY_NAME = ['autolevel'];
-
   const PANELS = DEFAULT_WIDGETS.filter((id) => !NOT_A_PANEL.includes(id));
-  const NAMED = PANELS.filter((id) => !UNREACHABLE_BY_NAME.includes(id));
 
   test('every panel in the workspace is a region', async ({ cncjs }) => {
     await cncjs.gotoWorkspace();
@@ -89,26 +85,37 @@ test.describe('widget chrome', () => {
     cncjs.expectNoPageErrors();
   });
 
-  test('every panel but one can be found by name', async ({ cncjs }) => {
+  test('every panel can be found by name', async ({ cncjs }) => {
     await cncjs.gotoWorkspace();
 
-    for (const id of NAMED) {
-      await expect(region(cncjs.page, id), `"${id}" should carry an accessible name`)
-        .toHaveAttribute('aria-label', /\bwidget$/);
-    }
-
-    // And the exception is asserted too, so the day it is fixed this case
-    // fails and someone has to come here and say so.
-    for (const id of UNREACHABLE_BY_NAME) {
+    // Asserted as the accessible NAME rather than as an attribute, because
+    // which attribute carries it is a mechanism: a titled panel points at its
+    // own heading, and the visualizer — which has no title — still says its
+    // name outright. Both are correct and only one is an `aria-label`.
+    for (const [id, title] of Object.entries(TITLES)) {
       await expect(
-        region(cncjs.page, id),
-        `"${id}" is the known unlabelled panel; if it now has a name, move it out of UNREACHABLE_BY_NAME`
-      ).not.toHaveAttribute('aria-label', /./);
+        cncjs.page.getByRole('region', { name: title }),
+        `"${id}" should be reachable as "${title}"`
+      ).toHaveCount(1);
     }
+    await expect(cncjs.page.getByRole('region', { name: '3D Visualizer widget' })).toHaveCount(1);
   });
 
   test('every panel says what it is', async ({ cncjs }) => {
     await cncjs.gotoWorkspace();
+
+    // A real heading each, so seventeen panels are navigable by something
+    // other than a mouse. They were plain divs before the chrome swap.
+    for (const [id, title] of Object.entries(TITLES)) {
+      // Anchored and case-folded. Playwright's `exact` is case-sensitive and
+      // the accessible name picks up the tile grammar's capitals, while the
+      // unanchored form matched the webcam panel's "Webcam is off" as well as
+      // its title.
+      await expect(
+        widget(cncjs.page, id).getByRole('heading', { name: new RegExp(`^${title}$`, 'i') }),
+        `"${id}" should head its panel with "${title}"`
+      ).toHaveCount(1);
+    }
 
     // The FIRST thing the panel says, not merely something it says somewhere.
     // `getByText(title).first()` looked right and was not: the probe panel has
@@ -121,10 +128,14 @@ test.describe('widget chrome', () => {
     for (const [id, title] of Object.entries(TITLES)) {
       const firstLine = async () => {
         const text = await region(cncjs.page, id).innerText();
-        return text.split(/\r?\n/)[0].trim();
+        // Case-folded, because `innerText` applies `text-transform` and the
+        // tile grammar sets its titles in capitals. Which case a title is
+        // *drawn* in is the stylesheet's business; which words it uses is this
+        // file's, and a rewording still fails here.
+        return text.split(/\r?\n/)[0].trim().toLowerCase();
       };
       await expect.poll(firstLine, { message: `"${id}" should lead with "${title}"` })
-        .toBe(title);
+        .toBe(title.toLowerCase());
     }
   });
 

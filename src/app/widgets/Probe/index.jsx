@@ -473,7 +473,7 @@ class ProbeWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="Probe widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

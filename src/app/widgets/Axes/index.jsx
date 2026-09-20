@@ -825,7 +825,7 @@ class AxesWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="Axes widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

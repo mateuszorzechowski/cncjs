@@ -245,7 +245,7 @@ class SmoothieWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="Smoothie widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

@@ -1,14 +1,8 @@
-import classNames from 'classnames';
 import React from 'react';
-import styles from './index.styl';
+import { Controls as Root } from './styles';
 
-const Controls = ({ className, ...props }) => (
-  <div
-    role="toolbar"
-    aria-label="Widget controls"
-    {...props}
-    className={classNames(className, styles.widgetControls)}
-  />
+const Controls = (props) => (
+  <Root role="toolbar" aria-label="Widget controls" {...props} />
 );
 
 export default Controls;

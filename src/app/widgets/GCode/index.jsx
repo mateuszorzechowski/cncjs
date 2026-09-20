@@ -72,7 +72,7 @@ class GCodeWidget extends PureComponent {
       const isForkedWidget = widgetId.match(/\w+:[\w\-]+/);
 
       return (
-        <Widget aria-label="G-code widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

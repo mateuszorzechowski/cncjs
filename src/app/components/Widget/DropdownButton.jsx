@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import { Button } from '../Buttons';
 import Dropdown from '../Dropdown';
-import styles from './index.styl';
+import { DropdownFrame } from './styles';
 
 class DropdownButton extends PureComponent {
     static propTypes = {
@@ -33,7 +33,7 @@ class DropdownButton extends PureComponent {
     };
 
     render() {
-      const { btnSize, toggle, style, children, ...props } = this.props;
+      const { btnSize, toggle, children, ...props } = this.props;
 
       // Split component props
       const dropdownProps = {};
@@ -48,26 +48,24 @@ class DropdownButton extends PureComponent {
       });
 
       return (
-        <Dropdown
-          {...dropdownProps}
-          style={{
-            ...style,
-            float: 'left'
-          }}
-          btnSize={btnSize}
-        >
-          <Dropdown.Toggle
-            aria-haspopup="menu"
-            {...toggleProps}
-            className={styles.widgetButton}
-            componentClass="a"
-          >
-            {toggle}
-          </Dropdown.Toggle>
-          <Dropdown.Menu>
-            {children}
-          </Dropdown.Menu>
-        </Dropdown>
+        // The frame is what carries the look. The toggle itself is drawn by
+        // the legacy dropdown, so it is reached through the one attribute this
+        // component sets on it rather than through a class name owned by
+        // someone else's CSS module.
+        <DropdownFrame>
+          <Dropdown {...dropdownProps} btnSize={btnSize}>
+            <Dropdown.Toggle
+              aria-haspopup="menu"
+              {...toggleProps}
+              componentClass="a"
+            >
+              {toggle}
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              {children}
+            </Dropdown.Menu>
+          </Dropdown>
+        </DropdownFrame>
       );
     }
 }

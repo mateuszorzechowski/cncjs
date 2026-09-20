@@ -24,7 +24,6 @@ const legacyComponents = [
   'Paginations', 'Panel', 'Portal', 'Progress', 'ProtectedRoute', 'Radio',
   'RepeatButton', 'SectionGroup', 'SectionTitle', 'Space', 'Table',
   'TabularForm', 'ToggleSwitch', 'Toggler', 'Tooltip', 'Validation', 'Webcam',
-  'Widget',
 ].map(name => `src/app/components/${name}/**`);
 
 /**

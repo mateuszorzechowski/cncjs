@@ -139,7 +139,7 @@ class GrblWidget extends PureComponent {
       return (
         <GrblModule>
           {(machine) => (
-            <Widget aria-label="Grbl widget" fullscreen={isFullscreen}>
+            <Widget fullscreen={isFullscreen}>
               <Widget.Header>
                 <Widget.Title>
                   <Widget.Sortable className={this.props.sortable.handleClassName}>

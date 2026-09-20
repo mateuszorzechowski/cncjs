@@ -202,7 +202,7 @@ class ConsoleWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="Console widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

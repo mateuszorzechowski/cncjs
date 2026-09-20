@@ -148,7 +148,7 @@ class WebcamWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="Webcam widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

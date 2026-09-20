@@ -262,7 +262,7 @@ class TinyGWidget extends PureComponent {
       };
 
       return (
-        <Widget aria-label="TinyG widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title>
               <Widget.Sortable className={this.props.sortable.handleClassName}>

@@ -1,12 +1,6 @@
-import classNames from 'classnames';
 import React from 'react';
-import styles from './index.styl';
+import { Content as Root } from './styles';
 
-const Content = ({ className, ...props }) => (
-  <div
-    {...props}
-    className={classNames(className, styles.widgetContent)}
-  />
-);
+const Content = (props) => <Root {...props} />;
 
 export default Content;

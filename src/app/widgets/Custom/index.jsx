@@ -170,7 +170,7 @@ class CustomWidget extends PureComponent {
       const buttonCount = 5; // [Disabled] [Refresh] [Edit] [Toggle] [More]
 
       return (
-        <Widget aria-label="Custom widget" fullscreen={isFullscreen}>
+        <Widget fullscreen={isFullscreen}>
           <Widget.Header>
             <Widget.Title
               style={{ width: `calc(100% - ${buttonWidth * buttonCount}px)` }}
