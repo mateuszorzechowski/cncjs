@@ -13,6 +13,7 @@ import Dropdown, { MenuItem } from 'app/components/Dropdown';
 import Space from 'app/components/Space';
 import StateChip from 'app/components/StateChip';
 import { Tooltip } from 'app/components/Tooltip';
+import { emergencyStop } from 'app/features/machine-state/commands';
 import MachineStateModule from 'app/features/machine-state/MachineStateModule';
 import settings from 'app/config/settings';
 import combokeys from 'app/lib/combokeys';
@@ -304,14 +305,16 @@ class Header extends PureComponent {
           {location.pathname === '/workspace' && (
             /*
               * Always present, always in the same place, and the only thing on
-              * this bar drawn as a block of colour. It sends the controller's
-              * soft reset — the same command the red "Reset" button sent
-              * before — which halts the machine immediately.
+              * this bar drawn as a block of colour. What it sends is a feed
+              * hold followed by a soft reset — see
+              * `app/features/machine-state/commands`, where that choice is
+              * written down along with the one number in it that still wants
+              * measuring against a real machine.
               */
             <Button
               size="large"
               color="error"
-              onClick={() => controller.command('reset')}
+              onClick={emergencyStop}
             >
               {i18n._('Stop')}
             </Button>
