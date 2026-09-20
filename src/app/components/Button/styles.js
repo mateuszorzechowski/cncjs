@@ -15,13 +15,31 @@ import { styled } from '@mui/material/styles';
  * the token for one of several in a row; it is not a density mode, and there
  * is no third step.
  */
-export const Root = styled(MuiButton)(({ theme, size, variant }) => ({
-  minHeight: size === 'small' ? theme.tokens.size.control : theme.tokens.size.controlLarge,
-  padding: size === 'small' ? theme.spacing(0, 1) : theme.spacing(0, 2.5),
+const heightFor = (theme, size) => ({
+  small: theme.tokens.size.control,
+  large: theme.tokens.size.controlHero,
+}[size] || theme.tokens.size.controlLarge);
+
+const paddingFor = (theme, size) => ({
+  small: theme.spacing(0, 1),
+  large: theme.spacing(0, 6),
+}[size] || theme.spacing(0, 2.5));
+
+const fontFor = (theme, size) => ({
+  small: theme.tokens.fontSize.small,
+  large: theme.tokens.fontSize.screenTitle,
+}[size] || theme.typography.button.fontSize);
+
+export const Root = styled(MuiButton)(({ theme, size, variant, color = 'primary' }) => ({
+  minHeight: heightFor(theme, size),
+  padding: paddingFor(theme, size),
   // Stated rather than inherited. Material sizes its small button in rem, and
   // rem resolves against a root this application does not own — which landed
   // the label at 11.3px, a size nothing in the token scale contains.
-  fontSize: size === 'small' ? theme.tokens.fontSize.small : theme.typography.button.fontSize,
+  fontSize: fontFor(theme, size),
+  // The hero size is the emergency stop and nothing else, so its tracking is
+  // set wide enough to read the word as a shape rather than as four letters.
+  ...(size === 'large' ? { letterSpacing: '0.2em' } : null),
   // A control label that wraps is a control whose own name is unreadable, and
   // these sit five to a row.
   whiteSpace: 'nowrap',
@@ -40,7 +58,9 @@ export const Root = styled(MuiButton)(({ theme, size, variant }) => ({
     : {
       '&:hover': {
         boxShadow: 'none',
-        backgroundColor: theme.palette.primary.dark,
+        // The button's own colour, not the accent's. A red button that turns
+        // blue when a finger lands on it is a button nobody trusts.
+        backgroundColor: (theme.palette[color] || theme.palette.primary).dark,
       },
     }),
   // A ring in the primary colour vanishes the moment it lands on a primary

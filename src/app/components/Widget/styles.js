@@ -24,12 +24,12 @@ export const Root = styled(TileRoot, {
   ...(borderless ? { border: 0 } : null),
   ...(fullscreen
     ? {
-      // Clear of the navbar and the rail. Both are still bootstrap and both
-      // are about to be rebuilt; until then the panel has to know how much
-      // of the screen is already spoken for.
+      // Clear of the bar and the rail. The panel has to know how much of the
+      // screen is already spoken for, and it reads that from the same tokens
+      // those two are sized by.
       position: 'fixed',
-      top: 50,
-      left: 60,
+      top: theme.tokens.size.bar,
+      left: theme.tokens.size.rail,
       right: 0,
       bottom: 0,
       margin: 0,

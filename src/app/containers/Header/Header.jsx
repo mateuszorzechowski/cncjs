@@ -1,6 +1,5 @@
 import classNames from 'classnames';
 import React, { PureComponent } from 'react';
-import { Navbar } from 'react-bootstrap';
 import { withRouter } from 'react-router-dom';
 import semver from 'semver';
 import styled from 'styled-components';
@@ -8,9 +7,13 @@ import without from 'lodash/without';
 import Push from 'push.js';
 import api from 'app/api';
 import Anchor from 'app/components/Anchor';
+import AppBar from 'app/components/AppBar';
+import Button from 'app/components/Button';
 import Dropdown, { MenuItem } from 'app/components/Dropdown';
 import Space from 'app/components/Space';
+import StateChip from 'app/components/StateChip';
 import { Tooltip } from 'app/components/Tooltip';
+import MachineStateModule from 'app/features/machine-state/MachineStateModule';
 import settings from 'app/config/settings';
 import combokeys from 'app/lib/combokeys';
 import controller from 'app/lib/controller';
@@ -269,85 +272,51 @@ class Header extends PureComponent {
     const showCommands = commands.length > 0;
 
     return (
-      <Navbar
-        aria-label="Application header"
-        fixedTop
-        fluid
-        inverse
-        style={{
-          border: 'none',
-          margin: 0
-        }}
-      >
-        <Navbar.Header>
-          <Tooltip
-            content={tooltip}
-            placement="right"
-          >
-            <Anchor
-              className="navbar-brand"
-              style={{
-                padding: 0,
-                position: 'relative',
-                height: 50,
-                width: 60
-              }}
-              href={releases}
-              target="_blank"
-              title={`${settings.productName} ${settings.version}`}
-            >
-              <img
-                style={{
-                  margin: '4px auto 0 auto'
-                }}
-                src="images/logo-badge-32x32.png"
-                alt=""
-              />
-              <div
-                style={{
-                  fontSize: '50%',
-                  lineHeight: '14px',
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+      <AppBar aria-label="Application header">
+        <AppBar.Group>
+          {/*
+            * The state chip is the first thing on the bar because it is the
+            * first thing anyone looks at: it answers "is it moving" before
+            * any control on the screen is read.
+            */}
+          <MachineStateModule>
+            {({ word, tone }) => <StateChip tone={tone}>{word}</StateChip>}
+          </MachineStateModule>
+          <Tooltip content={tooltip} placement="bottom">
+            <Anchor href={releases} target="_blank" title={`${settings.productName} ${settings.version}`}>
+              <AppBar.Note>
+                {settings.productName}
+                <Space width="8" />
                 {settings.version}
-              </div>
-              {newUpdateAvailable && (
-                <span
-                  className="label label-primary"
-                  style={{
-                    fontSize: '50%',
-                    position: 'absolute',
-                    top: 2,
-                    right: 2
-                  }}
-                >
-                  N
-                </span>
-              )}
+              </AppBar.Note>
             </Anchor>
           </Tooltip>
-          <Navbar.Toggle />
-        </Navbar.Header>
-        <Navbar.Collapse>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              columnGap: '8px',
-            }}
-          >
-            {location.pathname === '/workspace' && (
-              <QuickAccessToolbar state={this.state} actions={this.actions} />
-            )}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-              }}
+          {newUpdateAvailable && (
+            <AppBar.Note>{i18n._('Update available')}</AppBar.Note>
+          )}
+        </AppBar.Group>
+        <AppBar.Group>
+          {location.pathname === '/workspace' && (
+            <QuickAccessToolbar />
+          )}
+        </AppBar.Group>
+        <AppBar.End>
+          {location.pathname === '/workspace' && (
+            /*
+              * Always present, always in the same place, and the only thing on
+              * this bar drawn as a block of colour. It sends the controller's
+              * soft reset — the same command the red "Reset" button sent
+              * before — which halts the machine immediately.
+              */
+            <Button
+              size="large"
+              color="error"
+              onClick={() => controller.command('reset')}
             >
+              {i18n._('Stop')}
+            </Button>
+          )}
+          <AppBar.Group>
               <Dropdown
                 className={classNames(
                   { 'hidden': hideUserDropdown }
@@ -495,10 +464,9 @@ class Header extends PureComponent {
                   </MenuItem>
                 </Dropdown.Menu>
               </Dropdown>
-            </div>
-          </div>
-        </Navbar.Collapse>
-      </Navbar>
+          </AppBar.Group>
+        </AppBar.End>
+      </AppBar>
     );
   }
 }

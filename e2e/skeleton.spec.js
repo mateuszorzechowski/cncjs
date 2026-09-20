@@ -24,15 +24,18 @@ test.describe('application skeleton', () => {
   const commands = (page) => page.getByRole('toolbar', { name: 'Quick access toolbar' });
 
   /**
-   * The six commands the top bar offers, in the order it offers them.
+   * The commands the top bar offers, in the order it offers them.
    *
-   * Two of them stop a machine that is moving and one of them drops an alarm
-   * lock, so this is not a list of buttons — it is the set of things an
-   * operator can do without looking for a panel first. The mockup replaces the
-   * row with one large STOP and demotes the rest; whatever it ends up looking
-   * like, all six still have to be reachable.
+   * There were six, all drawn as equals. There are now five plus the stop,
+   * which sits on its own at the other end of the bar — so the one that halts
+   * a machine no longer looks like the one that puts it to sleep.
+   *
+   * **The sixth is the stop.** What was labelled "Reset" is labelled "Stop"
+   * and sends the same command: `controller.command('reset')`, the controller
+   * soft reset. The word changed, the wiring did not, and the rename is
+   * asserted below rather than left to be noticed.
    */
-  const COMMANDS = ['Cycle Start', 'Feedhold', 'Homing', 'Sleep', 'Unlock', 'Reset'];
+  const COMMANDS = ['Cycle Start', 'Feedhold', 'Homing', 'Sleep', 'Unlock'];
 
   test('the top bar is a landmark and names the product', async ({ cncjs }) => {
     await cncjs.gotoWorkspace();
@@ -40,7 +43,7 @@ test.describe('application skeleton', () => {
     await expect(header(cncjs.page)).toHaveCount(1);
     // The version is the one piece of text up there that is not a control, and
     // it is what anyone reporting a fault is asked for first.
-    await expect(header(cncjs.page).getByText(/^\d+\.\d+\.\d+/)).toBeVisible();
+    await expect(header(cncjs.page).getByText(/\d+\.\d+\.\d+/)).toBeVisible();
 
     cncjs.expectNoPageErrors();
   });
@@ -56,16 +59,42 @@ test.describe('application skeleton', () => {
     }
   });
 
+  test('the stop is always there, and it is not one of the row', async ({ cncjs }) => {
+    await cncjs.gotoWorkspace();
+
+    // Scoped to the bar, anchored, and case-folded. Scoped because the
+    // visualizer's transport controls have a Stop of their own, which stops a
+    // *job*; this one stops a *machine*, and an unscoped locator would have
+    // been happy with either. Anchored and case-folded because the accessible
+    // name picks up the bar's capitals and Playwright's `exact` is
+    // case-sensitive.
+    const stop = header(cncjs.page).getByRole('button', { name: /^Stop$/i });
+    await expect(stop).toHaveCount(1);
+
+    // Deliberately outside the command row: the whole point of the bar's shape
+    // is that the stop is not one of a set of equals. If it ever ends up back
+    // inside the group, this fails and somebody has to mean it.
+    await expect(commands(cncjs.page).getByRole('button', { name: 'Stop' })).toHaveCount(0);
+
+    // Large enough to hit without looking. The mockup draws it at 172x64 and
+    // the point of the measurement is the floor, not the figure.
+    const box = await stop.boundingBox();
+    expect(box.height, 'the stop should be as tall as the bar').toBeGreaterThanOrEqual(56);
+    expect(box.width, 'the stop should be wide enough to hit without aiming').toBeGreaterThanOrEqual(140);
+  });
+
   test('the machine commands are offered only where the machine is', async ({ cncjs }) => {
     await cncjs.gotoWorkspace();
     await expect(commands(cncjs.page)).toHaveCount(1);
 
     await cncjs.gotoSettings('general');
 
-    // Homing and Reset move a machine. Leaving them a click away from a
-    // settings form is how someone homes an axis while reading about baud
-    // rates, so the bar is not merely hidden here — it is not rendered.
+    // Homing moves a machine and the stop halts one. Leaving either a click
+    // away from a settings form is how an axis gets homed while somebody is
+    // reading about baud rates, so neither is merely hidden here — they are
+    // not rendered.
     await expect(commands(cncjs.page)).toHaveCount(0);
+    await expect(header(cncjs.page).getByRole('button', { name: /^Stop$/i })).toHaveCount(0);
   });
 
   test('the rail says where it goes', async ({ cncjs }) => {
@@ -77,15 +106,10 @@ test.describe('application skeleton', () => {
   });
 
   /**
-   * KNOWN GAP, recorded rather than skipped.
-   *
-   * The rail marks the current destination with a CSS class and nothing else —
-   * no `aria-current` — so which of the two you are looking at is available to
-   * a sighted user and to nobody else. Asserting the class would be asserting
-   * the thing that is about to be deleted, so the case below asserts the
-   * navigation instead and this note carries the gap.
-   *
-   * The rail rebuild is where it closes.
+   * CLOSED. The rail used to mark the current destination with a CSS class and
+   * nothing else, so which of the two you were looking at was available to a
+   * sighted user and to nobody else. It now says `aria-current`, which the
+   * case below asserts alongside the navigation itself.
    */
   test('the rail goes where it says, without reloading the page', async ({ cncjs }) => {
     await cncjs.gotoWorkspace();
@@ -98,9 +122,18 @@ test.describe('application skeleton', () => {
       window.__skeletonMarker = 'alive';
     });
 
+    await expect(rail(cncjs.page).getByRole('link', { name: 'Workspace' }))
+      .toHaveAttribute('aria-current', 'page');
+
     await rail(cncjs.page).getByRole('link', { name: 'Settings' }).click();
     await expect(cncjs.page).toHaveURL(/#\/settings/);
     expect(await cncjs.page.evaluate(() => window.__skeletonMarker)).toBe('alive');
+
+    // And the mark moves with you, rather than being painted on at build time.
+    await expect(rail(cncjs.page).getByRole('link', { name: 'Settings' }))
+      .toHaveAttribute('aria-current', 'page');
+    await expect(rail(cncjs.page).getByRole('link', { name: 'Workspace' }))
+      .not.toHaveAttribute('aria-current', /./);
 
     await rail(cncjs.page).getByRole('link', { name: 'Workspace' }).click();
     await expect(cncjs.page).toHaveURL(/#\/workspace/);

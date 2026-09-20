@@ -1,107 +1,44 @@
-import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
-import Space from 'app/components/Space';
+import Button from 'app/components/Button';
+import ButtonGroup from 'app/components/ButtonGroup';
 import controller from 'app/lib/controller';
 import i18n from 'app/lib/i18n';
-import styles from './index.styl';
 
+/**
+ * The machine commands that are not the stop.
+ *
+ * They used to be six buttons of six different colours — primary, success,
+ * warning, danger — sitting as equals in a dark bar, which made the one that
+ * stops a running machine look like the one that puts it to sleep. The stop
+ * now lives on its own at the other end of the bar, drawn large and red, and
+ * these five are deliberately quiet: they are things an operator reaches for
+ * deliberately, not things that should catch the eye.
+ *
+ * Reset is not here. It is the stop.
+ */
 class QuickAccessToolbar extends PureComponent {
-    static propTypes = {
-      state: PropTypes.object,
-      actions: PropTypes.object
-    };
-
-    command = {
-      'cyclestart': () => {
-        controller.command('cyclestart');
-      },
-      'feedhold': () => {
-        controller.command('feedhold');
-      },
-      'homing': () => {
-        controller.command('homing');
-      },
-      'sleep': () => {
-        controller.command('sleep');
-      },
-      'unlock': () => {
-        controller.command('unlock');
-      },
-      'reset': () => {
-        controller.command('reset');
-      },
-    };
+    commands = [
+      { id: 'cyclestart', label: () => i18n._('Cycle Start') },
+      { id: 'feedhold', label: () => i18n._('Feedhold') },
+      { id: 'homing', label: () => i18n._('Homing') },
+      { id: 'sleep', label: () => i18n._('Sleep') },
+      { id: 'unlock', label: () => i18n._('Unlock') },
+    ];
 
     render() {
       return (
-        <div role="toolbar" aria-label="Quick access toolbar" className={styles.quickAccessToolbar}>
-          <ul className="nav navbar-nav">
-            <li className="btn-group btn-group-sm" role="group">
-              <button
-                type="button"
-                className="btn btn-default"
-                onClick={this.command.cyclestart}
-                title={i18n._('Cycle Start')}
-              >
-                <i aria-hidden="true" className="fa fa-repeat" />
-                <Space width="8" />
-                {i18n._('Cycle Start')}
-              </button>
-              <button
-                type="button"
-                className="btn btn-default"
-                onClick={this.command.feedhold}
-                title={i18n._('Feedhold')}
-              >
-                <i aria-hidden="true" className="fa fa-hand-paper-o" />
-                <Space width="8" />
-                {i18n._('Feedhold')}
-              </button>
-            </li>
-            <li className="btn-group btn-group-sm" role="group">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={this.command.homing}
-                title={i18n._('Homing')}
-              >
-                <i aria-hidden="true" className="fa fa-home" />
-                <Space width="8" />
-                {i18n._('Homing')}
-              </button>
-              <button
-                type="button"
-                className="btn btn-success"
-                onClick={this.command.sleep}
-                title={i18n._('Sleep')}
-              >
-                <i aria-hidden="true" className="fa fa-bed" />
-                <Space width="8" />
-                {i18n._('Sleep')}
-              </button>
-              <button
-                type="button"
-                className="btn btn-warning"
-                onClick={this.command.unlock}
-                title={i18n._('Unlock')}
-              >
-                <i aria-hidden="true" className="fa fa-unlock-alt" />
-                <Space width="8" />
-                {i18n._('Unlock')}
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={this.command.reset}
-                title={i18n._('Reset')}
-              >
-                <i aria-hidden="true" className="fa fa-undo" />
-                <Space width="8" />
-                {i18n._('Reset')}
-              </button>
-            </li>
-          </ul>
-        </div>
+        <ButtonGroup role="toolbar" label={i18n._('Quick access toolbar')}>
+          {this.commands.map(({ id, label }) => (
+            <Button
+              key={id}
+              size="small"
+              variant="outlined"
+              onClick={() => controller.command(id)}
+            >
+              {label()}
+            </Button>
+          ))}
+        </ButtonGroup>
       );
     }
 }

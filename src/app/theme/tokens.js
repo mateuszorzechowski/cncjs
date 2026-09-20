@@ -130,6 +130,13 @@ export const size = {
   column: '420px',
   control: '46px',
   controlLarge: '52px',
+  // The one control on the screen that has to be hit without looking. The
+  // mockup draws the stop at 172x64 and nothing else comes close.
+  controlHero: '64px',
+  // The rail and the bar. Both are fixed furniture: everything else is laid
+  // out in the space they leave.
+  rail: '104px',
+  bar: '64px',
 };
 
 // MUI's spacing unit. The mockup's rhythm is built on 8 with half steps.

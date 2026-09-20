@@ -45,7 +45,7 @@ const OverrideControls = ({ status, actions, disabled }) => {
       />
       <Stack>
         <Readout name="override-R" label={i18n._('Rapid Override')} value={`${rapid}%`} />
-        <ButtonGroup label={i18n._('Rapid Override')}>
+        <ButtonGroup equal label={i18n._('Rapid Override')}>
           {[100, 50, 25].map((value) => (
             <Button
               key={value}
@@ -73,7 +73,7 @@ const OverrideControls = ({ status, actions, disabled }) => {
 const Adjustment = ({ name, label, resetLabel, percent, disabled, onAdjust }) => (
   <Stack>
     <Readout name={`override-${name}`} label={label} value={`${percent}%`} />
-    <ButtonGroup label={label}>
+    <ButtonGroup equal label={label}>
       {[-10, -1, 1, 10].map((step) => (
         <Button
           key={step}

@@ -1,6 +1,13 @@
-$navbar-height = 50px;
-$sidebar-background-color = #222;
-$sidebar-width = 60px;
-$content-background-color = #fff;
+// These four are the same measurements as `size.bar`, `size.rail` and
+// `color.surface` in src/app/theme/tokens.js. Stylus cannot read that file, so
+// until the containers are migrated the numbers live in both places — and
+// tokens.js is the one that decides. Changing one without the other puts the
+// rail and the bar out of register with everything laid out around them.
+$navbar-height = 64px;
+$sidebar-background-color = #fff;
+$sidebar-width = 104px;
+// The ground the panels lie on. The mockup lays its tiles on this, not on
+// white: a panel has to read as an object sitting on something.
+$content-background-color = #eaedf0;
 $content-min-width = 720px;
 $toggler-width = 50px;
