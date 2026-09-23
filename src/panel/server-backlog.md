@@ -243,6 +243,21 @@ dopóki nie przejdzie przez babel do `output/`.
 
 ---
 
+## ~~Jog ciągły — serwer daje tylko prymitywy~~ — ZROBIONE 2026-09-22 (PR z `47cff1aa`)
+
+**Pętla jest na serwerze.** `jogStart(dir, feedrate)` / `jogStop()` w
+`GrblController`, arytmetyka odcinka w `src/server/controllers/Grbl/jog.js`,
+skręt przez to samo `jogStart` jeszcze raz. Panel wysyła kierunek i posuw, i nie
+odmierza już milisekund — `machine/jog-stream.js` i `ui/useJogStream.jsx`, o
+których mówi opis niżej, nie istnieją.
+
+**Wpis został napisany w tym samym commicie, który go zamknął**, i przeleżał tak
+dwa dni — znaleziony przy przeglądzie z 2026-09-24. Zostaje, przekreślony, bo
+tłumaczy, skąd wzięła się dzisiejsza architektura; nie zostaje jako luka, bo nią
+nie jest.
+
+Poniżej zostaje oryginalny opis.
+
 ## Jog ciągły — serwer daje tylko prymitywy
 
 **Panel chciał:** trzymanego klawisza, który jedzie, daje się skręcić w locie i
@@ -278,3 +293,187 @@ z odcinkami dobieranymi do wolnego miejsca w planerze. Wtedy panel mówiłby
 „jedź tam", a nie odmierzał milisekundy.
 
 ---
+
+---
+
+## Przegląd 2026-09-24: co panel wysyła, a co powinien serwer
+
+Zlecone przez Mateusza po znalezisku z `$#` (2026-09-23): przejść wszystko, co
+panel wysyła, i przy każdym rozstrzygnąć — polecenie operatora (klient) czy
+odczyt, który serwer powinien mieć sam i rozgłaszać (serwer). Test: **czy druga
+aplikacja podpięta do tego samego portu dostaje to za darmo?**
+
+Cała lista jest krótka i domknięta. To wszystko, co panel wysyła w ogóle:
+
+| skąd | co idzie | rodzaj | werdykt |
+| --- | --- | --- | --- |
+| `commands.js` | `feedhold`, po 500 ms `reset` | polecenie | klient — ale **sekwencja należy do serwera**, patrz wpis niżej |
+| `jog.js` | `gcode` `$J=G91 …` (jeden krok) | polecenie | klient |
+| `jog.js` | `jogStart(dir, feedrate)`, `jogCancel` | polecenie | klient (pętla już na serwerze) |
+| `goto.js` | `gcode` `$J=G53 …` ×2 (odjazd Z + dojazd) | polecenie | klient |
+| `goto.js` | `jogCancel` | polecenie | klient |
+| `homing.js` | `homing` | polecenie | klient |
+| `zero.js` | `gcode` `G10 L20 P<n> …` | polecenie | klient |
+| `latency.js` | zdarzenie `latency` | pomiar **własnego łącza** | klient — nikt inny go nie zmierzy |
+| `ports.js` | `list`, `open`, `close` | pytanie o komputer / polecenie | serwer już to ma |
+| `snapshot.js` | `GET /api/controllers` | odczyt | serwer już to ma |
+| `session.js` | `POST /api/signin` | odczyt | serwer już to ma |
+
+**Główna odpowiedź: nic więcej tak nie stoi.** `$#` z `workOffsets.js` było
+jedynym miejscem, w którym panel wysyłał G-code **tylko po to, żeby przeczytać
+odpowiedź** — i zostało skasowane razem z PR #77. Każda pozostała linia `gcode`
+zmienia stan maszyny, czyli jest tym, czym wygląda: poleceniem operatora.
+Żadna z nich nie jest podejrzana z definicji „w alarmie nie przejdzie", bo
+żadna nie ma prawa przejść w alarmie — operator ma wtedy dostać wygaszony
+przycisk, co `readings.canSendGcode` robi.
+
+**Wzór, jak to wygląda zrobione dobrze:** `controller:timing`. Serwer mierzy u
+siebie (długość kolejki i czas odpowiedzi firmware'u — nikt inny tego nie
+widzi), rozgłasza do wszystkich, a panel dokłada to, co należy do niego
+(posuw, `$120`–`$122`, odległość do serwera). Podział jest po tym, **kto ma
+dane**, nie po tym, komu wygodniej policzyć.
+
+Przy okazji przeglądu wyszły trzy rzeczy, każda w osobnym wpisie niżej:
+awaryjny stop, podwójne liczenie zakresu ruchu i sterownik, który nie
+odpowiada, a trzyma port.
+
+**Jedna rzecz nie jest luką serwera i została naprawiona w kodzie:** ekran
+Połączenia odświeżał listę portów na `serialport:open` / `serialport:close`, a
+te zdarzenia idą **tylko do gniazd podpiętych do tego sterownika**
+(`GrblController.emit` iteruje `this.sockets`). Do wszystkich idzie
+`serialport:change` — dokładnie ta sama pomyłka, którą `useMachine` już raz
+naprawił.
+
+Skutek był węższy, niż się z tego wydaje, i warto to zapisać dokładnie. Dla
+portu, do którego panel **sam się dopina**, `held` w `ConnectScreen` nadpisuje
+`inuse` z listy, więc wiersz i przycisk były prawdziwe nawet przy nieświeżej
+liście. Nieprawdziwa zostawała sama lista — czyli różnica **zajęty kontra
+wolny** dla każdego portu, którego ten panel nie trzyma. To jest cała treść
+rozróżnienia `PORT_BUSY`/`PORT_FREE`, więc zostało naprawione, ale nie jest to
+usterka, którą operator zobaczyłby na tym stole: **jeden port, jedna maszyna**.
+
+**I nie ma na to testu.** Żeby przypadek pokazał różnicę, potrzebny jest drugi
+port szeregowy: przy jednym `held` maskuje nieświeżą listę, a tier smoke nie ma
+portu w ogóle (preflight odmawia przebiegu, jeśli jakiś jest otwarty). Zapisane
+jako brak pokrycia, nie zamiecione.
+
+---
+
+## Awaryjny stop: 500 ms żyje w zegarze przeglądarki
+
+**Panel chciał:** wielkiego czerwonego przycisku. Decyzja Mateusza z
+2026-09-20: najpierw wstrzymanie posuwu, po chwili miękki reset — bo sam reset
+zatrzymuje, porzucając planer, czyli z pozycją, której potem nikt nie zna, a
+samo wstrzymanie jest odwracalne i dlatego nie jest zatrzymaniem.
+
+**Serwer ma:** dwie osobne komendy (`feedhold`, `reset`) i jedną złożoną,
+`gcode:stop` z `{ force: true }`, która robi dokładnie to samo co panel —
+`!`, `await delay(500)`, `\x18` — tylko u siebie. Nie jest to jednak zamiennik:
+**bramkuje oba kroki stanem**. `!` leci wyłącznie przy `Run`, a `\x18`
+wyłącznie przy `Hold`. Maszyna w `Jog` albo `Home` nie dostaje ani jednego z
+nich, a to są stany, w których ruch trwa.
+
+**Skutek — to, co panel robi dzisiaj:**
+`controller.command('feedhold')`, `setTimeout(…, 500)` w karcie przeglądarki,
+`controller.command('reset')`. Pokrycie stanów jest lepsze od serwerowego (oba
+bajty lecą bezwarunkowo), ale **dostarczenie drugiej połowy nie jest niczym
+zagwarantowane**:
+
+- karta uśpiona, zamknięta albo zwinięta w tle w ciągu tych 500 ms zostawia
+  maszynę **we wstrzymaniu, nie po resecie** — czyli w stanie, który wygląda
+  na zatrzymanie i wznawia się przez Cycle Start;
+- zegary w karcie w tle są dławione (na telefonie do sekund), a panel jest
+  PWA, którą operator trzyma w kieszeni;
+- zerwane łącze między dwoma poleceniami daje to samo.
+
+To jest ten sam argument, który przeniósł jog ciągły na serwer: **stronę, która
+gwarantuje ciąg dalszy, ma tylko ta, która trzyma port.** Tym razem dotyczy
+przycisku bezpieczeństwa.
+
+**Propozycja:** jedna komenda serwera — `estop` — która wysyła `!`
+bezwarunkowo, odczekuje i wysyła `\x18` bezwarunkowo, bez bramkowania stanem.
+Wtedy druga aplikacja na tym samym porcie ma ten sam czerwony przycisk za
+darmo, a zamknięcie karty w środku sekwencji nic nie zmienia. Odczekanie
+powinno wyjść z `$120`–`$122` i posuwu, a nie ze stałej 500 ms — serwer ma
+jedno i drugie, panel ma tylko drugie (komentarz w `commands.js` mówi to
+wprost: „NOT MEASURED").
+
+**Czego nie zmierzyłem i trzeba przy maszynie:** co Grbl 1.1 robi z `!` w
+stanie `Jog`. Dokumentacja opisuje wstrzymanie jako anulowanie jogu, więc
+maszyna wychodzi z tego prawdopodobnie w `Idle`, a nie w `Hold` — i wtedy
+bramka `activeState === 'Hold'` w `gcode:stop` nie puści resetu nawet po
+wstrzymaniu, które się udało. Zanim ktokolwiek ruszy ten przycisk, to jest
+pomiar do zrobienia.
+
+---
+
+## Zakres ruchu liczony dwa razy, po obu stronach gniazda
+
+**Panel chciał:** nie wysyłać kroku jogu, który wyjdzie za koniec osi. Z
+`$20=1` firmware **odrzuca** taką linię, a nie przycina jej, więc przycisk przy
+krawędzi stołu nie robił nic i nic o tym nie mówił.
+
+**Serwer ma to samo u siebie** — i to jest cała treść wpisu.
+`roomFor` w `src/server/controllers/Grbl/jog.js` czyta `$130`–`$132`, dekoduje
+maskę `$23`, bierze `mpos` ze statusu i skraca odcinek do tego, co zostało.
+Panel ma drugą kopię tej arytmetyki: `machineEnvelope` w `envelope.js` plus
+`jogRoom` w `jog.js`.
+
+**Skutek:** trzymany klawisz jest ograniczany przez serwer, a pojedyncze
+naciśnięcie przez przeglądarkę. Sprawdzone 2026-09-24 — **obie kopie liczą
+dzisiaj to samo**: ten sam bit `$23`, ten sam przedział `[-$13x, 0]`, i panel
+podaje do `jogRoom` `machinePosition`, nie `position`, więc nie ma przesunięcia
+o zero robocze. To nie jest usterka, to dwa miejsca na jedną zmianę — a zmiana
+przyjdzie, bo `$23` to nie jedyny sposób, w jaki maszyna może leżeć inaczej
+(`$132` na maszynie bez bazowania Z, `G53` przy `$20=0`).
+
+**Propozycja:** skoro serwer i tak to liczy, niech powie. Obwiednia w
+`controller:settings` albo obok niej — jedno pole z `min`/`max` na oś —
+zamyka trzy rzeczy naraz: panel przestaje dekodować `$23`, stara aplikacja
+dostaje obwiednię, której nie ma wcale, a scena ekranu Ścieżka rysuje to, czym
+serwer ogranicza jog, a nie swoją własną interpretację tych samych rejestrów.
+
+---
+
+## Sterownik, który nie odpowiada, trzyma port dla wszystkich
+
+**Zmierzone 2026-09-24, przy restarcie serwera.** W logu, sekunda po sekundzie:
+
+```
+22:59:40  socket.open("COM3", {"baudrate":9600,"controllerType":"Marlin"})
+22:59:41  socket.open("COM3", {"baudrate":115200,"controllerType":"Grbl"})
+22:59:41  warn  serial port "COM3" is already open with controllerType=Marlin,
+                refusing controllerType=Grbl
+```
+
+Oba zgłoszenia przyszły z tego samego adresu (klient z WSL), w odstępie
+sekundy. Wygrało pierwsze. Na COM3 wisi Grbl, więc sterownik Marlina **nigdy
+nie stał się gotowy** — `/api/controllers` pokazywał `ready:false` godzinami, z
+pustymi `settings` i zerową pozycją — i przez cały ten czas port był
+niedostępny dla klienta, który zgłaszał się poprawnie.
+
+**Serwer ma:** obronę z PR #70, która działa dokładnie tak, jak zaprojektowana:
+rozbieżne `controllerType`/`baudrate` przy żywym porcie to odmowa, nie ciche
+przestawienie. Problem jest w tym, **kogo ta obrona broni** — tego, kto był
+pierwszy, także wtedy, gdy widać, że nie rozmawia z maszyną.
+
+**Skutek:** panel pokazuje port jako zajęty i oferuje „Połącz", który dopina do
+sterownika bez żadnych odczytów. Dla operatora to maszyna, która nie odpowiada,
+bez śladu przyczyny na ekranie. Jedyne wyjście to zamknięcie portu z drugiej
+strony albo restart serwera — po którym wyścig rozgrywa się od nowa.
+
+**Do rozważenia, w kolejności kosztu:**
+- `ready` w odpowiedzi `serialport:list` i w `/api/controllers`, obok `inuse`.
+  Panel ma wtedy co powiedzieć („port zajęty, sterownik nie odpowiada") i to
+  jest najtańsze z trzech.
+- Zwolnienie portu przez sterownik, który po otwarciu nie dostał **ani jednej**
+  linii w rozsądnym czasie. `lastDataReceivedTime` już istnieje i już jest
+  używane do „the controller stopped responding" — brakuje tylko wniosku z
+  przypadku, w którym nic nie przyszło nigdy.
+- Odmowa w drugą stronę: sterownik z `ready:false` przegrywa z klientem,
+  który prosi o inne ustawienia. Najbardziej ryzykowne, bo „nie odpowiada"
+  bywa chwilowe.
+
+**Uwaga o tym, jak to znaleźć u siebie:** nie po objawie na ekranie, tylko
+`/api/controllers` — `ready:false` przy otwartym porcie to cała diagnoza, a
+preflight pokazuje to w sekundę.
