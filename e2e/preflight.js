@@ -147,8 +147,24 @@ const nodeProcesses = () => {
  * chain runs through `cmd.exe` and the ppid link is broken. Excluding the
  * wrappers by name is the reliable discriminator; they still count towards
  * memory, because the memory is real.
+ *
+ * **`cross-env` is one of them, and leaving it out made this check refuse
+ * every run.** It is how all three dev scripts are written — `start-app-dev`,
+ * `start-panel-dev`, `start-server-dev` — so the documented way to start the
+ * tree always produces a `cross-env` process carrying the watcher's whole
+ * command line beside the watcher itself. Measured 2026-09-24: a smoke run
+ * refused with "2 copies of the panel watcher are running", naming
+ * `cross-env.js … --config webpack.config.panel.development.js` and the
+ * webpack it had just spawned. The advice it printed would have killed the
+ * only real watcher.
+ *
+ * Earlier runs got away with it because the watcher was started by hand, as
+ * `npx webpack --watch …` — which is what this file's own repair advice
+ * suggests. A check that only passes when you ignore the project's own
+ * scripts is worse than no check: it is a stopped run with a confident
+ * explanation.
  */
-const WRAPPER = /npx-cli\.js|npm-cli\.js/;
+const WRAPPER = /npx-cli\.js|npm-cli\.js|cross-env/;
 
 const ROLES = [
   { id: 'the dev server', pattern: /bin[/\\]cncjs/ },
@@ -184,6 +200,24 @@ const BLOATED_MB = 2048;
  */
 const TIER_OPENS_AS = { controllerType: 'Grbl', baudrate: 115200 };
 
+/**
+ * Which roles are running more than once, given every node process there is.
+ *
+ * Pulled out of the check below so it can be asked in a unit test, because it
+ * is the part that has been wrong twice: once about `npx`/`npm` and once about
+ * `cross-env`, and both times it stopped a run that would have passed. The
+ * shape of the mistake is the same each time — a wrapper carrying its child's
+ * command line — so it is worth a case rather than another reading of the
+ * regex.
+ */
+const duplicateRoles = (all) => {
+  const named = all.filter((one) => !WRAPPER.test(one.command));
+
+  return ROLES
+    .map(({ id, pattern }) => ({ id, running: named.filter((one) => pattern.test(one.command)) }))
+    .filter(({ running }) => running.length > 1);
+};
+
 const checks = {
   /**
    * Nothing is running twice, and nothing has eaten the machine.
@@ -206,20 +240,12 @@ const checks = {
       return null;
     }
 
-    const problems = [];
-    const named = all.filter((one) => !WRAPPER.test(one.command));
-
-    for (const { id, pattern } of ROLES) {
-      const running = named.filter((one) => pattern.test(one.command));
-      if (running.length > 1) {
-        problems.push(
-          `${running.length} copies of ${id} are running: ${running.map((one) => `pid ${one.pid}`).join(', ')}.\n` +
-          '    Two watchers write the same bundle and the loser wins the file; two servers mean the\n' +
-          '    port under test need not be the process you rebuilt. Keep one:\n' +
-          `      Stop-Process -Id ${running.slice(1).map((one) => one.pid).join(',')} -Force`
-        );
-      }
-    }
+    const problems = duplicateRoles(all).map(({ id, running }) => (
+      `${running.length} copies of ${id} are running: ${running.map((one) => `pid ${one.pid}`).join(', ')}.\n` +
+      '    Two watchers write the same bundle and the loser wins the file; two servers mean the\n' +
+      '    port under test need not be the process you rebuilt. Keep one:\n' +
+      `      Stop-Process -Id ${running.slice(1).map((one) => one.pid).join(',')} -Force`
+    ));
 
     const bloated = all.filter((one) => one.mb >= BLOATED_MB);
     const total = all.reduce((sum, one) => sum + one.mb, 0);
@@ -502,4 +528,4 @@ const preflight = async (baseUrl, projects, { filtered = false } = {}) => {
   };
 };
 
-module.exports = { preflight, FOR_PROJECT };
+module.exports = { preflight, FOR_PROJECT, duplicateRoles };

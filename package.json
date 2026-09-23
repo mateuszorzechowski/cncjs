@@ -416,7 +416,8 @@
       "<rootDir>/src/app/features/**/__tests__/**/*.test.js",
       "<rootDir>/src/panel/**/__tests__/**/*.test.js",
       "<rootDir>/src/app/widgets/Visualizer/__tests__/**/*.test.js",
-      "<rootDir>/src/lib/toolpath/__tests__/**/*.test.js"
+      "<rootDir>/src/lib/toolpath/__tests__/**/*.test.js",
+      "<rootDir>/e2e/__tests__/**/*.test.js"
     ],
     "transformIgnorePatterns": [
       "/node_modules/(?!three/)"
