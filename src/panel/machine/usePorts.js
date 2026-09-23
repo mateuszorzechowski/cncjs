@@ -51,13 +51,26 @@ export const usePorts = (linked) => {
     // And asking again whenever a port opens or closes, by anyone. `inuse` is
     // the server's state, not this panel's: the old application connecting on
     // the next tab changes what this screen should be offering.
-    controller.addListener('serialport:open', refresh);
-    controller.addListener('serialport:close', refresh);
+    //
+    // `serialport:change` and not `serialport:open`/`close`, which is the
+    // whole point: those two go to `GrblController.emit`, which walks the
+    // sockets attached to *that* controller, so a panel holding nothing — or
+    // holding a different port — hears nothing about them. Only `change` is
+    // emitted on `engine.io` to every socket. `useMachine` already had this
+    // fixed; this hook did not.
+    //
+    // What it cost is narrower than it looks, and worth saying so nobody
+    // re-derives it: for the port this panel attaches to, `held` in
+    // `ConnectScreen` outranks `inuse`, so the row and the button were right
+    // anyway. What stayed wrong was the list itself — busy against free for
+    // every port this panel is *not* holding, which is the entire content of
+    // that distinction. One serial port on the bench is why nobody saw it,
+    // and also why no case here can cover it.
+    controller.addListener('serialport:change', refresh);
 
     return () => {
       controller.removeListener('serialport:list', received);
-      controller.removeListener('serialport:open', refresh);
-      controller.removeListener('serialport:close', refresh);
+      controller.removeListener('serialport:change', refresh);
     };
   }, [refresh]);
 
