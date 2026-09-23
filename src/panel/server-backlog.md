@@ -140,6 +140,52 @@ prywatne.
 Zostaje wpisane, bo to jedyna pozycja z tej listy, która była blokadą dla
 całej reszty pendanta, i łatwiej ją tu przeczytać niż odtworzyć z historii.
 
+## ~~Magazyn sesji na Windows nie działa i rośnie bez końca~~ — ZROBIONE 2026-09-24
+
+**Naprawione trzema opcjami w `src/server/app.js`:** `resave: false`,
+`saveUninitialized: false` i `retries: 0` w `FileStore`. Zmierzone na przebiegu
+smoke: **83 pliki sesji przed, 0 po**, zero `EPERM` i zero `will retry`.
+
+Dlaczego to działa: **nic w tym serwerze nie zapisuje niczego do sesji.**
+`req.session` jest czytane w jednym miejscu w całym drzewie — token `:id`
+morgana — a morgan nie jest w ogóle montowany, dopóki `verbosity > 0`, a
+domyślnie jest 0. Więc z `resave: true` i `saveUninitialized: true` powstawał
+plik na **każde żądanie** dla sesji, do której nikt nic nie wkładał, i był
+nadpisywany przy każdym następnym.
+
+`retries: 0` dotyczy drugiej połowy hałasu, której poprzedni opis nie nazwał:
+katalog jest **czyszczony przy starcie** (`rimraf.sync` w tym samym bloku), a
+przeglądarki trzymają swoje ciasteczko dalej — więc pierwsze żądanie z otwartej
+karty pyta o sesję, którą serwer właśnie świadomie skasował. Domyślnie store
+ponawia to pięć razy z narastającą przerwą: **piętnaście linii `will retry` na
+jeden identyfikator sesji**, zmierzone 2026-09-24. Brakujący plik nie jest
+usterką przejściową.
+
+**Jedna rzecz z poprzedniego opisu była nieprawdą:** „najstarsze sprzed wielu
+dni. Nic ich nie kasuje". Kasuje je `rimraf.sync(path)` przy każdym starcie
+serwera. Zmierzone: najstarszy plik nosił znacznik czasu restartu z tej sesji,
+a nie wcześniejszy. 424 pliki z popołudnia 2026-09-23 pochodziły więc z
+**jednego przebiegu**, nie z wielu dni — co jest gorszą wiadomością, nie lepszą.
+
+**Co zostaje jako decyzja, nie jako usterka.** Ten magazyn nie przechowuje już
+nic i nigdy nie przechowywał nic potrzebnego. Pełne usunięcie
+`express-session`, `session-file-store` i `rimraf` z `app.js` jest o trzy
+importy i jeden blok dalej, i zabiera też token `:id` z formatu morgana (bo bez
+sesji nie ma czego w nim pokazać). **Nie zrobione świadomie:** to zmiana w
+backendzie poza Grblem i CNCEngine, a zasada mówi, że backendu nie ruszamy bez
+powodu — a usterka, która to uzasadniała, jest już naprawiona. Do rozstrzygnięcia
+przez Mateusza; jeśli tak, `:id` zamienia się albo w prawdziwy identyfikator
+żądania, albo znika z formatu.
+
+**Nie zweryfikowane, dalej:** czy ma to związek z pojedynczym `400` na
+`/socket.io/?…&transport=polling&sid=…`, który wypada mniej więcej w co drugim
+pełnym przebiegu smoke (opisany w `e2e/fixtures.js`). Sprawdzone wcześniej:
+dziesięć kolejnych `POST /api/signin` nie dołożyło ani jednego `EPERM`. Teraz da
+się to rozstrzygnąć taniej niż wtedy — jeśli `400` wypadnie przy zerze plików
+sesji, te dwie rzeczy nie mają ze sobą nic wspólnego.
+
+Poniżej zostaje oryginalny opis, bo trzyma pomiary z dnia, w którym to wyszło.
+
 ## Magazyn sesji na Windows nie działa i rośnie bez końca
 
 **Panel chciał:** tylko się zalogować. `POST /api/signin` bez ciała, raz na

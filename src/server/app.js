@@ -142,14 +142,50 @@ const appMain = () => {
       // https://github.com/expressjs/session#secret
       secret: settings.secret,
 
-      // https://github.com/expressjs/session#resave
-      resave: true,
-
-      // https://github.com/expressjs/session#saveuninitialized
-      saveUninitialized: true,
+      /*
+       * Neither of these is saved, because nothing here puts anything in a
+       * session.
+       *
+       * `true` and `true` together mean a file written for *every request*,
+       * and on Windows the write is a `rename` over a file another handler may
+       * still have open, which answers `EPERM`. Measured 2026-09-23:
+       * **529 EPERM in one afternoon's log and 424 session files** in
+       * `~/.cncjs-sessions`; measured again on 2026-09-24 as 144 files in the
+       * first forty minutes of a single run. Nothing visible broke either
+       * time, which is the worst part — the log fills with the one error that
+       * is never the one you are looking for.
+       *
+       * `resave: false` stops rewriting a session nobody touched;
+       * `saveUninitialized: false` stops creating one for a request that had
+       * no use for it. Together they mean this store holds nothing, which is
+       * the truth about it: grep the tree and `req.session` is read in
+       * exactly one place — morgan's `:id` token below, which is not even
+       * mounted unless `verbosity > 0`, and the default is 0.
+       *
+       * `req.session.id` is still there. It is generated per request either
+       * way; what changes is that it is no longer written down, so it stops
+       * being the same id across a browser's requests. That was only ever
+       * true for clients that keep cookies anyway.
+       */
+      resave: false,
+      saveUninitialized: false,
 
       store: new FileStore({
         path: path,
+
+        /*
+         * A session file that is not there is an answer, not a hiccup.
+         *
+         * The default is five retries with a backoff, which is right for a
+         * half-written file and wrong for the case that actually happens
+         * here: the directory is wiped on startup, above, while browsers
+         * keep their cookie — so the first request from an already-open tab
+         * asks for a session that was deliberately deleted, and the log gets
+         * six lines saying so. Seen 2026-09-24: fifteen `will retry` lines
+         * for one session id.
+         */
+        retries: 0,
+
         logFn: (...args) => {
           log.debug.apply(log, args);
         }
