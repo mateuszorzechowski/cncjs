@@ -6,6 +6,17 @@ const baseURL = process.env.CNCJS_URL || 'http://localhost:8000';
 
 module.exports = defineConfig({
   testDir: './e2e',
+  /*
+   * `.spec.js` only, because `.test.js` in here belongs to Jest.
+   *
+   * Playwright's default pattern is `*.@(spec|test).[jt]s`, so the moment a
+   * unit test for a helper in this directory appeared — `e2e/__tests__/
+   * preflight.test.js` — Playwright collected it, found no `describe`, and
+   * took the whole run down before a browser started. Every spec here has
+   * always been `.spec.js`, so naming that is not a restriction; it is saying
+   * out loud which of the two runners owns which file.
+   */
+  testMatch: '**/*.spec.js',
   // Blocks until the server is serving, so a cold webpack compile cannot
   // masquerade as a flaky first navigation.
   globalSetup: require.resolve('./e2e/global-setup'),
