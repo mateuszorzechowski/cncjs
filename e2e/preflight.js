@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const tls = require('tls');
 
 /**
  * Refuse to start a run that cannot pass.
@@ -355,6 +356,56 @@ const checks = {
   },
 
   /**
+   * The browser will trust this server's certificate.
+   *
+   * **The panel registers a service worker, and `ignoreHTTPSErrors` does not
+   * cover the fetch that loads one.** Chromium refuses the script and writes
+   * `An SSL certificate error occurred when fetching the script.` to the
+   * console — and the smoke fixture fails any page that logged a console
+   * error, which every panel case asks it to check. So one untrusted
+   * certificate is eight failures with nothing to do with the panel.
+   *
+   * Measured 2026-09-24 against `scripts/serve-panel.sh` (its own authority,
+   * name-constrained, installed on a phone and nowhere else): **8 failed, 63
+   * passed**, every failure on that one console line. The same certificate
+   * costs the hardware tier nothing, because `hardware/panel.spec.js` does not
+   * assert on console errors — same server, same browser, different question.
+   *
+   * Asked by a TLS handshake rather than inferred from the URL, because
+   * `https` is not the problem: a certificate the browser accepts is fine, and
+   * refusing every `https` run would block the one configuration the pendant
+   * is actually deployed in from ever being tested.
+   *
+   * **The one way this can be wrong:** an authority installed in the operating
+   * system's store. Chromium reads it, node does not — node carries its own
+   * list — so a certificate a browser accepts would be reported here as
+   * untrusted. The message says so, and `--no-tls` is one flag away either
+   * way.
+   */
+  async browserTrustsServer(baseUrl) {
+    const url = new URL(baseUrl);
+    if (url.protocol !== 'https:') {
+      return null;
+    }
+
+    const reason = await certificateError(url);
+    if (!reason) {
+      return null;
+    }
+
+    return `${url.host} answers over TLS with a certificate this machine cannot verify (${reason}),\n` +
+      '    and the panel\'s service worker is fetched on terms `ignoreHTTPSErrors` does not reach.\n' +
+      '    Chromium logs "An SSL certificate error occurred when fetching the script." and the\n' +
+      '    fixture fails every panel case on it: measured 8 failed, 63 passed, one cause.\n' +
+      '    Run this tier over plain HTTP — it has no business with certificates:\n' +
+      '      bash scripts/serve-panel.sh --no-tls\n' +
+      '    Or point it somewhere that already is:\n' +
+      '      CNCJS_URL=http://localhost:8000 yarn test:e2e --project=smoke\n' +
+      '    If the authority is installed in the Windows store, this check is the one that is wrong:\n' +
+      '    node does not read that store, Chromium does.';
+  },
+
+  /**
    * No serial port is open, for the tier whose panel cases are about not
    * having one.
    *
@@ -462,6 +513,43 @@ const checks = {
   },
 };
 
+/**
+ * Why a client would refuse this server's certificate, or nothing.
+ *
+ * `rejectUnauthorized: false` on purpose: the handshake is allowed to finish
+ * so that `authorizationError` can be read off it. The answer wanted here is
+ * *which* objection, to put in the message — a thrown error would carry the
+ * same fact in a form that has to be unwrapped, and would have to be caught
+ * to tell "untrusted" from "not listening".
+ *
+ * `NODE_TLS_REJECT_UNAUTHORIZED=0` does not blind it. `global-setup` sets that
+ * before this runs, and the verdict is still computed; checked rather than
+ * assumed.
+ *
+ * Nothing, rather than a finding, when the handshake cannot happen at all. A
+ * server that is not listening is a different problem and the wait above has
+ * already had its say about it.
+ */
+const certificateError = (url) => new Promise((resolve) => {
+  const socket = tls.connect({
+    host: url.hostname,
+    port: Number(url.port) || 443,
+    servername: url.hostname,
+    rejectUnauthorized: false,
+    timeout: 5000,
+  }, () => {
+    const { authorizationError: failure } = socket;
+    socket.destroy();
+    resolve(failure ? String(failure.code || failure.message || failure) : null);
+  });
+
+  socket.on('error', () => resolve(null));
+  socket.on('timeout', () => {
+    socket.destroy();
+    resolve(null);
+  });
+});
+
 const openPorts = async (baseUrl) => {
   const res = await fetch(new URL('/api/controllers', baseUrl).href);
   if (!res.ok) {
@@ -480,7 +568,7 @@ const openPorts = async (baseUrl) => {
  * business being told that a dev watcher is behind.
  */
 const FOR_PROJECT = {
-  smoke: ['processes', 'appBundleRuns', 'appAssetsPresent', 'panelBundleFresh', 'noPortOpen'],
+  smoke: ['processes', 'appBundleRuns', 'appAssetsPresent', 'panelBundleFresh', 'browserTrustsServer', 'noPortOpen'],
   hardware: ['processes', 'appBundleRuns', 'appAssetsPresent', 'panelBundleFresh', 'testPortUsable'],
   // Nothing. This is the step that cleans up after a tier, and a cleanup that
   // refuses to run because the machine it is cleaning up is untidy is no
