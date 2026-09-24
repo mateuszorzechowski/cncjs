@@ -66,12 +66,12 @@ const SegmentedChoice = ({
             !columns && compact ? 'shrink-0 px-3' : '',
             !columns && !compact ? 'min-w-0 flex-1 basis-0 px-1' : '',
             chosen
-              ? 'border-acc bg-acc text-white'
+              ? 'border-acc bg-acc text-white hover:brightness-95'
               : 'border-line bg-surf text-ink hover:border-acc hover:text-acc',
             // Dimmed, not repainted: which step is selected is still the
             // answer to "what happens when I reconnect and press a key", and
             // a disabled control that drops its selection hides that.
-            'disabled:opacity-45 disabled:hover:border-line disabled:hover:text-ink',
+            'disabled:opacity-45 disabled:hover:border-line disabled:hover:text-ink disabled:hover:brightness-100',
           ].join(' ')}
         >
           {format(option)}
