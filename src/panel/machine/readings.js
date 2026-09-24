@@ -182,6 +182,56 @@ const toolOf = (type, state) => {
 };
 
 /**
+ * The sender's own report, as a job a screen can draw.
+ *
+ * Null unless `total > 0`, which is the test for "there is a job" rather than
+ * the presence of the object: the sender reports its status continuously and
+ * reports zeroes when nothing is loaded, and a panel that read that as a job
+ * would offer Start for a file that does not exist.
+ *
+ * **The interesting part is what happens when a program ends.** The server
+ * decides that explicitly — `Sender.next()` sets `finishTime` and emits `end`
+ * the moment `received` reaches `total` — and then `workflow.stop()` rewinds
+ * the sender, which puts `sent` and `received` back to nought so the program
+ * can be run again. Both halves are right on their own, and together they mean
+ * the counters a second after a finished run are indistinguishable from the
+ * counters of a program that was loaded and never started.
+ *
+ * Measured on the machine, 2026-09-24: at t+3.6s `running, 31/31, 100%`; at
+ * t+4.0s `idle, 0/31, 0%`. On screen that was a file name, an empty bar and a
+ * live Start — a job that had just run to the end, reading as one that had not
+ * begun.
+ *
+ * So the decision is read from `finishTime` rather than inferred from the
+ * counters, and it survives the rewind because the rewind does not touch it.
+ * It is also the *right* decision rather than a near one: `finishTime` is set
+ * only on the path where the last line came back, so a program stopped half
+ * way leaves it at nought, and starting again clears it.
+ */
+const readJob = (job) => {
+  if (!job || !(job.total > 0)) {
+    return null;
+  }
+
+  const finished = Boolean(job.finishTime);
+  // What was actually got through. After the rewind the counter is nought and
+  // the truth is "all of it"; a bar that dropped to empty at the finish line
+  // would be the panel reporting the counter rather than the run.
+  const received = finished ? job.total : (job.received || 0);
+
+  return {
+    name: job.name || '',
+    total: job.total,
+    sent: job.sent || 0,
+    received,
+    remaining: job.remainingTime || 0,
+    percent: Math.min(100, Math.round((received / job.total) * 100)),
+    /** Whether this program ran to its last line. Not "is it stopped". */
+    finished,
+  };
+};
+
+/**
  * Everything on screen, derived in one place.
  *
  * The views take what this returns and arrange it. Nothing downstream reaches
@@ -299,14 +349,6 @@ export const readMachine = ({
     // a tile of their own.
     machinePosition: positions(type, state, 'mpos'),
     modal: modalOf(type, state),
-    /**
-     * The loaded job, or nothing.
-     *
-     * `total > 0` is the test for "there is a job", not the presence of the
-     * object: the sender reports its status continuously and reports zeroes
-     * when nothing is loaded, and a panel that read that as a job would offer
-     * Start for a file that does not exist.
-     */
     // Whether this machine can be sent home. Not a preference — whether
     // limit switches exist and are turned on, which only the firmware
     // knows. See `homing.js`.
@@ -352,16 +394,7 @@ export const readMachine = ({
      * panel answering for a controller it cannot hear.
      */
     envelope: connected ? (envelope || null) : null,
-    job: job && job.total > 0
-? {
-      name: job.name || '',
-      total: job.total,
-      sent: job.sent || 0,
-      received: job.received || 0,
-      remaining: job.remainingTime || 0,
-      percent: Math.min(100, Math.round(((job.received || 0) / job.total) * 100)),
-    }
-: null,
+    job: readJob(job),
   };
 };
 

@@ -107,7 +107,7 @@
     "title": "Job progress",
     "noFile": "no file loaded",
     "none": "no job",
-    "line": "line {{received}}/{{total}}",
+    "finished": "finished",
     "percentLine": "% · line ",
     "remaining": "{{minutes}} min left",
     "file": "file",

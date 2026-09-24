@@ -248,3 +248,71 @@ describe('statesOf', () => {
     });
   });
 });
+
+describe('a job, and whether it has finished', () => {
+  // The shape the server sends: `sender.toJSON()`, whole.
+  const sender = (overrides) => ({
+    name: 'part.nc', total: 31, sent: 0, received: 0,
+    startTime: 0, finishTime: 0, elapsedTime: 0, remainingTime: 0,
+    ...overrides,
+  });
+  const read = (job) => readMachine({
+    connection: 'open', port: 'COM3', type: 'Grbl', attached: true, state: {}, settings: {}, job,
+  }).job;
+
+  test('nothing loaded is not a job', () => {
+    // The sender reports zeroes continuously when there is nothing to send,
+    // and a panel that read that as a job would offer Start for a file that
+    // does not exist.
+    expect(read(sender({ name: '', total: 0 }))).toBeNull();
+    expect(read(null)).toBeNull();
+  });
+
+  test('part way through, the bar is what has come back', () => {
+    // Received, not sent: sent counts what the controller has been handed,
+    // which runs seconds ahead of the tool while the planner drains.
+    expect(read(sender({ sent: 30, received: 12 }))).toMatchObject({
+      received: 12, percent: 39, finished: false,
+    });
+  });
+
+  test('finished reads as finished, not as never started', () => {
+    /*
+     * The defect this exists for, measured on the machine 2026-09-24: at
+     * t+3.6s the sender says `31/31, 100%`; at t+4.0s `workflow.stop()` has
+     * rewound it and it says `0/31, 0%`. On screen that was a file name, an
+     * empty bar and a live Start — a program that had just run to its last
+     * line, reading exactly like one nobody had started.
+     */
+    const afterTheRun = sender({ sent: 0, received: 0, finishTime: 1700000003568, elapsedTime: 3568 });
+
+    expect(read(afterTheRun)).toMatchObject({
+      finished: true,
+      received: 31,
+      percent: 100,
+    });
+  });
+
+  test('a program stopped half way is not finished', () => {
+    /*
+     * And this is why the decision is read from `finishTime` rather than
+     * guessed at from idleness: the sender sets it only on the path where the
+     * last line came back, so an abandoned run leaves it at nought — and the
+     * counters of an abandoned run are rewound exactly like the counters of a
+     * completed one.
+     */
+    expect(read(sender({ sent: 0, received: 0, startTime: 1700000000000 }))).toMatchObject({
+      finished: false,
+      received: 0,
+      percent: 0,
+    });
+  });
+
+  test('the same program started again is not finished any more', () => {
+    // `Sender.next()` clears `finishTime` when a run begins, so a second run
+    // cannot inherit the first one's answer.
+    expect(read(sender({ sent: 4, received: 1, finishTime: 0 }))).toMatchObject({
+      finished: false, percent: 3,
+    });
+  });
+});

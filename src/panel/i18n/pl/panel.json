@@ -107,7 +107,7 @@
     "title": "Przebieg zadania",
     "noFile": "brak wczytanego pliku",
     "none": "brak zadania",
-    "line": "linia {{received}}/{{total}}",
+    "finished": "zakończone",
     "percentLine": "% · linia ",
     "remaining": "pozostało {{minutes}} min",
     "file": "plik",
