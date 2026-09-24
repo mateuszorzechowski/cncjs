@@ -243,12 +243,13 @@ const readJob = (job) => {
  *
  * The server's rule (`program-gate.js`), read here so a key is dark before it
  * is pressed. Running, the job owns the machine. Paused with the firmware
- * standing still is a tool change, and the operator may jog, touch off and
- * zero; paused in `Hold` — a feed hold, an `M0` — is as good as running,
- * since Grbl refuses a jog there itself.
+ * standing still — `Idle`, or `Jog` once the operator's own jog is moving —
+ * is a tool change, and the operator may jog, touch off and zero; paused in
+ * `Hold` — a feed hold, an `M0` — is as good as running, since Grbl refuses
+ * a jog there itself.
  */
 export const programHolds = (workflow, word) => (
-  workflow === 'running' || (workflow === 'paused' && word !== 'Idle')
+  workflow === 'running' || (workflow === 'paused' && word !== 'Idle' && word !== 'Jog')
 );
 
 /**

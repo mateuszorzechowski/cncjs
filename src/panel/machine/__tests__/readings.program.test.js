@@ -28,6 +28,14 @@ describe('readMachine, while a program is under way', () => {
     expect(pendant(toolChange).canZero).toBe(true);
   });
 
+  test('and the pad stays live while that jog is moving', () => {
+    // Grbl reports `Jog` the instant the key goes down. A pad that went dark
+    // then would let go of the key under the operator's finger.
+    const jogging = { workflow: 'paused', state: { status: { activeState: 'Jog' } } };
+    expect(pendant(jogging).canMove).toBe(true);
+    expect(pendant(jogging).held).toBeNull();
+  });
+
   test('but it is by a running program, because it would land in the middle of one', () => {
     // A `G10 L20` between two lines of a job moves every cut still to come.
     expect(pendant({ workflow: 'running' }).canZero).toBe(false);
