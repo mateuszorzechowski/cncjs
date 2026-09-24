@@ -127,6 +127,13 @@
     "zeroXY": "Zeruj XY",
     "probeZ": "Sonduj Z"
   },
+  "control": {
+    "title": "Komendy",
+    "unlock": "Odblokuj",
+    "hold": "Wstrzymaj",
+    "resume": "Wznów",
+    "reset": "Reset"
+  },
   "dashboard": {
     "probeZ": "Sonda Z"
   },

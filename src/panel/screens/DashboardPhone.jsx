@@ -1,3 +1,4 @@
+import ControlWidget from '../widgets/ControlWidget';
 import DroWidget from '../widgets/DroWidget';
 import JobWidget from '../widgets/JobWidget';
 
@@ -17,6 +18,10 @@ import JobWidget from '../widgets/JobWidget';
  * control that belongs to nothing and does nothing. It comes back inside
  * whatever card owns probing, when there is one.
  *
+ * The firmware's four commands are here too, in their own card: unlocking
+ * after an alarm and a hold or a reset are things done standing at the
+ * machine, which is where the phone is.
+ *
  * The readout takes its own height and the job card takes the rest. Its rows
  * hit their ceiling long before a phone screen is used up, so letting it
  * stretch would only put air inside it.
@@ -24,6 +29,7 @@ import JobWidget from '../widgets/JobWidget';
 const DashboardPhone = ({ machine }) => (
   <div className="flex min-h-0 flex-1 flex-col gap-gap">
     <DroWidget machine={machine} className="shrink-0" />
+    <ControlWidget machine={machine} className="shrink-0" />
     <JobWidget machine={machine} className="min-h-0 flex-1" />
   </div>
 );

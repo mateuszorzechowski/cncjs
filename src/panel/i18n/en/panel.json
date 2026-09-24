@@ -127,6 +127,13 @@
     "zeroXY": "Zero XY",
     "probeZ": "Probe Z"
   },
+  "control": {
+    "title": "Commands",
+    "unlock": "Unlock",
+    "hold": "Hold",
+    "resume": "Resume",
+    "reset": "Reset"
+  },
   "dashboard": {
     "probeZ": "Probe Z"
   },

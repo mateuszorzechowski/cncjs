@@ -1,4 +1,5 @@
 import Button from '../ui/Button';
+import ControlWidget from '../widgets/ControlWidget';
 import DroWidget from '../widgets/DroWidget';
 import JobWidget from '../widgets/JobWidget';
 import ToolWidget from '../widgets/ToolWidget';
@@ -12,6 +13,10 @@ import { t } from '../i18n';
  * the right, the Z height across the bottom. Nothing is folded and nothing is
  * left out, because there is room for all of it.
  *
+ * The firmware's four commands go under the tool card, in the left column,
+ * which has room to spare. Put between the readout and the job they took the
+ * readout's slack, and its three rows ran into each other.
+ *
  * The readout takes the slack in that column and the job card keeps its own
  * height. The other way round left the job 218px for 250px of content and its
  * four facts collapsed to five pixels a line — present, unreadable, and
@@ -20,26 +25,29 @@ import { t } from '../i18n';
 const DashboardWide = ({ machine, onGo }) => (
   <div className="flex min-h-0 flex-1 flex-col gap-gap">
     <div className="flex min-h-0 flex-1 gap-gap">
-      <ToolWidget machine={machine} className="flex-1">
-        {/* The three places an operator goes next, put where the hand already
-          * is rather than making them find the rail. */}
-        <div className="flex gap-3">
-          {[
-            { id: 'probe', label: t('dashboard.probeZ') },
-            { id: 'jog', label: t('nav.jog') },
-            { id: 'files', label: t('nav.files') },
-          ].map(({ id, label }) => (
-            <Button
-              key={id}
-              onClick={() => onGo(id)}
-              disabled={id !== 'jog'}
-              className="h-ctl flex-1"
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
-      </ToolWidget>
+      <div className="flex min-w-0 flex-1 flex-col gap-gap">
+        <ToolWidget machine={machine} className="min-h-0 flex-1">
+          {/* The three places an operator goes next, put where the hand already
+            * is rather than making them find the rail. */}
+          <div className="flex gap-3">
+            {[
+              { id: 'probe', label: t('dashboard.probeZ') },
+              { id: 'jog', label: t('nav.jog') },
+              { id: 'files', label: t('nav.files') },
+            ].map(({ id, label }) => (
+              <Button
+                key={id}
+                onClick={() => onGo(id)}
+                disabled={id !== 'jog'}
+                className="h-ctl flex-1"
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </ToolWidget>
+        <ControlWidget machine={machine} className="shrink-0" />
+      </div>
 
       <div className="flex w-side shrink-0 flex-col gap-gap">
         <DroWidget machine={machine} className="min-h-0 flex-1" />
