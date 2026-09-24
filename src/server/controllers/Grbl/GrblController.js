@@ -1708,7 +1708,43 @@ class GrblController {
           log.warn(`Warning: The "${cmd}" command is deprecated and will be removed in a future release.`);
           this.command('gcode:start');
         },
+        /**
+         * Start the loaded program — and not into a machine that is moving.
+         *
+         * **The gate between a program and a jog existed in one direction
+         * only.** `jogStart` has always refused while a job runs, because the
+         * planner belongs to the job then. Nothing refused the other way: this
+         * handler was `workflow.start()`, `feeder.reset()`, `sender.next()`,
+         * and it asked neither about `jogging` nor about what the machine was
+         * doing. So a program began streaming into a planner a jog loop was
+         * still feeding `$J=` into, and **two sources of motion wrote to one
+         * planner** — with the sender counting characters in a Grbl buffer
+         * that the other source never reports to it. On a machine with
+         * mechanics that is a crash, not untidiness.
+         *
+         * Two clients is all it takes, which on this bench is the ordinary
+         * case: the old application in one tab and the panel in another. One
+         * device cannot do it, because `useHoldToJog` releases the key on
+         * `blur`, and a single finger cannot hold a key and press Start on
+         * another screen.
+         *
+         * **`Run` is deliberately not in here.** A machine executing a line
+         * somebody fed by hand is busy for a moment and then is not; refusing
+         * Start for that would make the button unreliable in a way an operator
+         * cannot see the cause of. `Jog` is different — it is either this
+         * controller's own loop or another client's travel, and both are the
+         * collision this is about.
+         */
         'gcode:start': () => {
+          if (this.jogging.dir) {
+            this.refuse(cmd, 'jogging');
+            return;
+          }
+          if (this.isTravelling()) {
+            this.refuse(cmd, 'machine-moving');
+            return;
+          }
+
           this.event.trigger('gcode:start');
 
           this.workflow.start();

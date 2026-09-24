@@ -40,6 +40,11 @@ const KEYS = {
   // The planner belongs to the job while one is running, and two sources of
   // motion in one planner is not something to sort out afterwards.
   'program-running': 'refusal.programRunning',
+  // Somebody is holding a jog key. The other half of `program-running`, and
+  // the one with an action in it: let go.
+  jogging: 'refusal.jogging',
+  // The machine is under way — another client's travel, most likely.
+  'machine-moving': 'refusal.machineMoving',
   // A panel newer than the server it is talking to. The only refusal here
   // that is about the installation rather than about the machine.
   'unknown-command': 'refusal.unknownCommand',
