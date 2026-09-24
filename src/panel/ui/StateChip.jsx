@@ -64,9 +64,14 @@ const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
         // number from `--rail` and two nearly-equal widths stacked read as a
         // mistake; the full `--rail` glued it to both edges of the column.
         // One column, and the chip sits inside it.
-        // Wide, the same chip in the rail's column and no bigger: the word
-        // takes what the rule and chevron leave, and gives way first.
-        '@3xl/shell:h-btnh @3xl/shell:w-railInset',
+        // Wide, the rule stands on the rail's own edge and the chevron goes
+        // past it — for now (*"tymczasowo poszerz chip tak, żeby divider był
+        // na równo z kolumną menu bocznego"*, 2026-09-25), because inside the
+        // column the longer states were cut to "BRAK SERW…". The width is the
+        // rail plus what sits right of the rule: 6px in from the bar's edge,
+        // then rule, 10px, a 16px chevron, 10px and the border — 31px past
+        // the rail puts the rule on its last pixel.
+        '@3xl/shell:h-btnh @3xl/shell:w-[calc(var(--rail)+31px)]',
         '@3xl/shell:rounded-ctl @3xl/shell:border',
         t.edge,
         'transition-colors hover:brightness-95',
