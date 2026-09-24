@@ -58,6 +58,12 @@ describe('finding entries', () => {
     expect(matches({ ...entry, level: 'info' }, { level: 'warn' })).toBe(false);
   });
 
+  test('or levels, picked one by one', () => {
+    // *"Mogę chcieć tylko info i error"* — not a range.
+    expect(matches(entry, { levels: ['info', 'error'] })).toBe(true);
+    expect(matches({ ...entry, level: 'warn' }, { levels: ['info', 'error'] })).toBe(false);
+  });
+
   test('by source, event, device and time', () => {
     expect(matches(entry, { source: 'controller' })).toBe(true);
     expect(matches(entry, { source: 'server' })).toBe(false);
@@ -112,6 +118,9 @@ describe('finding entries', () => {
     journal.record(START);
 
     const page = journal.query({ level: 'warn', source: 'controller' }, { limit: 1 });
+    const picked = journal.query({ levels: ['warn', 'info'] });
+    expect(picked.matched).toBe(2);
+    expect(picked.counts).toEqual({ debug: 0, info: 1, warn: 1, error: 2 });
     // Per level with everything but the level applied, so each button says
     // what pressing it would show.
     expect(page.counts).toEqual({ debug: 0, info: 0, warn: 0, error: 2 });

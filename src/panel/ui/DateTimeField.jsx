@@ -16,13 +16,18 @@ const parse = (text) => (text ? new Date(text) : null);
  *
  * `label` is written before the field in small caps and is the sheet's title.
  *
- * `native` is for a phone: the same field face, and the phone's own picker
- * behind it — *"na telefonie użyj wbudowanych pickerów"* (2026-09-24). A
- * phone's picker is made for a thumb and is the one its owner already knows;
- * a desk's is a small calendar nobody designed for this panel.
+ * **Under a finger, the device's own picker** — the same field face, with a
+ * phone's or a tablet's picker behind it (*"na telefonie użyj wbudowanych
+ * pickerów"*, 2026-09-24): made for a thumb, and the one its owner already
+ * knows. Decided by the pointer, not the width — *"jeśli to PC wielkości
+ * tabletu to nasz picker, jeśli tablet to systemowy"*: a desk's own picker is
+ * a small calendar nobody designed for this panel.
  */
-const DateTimeField = ({ label, value, onChange, time, native = false }) => {
+const touch = () => Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+const DateTimeField = ({ label, value, onChange, time }) => {
   const [open, setOpen] = useState(false);
+  const native = touch();
   const at = parse(value);
 
   const caption = <span className="shrink-0 text-cap font-semibold uppercase tracking-[0.08em] text-mut">{label}</span>;

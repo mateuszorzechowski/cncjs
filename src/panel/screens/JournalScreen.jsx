@@ -20,9 +20,9 @@ import { t } from '../i18n';
  * what happened before. The current alarm belongs to the state sheet under
  * the chip.
  *
- * **Filters as drawn on 2026-09-24**, for a phone, a tablet and a desk: a
- * level is a floor, so `Warn` shows warnings and errors, and each level says
- * how many entries it stands for; the two sources are a set; a time window a
+ * **Filters as drawn on 2026-09-24**, for a phone, a tablet and a desk: the
+ * levels are picked one by one, and each says how many entries it stands
+ * for; the two sources are a set; a time window a
  * press away; and text, which finds what was stored and what the panel says
  * about it. On a phone they live in a sheet behind one button, beside the
  * search, so the list keeps the screen. Newest on top, a heading per day,

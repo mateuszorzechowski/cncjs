@@ -15,11 +15,14 @@ import { t } from '../i18n';
  * listener rebuilt on every change would drop the entries that arrive while it
  * is being swapped.
  */
-export const useJournal = ({ level, source, since, until, q }) => {
+export const useJournal = ({ levels: picked, source, since, until, q }) => {
+  // Compared as text: the array is new on every render, the choice is not.
+  const levelsKey = picked.join(',');
+  const levels = useMemo(() => (levelsKey ? levelsKey.split(',') : []), [levelsKey]);
   // Which codes the panel's own sentences for `q` belong to — the half of
   // the search the server cannot do, since it never has the words.
   const said = useMemo(() => (q ? codesSaying(q, t) : []), [q]);
-  const filter = { level, source, since, until, q, said };
+  const filter = { levels, source, since, until, q, said };
   const [entries, setEntries] = useState([]);
   const [next, setNext] = useState(null);
   const [error, setError] = useState(null);
@@ -32,7 +35,7 @@ export const useJournal = ({ level, source, since, until, q }) => {
     let live = true;
     setLoading(true);
     setError(null);
-    fetchJournal({ level, source, since, until, q, said })
+    fetchJournal({ levels, source, since, until, q, said })
       .then((page) => {
         if (live) {
           setEntries(page.records);
@@ -45,14 +48,14 @@ export const useJournal = ({ level, source, since, until, q }) => {
     return () => {
       live = false;
     };
-  }, [level, source, since, until, q, said]);
+  }, [levels, source, since, until, q, said]);
 
   useEffect(() => {
     // Counted the way the server counts: per level with the rest of the
     // filter applied, matched with all of it, kept regardless.
     const arrived = (entry) => {
       const shown = passes(entry, filterRef.current);
-      const levelled = passes(entry, { ...filterRef.current, level: 'debug' });
+      const levelled = passes(entry, { ...filterRef.current, levels: undefined });
       setTally((was) => ({
         counts: was.counts && levelled ? { ...was.counts, [entry.level]: (was.counts[entry.level] || 0) + 1 } : was.counts,
         matched: was.matched + (shown ? 1 : 0),

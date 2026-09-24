@@ -17,10 +17,9 @@
  * because these are the panel's buttons and a touch target does not get
  * smaller for being a filter.
  *
- * For the journal's filters, three more, all optional:
- * - `isOn(option)` in place of `value` when more than one can be on — a
- *   level is a floor, so `Warn` lights `Warn` and `Error`; sources are a
- *   set;
+ * For the journal's filters, more, all optional:
+ * - `isOn(option)` in place of `value` when more than one can be on — the
+ *   journal's levels and sources are sets;
  * - `counts`, what each option stands for, shown after its name;
  * - `columns`, tiles in a grid instead of a row, for a phone's sheet;
  * - `joined`, the same buttons as one group, touching, rounded only at the
@@ -56,8 +55,11 @@ const SegmentedChoice = ({
             'flex items-center gap-2 border font-num text-base font-semibold transition-colors',
             // Joined: one border between two buttons rather than two, and the
             // chosen one drawn over its neighbours so its edge is whole.
-            joined ? '-ml-px first:ml-0 first:rounded-l-ctl last:rounded-r-ctl' : 'rounded-ctl',
-            joined && chosen ? 'relative' : '',
+            // Hovered drawn over its neighbours too, or the neighbour's edge
+            // covers one side of the hover and it reads as one button
+            // slipping under the next.
+            joined ? 'relative -ml-px first:ml-0 first:rounded-l-ctl last:rounded-r-ctl hover:z-20' : 'rounded-ctl',
+            joined && chosen ? 'z-10' : '',
             // Two chosen side by side would read as one wide button.
             joined && chosen && index > 0 && on(options[index - 1]) ? 'border-l-panel' : '',
             columns ? 'h-chiph justify-between px-3' : 'h-full justify-center',

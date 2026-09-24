@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LEVELS } from './journal';
 
 /** The windows a press away, besides `custom`. */
 export const RANGES = ['m15', 'h1', 'today', 'all'];
@@ -30,7 +31,8 @@ const fromLocal = (local) => (local ? new Date(local).toISOString() : undefined)
 const toLocal = (local) => (local ? new Date(new Date(local).getTime() + 59999).toISOString() : undefined);
 
 const START = {
-  level: 'info',
+  // Picked one by one — *"mogę chcieć tylko info i error"* (2026-09-24).
+  levels: { debug: false, info: true, warn: true, error: true },
   sources: { server: true, controller: true },
   range: 'all',
   since: undefined,
@@ -45,26 +47,31 @@ const START = {
  * One hook for the bar and the phone's sheet, so the two cannot disagree.
  * `query` is the part the server reads.
  *
- * Sources are a set with at least one in it: both is everything, and turning
- * the last one off would be a filter that shows nothing on purpose.
+ * Levels and sources are sets with at least one in each: turning the last
+ * one off would be a filter that shows nothing on purpose.
  */
 export const useJournalFilters = () => {
   const [filters, setFilters] = useState(START);
   const set = (change) => setFilters((previous) => ({ ...previous, ...change }));
 
-  const { level, sources, range, since, from, to, q } = filters;
+  const { levels, sources, range, since, from, to, q } = filters;
   const source = sources.server && sources.controller ? 'all' : (sources.server ? 'server' : 'controller');
 
   return {
     ...filters,
     query: {
-      level,
+      levels: LEVELS.filter((id) => levels[id]),
       source,
       since: range === 'custom' ? fromLocal(from) : since,
       until: range === 'custom' ? toLocal(to) : undefined,
       q: q.trim(),
     },
-    setLevel: (next) => set({ level: next }),
+    toggleLevel: (id) => {
+      const next = { ...levels, [id]: !levels[id] };
+      if (LEVELS.some((level) => next[level])) {
+        set({ levels: next });
+      }
+    },
     toggleSource: (id) => {
       const next = { ...sources, [id]: !sources[id] };
       if (next.server || next.controller) {
