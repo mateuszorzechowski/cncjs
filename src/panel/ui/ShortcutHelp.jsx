@@ -1,6 +1,7 @@
 import Sheet from './Sheet';
+import JogTiming from './JogTiming';
 import { t } from '../i18n';
-import { accelerationFor, stoppingDistance } from '../machine/stopping';
+import { stoppingDistanceFor } from '../machine/stopping';
 
 /**
  * What the keyboard does on this screen, with the numbers it will actually use.
@@ -44,12 +45,8 @@ const Row = ({ keys, does, value }) => (
  * `replace('.', ',')` here. It used to be written in, which was correct in
  * Polish and would have been a typo in English.
  */
-const stopText = ({ timing, settings, feedrate, axes }) => {
-  const distance = stoppingDistance({
-    timing,
-    feedrate,
-    acceleration: accelerationFor(axes, settings),
-  });
+const stopText = ({ timing, settings, feedrate, axes, linkMs }) => {
+  const distance = stoppingDistanceFor({ timing, settings, feedrate, axes, linkMs });
 
   if (distance === null) {
     return null;
@@ -58,45 +55,9 @@ const stopText = ({ timing, settings, feedrate, axes }) => {
   return t('shortcuts.stopDistance', { distance });
 };
 
-/**
- * Where the stopping time goes, in a sentence.
- *
- * Named parts rather than one total, because the parts are actionable and
- * the total is not: a long queue means this computer is busy, a slow reply
- * means the cable or the adapter, and a slow link means the server is
- * across a workshop. The link is left out entirely when the server is this
- * computer, which is the common case and reads as noise at 0 ms.
- */
-const timingNote = ({ timing, linkMs }) => {
-  if (!timing) {
-    return null;
-  }
-
-  const link = Math.round(linkMs || 0);
-  const parts = [
-    t('shortcuts.timing.queue', { ms: timing.leadMs }),
-    t('shortcuts.timing.ack', { ms: timing.ackMs }),
-  ];
-
-  // Two milliseconds, not one: a server on this computer measures as a
-  // fraction of a millisecond, and rounding that up to `1 ms to the server`
-  // is noise dressed up as a finding.
-  if (link >= 2) {
-    parts.push(t('shortcuts.timing.link', { ms: link }));
-  }
-
-  return t('shortcuts.timing.note', {
-    total: timing.stopMs + link,
-    parts: parts.join(', '),
-  });
-};
-
 const ShortcutHelp = ({
-  onClose, xyStep, zStep, xyCoarse, zCoarse, xySpeed, zSpeed, timing, settings, linkMs,
-}) => {
-  const note = timingNote({ timing, linkMs });
-
-  return (
+  onClose, xyStep, zStep, xyCoarse, zCoarse, xySpeed, zSpeed, timing, settings, linkMs, beatMs,
+}) => (
     <Sheet title={t('shortcuts.title')} onClose={onClose}>
       <div className="flex flex-col">
         <Row
@@ -124,19 +85,19 @@ const ShortcutHelp = ({
           keys={[t('shortcuts.key.onRelease')]}
           does={t('shortcuts.stop')}
           value={[
-            stopText({ timing, settings, feedrate: xySpeed, axes: ['x', 'y'] }),
-            stopText({ timing, settings, feedrate: zSpeed, axes: ['z'] }),
+            stopText({ timing, settings, feedrate: xySpeed, axes: ['x', 'y'], linkMs }),
+            stopText({ timing, settings, feedrate: zSpeed, axes: ['z'], linkMs }),
           ].filter(Boolean).join(' · ') || null}
         />
         <Row keys={[t('shortcuts.key.escape')]} does={t('shortcuts.close')} />
         <Row keys={[t('shortcuts.key.help')]} does={t('shortcuts.help')} />
       </div>
-      <p className="m-0 text-note text-mut">
-        {t('shortcuts.note')}
-        {note ? ` ${note}` : null}
-      </p>
+      {/* Where that last figure comes from, part by part. It was a sentence
+        * here and it outgrew one — see `JogTiming`. */}
+      <JogTiming timing={timing} linkMs={linkMs} beatMs={beatMs} />
+
+      <p className="m-0 text-note text-mut">{t('shortcuts.note')}</p>
     </Sheet>
   );
-};
 
 export default ShortcutHelp;

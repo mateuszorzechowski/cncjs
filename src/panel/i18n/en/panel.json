@@ -91,13 +91,7 @@
     "step": "{{value, number}} mm",
     "coarseSteps": "XY {{xy, number}} mm · Z {{z, number}} mm",
     "stopDistance": "{{distance, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
-    "note": "Change the step and the speed on the jog card. The keys do nothing while you are typing in a text field, or while there is no connection to the controller.",
-    "timing": {
-      "queue": "{{ms}} ms of queue",
-      "ack": "{{ms}} ms of controller reply",
-      "link": "{{ms}} ms to the server",
-      "note": "After the key comes up the machine reacts in {{total}} ms — {{parts}} — and the distance above is that time plus braking. The server times its own clock while jogging, so the number describes this computer doing this work."
-    }
+    "note": "Change the step and the speed on the jog card. The keys do nothing while you are typing in a text field, or while there is no connection to the controller."
   },
   "dro": {
     "work": "Work position",
@@ -338,5 +332,18 @@
     "server": "Server",
     "port": "Port",
     "machine": "Machine"
+  },
+  "timings": {
+    "title": "This installation",
+    "ms": "{{ms}} ms",
+    "link": "Link",
+    "linkNote": "one way to the server, added to everything below",
+    "linkHere": "the server is this computer",
+    "queue": "Queue",
+    "queueNote": "travel the server keeps ahead of the machine",
+    "reply": "Reply",
+    "replyNote": "how long the controller takes to answer over its cable",
+    "panel": "Pendant",
+    "panelNote": "the worst gap between this panel's own confirmations"
   }
 }

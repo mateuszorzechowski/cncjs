@@ -263,6 +263,7 @@ const JogWidget = ({ machine, className = '' }) => {
           timing={machine.timing}
           settings={machine.settings}
           linkMs={machine.linkMs}
+          beatMs={machine.beatMs}
         />
       ) : null}
 

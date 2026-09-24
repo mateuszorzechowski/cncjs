@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import controller from './controller';
 import { deviceId } from './device';
+import { worstBeatMs } from './deadman';
 import { signIn } from './session';
 import { fetchOpenController } from './snapshot';
 import { readMachine } from './readings';
@@ -493,6 +494,16 @@ export const useMachine = () => {
   // `status.word` exactly as it did before.
   return {
     ...machine,
+    /*
+     * How punctual this panel's own confirmations of a held jog have been.
+     *
+     * Not part of `readings`, and deliberately: that tier is a pure function
+     * of the snapshot and runs with no browser, while this is a measurement
+     * the page has been accumulating since it loaded. Read at render rather
+     * than stored, because nothing needs to re-render when it changes — the
+     * one place it is shown is opened on demand.
+     */
+    beatMs: worstBeatMs(),
     status: {
       ...machine.status,
       word: machine.status.key ? t(machine.status.key) : machine.status.word,

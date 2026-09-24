@@ -91,13 +91,7 @@
     "step": "{{value, number}} mm",
     "coarseSteps": "XY {{xy, number}} mm · Z {{z, number}} mm",
     "stopDistance": "{{distance, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
-    "note": "Krok i prędkość zmienisz na karcie jogu. Klawisze nie działają, gdy piszesz w polu tekstowym, i gdy nie ma połączenia ze sterownikiem.",
-    "timing": {
-      "queue": "{{ms}} ms kolejki",
-      "ack": "{{ms}} ms odpowiedzi sterownika",
-      "link": "{{ms}} ms drogi do serwera",
-      "note": "Po puszczeniu klawisza maszyna reaguje po {{total}} ms — {{parts}} — a droga powyżej to ten czas plus hamowanie. Serwer mierzy swój własny zegar w trakcie jogu, więc liczba opisuje ten komputer przy tej pracy."
-    }
+    "note": "Krok i prędkość zmienisz na karcie jogu. Klawisze nie działają, gdy piszesz w polu tekstowym, i gdy nie ma połączenia ze sterownikiem."
   },
   "dro": {
     "work": "Pozycja robocza",
@@ -338,5 +332,18 @@
     "server": "Serwer",
     "port": "Port",
     "machine": "Maszyna"
+  },
+  "timings": {
+    "title": "Ta instalacja",
+    "ms": "{{ms}} ms",
+    "link": "Łącze",
+    "linkNote": "w jedną stronę do serwera, dolicza się do wszystkiego poniżej",
+    "linkHere": "serwer to ten komputer",
+    "queue": "Kolejka",
+    "queueNote": "zapas ruchu, który serwer trzyma przed maszyną",
+    "reply": "Odpowiedź",
+    "replyNote": "ile sterownik odpowiada przez swój kabel",
+    "panel": "Pulpit",
+    "panelNote": "najgorsza przerwa między potwierdzeniami tego panelu"
   }
 }
