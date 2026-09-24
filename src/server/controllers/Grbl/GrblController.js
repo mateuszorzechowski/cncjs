@@ -56,6 +56,7 @@ import { changesWorkOffsets } from './offsets';
 import { machineEnvelope } from './envelope';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
+import { programRefusal } from './program-gate';
 import { deadmanMsFor, isAbandoned } from './deadman';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
@@ -77,6 +78,11 @@ const noop = _.noop;
 // seconds, so a working link is never quiet for long. Silence past this is
 // taken to mean the controller is no longer reachable.
 const CONNECTION_TIMEOUT = 10000;
+
+// https://github.com/gnea/grbl/blob/master/doc/markdown/commands.md#grbl-v11-realtime-commands
+const isRealtimeCommand = (data) => (
+  _.includes(GRBL_REALTIME_COMMANDS, data) || Boolean(String(data).match(/[\x80-\xff]/))
+);
 
 class GrblController {
     type = GRBL;
@@ -1872,6 +1878,26 @@ class GrblController {
       this.sockets[owner]?.emit('command:refused', { cmd: 'jogStart', reason: 'not-confirmed' });
     }
 
+    /**
+     * Why a client may not ask for this now, or null when it may.
+     *
+     * Read at every entry a client has — `CNCEngine` for a socket command and
+     * a raw line, the G-code upload for a file — and never inside `command`,
+     * because the server calls that too, and its own tool-change routine and
+     * G-code events have to run during a pause. See `program-gate.js`.
+     *
+     * A raw line is a `realtime` byte or it is a `write`; there is nothing in
+     * between that a rule about programs needs to tell apart.
+     */
+    clientRefusal(cmd, data) {
+      const asked = (cmd === 'write' && isRealtimeCommand(data)) ? 'realtime' : cmd;
+
+      return programRefusal(asked, {
+        workflow: this.workflow.state,
+        firmware: this.runner?.state?.status?.activeState,
+      });
+    }
+
     refuse(cmd, reason) {
       log.warn(`Refused "${cmd}": ${reason}`);
       if (this.commandSocket) {
@@ -3208,7 +3234,6 @@ class GrblController {
       const now = Date.now();
 
       const reason = motionRefusal({
-        programRunning: this.workflow.state !== WORKFLOW_STATE_IDLE,
         lease: this.motionLease,
         device,
         now,
@@ -3559,12 +3584,7 @@ class GrblController {
     }
 
     writeln(data, context) {
-      // https://github.com/gnea/grbl/blob/master/doc/markdown/commands.md#grbl-v11-realtime-commands
-      const isASCIIRealtimeCommand = _.includes(GRBL_REALTIME_COMMANDS, data);
-      const isExtendedASCIIRealtimeCommand = String(data).match(/[\x80-\xff]/);
-      const isRealtimeCommand = isASCIIRealtimeCommand || isExtendedASCIIRealtimeCommand;
-
-      if (isRealtimeCommand) {
+      if (isRealtimeCommand(data)) {
         this.write(data, context);
       } else {
         this.write(data + '\n', context);

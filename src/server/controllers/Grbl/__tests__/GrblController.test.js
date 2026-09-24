@@ -1746,19 +1746,17 @@ describe('intent commands', () => {
       expect(refusals).toEqual([{ cmd: 'jogStep', reason: 'alarm' }]);
     });
 
-    test.each(['jogStep', 'jogStart'])('%s refuses while a program is running', (command) => {
+    test.each(['jogStep', 'jogStart'])('%s is refused at the door while a program is running', (command) => {
       const { controller } = setup();
-      const refusals = asking(controller);
+      asking(controller);
       reports(controller, { x: '-500', y: '-350', z: '-75' });
 
       controller.command('gcode:load', 'test.gcode', 'G0 X0');
       controller.command('gcode:start');
 
-      controller.command(command, { dir: { x: 1 }, distance: 10, feedrate: 1500 }, 1500);
-
-      // The planner belongs to the job. `jogStart` has always refused this
-      // and only ever said so in the server's own log.
-      expect(refusals).toEqual([{ cmd: command, reason: 'program-running' }]);
+      // The planner belongs to the job. Asked by `CNCEngine` before the
+      // command is carried out, so the handler never sees it.
+      expect(controller.clientRefusal(command)).toBe('program-running');
     });
   });
 
@@ -2123,14 +2121,53 @@ describe('intent commands', () => {
       const { controller } = setup();
       reports(controller);
 
-      const refusals = from(controller, 'pendant');
+      from(controller, 'pendant');
       controller.command('gcode:load', 'test.gcode', LONG_PROGRAM);
       controller.command('gcode:start');
-      step(controller);
 
       // Including the device that pressed Start. The planner belongs to the
       // job, and `held-elsewhere` there would be true and useless.
-      expect(refusals).toEqual([{ cmd: 'jogStep', reason: 'program-running' }]);
+      expect(controller.clientRefusal('jogStep')).toBe('program-running');
+    });
+
+    test('a line typed into a console is a realtime byte or a line, and only the byte goes through', () => {
+      const { controller } = setup();
+      from(controller, 'pendant');
+      controller.command('gcode:load', 'test.gcode', LONG_PROGRAM);
+      controller.command('gcode:start');
+
+      // A feed hold typed by hand is a stop like any other.
+      expect(controller.clientRefusal('write', '!')).toBeNull();
+      expect(controller.clientRefusal('write', '\x85')).toBeNull();
+      // A zero typed by hand would move every cut still to come.
+      expect(controller.clientRefusal('write', 'G10 L20 P1 Z0\n')).toBe('program-running');
+    });
+
+    test('a pause with the firmware standing still is a tool change, and the lease lets it jog', () => {
+      const { controller, writes } = setup();
+      reports(controller);
+
+      const refusals = from(controller, 'pendant');
+      controller.command('gcode:load', 'test.gcode', LONG_PROGRAM);
+      controller.command('gcode:start');
+      controller.command('gcode:pause');
+
+      // A feed hold or an `M0`: Grbl is in Hold and refuses a jog itself.
+      controller.runner.state.status.activeState = 'Hold';
+      expect(controller.clientRefusal('jogStep')).toBe('program-running');
+
+      // An `M6`, stopped in the sender: Grbl is Idle, and the operator has to
+      // jog to the plate. Measured on the bench, 2026-09-24.
+      controller.runner.state.status.activeState = 'Idle';
+      expect(controller.clientRefusal('jogStep')).toBeNull();
+
+      writes.length = 0;
+      step(controller);
+
+      // The lease used to answer `program-running` for any workflow but idle,
+      // which is the refusal this pause has to get past.
+      expect(refusals).toEqual([]);
+      expect(writes.map(write => write.data)).toEqual([expect.stringMatching(/^\$J=/)]);
     });
 
     test('a request that was going to be refused does not take the claim', () => {

@@ -32,7 +32,7 @@ import { t } from '../i18n';
  */
 
 const ZeroScreen = ({ machine }) => {
-  const { position, machinePosition, modal, connected, canSendGcode, status, type } = machine;
+  const { position, machinePosition, modal, connected, canSendGcode, canZero: mayZero, status, type } = machine;
   const [help, setHelp] = useState(false);
 
   /*
@@ -52,9 +52,10 @@ const ZeroScreen = ({ machine }) => {
    * In alarm every controller the server drives resets its feeder and drops
    * the line, so a press here would put `G10 L20` on the socket and change
    * nothing. Measured, after the button was built and pressed at an alarmed
-   * machine — which is the only way this was ever going to be found.
+   * machine — which is the only way this was ever going to be found. And
+   * the same for a program under way — see `readings.canZero`.
    */
-  const canZero = connected && knowsWcs && canSendGcode;
+  const canZero = knowsWcs && mayZero;
 
   /*
    * The face is the axis, the name is the sentence.

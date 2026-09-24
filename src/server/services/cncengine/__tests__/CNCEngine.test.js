@@ -1,4 +1,4 @@
-import CNCEngine from '../CNCEngine';
+import CNCEngine, { admits } from '../CNCEngine';
 import config from '../../configstore';
 
 jest.mock('../../configstore', () => {
@@ -74,5 +74,36 @@ describe('remembering what was last opened', () => {
     // The screen falls back to its defaults rather than to a guess, and
     // `startup` carries null rather than an empty object that reads as one.
     expect(config.get(CONNECTION_KEY, null)).toBeNull();
+  });
+});
+
+describe('a client request at the door', () => {
+  const controllerSaying = (reason) => {
+    const refused = [];
+    return {
+      refused,
+      clientRefusal: jest.fn(() => reason),
+      refuse: (cmd, why) => refused.push({ cmd, why }),
+    };
+  };
+
+  test('goes through when the controller has nothing against it', () => {
+    const controller = controllerSaying(null);
+
+    expect(admits(controller, 'jogStep')).toBe(true);
+    expect(controller.refused).toEqual([]);
+  });
+
+  test('is turned away, and told why, when the controller refuses it', () => {
+    const controller = controllerSaying('program-running');
+
+    expect(admits(controller, 'write', 'G10 L20 P1 Z0\n')).toBe(false);
+    expect(controller.clientRefusal).toHaveBeenCalledWith('write', 'G10 L20 P1 Z0\n');
+    expect(controller.refused).toEqual([{ cmd: 'write', why: 'program-running' }]);
+  });
+
+  test('goes through on a controller that has no such rule', () => {
+    // Marlin, Smoothie and TinyG carry on as they always have.
+    expect(admits({ refuse: jest.fn() }, 'gcode')).toBe(true);
   });
 });

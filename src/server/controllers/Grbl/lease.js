@@ -67,12 +67,11 @@ export const renewed = (device, now) => ({ device, until: now + LEASE_MS });
 /**
  * Why this device may not move the machine, or null when it may.
  *
- * **A running program is not a device and does not need to be.** The workflow
- * being anything other than idle means the planner belongs to the job, and
- * that is true for the device that started it as much as for any other — so it
- * is answered first and separately, with the reason that tells an operator
- * what is actually in the way. `held-elsewhere` in its place would be true and
- * useless.
+ * **A program is not a device and is not answered here.** Whether anything
+ * but a stop may go through while a job is under way is one rule for every
+ * command a client sends, so it is decided before any of them is carried out
+ * — see `program-gate.js`. By the time a command reaches this, the program
+ * has already let it.
  *
  * **An unidentified device is its own device, not everybody's.** A client that
  * sends no identity gets its socket id, which is the honest reading: it is one
@@ -81,11 +80,7 @@ export const renewed = (device, now) => ({ device, until: now + LEASE_MS });
  * equal to a null holder and hand movement to whoever asked first, which is
  * the opposite of what this is for.
  */
-export const motionRefusal = ({ programRunning, lease, device, now }) => {
-  if (programRunning) {
-    return 'program-running';
-  }
-
+export const motionRefusal = ({ lease, device, now }) => {
   const holder = leaseHolder(lease, now);
   if (holder && holder !== device) {
     return 'held-elsewhere';

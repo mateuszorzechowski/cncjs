@@ -111,7 +111,6 @@ describe('readMachine, when movement belongs to somebody else', () => {
     // after a press. Greying out is first here.
     expect(pendant({ workflow: 'running' }).canMove).toBe(false);
     expect(pendant({ workflow: 'running' }).held).toBe('program-running');
-    expect(pendant({ workflow: 'paused' }).canMove).toBe(false);
   });
 
   test('homing goes dark with them, though an alarm leaves it live', () => {
@@ -123,13 +122,11 @@ describe('readMachine, when movement belongs to somebody else', () => {
     expect(pendant({ workflow: 'running' }).canHome).toBe(false);
   });
 
-  test('zeroing is not held, because the server does not hold it', () => {
-    // It writes an offset and moves nothing. A panel that greyed the zero
-    // buttons out while somebody else jogged would be inventing a restriction
-    // the machine does not have — the same mistake as reading `Door` as an
-    // alarm.
-    expect(pendant({ motion: 'phone' }).canSendGcode).toBe(true);
-    expect(pendant({ workflow: 'running' }).canSendGcode).toBe(true);
+  test('zeroing is not held by the lease, because it moves nothing', () => {
+    // A panel that greyed the zero buttons out while somebody else jogged
+    // would be inventing a restriction the machine does not have — the same
+    // mistake as reading `Door` as an alarm.
+    expect(pendant({ motion: 'phone' }).canZero).toBe(true);
   });
 });
 

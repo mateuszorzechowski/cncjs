@@ -2,6 +2,7 @@ import get from 'lodash/get';
 import store from '../store';
 import {
   ERR_BAD_REQUEST,
+  ERR_CONFLICT,
   ERR_INTERNAL_SERVER_ERROR
 } from '../constants';
 
@@ -25,6 +26,17 @@ export const upload = (req, res) => {
   if (!controller) {
     res.status(ERR_BAD_REQUEST).send({
       msg: 'Controller not found'
+    });
+    return;
+  }
+
+  // Loading stops whatever program is loaded, so it is a client's request like
+  // any other and meets the same rule — see `program-gate.js`.
+  const reason = controller.clientRefusal?.('gcode:load');
+  if (reason) {
+    res.status(ERR_CONFLICT).send({
+      msg: 'A program is under way',
+      reason
     });
     return;
   }
