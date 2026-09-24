@@ -64,22 +64,24 @@ const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
         // number from `--rail` and two nearly-equal widths stacked read as a
         // mistake; the full `--rail` glued it to both edges of the column.
         // One column, and the chip sits inside it.
-        '@3xl/shell:h-btnh @3xl/shell:w-railInset @3xl/shell:justify-center',
-        '@3xl/shell:rounded-ctl @3xl/shell:border @3xl/shell:px-1.5',
+        // Wide, the same chip in the rail's column and no bigger: the word
+        // takes what the rule and chevron leave, and gives way first.
+        '@3xl/shell:h-btnh @3xl/shell:w-railInset',
+        '@3xl/shell:rounded-ctl @3xl/shell:border',
         t.edge,
         'transition-colors hover:brightness-95',
       ].join(' ')}
     >
       <span className={`size-[9px] shrink-0 rounded-full ${t.dot}`} aria-hidden="true" />
-      <span className={`truncate text-cap font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
+      <span className={`min-w-0 flex-1 truncate text-left text-cap @3xl/shell:line-clamp-2 @3xl/shell:whitespace-normal @3xl/shell:break-words font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
         {children}
       </span>
-      {/* What pressing it does, on a phone: it opens the state sheet. A
+      {/* What pressing it does: it opens the state sheet. A
         * short rule in the chip's tone — not its full height, which cut the
         * chip in two — and a chevron with room round it, as drawn on
         * 2026-09-25. */}
-      <span className={`ml-1 h-5 w-px ${t.rule} @3xl/shell:hidden`} aria-hidden="true" />
-      <Icon name="chevron" className={`ml-1 size-4 shrink-0 ${t.text} @3xl/shell:hidden`} weight={2} />
+      <span className={`ml-1 h-5 w-px shrink-0 ${t.rule}`} aria-hidden="true" />
+      <Icon name="chevron" className={`ml-1 size-4 shrink-0 ${t.text}`} weight={2} />
     </button>
   );
 };
