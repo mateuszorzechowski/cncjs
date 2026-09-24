@@ -46,9 +46,17 @@ const JobStatusLine = ({ job, error, canStart, onStart, canPause, onPause }) => 
           * One translated sentence rather than a word, a figure and a unit
           * assembled in this order: English puts the number first and the word
           * last, so the order belongs to the language. The cost is the minute
-          * count no longer being picked out in ink. */}
+          * count no longer being picked out in ink.
+          *
+          * A job that has finished says so instead. "0 min left" is true of a
+          * program that has just ended and of one that has not begun, and the
+          * counters beside it say the same thing — so without this word the
+          * strip a second after a run reads exactly like the strip before
+          * one. See `readJob`. */}
         <span className="shrink-0 font-num text-base text-mut">
-          {t('job.remaining', { minutes: Math.round(job.remaining / 60) })}
+          {job.finished
+            ? t('job.finished')
+            : t('job.remaining', { minutes: Math.round(job.remaining / 60) })}
         </span>
       </>
     ) : <span className="flex-1" />}
