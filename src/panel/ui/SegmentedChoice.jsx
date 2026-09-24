@@ -22,19 +22,21 @@
  *   level is a floor, so `Warn` lights `Warn` and `Error`; sources are a
  *   set;
  * - `counts`, what each option stands for, shown after its name;
- * - `columns`, tiles in a grid instead of a row, for a phone's sheet.
+ * - `columns`, tiles in a grid instead of a row, for a phone's sheet;
+ * - `joined`, the same buttons as one group, touching, rounded only at the
+ *   ends — *"te przyciski mogą być jako button group"* (2026-09-24).
  */
 const COLUMNS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 4: 'grid-cols-4' };
 
 const SegmentedChoice = ({
-  options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, counts, columns,
+  options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, counts, columns, joined = false,
 }) => (
   <div
-    className={columns ? `grid gap-2 ${COLUMNS[columns]}` : 'flex h-chiph shrink-0 gap-2'}
+    className={columns ? `grid gap-2 ${COLUMNS[columns]}` : `flex h-chiph shrink-0 ${joined ? '' : 'gap-2'}`}
     role="group"
     aria-label={label}
   >
-    {options.map((option) => {
+    {options.map((option, index) => {
       const chosen = isOn ? isOn(option) : option === value;
       const count = counts ? counts[option] : undefined;
       return (
@@ -50,7 +52,13 @@ const SegmentedChoice = ({
           disabled={disabled}
           onClick={() => onChange(option)}
           className={[
-            'flex items-center gap-2 rounded-ctl border font-num text-base font-semibold transition-colors',
+            'flex items-center gap-2 border font-num text-base font-semibold transition-colors',
+            // Joined: one border between two buttons rather than two, and the
+            // chosen one drawn over its neighbours so its edge is whole.
+            joined ? '-ml-px first:ml-0 first:rounded-l-ctl last:rounded-r-ctl' : 'rounded-ctl',
+            joined && chosen ? 'relative' : '',
+            // Two chosen side by side would read as one wide button.
+            joined && chosen && index > 0 && (isOn ? isOn(options[index - 1]) : false) ? 'border-l-panel' : '',
             columns ? 'h-chiph justify-between px-3' : 'h-full justify-center',
             !columns && compact ? 'shrink-0 px-3' : '',
             !columns && !compact ? 'min-w-0 flex-1 basis-0 px-1' : '',

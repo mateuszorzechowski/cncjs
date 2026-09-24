@@ -1,19 +1,15 @@
 /**
  * The panel's one field to type into.
  *
- * The first one — until the journal needed a search and a time window, every
- * value on the panel was chosen, stepped or jogged, never typed. One component
- * so that the second screen to need a field gets the same one.
+ * The first one — until the journal needed a search, every value on the
+ * panel was chosen, stepped or jogged, never typed. One component so that
+ * the second screen to need a field gets the same one.
  *
- * `label` is the name read aloud, and, when `caption` is set, also written
- * before the field in the panel's small caps — a date field on its own says
- * nothing about which end of a window it is.
+ * `label` is the name read aloud. A date and time is `DateTimeField`, which
+ * wears the same face.
  */
-const TextField = ({ label, caption = false, className = '', ...rest }) => (
+const TextField = ({ label, className = '', ...rest }) => (
   <label className={`flex h-chiph min-w-0 items-center gap-2 ${className}`}>
-    {caption ? (
-      <span className="shrink-0 text-cap font-semibold uppercase tracking-[0.08em] text-mut">{label}</span>
-    ) : null}
     <input
       aria-label={label}
       className={[

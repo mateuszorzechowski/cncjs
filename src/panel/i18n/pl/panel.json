@@ -534,5 +534,16 @@
     "unlock": "Odblokuj",
     "unlockWarning": "Odblokuj tylko, jeśli wiesz, gdzie jest maszyna — współrzędne mogą nie odpowiadać rzeczywistości.",
     "code": "ALARM:{{code}}"
+  },
+  "picker": {
+    "previous": "Poprzedni miesiąc",
+    "next": "Następny miesiąc",
+    "hour": "Godzina",
+    "hourUnit": "h",
+    "minute": "Minuta",
+    "minuteUnit": "min",
+    "now": "Teraz",
+    "clear": "Wyczyść",
+    "none": "dowolnie"
   }
 }

@@ -534,5 +534,16 @@
     "unlock": "Unlock",
     "unlockWarning": "Unlock only if you know where the machine is — the coordinates may not match reality.",
     "code": "ALARM:{{code}}"
+  },
+  "picker": {
+    "previous": "Previous month",
+    "next": "Next month",
+    "hour": "Hour",
+    "hourUnit": "h",
+    "minute": "Minute",
+    "minuteUnit": "min",
+    "now": "Now",
+    "clear": "Clear",
+    "none": "any"
   }
 }
