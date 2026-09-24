@@ -232,7 +232,6 @@
     "ready": "This browser is ready to install it.",
     "notYet": "This browser has not offered to install it yet. It usually asks after the page has been used once or twice.",
     "certWarning": "This authority is limited to names on your own network — it cannot vouch for any site on the internet. Even so, install it only for a machine you own, on a network you own.",
-    "certWhere": "Android: choose “CA certificate” rather than “VPN and app certificate”, and set a screen lock first if you have none.",
     "certLife": "The authority lasts a year, the server’s own certificate 30 days. The server replaces its own; after a year the authority stops working and a new one has to be installed, and the old one deleted in the phone’s settings — an expired one does not go away by itself.",
     "certTitle": "Certificate authority",
     "certWhat": "This file is installed on the phone once. Without it the phone will not treat the connection to the panel as secure, and will not install the application.",
@@ -244,7 +243,15 @@
     "refreshWhy": "Fetches the newest panel from the server.",
     "updateReady": "A newer panel is waiting on the server. Reload to take it.",
     "installTitle": "Install",
-    "refreshTitle": "Refresh the panel"
+    "refreshTitle": "Refresh the panel",
+    "certPlatform": "Your device",
+    "certHow": {
+      "android": "Android: choose “CA certificate” rather than “VPN and app certificate”, and set a screen lock first if you have none.",
+      "ios": "iPhone / iPad: install the downloaded profile in Settings, then under General → About → Certificate Trust Settings turn on full trust for this authority.",
+      "windows": "Windows: open the downloaded file, “Install Certificate”, choose “Current User” and the “Trusted Root Certification Authorities” store.",
+      "macos": "macOS: open the downloaded file in Keychain Access, add it to the “login” keychain, and set its trust to “Always Trust”.",
+      "linux": "Linux: in the browser’s settings, Privacy and security → Certificates → Authorities, import the downloaded file and trust it for websites."
+    }
   },
   "refusal": {
     "alarm": "The machine is in alarm, so nothing was sent. Clear the alarm first.",
@@ -547,5 +554,12 @@
     "now": "Now",
     "clear": "Clear",
     "none": "any"
+  },
+  "platform": {
+    "android": "Android",
+    "ios": "iOS",
+    "windows": "Windows",
+    "macos": "macOS",
+    "linux": "Linux"
   }
 }

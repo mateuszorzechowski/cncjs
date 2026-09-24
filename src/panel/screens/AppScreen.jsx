@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Notice from '../ui/Notice';
+import SegmentedChoice from '../ui/SegmentedChoice';
 import SettingRow from '../ui/SettingRow';
+import { PLATFORMS, platformOf } from '../machine/platform';
 import { trustState } from '../machine/trust';
 import { AUTHORITY_URL, fetchAuthority } from '../machine/authority';
 import { canInstall, isInstalled, promptInstall, watchInstall } from '../machine/install';
@@ -40,7 +42,33 @@ const Fact = ({ label, children }) => (
   </div>
 );
 
+// Written out, so every key is a literal the resources test can find.
+const HOW = {
+  android: 'app.certHow.android',
+  ios: 'app.certHow.ios',
+  windows: 'app.certHow.windows',
+  macos: 'app.certHow.macos',
+  linux: 'app.certHow.linux',
+};
+
+const PLATFORM_NAMES = {
+  android: 'platform.android',
+  ios: 'platform.ios',
+  windows: 'platform.windows',
+  macos: 'platform.macos',
+  linux: 'platform.linux',
+};
+
 const AppScreen = () => {
+  /*
+   * How to install the certificate depends on where it is going, so the
+   * instructions are for the platform the panel is open on — and when that
+   * cannot be told, a choice rather than a guess (see `machine/platform`).
+   */
+  const detected = platformOf(window.navigator);
+  const [picked, setPicked] = useState(null);
+  const platform = detected || picked;
+
   /*
    * Re-read rather than held: `machine/install` owns the state, because the
    * event it depends on fires before any screen exists. This only subscribes
@@ -166,9 +194,20 @@ const AppScreen = () => {
             * because a warning nobody can act on is one everybody learns to
             * tap through.
             */}
+          {detected ? null : (
+            <SegmentedChoice
+              joined
+              fitWide
+              label={t('app.certPlatform')}
+              options={PLATFORMS}
+              value={picked}
+              onChange={setPicked}
+              format={(id) => t(PLATFORM_NAMES[id])}
+            />
+          )}
           <Notice>
             <span>{t('app.certWarning')}</span>
-            <span className="text-note">{t('app.certWhere')}</span>
+            {platform ? <span className="text-note">{t(HOW[platform])}</span> : null}
           </Notice>
 
           {/*
