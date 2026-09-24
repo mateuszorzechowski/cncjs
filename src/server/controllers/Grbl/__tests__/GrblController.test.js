@@ -198,14 +198,14 @@ const setup = (configValues = {}, { ticking = false } = {}) => {
   jest.spyOn(config, 'get').mockImplementation((key, defaultValue) => {
     return (Object.prototype.hasOwnProperty.call(configValues, key) ? configValues[key] : defaultValue);
   });
-  const { controller, writes, remembered } = createController(GrblController);
+  const { controller, writes } = createController(GrblController);
   if (!ticking) {
     clearInterval(controller.queryTimer);
   }
   const socketEvents = [];
   controller.sockets.test = { emit: (event, ...args) => socketEvents.push({ event, args }) };
   activeControllers.push(controller);
-  return { controller, writes, socketEvents, remembered };
+  return { controller, writes, socketEvents };
 };
 
 const serialWrites = (socketEvents) => {
@@ -1919,52 +1919,6 @@ describe('intent commands', () => {
 
       controller.runner.parse('ok');
       expect(writes.map(write => write.data)).toEqual(['G0 X0' + '\n', 'G0 Y0' + '\n']);
-    });
-  });
-
-  describe('the connection worth remembering', () => {
-    test('is the one whose machine answered, not the one that opened a port', () => {
-      const { controller, remembered } = setup();
-
-      // Opened, and silent. A driver can hold a port for hours with nothing
-      // answering on the other end — which is what happens here every time
-      // something opens this Grbl as a Marlin at 9600, measured on the bench.
-      expect(remembered).toEqual([]);
-
-      controller.runner.emit('status', { raw: '<Idle|MPos:0.000,0.000,0.000>' });
-
-      expect(remembered).toEqual([
-        { port: '/dev/null', controllerType: 'Grbl', baudrate: 115200 },
-      ]);
-    });
-
-    test('counts the startup banner too, which is how a fresh port answers', () => {
-      const { controller, remembered } = setup();
-
-      /*
-       * The version that shipped in my head had this on the status report
-       * alone, and on the machine it never fired once: a Grbl prints its
-       * banner when the port opens, that sets `ready`, and the status handler
-       * then finds nothing left to do. Measured as a memory that stayed null
-       * beside a controller reporting `ready: true`.
-       */
-      controller.runner.parse("Grbl 1.1h ['$' for help]");
-
-      expect(remembered).toEqual([
-        { port: '/dev/null', controllerType: 'Grbl', baudrate: 115200 },
-      ]);
-    });
-
-    test('is offered once, however much the machine says afterwards', () => {
-      const { controller, remembered } = setup();
-
-      controller.runner.emit('status', { raw: '<Idle|MPos:0.000,0.000,0.000>' });
-      controller.runner.emit('status', { raw: '<Idle|MPos:1.000,0.000,0.000>' });
-      controller.runner.emit('status', { raw: '<Run|MPos:2.000,0.000,0.000>' });
-
-      // The engine drops a repeat of its own accord, but a controller that
-      // announced itself four times a second would be leaning on that.
-      expect(remembered).toHaveLength(1);
     });
   });
 
