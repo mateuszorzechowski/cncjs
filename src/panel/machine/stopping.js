@@ -64,6 +64,44 @@ export const accelerationFor = (axes, settings) => {
  *   somewhere else. Absent and zero mean the same thing here, because a
  *   server on this computer really does cost nothing.
  */
+/**
+ * How far a stretch of time carries the tool, in millimetres.
+ *
+ * The half of a stop that is simply travel: the machine is still going at the
+ * feed it was given, so every millisecond is `v * dt` and the parts add up.
+ * Null rather than nought when either half is unknown, because a distance of
+ * nought is a claim.
+ */
+export const travelDuring = (ms, feedrate) => {
+  // Null explicitly, because `Number(null)` is nought and nought here is a
+  // claim: "this costs no distance" is a different statement from "nobody has
+  // measured this yet". The same coercion put `0 ms` on screen for a pendant
+  // that had never held a jog.
+  if (ms === null || ms === undefined || !(feedrate > 0)) {
+    return null;
+  }
+
+  const number = Number(ms);
+  return Number.isFinite(number) ? (feedrate / 60) * (number / 1000) : null;
+};
+
+/**
+ * How far the tool goes while slowing down, in millimetres.
+ *
+ * `v² / 2a`, and it is the machine's own — `$120`–`$122` and the feed rate in
+ * use. It is the part of a stop that no amount of a faster computer or a
+ * shorter cable will remove, which is worth being able to see separately from
+ * the parts that a better installation does remove.
+ */
+export const brakingDistance = (feedrate, acceleration) => {
+  if (!(feedrate > 0) || !(acceleration > 0)) {
+    return null;
+  }
+
+  const speed = feedrate / 60;
+  return (speed * speed) / (2 * acceleration);
+};
+
 export const stoppingDistance = ({ timing, feedrate, acceleration, linkMs = 0 }) => {
   const stopMs = Number(timing?.stopMs);
   const link = Number.isFinite(Number(linkMs)) ? Number(linkMs) : 0;
@@ -72,9 +110,7 @@ export const stoppingDistance = ({ timing, feedrate, acceleration, linkMs = 0 })
     return null;
   }
 
-  const speed = feedrate / 60;
-
-  return (speed * ((stopMs + link) / 1000)) + ((speed * speed) / (2 * acceleration));
+  return travelDuring(stopMs + link, feedrate) + brakingDistance(feedrate, acceleration);
 };
 
 /**

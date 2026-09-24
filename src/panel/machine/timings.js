@@ -20,6 +20,8 @@
  * for either would be a figure dressed up as a finding.
  */
 
+import { accelerationFor, brakingDistance, travelDuring } from './stopping';
+
 /**
  * Below this, the link is not worth a line of its own, in milliseconds.
  *
@@ -84,6 +86,44 @@ export const installationTimings = ({ timing, linkMs, beatMs } = {}) => {
     leadMs: asMs(timing?.leadMs),
     /** The cable: how long the firmware takes to answer a line. */
     ackMs: asMs(timing?.ackMs),
+  };
+};
+
+/**
+ * The same reading in the unit that matters, at the feed actually set.
+ *
+ * **A millisecond is the cause; a millimetre is the consequence, and it is the
+ * consequence that is standing beside a spindle.** Each part of a release is
+ * `v * dt` at the feed in use, and the braking the machine does on top is its
+ * own — `$120`–`$122` — which is the part no faster computer or shorter cable
+ * will ever remove. Together they are the figure the sheet already shows as
+ * one number, and separately they are the reason it is that size.
+ *
+ * **The worse of the two feeds, not one of them.** The panel sets XY and Z
+ * independently and a key on either pad produces this, so the honest figure is
+ * the one that goes furthest; a sheet that quoted the gentler of the two would
+ * be understating a distance somebody is about to put a hand near. Which group
+ * that is decides the acceleration as well, so the braking belongs to the same
+ * move rather than to an average of both.
+ */
+export const travelParts = ({ timings, settings, xySpeed, zSpeed }) => {
+  const overZ = !(zSpeed > xySpeed);
+  const feedrate = overZ ? xySpeed : zSpeed;
+  const acceleration = accelerationFor(overZ ? ['x', 'y'] : ['z'], settings);
+
+  return {
+    /** Which move these distances describe, so the sheet can say so. */
+    feedrate,
+    overZ,
+    // No `linkMatters` guard here. It was one, and a mutation showed it did
+    // nothing: the row is drawn only when the link matters, so a distance for
+    // a link that does not is never read. What the guard was really covering
+    // was `travelDuring` turning a null into a nought, which is fixed where it
+    // belongs.
+    linkMm: travelDuring(timings.linkMs, feedrate),
+    queueMm: travelDuring(timings.leadMs, feedrate),
+    replyMm: travelDuring(timings.ackMs, feedrate),
+    brakingMm: brakingDistance(feedrate, acceleration),
   };
 };
 
