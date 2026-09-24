@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import controller from './controller';
 import { fetchJournal, passes } from './journal';
+import { codesSaying } from './journalWords';
+import { t } from '../i18n';
 
 /**
  * The journal as a list that fills in both directions.
@@ -13,8 +15,11 @@ import { fetchJournal, passes } from './journal';
  * listener rebuilt on every change would drop the entries that arrive while it
  * is being swapped.
  */
-export const useJournal = (filter) => {
-  const { level, source } = filter;
+export const useJournal = ({ level, source, since, until, q }) => {
+  // Which codes the panel's own sentences for `q` belong to — the half of
+  // the search the server cannot do, since it never has the words.
+  const said = useMemo(() => (q ? codesSaying(q, t) : []), [q]);
+  const filter = { level, source, since, until, q, said };
   const [entries, setEntries] = useState([]);
   const [next, setNext] = useState(null);
   const [error, setError] = useState(null);
@@ -26,7 +31,7 @@ export const useJournal = (filter) => {
     let live = true;
     setLoading(true);
     setError(null);
-    fetchJournal({ level, source })
+    fetchJournal({ level, source, since, until, q, said })
       .then((page) => {
         if (live) {
           setEntries(page.records);
@@ -38,7 +43,7 @@ export const useJournal = (filter) => {
     return () => {
       live = false;
     };
-  }, [level, source]);
+  }, [level, source, since, until, q, said]);
 
   useEffect(() => {
     const arrived = (entry) => {

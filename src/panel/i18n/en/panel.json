@@ -368,7 +368,10 @@
     "more": "Older entries",
     "filter": {
       "level": "Level",
-      "source": "Source"
+      "source": "Source",
+      "from": "From",
+      "to": "To",
+      "search": "Search the journal"
     },
     "keep": {
       "label": "Journal keeps from",

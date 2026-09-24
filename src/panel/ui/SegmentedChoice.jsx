@@ -10,9 +10,16 @@
  *
  * `aria-pressed` rather than a class alone: which one is chosen has to be
  * available to something that is not looking at the fill.
+ *
+ * `compact` is for a filter rather than a setting: options as wide as their
+ * labels, a smaller face, and the chosen one tinted rather than filled, so
+ * a row of them can sit beside other controls without being the loudest
+ * thing on the screen — *"filtry delikatniejsze, w jednej linii, mniejsze
+ * buttony"* (Mateusz, 2026-09-24). Same height, because a touch target
+ * does not get smaller for being quiet.
  */
-const SegmentedChoice = ({ options, value, onChange, format = String, label, unit, disabled }) => (
-  <div className="flex h-chiph shrink-0 gap-2" role="group" aria-label={label}>
+const SegmentedChoice = ({ options, value, onChange, format = String, label, unit, disabled, compact = false }) => (
+  <div className={`flex h-chiph shrink-0 ${compact ? 'gap-1' : 'gap-2'}`} role="group" aria-label={label}>
     {options.map((option) => {
       const chosen = option === value;
       return (
@@ -28,10 +35,13 @@ const SegmentedChoice = ({ options, value, onChange, format = String, label, uni
           disabled={disabled}
           onClick={() => onChange(option)}
           className={[
-            'h-full min-w-0 flex-1 basis-0 rounded-ctl border px-1 font-num text-base font-semibold transition-colors',
-            chosen
-              ? 'border-acc bg-acc text-white'
-              : 'border-line bg-surf text-ink hover:border-acc hover:text-acc',
+            'h-full rounded-ctl border transition-colors',
+            compact
+              ? 'shrink-0 px-3 text-note font-semibold'
+              : 'min-w-0 flex-1 basis-0 px-1 font-num text-base font-semibold',
+            chosen && compact ? 'border-acc bg-accS text-acc' : '',
+            chosen && !compact ? 'border-acc bg-acc text-white' : '',
+            chosen ? '' : 'border-line bg-surf text-ink hover:border-acc hover:text-acc',
             // Dimmed, not repainted: which step is selected is still the
             // answer to "what happens when I reconnect and press a key", and
             // a disabled control that drops its selection hides that.

@@ -67,10 +67,20 @@ describe('finding entries', () => {
     expect(matches(entry, { until: '2026-09-24T17:00:00.000Z' })).toBe(false);
   });
 
-  test('by text, in the code and the program name', () => {
+  test('by text, in anything the entry stored', () => {
     expect(matches(entry, { q: 'alarm:3' })).toBe(true);
     expect(matches(entry, { q: 'circle' })).toBe(true);
+    expect(matches(entry, { q: 'com3' })).toBe(true);
+    expect(matches(entry, { q: '700' })).toBe(true);
+    expect(matches({ ...entry, data: { sent: 'G2 X1 Y1' } }, { q: 'g2 x1' })).toBe(true);
     expect(matches(entry, { q: 'octocat' })).toBe(false);
+  });
+
+  test('by text, in the words the panel says it with', () => {
+    // The panel knows which codes its sentences for the needle belong to;
+    // the server only knows codes.
+    expect(matches(entry, { q: 'blokada', said: ['ALARM:3'] })).toBe(true);
+    expect(matches(entry, { q: 'blokada', said: ['ALARM:1'] })).toBe(false);
   });
 
   test('newest first, a page at a time, stable while more arrive', () => {

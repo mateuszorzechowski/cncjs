@@ -368,7 +368,10 @@
     "more": "Starsze wpisy",
     "filter": {
       "level": "Poziom",
-      "source": "Źródło"
+      "source": "Źródło",
+      "from": "Od",
+      "to": "Do",
+      "search": "Szukaj w dzienniku"
     },
     "keep": {
       "label": "Dziennik zapisuje od",

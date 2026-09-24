@@ -107,4 +107,13 @@
     outline: 2px solid var(--acc);
     outline-offset: -2px;
   }
+
+  /*
+   * What the browser draws itself follows the theme too — the calendar a
+   * date field opens, its icon, a field's own scrollbar. Without it a dark
+   * panel opened a white calendar.
+   */
+  [data-theme='dark'] {
+    color-scheme: dark;
+  }
 }

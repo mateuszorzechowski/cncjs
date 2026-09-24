@@ -1,4 +1,4 @@
-import { describeEntry } from '../journalWords';
+import { codesSaying, describeEntry } from '../journalWords';
 import { passes } from '../journal';
 
 jest.mock('../../i18n', () => ({ t: (key) => key }));
@@ -46,5 +46,44 @@ describe('whether a live entry belongs on screen', () => {
   test('a source is exact, and all is all', () => {
     expect(passes(entry({ source: 'controller' }), { level: 'debug', source: 'server' })).toBe(false);
     expect(passes(entry({ source: 'controller' }), { level: 'debug', source: 'all' })).toBe(true);
+  });
+
+  test('a time window, both ends included', () => {
+    const at = { level: 'debug', source: 'all' };
+    expect(passes(entry({}), { ...at, since: '2026-09-24T17:45:52.118Z' })).toBe(true);
+    expect(passes(entry({}), { ...at, since: '2026-09-24T18:00:00.000Z' })).toBe(false);
+    expect(passes(entry({}), { ...at, until: '2026-09-24T17:45:52.118Z' })).toBe(true);
+    expect(passes(entry({}), { ...at, until: '2026-09-24T17:00:00.000Z' })).toBe(false);
+  });
+
+  test('text, in what was stored or in the codes whose sentence says it', () => {
+    const at = { level: 'debug', source: 'all' };
+    const error = entry({ event: 'error', code: 'error:33', data: { sent: 'G2 X1 Y1' } });
+    expect(passes(error, { ...at, q: 'g2 x1' })).toBe(true);
+    expect(passes(error, { ...at, q: 'cel ruchu' })).toBe(false);
+    expect(passes(error, { ...at, q: 'cel ruchu', said: ['error:33'] })).toBe(true);
+  });
+});
+
+describe('which codes a sentence belongs to', () => {
+  const say = (key) => ({
+    'grbl.alarm.3': 'Blokada bazowania',
+    'grbl.error.33': 'Niepoprawny cel ruchu',
+    'journal.command.unlock': 'Odblokowano alarm ($X)',
+    'journal.pause.m6': 'Wymiana narzędzia w linii {{line}}',
+    'journal.command.line': 'Linia z konsoli: {{line}}',
+  }[key] || '');
+
+  test('any case, anywhere in the sentence', () => {
+    expect(codesSaying('BLOKOWANO', say)).toEqual(['unlock']);
+    expect(codesSaying('cel ruchu', say)).toEqual(['error:33']);
+  });
+
+  test('a pause is found by any of its reasons', () => {
+    expect(codesSaying('wymiana', say)).toEqual(['pause']);
+  });
+
+  test('not by the placeholder of a value', () => {
+    expect(codesSaying('line', say)).toEqual([]);
   });
 });

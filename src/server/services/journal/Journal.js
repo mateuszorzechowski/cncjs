@@ -39,11 +39,18 @@ const MAX_ENTRIES = 50000;
  *
  * Every field optional; a missing one lets everything through. `level` is a
  * floor — `warn` means warn and error — because that is how a level filter
- * is read everywhere else. `q` looks at the code and the program name, which
- * is what somebody searching remembers; it does not search free text,
- * because there is none.
+ * is read everywhere else.
+ *
+ * `q` looks at every value the entry stored — code, program, port, device,
+ * the line sent. What the operator reads, though, is the panel's sentence for
+ * the code, which the server never had: so the panel works out which codes
+ * its sentences for `q` belong to and sends them as `said`, and an entry
+ * with one of those codes matches too. *"Wyszukiwanie tekstowe, czy wpis
+ * zawiera tekst"* (Mateusz, 2026-09-24).
  */
-export const matches = (entry, { level, source, event, device, since, until, q } = {}) => {
+const values = (value) => (value && typeof value === 'object' ? Object.values(value).flatMap(values) : [value]);
+
+export const matches = (entry, { level, source, event, device, since, until, q, said = [] } = {}) => {
   if (level && rank(entry.level) < rank(level)) {
     return false;
   }
@@ -62,9 +69,10 @@ export const matches = (entry, { level, source, event, device, since, until, q }
   if (until && entry.time > until) {
     return false;
   }
-  if (q) {
+  if (q && !said.includes(entry.code)) {
     const needle = String(q).toLowerCase();
-    const haystack = [entry.code, entry.program?.name].filter(Boolean).join(' ').toLowerCase();
+    const stored = [entry.event, entry.code, entry.port, entry.device, entry.program, entry.data];
+    const haystack = values(stored).filter((v) => v !== undefined && v !== null).join('\n').toLowerCase();
     if (!haystack.includes(needle)) {
       return false;
     }

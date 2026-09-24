@@ -171,3 +171,27 @@ export const describeEntry = (entry) => {
   }
   return { text: entry.code || entry.event };
 };
+
+// Every code with a sentence of its own, as [code, key]. A pause is one code
+// with a sentence per reason, so it appears once for each.
+const SENTENCES = [
+  ...Object.entries({ ...ALARMS, ...ERRORS, ...PROGRAM, ...COMMANDS, ...PORT, ...REFUSAL_KEYS }),
+  ...Object.values(PAUSE).map((key) => ['pause', key]),
+];
+
+/**
+ * The codes whose sentence contains `needle`, for the journal's search.
+ *
+ * The server keeps codes and searches what it stored; the words an operator
+ * reads exist only here. This is the half of the search the server cannot
+ * do. Placeholders are left out, so `line` does not find every sentence
+ * that has a `{{line}}` in it — the value it stands for is stored, and the
+ * server finds that.
+ */
+export const codesSaying = (needle, say) => {
+  const wanted = needle.toLowerCase();
+  const found = SENTENCES
+    .filter(([, key]) => say(key).replace(/\{\{[^}]*\}\}/g, '').toLowerCase().includes(wanted))
+    .map(([code]) => code);
+  return [...new Set(found)];
+};
