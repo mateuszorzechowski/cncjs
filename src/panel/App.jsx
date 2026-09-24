@@ -19,6 +19,8 @@ import ZeroScreen from './screens/ZeroScreen';
 import { useMachine } from './machine/useMachine';
 import { adviceFor } from './machine/advice';
 import { emergencyStop } from './machine/commands';
+import controller from './machine/controller';
+import { pressPause, programControls, startProgram } from './machine/program';
 
 /**
  * Every destination the mockup draws, with `ready` saying which ones exist.
@@ -138,6 +140,7 @@ const Panel = ({ machine, screen, onScreen }) => {
    * that keeps working.
    */
   const stop = () => emergencyStop(machine.type);
+  const program = programControls(machine);
 
   return (
     <>
@@ -363,8 +366,9 @@ const Panel = ({ machine, screen, onScreen }) => {
           content={footer}
           job={machine.job}
           error={machine.error}
-          canStart={false}
-          canPause={false}
+          {...program}
+          onStart={() => startProgram(controller)}
+          onPause={() => pressPause(controller, program.paused)}
         />
       )}
     </>

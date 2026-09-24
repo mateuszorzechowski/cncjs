@@ -21,7 +21,7 @@ import { t } from '../i18n';
  * something goes wrong — which is the moment an operator can least afford the
  * controls to move.
  */
-const JobStatusLine = ({ job, error, canStart, onStart, canPause, onPause }) => (
+const JobStatusLine = ({ job, error, canStart, onStart, canPause, paused, onPause }) => (
   <>
     <span className={`min-w-0 truncate font-num text-base ${error ? 'text-red' : 'text-mut'}`}>
       {error || (job ? job.name : t('job.noFile'))}
@@ -64,8 +64,10 @@ const JobStatusLine = ({ job, error, canStart, onStart, canPause, onPause }) => 
     <Button tone="go" disabled={!canStart} onClick={onStart} className="h-9 tracking-[0.12em]">
       {t('job.start')}
     </Button>
+    {/* One button, two faces: a paused program is resumed where it was
+      * paused, so the hand that pressed Pause finds Resume under it. */}
     <Button disabled={!canPause} onClick={onPause} className="h-9">
-      {t('job.pause')}
+      {paused ? t('job.resume') : t('job.pause')}
     </Button>
   </>
 );
