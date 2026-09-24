@@ -1938,6 +1938,17 @@ class GrblController {
         'jogStart': () => {
           const [dir, feedrate] = args;
 
+          /*
+           * Read now, not where it is stored.
+           *
+           * `CNCEngine` clears `commandSocket` the moment this handler returns,
+           * and the take-over path below finishes in a `setTimeout` — so
+           * reading it there would always find null and leave the jog with no
+           * owner, or worse, with the previous one's. Captured here, used by
+           * both paths.
+           */
+          const owner = this.commandSocket?.id ?? null;
+
           if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
             log.warn('Refusing to jog while a job is running');
             return;
@@ -1970,7 +1981,7 @@ class GrblController {
             const ourOwnBraking = this.jogging.stopping
               || (Date.now() - (this.jogging.cancelledAt ?? 0) < 1000);
 
-            this.takeOverWith(dir, feedrate, ourOwnBraking);
+            this.takeOverWith(dir, feedrate, ourOwnBraking, owner);
             return;
           }
 
@@ -1978,7 +1989,7 @@ class GrblController {
           this.jogging.feedrate = feedrate;
           // Whose hold this is. See `removeConnection`: a jog ends when the
           // client holding it goes away, and only that one.
-          this.jogging.owner = this.commandSocket?.id ?? null;
+          this.jogging.owner = owner;
           this.jogging.stopping = false;
           // Read once per hold rather than per tick: the lead an operator was
           // told about is the lead this jog uses, start to finish.
@@ -2594,7 +2605,7 @@ class GrblController {
      *   Sending a second one is harmless but pointless, and it muddies the
      *   wire when reading a trace.
      */
-    takeOverWith(dir, feedrate, alreadyCancelled = false) {
+    takeOverWith(dir, feedrate, alreadyCancelled = false, owner = null) {
       if (!alreadyCancelled) {
         this.write('\x85');
       }
@@ -2632,6 +2643,7 @@ class GrblController {
 
         this.jogging.dir = dir;
         this.jogging.feedrate = feedrate;
+        this.jogging.owner = owner;
         this.jogging.stopping = false;
         this.jogging.leadSeconds = hostTiming().leadSeconds;
         this.jogging.ticks = [];

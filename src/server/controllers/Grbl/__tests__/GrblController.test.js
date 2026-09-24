@@ -1144,6 +1144,37 @@ describe('GrblController', () => {
       expect(jogLines(writes).length).toBeGreaterThan(held);
     });
 
+    /*
+     * A jog that took over a travel belongs to whoever took it over.
+     *
+     * The take-over path finishes in a `setTimeout`, so it cannot read
+     * `commandSocket` for itself — by then `CNCEngine` has cleared it. Without
+     * carrying the id in, the jog would keep the *previous* owner or none, and
+     * the disconnect rule would then either miss the holder or fire for a
+     * stranger. Both are silent.
+     */
+    test('taking over a travel makes the jog belong to whoever took it', async () => {
+      const { controller } = setup();
+      // A travel is under way and no loop is driving it, which is the state
+      // that sends `jogStart` down the take-over path.
+      controller.runner.state.status.activeState = 'Jog';
+      controller.jogging.owner = 'whoever-was-here-before';
+
+      controller.commandSocket = { id: 'pendant' };
+      try {
+        controller.command('jogStart', { x: -1 }, 600);
+      } finally {
+        controller.commandSocket = null;
+      }
+
+      // The take-over waits for the machine to come to rest before it starts.
+      controller.runner.state.status.activeState = 'Idle';
+      await delay(200);
+
+      expect(controller.jogging.dir).toEqual({ x: -1 });
+      expect(controller.jogging.owner).toBe('pendant');
+    });
+
     test('a client disconnecting with no jog running sends nothing', () => {
       const { controller, writes } = setup();
 
