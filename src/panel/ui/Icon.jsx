@@ -154,6 +154,11 @@ const GLYPHS = {
    * above — the corner it sits in when it is not turned at all.
    */
   diagonal: <path d="M7 17 16 8M11 8 16 8 16 13" />,
+  /*
+   * Opens downwards: a sheet, a list. A line chevron rather than a filled
+   * triangle, which read as a glyph from a font rather than one of these.
+   */
+  chevron: <path d="M6 9.5 12 15.5 18 9.5" />,
 
   /*
    * The machine's zero: the same arms, **in the corner**.

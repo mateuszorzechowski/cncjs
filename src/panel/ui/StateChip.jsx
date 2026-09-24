@@ -1,3 +1,5 @@
+import Icon from './Icon';
+
 // The tone a machine state is shown in. Four, and no more: the panel spends
 // colour on "moving", "ready", "will not move" and "nothing to say", and a
 // fifth would dilute the ones that matter.
@@ -5,10 +7,10 @@
 // text: a class assembled at runtime from a prefix and a colour is a class it
 // never sees and never generates.
 const TONES = {
-  running: { text: 'text-grn', dot: 'bg-grn', edge: 'border-grn bg-grnS' },
-  ready: { text: 'text-amb', dot: 'bg-amb', edge: 'border-amb bg-ambS' },
-  stopped: { text: 'text-red', dot: 'bg-red', edge: 'border-red bg-redS' },
-  inactive: { text: 'text-mut', dot: 'bg-mut', edge: 'border-line bg-mutS' },
+  running: { text: 'text-grn', dot: 'bg-grn', rule: 'bg-grn', edge: 'border-grn bg-grnS' },
+  ready: { text: 'text-amb', dot: 'bg-amb', rule: 'bg-amb', edge: 'border-amb bg-ambS' },
+  stopped: { text: 'text-red', dot: 'bg-red', rule: 'bg-red', edge: 'border-red bg-redS' },
+  inactive: { text: 'text-mut', dot: 'bg-mut', rule: 'bg-line', edge: 'border-line bg-mutS' },
 };
 
 /**
@@ -55,7 +57,9 @@ const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
         // Framed on a phone too, and as tall as the `?` and the STOP beside
         // it — *"w naszych stylach i wszystko tej samej wysokości"*
         // (2026-09-25). It was bare text there.
-        'h-chiph min-w-chip rounded-ctl border px-3',
+        // The right edge as close to the chevron as the rule is on its left:
+        // the chevron sits centred in its own end of the chip.
+        'h-chiph min-w-chip rounded-ctl border pl-3 pr-2.5',
         // The rail's column, inset either side. `--chipw` was a different
         // number from `--rail` and two nearly-equal widths stacked read as a
         // mistake; the full `--rail` glued it to both edges of the column.
@@ -71,9 +75,11 @@ const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
         {children}
       </span>
       {/* What pressing it does, on a phone: it opens the state sheet. A
-        * rule and a caret, as drawn on 2026-09-25. */}
-      <span className="ml-1 h-4 w-px bg-current opacity-30 @3xl/shell:hidden" aria-hidden="true" />
-      <span className={`text-note ${t.text} @3xl/shell:hidden`} aria-hidden="true">&#9662;</span>
+        * short rule in the chip's tone — not its full height, which cut the
+        * chip in two — and a chevron with room round it, as drawn on
+        * 2026-09-25. */}
+      <span className={`ml-1 h-5 w-px ${t.rule} @3xl/shell:hidden`} aria-hidden="true" />
+      <Icon name="chevron" className={`ml-1 size-4 shrink-0 ${t.text} @3xl/shell:hidden`} weight={2} />
     </button>
   );
 };
