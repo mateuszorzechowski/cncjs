@@ -1,4 +1,4 @@
-import { accelerationFor, stoppingDistance } from '../stopping';
+import { accelerationFor, stoppingDistance, stoppingDistanceFor } from '../stopping';
 
 const SETTINGS = { settings: { $120: '500.000', $121: '500.000', $122: '300.000' } };
 
@@ -74,5 +74,43 @@ describe('how far it goes after the key comes up', () => {
     expect(stoppingDistance({ timing: null, feedrate: 1500, acceleration: 500 })).toBeNull();
     expect(stoppingDistance({ timing: { stopMs: 46 }, feedrate: 0, acceleration: 500 })).toBeNull();
     expect(stoppingDistance({ timing: { stopMs: 46 }, feedrate: 1500, acceleration: null })).toBeNull();
+  });
+});
+
+describe('the figure a screen asks for', () => {
+  const settings = { settings: { $120: '500', $121: '500', $122: '300' } };
+
+  test('counts the link, which the millimetres used not to', () => {
+    /*
+     * The defect this entry point exists to make impossible. The sentence
+     * beside the figure counted the link from the day it was written; the
+     * figure — the one somebody reads before putting a hand near a cutter —
+     * was the server's total without the crossing, because the view composed
+     * the call itself and left one argument out.
+     */
+    const near = stoppingDistanceFor({
+      timing: { stopMs: 46 }, settings, feedrate: 1500, axes: ['x', 'y'], linkMs: 0,
+    });
+    const across = stoppingDistanceFor({
+      timing: { stopMs: 46 }, settings, feedrate: 1500, axes: ['x', 'y'], linkMs: 79,
+    });
+
+    // 79ms at 25mm/s is just under 2mm, and it is all on the far side of the
+    // operator's hand.
+    expect(across - near).toBeCloseTo(1.975, 3);
+  });
+
+  test('and takes the slowest axis, as the long way round does', () => {
+    expect(stoppingDistanceFor({
+      timing: { stopMs: 46 }, settings, feedrate: 1500, axes: ['x', 'z'], linkMs: 0,
+    })).toBeCloseTo(stoppingDistance({
+      timing: { stopMs: 46 }, feedrate: 1500, acceleration: accelerationFor(['x', 'z'], settings),
+    }), 6);
+  });
+
+  test('and says nothing when the machine has not reported its acceleration', () => {
+    expect(stoppingDistanceFor({
+      timing: { stopMs: 46 }, settings: {}, feedrate: 1500, axes: ['x'], linkMs: 0,
+    })).toBeNull();
   });
 });

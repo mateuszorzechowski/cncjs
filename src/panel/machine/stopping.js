@@ -77,4 +77,21 @@ export const stoppingDistance = ({ timing, feedrate, acceleration, linkMs = 0 })
   return (speed * ((stopMs + link) / 1000)) + ((speed * speed) / (2 * acceleration));
 };
 
+/**
+ * The same figure, from what a screen actually has in its hands.
+ *
+ * A view holds the controller's settings and the axes a control moves, not an
+ * acceleration; composing the two at the call site is how the **link came to
+ * be left out of the millimetres while the sentence beside them counted it**.
+ * One entry point that takes everything and forgets nothing.
+ */
+export const stoppingDistanceFor = ({ timing, settings, feedrate, axes, linkMs }) => (
+  stoppingDistance({
+    timing,
+    feedrate,
+    acceleration: accelerationFor(axes, settings),
+    linkMs,
+  })
+);
+
 export default stoppingDistance;

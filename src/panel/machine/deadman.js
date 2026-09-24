@@ -104,9 +104,18 @@ export const toleranceMsFor = ({ worstGapMs, linkMs = 0 }) => {
  * answer really is nothing.
  */
 export const jogToleranceMs = (linkMs) => toleranceMsFor({
-  worstGapMs: gaps.length ? Math.max(...gaps) : 0,
+  worstGapMs: worstBeatMs() ?? 0,
   linkMs,
 });
+
+/**
+ * The worst gap between two confirmations this panel has managed, or null.
+ *
+ * The same figure `jogToleranceMs` is built from, exposed because it is worth
+ * showing: it is this pendant's own contribution to how far a machine travels
+ * after the page it is being driven from stops responding.
+ */
+export const worstBeatMs = () => (gaps.length ? Math.max(...gaps) : null);
 
 /** Take note of a gap between two beats. */
 export const observeBeatGap = (gapMs) => {
