@@ -25,6 +25,42 @@ const path = require('path');
 const PORT = Number(process.env.REVIEW_PORT || 8765);
 const NOTES = path.join(__dirname, '..', 'output', 'review-notes.json');
 const OVERLAY = path.join(__dirname, 'design-review-overlay.js');
+const STATES = path.join(__dirname, 'design-review-states.js');
+
+/*
+ * The programs the state manager can hand the panel: the repository's own
+ * examples, so there is something of every shape — arcs, inch units, a
+ * laser job, a large engraving — without anyone uploading anything.
+ */
+const PROGRAMS = path.join(__dirname, '..', 'examples', 'gcode');
+const listPrograms = (dir = PROGRAMS, prefix = '') => fs.readdirSync(dir, { withFileTypes: true })
+  .flatMap((entry) => (entry.isDirectory()
+    ? listPrograms(path.join(dir, entry.name), `${prefix}${entry.name}/`)
+    : [`${prefix}${entry.name}`]))
+  .filter((name) => /\.(gcode|nc|ngc|tap)$/i.test(name));
+
+/*
+ * Pictures pasted into a note, as files beside the notes rather than inside
+ * them: the notes file is read whole by everything, and a screenshot is a
+ * megabyte. The note carries their paths, which is also what Claude opens.
+ */
+const IMAGES = path.join(__dirname, '..', 'output', 'review-images');
+const TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' };
+
+const saveImages = (id, images = []) => images.flatMap((dataUrl, index) => {
+  const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(String(dataUrl));
+  if (!match || !TYPES[match[1]]) {
+    return [];
+  }
+  fs.mkdirSync(IMAGES, { recursive: true });
+  const file = path.join(IMAGES, `${id}-${index + 1}.${TYPES[match[1]]}`);
+  fs.writeFileSync(file, Buffer.from(match[2], 'base64'));
+  return [path.relative(path.join(__dirname, '..'), file).split(path.sep).join('/')];
+});
+
+const removeImages = (note) => (note && note.images ? note.images : []).forEach((file) => {
+  fs.rmSync(path.join(__dirname, '..', file), { force: true });
+});
 
 /**
  * Whether the board is held, in a file of its own.
@@ -123,6 +159,34 @@ const handler = (req, res) => {
     return send(res, 200, fs.readFileSync(OVERLAY, 'utf8'), 'application/javascript');
   }
 
+  if (url.pathname === '/states.js') {
+    return send(res, 200, fs.readFileSync(STATES, 'utf8'), 'application/javascript');
+  }
+
+  if (url.pathname === '/programs') {
+    return send(res, 200, JSON.stringify(listPrograms()));
+  }
+
+  const program = url.pathname.match(/^\/programs\/(.+)$/);
+  if (program) {
+    const name = decodeURIComponent(program[1]);
+    if (!listPrograms().includes(name)) {
+      return send(res, 404, JSON.stringify({ error: 'no such program' }));
+    }
+    return send(res, 200, fs.readFileSync(path.join(PROGRAMS, name), 'utf8'), 'text/plain');
+  }
+
+  // Only names this server gives out, so nothing else under output/ is served.
+  const image = url.pathname.match(/^\/(output\/review-images\/\d+-\d+\.(?:png|jpg|webp|gif))$/);
+  if (image) {
+    const file = path.join(__dirname, '..', image[1]);
+    if (!fs.existsSync(file)) {
+      return send(res, 404, JSON.stringify({ error: 'no such image' }));
+    }
+    res.writeHead(200, { 'Content-Type': `image/${path.extname(file).slice(1).replace('jpg', 'jpeg')}`, 'Access-Control-Allow-Origin': '*' });
+    return res.end(fs.readFileSync(file));
+  }
+
   if (url.pathname === '/notes' && req.method === 'GET') {
     return send(res, 200, JSON.stringify(read()));
   }
@@ -170,9 +234,11 @@ const handler = (req, res) => {
       // A counter, not a clock: the order they were left in is the only thing
       // anyone needs, and it reads the same tomorrow.
       const id = notes.reduce((top, n) => Math.max(top, n.id || 0), 0) + 1;
-      notes.push({ id, ...note });
+      const { images, ...rest } = note;
+      const saved = saveImages(id, images);
+      notes.push({ id, ...rest, ...(saved.length ? { images: saved } : {}) });
       write(notes);
-      console.log(`  ${id}. [${note.screen}] ${note.text}`);
+      console.log(`  ${id}. [${note.screen}] ${note.text}${saved.length ? ` (+${saved.length} zdj.)` : ''}`);
       return send(res, 200, JSON.stringify({ id }));
     });
   }
@@ -197,6 +263,7 @@ const handler = (req, res) => {
         error: 'Clearing the whole board is the overlay button. Delete notes one at a time, by id, once each is done.',
       }));
     }
+    read().forEach(removeImages);
     write([]);
     setHeld(true);
     console.log('  (wyczyszczono z nakladki, wstrzymane z powrotem)');
@@ -206,6 +273,7 @@ const handler = (req, res) => {
   const single = url.pathname.match(/^\/notes\/(\d+)$/);
   if (single && req.method === 'DELETE') {
     const id = Number(single[1]);
+    removeImages(read().find((note) => note.id === id));
     const left = read().filter((note) => note.id !== id);
     write(left);
     console.log(`  (usunięto ${id})`);

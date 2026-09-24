@@ -12,4 +12,16 @@
 // eslint-disable-next-line no-restricted-imports
 import controller from 'app/lib/controller';
 
+/*
+ * Handed to the review overlay's state manager, in development only.
+ *
+ * Every reading on the panel arrives as an event on this object, so this is
+ * where a simulated alarm or a loaded program can be put in without a machine
+ * or a server being asked for it — see `scripts/design-review-states.js`. The
+ * production build drops the branch entirely.
+ */
+if (process.env.NODE_ENV !== 'production') {
+  window.__panelController = controller;
+}
+
 export default controller;

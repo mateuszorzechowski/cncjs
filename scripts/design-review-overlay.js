@@ -169,6 +169,14 @@
     #rv-form button { font: inherit; cursor: pointer; border-radius: 4px; padding: 5px 10px;
       border: 1px solid #3a424c; background: #2c323a; color: #e6ecf3; }
     #rv-form button.save { background: #1557c0; border-color: #1557c0; }
+    #rv-form .shots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    #rv-form .shots:empty { display: none; }
+    #rv-form .shot { position: relative; }
+    #rv-form .shot img { display: block; height: 56px; max-width: 120px; object-fit: cover;
+      border: 1px solid #3a424c; border-radius: 4px; }
+    #rv-form .shot button { position: absolute; top: -6px; right: -6px; padding: 0 5px; line-height: 16px;
+      border-radius: 50%; background: #e04a4a; border-color: #e04a4a; }
+    #rv-form .hint { color: #8b97a6; font-size: 11px; margin-top: 4px; }
   `;
   document.head.appendChild(style);
 
@@ -193,6 +201,7 @@
     <span class="sep"></span>
     <button id="rv-pick">Komentarz</button>
     <span class="count" id="rv-count"></span>
+    <button id="rv-pins" title="Pokaż / ukryj numerki uwag na ekranie"></button>
     <button id="rv-hold" title="Dopóki wstrzymane, uwagi tylko się zbierają"></button>
     <button id="rv-clear" title="Usuń wszystkie uwagi">Wyczyść</button>`;
   document.body.appendChild(bar);
@@ -203,6 +212,27 @@
   const scaleNote = bar.querySelector('#rv-scale');
   const openButton = bar.querySelector('#rv-open');
   const themeButton = bar.querySelector('#rv-theme');
+  const pinsButton = bar.querySelector('#rv-pins');
+
+  /*
+   * The numbers can be put away. They sit on top of the very thing a note is
+   * about, and looking at a screen as it is — or taking a screenshot of it —
+   * means looking past them. The notes stay; only the markers go.
+   */
+  const KEEP_PINS = 'rv-pins';
+  let pinsShown = true;
+  try { pinsShown = window.sessionStorage.getItem(KEEP_PINS) !== 'off'; } catch (err) { pinsShown = true; }
+  const drawPinsButton = () => {
+    pinsButton.textContent = pinsShown ? 'Ukryj numerki' : 'Pokaż numerki';
+    pinsButton.classList.toggle('on', !pinsShown);
+  };
+  pinsButton.addEventListener('click', () => {
+    pinsShown = !pinsShown;
+    try { window.sessionStorage.setItem(KEEP_PINS, pinsShown ? 'on' : 'off'); } catch (err) { /* private mode */ }
+    drawPinsButton();
+    drawPins();
+  });
+  drawPinsButton();
 
   /*
    * The theme lives here now, not on the machine bar.
@@ -281,10 +311,12 @@
     // The bar owns a strip down the right, so the frame is centred in what is
     // left rather than in the window — otherwise it sits under the controls at
     // the sizes where it is widest.
+    // And the state manager owns one down the left, open or folded.
     const BAR = 150;
-    const room = { w: window.innerWidth - BAR - 40, h: window.innerHeight - 40 };
+    const STATES = window.__reviewStatesWidth ? window.__reviewStatesWidth() : 0;
+    const room = { w: window.innerWidth - BAR - STATES - 40, h: window.innerHeight - 40 };
     const scale = Math.min(room.w / target.w, room.h / target.h, 1);
-    const left = Math.max(20, Math.round((room.w - target.w * scale) / 2) + 20);
+    const left = STATES + Math.max(20, Math.round((room.w - target.w * scale) / 2) + 20);
     const top = Math.max(28, Math.round((room.h - target.h * scale) / 2) + 20);
     /*
      * Everything outside the frame is dimmed by a shadow large enough to reach
@@ -360,7 +392,7 @@
 
   const drawPins = () => {
     clearPins();
-    notes.forEach((note, index) => {
+    (pinsShown ? notes : []).forEach((note, index) => {
       let target = null;
       try { target = document.querySelector(note.path); } catch (err) { target = null; }
       const box = target
@@ -371,7 +403,7 @@
       pin.textContent = String(index + 1);
       pin.style.left = `${box.x + box.width / 2 + window.scrollX}px`;
       pin.style.top = `${box.y + window.scrollY + 11}px`;
-      pin.title = note.text;
+      pin.title = note.images ? `${note.text} (+${note.images.length} zdj.)` : note.text;
       pin.addEventListener('click', async (event) => {
         event.stopPropagation();
         if (window.confirm(`${index + 1}. ${note.text}\n\nUsunąć tę uwagę?`)) {
@@ -442,7 +474,7 @@
      * body does not scroll while a target is framed, so anything below the
      * fold was simply not reachable.
      */
-    const FORM = { w: 280, h: 150 };
+    const FORM = { w: 280, h: 230 };
     form.style.left = `${Math.max(8, Math.min(box.x, window.innerWidth - FORM.w - 8))}px`;
     form.style.top = box.bottom + 8 + FORM.h < window.innerHeight
       ? `${box.bottom + 8}px`
@@ -450,20 +482,53 @@
     form.innerHTML = `
       <div class="what">${where.target} · ${where.screen}${where.card ? ` · ${where.card}` : ''} · &lt;${where.tag}&gt; ${where.label || ''}${where.state ? ` · ${where.state}` : ''}</div>
       <textarea placeholder="Co jest nie tak w tym miejscu?"></textarea>
+      <div class="shots"></div>
+      <div class="hint">Ctrl+V wkleja zrzut ekranu albo zdjęcie.</div>
       <div class="row"><button class="cancel">Anuluj</button><button class="save">Zapisz</button></div>`;
     document.body.appendChild(form);
 
     const area = form.querySelector('textarea');
     area.focus();
 
+    /*
+     * Pictures pasted in, kept as data URLs until the note is saved; the
+     * server writes them to files and the note keeps the paths. A picture
+     * alone is a note too — a screenshot often says it better than a sentence.
+     */
+    const images = [];
+    const shots = form.querySelector('.shots');
+    const drawShots = () => {
+      shots.innerHTML = '';
+      images.forEach((src, index) => {
+        const shot = document.createElement('span');
+        shot.className = 'shot';
+        shot.innerHTML = '<img alt=""><button title="Usuń">×</button>';
+        shot.querySelector('img').src = src;
+        shot.querySelector('button').addEventListener('click', () => { images.splice(index, 1); drawShots(); });
+        shots.appendChild(shot);
+      });
+    };
+    area.addEventListener('paste', (event) => {
+      const files = Array.from(event.clipboardData ? event.clipboardData.items : [])
+        .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+        .map((item) => item.getAsFile());
+      if (!files.length) { return; }
+      event.preventDefault();
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = () => { images.push(reader.result); drawShots(); };
+        reader.readAsDataURL(file);
+      });
+    });
+
     const close = () => form.remove();
     const save = async () => {
       const text = area.value.trim();
-      if (!text) { close(); return; }
+      if (!text && !images.length) { close(); return; }
       await fetch(`${HOST}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...where, text }),
+        body: JSON.stringify({ ...where, text, images }),
       });
       close();
       await load();
@@ -562,6 +627,17 @@
 
   openButton.addEventListener('click', openAtTarget);
   window.addEventListener('resize', () => setTarget(current));
+  window.__reviewRelayout = () => setTarget(current);
+
+  /*
+   * The state manager, on the left. Only on the panel's development build,
+   * which is what hands over the controller it works through.
+   */
+  if (window.__panelController) {
+    const states = document.createElement('script');
+    states.src = `${HOST}/states.js?${Date.now()}`;
+    document.body.appendChild(states);
+  }
 
   /*
    * The notes are polled rather than only read once. A pin is removed at the
