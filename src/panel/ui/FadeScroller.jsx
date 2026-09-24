@@ -18,19 +18,18 @@ import { edgesOf, thumbOf } from './scrollMetrics';
  *     under an edge. A mask and not a coloured gradient, because the strip
  *     passes over the white card *and* the grey behind it, and one colour
  *     cannot be right on both.
- *   - **the thumb** says *where you are*, in the way a phone does: it is not
- *     there until you move, and it fades out a moment after you stop. Never
- *     draggable — no phone's is, and a 4px drag target beside a jog pad is a
- *     mis-tap waiting to happen.
+ *   - **the thumb on its track** says *where you are* and *that this
+ *     scrolls at all*, and says it all the time — *"pasek scrolla i scroll
+ *     zawsze widoczne"* (Mateusz, 2026-09-24). It used to appear only while
+ *     moving, the way a phone's does, which left a list that had not been
+ *     touched yet looking like all there was. Never draggable — a 4px drag
+ *     target beside a jog pad is a mis-tap waiting to happen.
  *
  * The geometry is set as custom properties on the thumb rather than as a
  * `style` prop: Tailwind cannot see a class assembled at runtime, and the
  * panel does not write inline styles. Same trick the fade uses for its two
  * stops, one step further because these change with every scroll event.
  */
-
-/** How long the thumb stays after the last movement, in milliseconds. */
-const LINGER = 700;
 
 /**
  * Which scrollers currently have something running under their bottom edge.
@@ -58,9 +57,8 @@ const remark = () => {
 const FadeScroller = ({ className = '', children }) => {
   const [scroller, setScroller] = useState(null);
   const [edges, setEdges] = useState({ top: false, bottom: false });
-  const [moving, setMoving] = useState(false);
+  const [scrolls, setScrolls] = useState(false);
   const thumb = useRef(null);
-  const idle = useRef(null);
 
   const measure = useCallback(() => {
     const at = edgesOf(scroller);
@@ -92,6 +90,7 @@ const FadeScroller = ({ className = '', children }) => {
     }
 
     const bar = thumbOf(scroller);
+    setScrolls(Boolean(bar));
     const node = thumb.current;
     if (!node) {
       return;
@@ -102,15 +101,6 @@ const FadeScroller = ({ className = '', children }) => {
     node.style.setProperty('--thumbH', `${bar ? bar.height : 0}px`);
     node.style.setProperty('--thumbY', `${bar ? bar.top : 0}px`);
   }, [scroller]);
-
-  const onScroll = useCallback(() => {
-    measure();
-    setMoving(true);
-    clearTimeout(idle.current);
-    idle.current = setTimeout(() => setMoving(false), LINGER);
-  }, [measure]);
-
-  useEffect(() => () => clearTimeout(idle.current), []);
 
   /*
    * Measured on arrival, on scroll, and whenever the content changes --- not
@@ -153,7 +143,7 @@ const FadeScroller = ({ className = '', children }) => {
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={setScroller}
-        onScroll={onScroll}
+        onScroll={measure}
         className={[
           'min-h-0 flex-1 overflow-y-auto scroll-quiet',
           '[mask-image:linear-gradient(to_bottom,transparent_0,black_var(--fadeT),black_calc(100%-var(--fadeB)),transparent_100%)]',
@@ -193,13 +183,23 @@ const FadeScroller = ({ className = '', children }) => {
         * inside it, the way a phone's own indicator hugs the edge. `--pad` is
         * the default because most of the things that scroll here are cards.
         */}
+      {/* The track: the whole height the thumb can travel, so its length
+        * reads as a share of the list. Only where there is something to
+        * scroll — a track beside content that fits would promise more. */}
+      <span
+        aria-hidden="true"
+        className={[
+          'pointer-events-none absolute bottom-0 right-[calc(2px-var(--thumbGutter,var(--pad)))] top-0 w-1 rounded-full bg-line',
+          scrolls ? '' : 'hidden',
+        ].join(' ')}
+      />
       <span
         ref={thumb}
         aria-hidden="true"
         className={[
-          'pointer-events-none absolute right-[calc(2px-var(--thumbGutter,var(--pad)))] top-0 w-1 rounded-full bg-mut transition-opacity duration-300',
+          'pointer-events-none absolute right-[calc(2px-var(--thumbGutter,var(--pad)))] top-0 w-1 rounded-full bg-mut',
           'h-[var(--thumbH,0px)] translate-y-[var(--thumbY,0px)]',
-          moving ? 'opacity-40' : 'opacity-0',
+          scrolls ? '' : 'hidden',
         ].join(' ')}
       />
     </div>
