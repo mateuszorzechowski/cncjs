@@ -64,29 +64,30 @@ const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
         // number from `--rail` and two nearly-equal widths stacked read as a
         // mistake; the full `--rail` glued it to both edges of the column.
         // One column, and the chip sits inside it.
-        // Wide, the rule stands on the rail's own edge and the chevron goes
-        // past it — for now (*"tymczasowo poszerz chip tak, żeby divider był
-        // na równo z kolumną menu bocznego"*, 2026-09-25), because inside the
-        // column the longer states were cut to "BRAK SERW…". The width is the
-        // rail plus what sits right of the rule: 6px in from the bar's edge,
-        // then rule, 10px, a 16px chevron, 10px and the border — 31px past
-        // the rail puts the rule on its last pixel.
-        '@3xl/shell:h-btnh @3xl/shell:w-[calc(var(--rail)+31px)]',
+        //
+        // Wide, the chip is a column rather than a row — the state, a
+        // horizontal rule, the chevron under it (*"divider horyzontalnie i
+        // chevron pod spodem"*, 2026-09-25) — so the word has the chip's whole
+        // width and the chip stays in the rail's column. Beside the word, the
+        // rule and chevron left too little of 120px and the longer states
+        // were cut to "BRAK SERW…".
+        '@3xl/shell:h-btnh @3xl/shell:w-railInset @3xl/shell:flex-col @3xl/shell:justify-center @3xl/shell:gap-1 @3xl/shell:px-2',
         '@3xl/shell:rounded-ctl @3xl/shell:border',
         t.edge,
         'transition-colors hover:brightness-95',
       ].join(' ')}
     >
-      <span className={`size-[9px] shrink-0 rounded-full ${t.dot}`} aria-hidden="true" />
-      <span className={`min-w-0 flex-1 truncate text-left text-cap @3xl/shell:line-clamp-2 @3xl/shell:whitespace-normal @3xl/shell:break-words font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
-        {children}
+      <span className="flex min-w-0 items-center gap-1.5 @3xl/shell:max-w-full">
+        <span className={`size-[9px] shrink-0 rounded-full ${t.dot}`} aria-hidden="true" />
+        <span className={`min-w-0 truncate text-left text-cap @3xl/shell:line-clamp-2 @3xl/shell:whitespace-normal @3xl/shell:break-words font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
+          {children}
+        </span>
       </span>
-      {/* What pressing it does: it opens the state sheet. A
-        * short rule in the chip's tone — not its full height, which cut the
-        * chip in two — and a chevron with room round it, as drawn on
-        * 2026-09-25. */}
-      <span className={`ml-1 h-5 w-px shrink-0 ${t.rule}`} aria-hidden="true" />
-      <Icon name="chevron" className={`ml-1 size-4 shrink-0 ${t.text}`} weight={2} />
+      {/* What pressing it does: it opens the state sheet. A short rule in
+        * the chip's tone — beside the word on a phone, under it when wide —
+        * and a chevron with room round it, as drawn on 2026-09-25. */}
+      <span className={`ml-1 h-5 w-px shrink-0 ${t.rule} @3xl/shell:ml-0 @3xl/shell:h-px @3xl/shell:w-2/3`} aria-hidden="true" />
+      <Icon name="chevron" className={`ml-1 size-4 shrink-0 ${t.text} @3xl/shell:ml-0`} weight={2} />
     </button>
   );
 };
