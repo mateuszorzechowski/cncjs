@@ -1595,6 +1595,32 @@ class GrblController {
       log.debug(`Remove socket connection: id=${socket.id}`);
       this.sockets[socket.id] = undefined;
       delete this.sockets[socket.id];
+
+      /*
+       * And a held jog ends with the client, because nobody is left to let go.
+       *
+       * A continuous jog is one command and then silence until the release, so
+       * the release is the only thing that stops it — and a client that has gone
+       * will never send one. Nothing else here would notice: this method used to
+       * remove a socket from a pool and no more, while the loop went on feeding
+       * segments until the axis ran out of travel. Up to `$130` of it, which on
+       * this bench is a metre.
+       *
+       * **Stopped rather than abandoned:** the machine is still listening, so the
+       * cancel goes out properly and the position stays known.
+       *
+       * The trade, said out loud: with two pendants attached and one of them
+       * closing, this stops a jog the *other* one may still be holding. That is
+       * the safe direction — an operator whose jog stopped presses again, and the
+       * alternative is a machine crossing the table with nobody watching — and
+       * the controller cannot tell them apart, because `socket.on('command')`
+       * does not pass the socket through to `command()`.
+       *
+       * It does **not** cover a client that is wedged rather than gone: the
+       * socket stays open, so this never fires, and socket.io takes up to its
+       * ping timeout to notice. The travel limit is the only backstop there.
+       */
+      this.endHeldJog();
     }
 
     emit(eventName, ...args) {

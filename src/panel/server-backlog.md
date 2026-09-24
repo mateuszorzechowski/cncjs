@@ -457,6 +457,62 @@ Dwa szczegóły, które kosztowały pomiar:
   wstawała w **alarmie z porzuconą pozycją**. Droga była dobra, zły był stan.
   Serwer zna ten czas — to `stopMs` z `controller:timing`.
 
+### 4. Kto odpowiada za stop i anulowanie — i ostatnia dziura
+
+Pytanie Mateusza po tych poprawkach: *„przeglądarka jest odpowiedzialna za stop i
+anulowanie?"*. Rozstrzyga się na dwóch pytaniach, nie jednym.
+
+**Czy ma zdecydować, że stop ma nastąpić** — tak, i to się nie przenosi. Tylko
+przeglądarka wie, że operator nacisnął przycisk albo puścił palec.
+
+**Czy ma to wykonać** — już nie. Stop na Grblu to jedna komenda, a anulowanie
+jogu to `jogStop`, po którym serwer czeka na potwierdzenia i wysyła `0x85`.
+Przeglądarka mówi „teraz", serwer robi resztę. Zostaje przy niej jeszcze jedna
+rzecz i jest właściwa: okno 250 ms rozstrzygające **dotknięcie kontra
+przytrzymanie**, bo to jest pytanie o intencję człowieka, nie o maszynę.
+
+**Ale z tego pytania wyszła ostatnia dziura, i była poważna.** Puszczenie
+klawisza to **jedyna** rzecz, która kończy jog ciągły — a klient, którego już nie
+ma, nigdy go nie wyśle. `removeConnection` usuwało gniazdo z puli i nic więcej.
+
+Zmierzone: gniazdo trzymające klawisz zabite bez żadnego puszczenia, drugie
+patrzy —
+
+| po zniknięciu klienta | przed | po |
+| --- | --- | --- |
+| droga w pierwszych 3 s | **29,532 mm** | **0,860 mm** |
+| stan po 3 s | **`Jog`** — dalej jedzie | **`Idle`** |
+| droga w kolejnych 1,5 s | **14,764 mm** | **0,000 mm** |
+
+Czyli przed poprawką maszyna jechała **do końca zakresu osi** — na tym stole do
+metra — z nikim, kto by patrzył. `removeConnection` traktuje teraz zniknięcie
+klienta jak puszczenie klawisza (`endHeldJog()`, więc grzecznie: `0x85` po
+potwierdzeniach, pozycja zostaje znana).
+
+**Cena, powiedziana wprost:** przy dwóch pendantach zamknięcie jednego zatrzyma
+jog, który drugi może jeszcze trzymać. To jest bezpieczna strona — operator
+naciśnie znowu — a sterownik i tak nie umie ich rozróżnić, bo
+`socket.on('command')` nie przekazuje gniazda do `command()`.
+
+**Czego to nie pokrywa i co zostaje na Twoją decyzję:** klienta, który **zawiesił
+się, ale nie zniknął**. Gniazdo stoi otwarte, więc `removeConnection` nie pada, a
+socket.io potrzebuje do tego swojego ping timeoutu (`pingInterval` 10 s +
+`pingTimeout` 8 s). Jedynym zabezpieczeniem jest wtedy **limit zakresu osi** —
+`roomFor` zatrzymuje pętlę na krawędzi obwiedni, co na tym stole znaczy „do metra
+w tym kierunku".
+
+Prawdziwa odpowiedź na to jest **czuwak**: panel odnawia przytrzymanie co
+N milisekund, serwer porzuca jog, gdy nie usłyszał w 2N. To zmiana protokołu jogu
+i dlatego jej nie zrobiłem sam. Do rozstrzygnięcia z Mateuszem.
+
+**Przy okazji poprawiony komentarz, który przestał być prawdą.**
+`ui/useHoldToJog.jsx` twierdził: *„the stream's own segment length is the backstop
+underneath all of them ... even a release that is never seen stops the machine
+almost at once"*. Było prawdą, gdy pętla siedziała w przeglądarce. Przeniesienie
+jej na serwer (2026-09-22) zabrało ten bezpiecznik i **nikt nie poprawił
+zdania** — a to jest dokładnie ten rodzaj notatki, na którym ktoś oprze decyzję o
+usunięciu jednego z czterech nasłuchów.
+
 ### Pomiary, przed i po
 
 | przy trzymanym klawiszu | przed | po |
@@ -486,8 +542,10 @@ Dwa szczegóły, które kosztowały pomiar:
 
 ### Co zostaje, a co nie
 
-**Nie zostaje nic po stronie Grbla.** Zegar przeglądarki zniknął, sekwencja jest
-niepodzielna, a wynik nie zależy od tego, czy karta przeżyje naciśnięcie.
+**Po stronie Grbla zostaje jedna rzecz i jest nazwana wyżej: czuwak na
+zawieszonego klienta.** Zegar przeglądarki zniknął, sekwencja stopu jest
+niepodzielna, a klient, który *zniknął*, kończy jog. Klient, który stoi z
+otwartym gniazdem i nie odpowiada, opiera się tylko na limicie zakresu osi.
 
 **Marlin, Smoothie i TinyG zostają na dwustopniowej ścieżce**, bo nie mają
 `estop`, a wymyślanie go dla firmware'u, którego nic na tym stole nie uruchamia,

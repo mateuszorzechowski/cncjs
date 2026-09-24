@@ -1075,6 +1075,43 @@ describe('GrblController', () => {
      * pendant holds a key — and its own tests are `Run` then `Hold`, neither of
      * which a jog passes through.
      */
+    /*
+     * The client going away is a release, because nobody is left to send one.
+     *
+     * A continuous jog is one command and then silence until the finger comes
+     * up, so a client that has gone will never end it — and nothing else would.
+     * Before this, the loop fed segments until the axis ran out of travel: up to
+     * `$130`, a metre on the bench machine, with nobody watching.
+     */
+    test('a client disconnecting ends the jog it was holding', async () => {
+      const { controller, writes } = setup();
+
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(STALLED);
+      const held = jogLines(writes).length;
+      expect(held).toBeGreaterThan(0);
+
+      controller.removeConnection({ id: 'test' });
+
+      expect(controller.jogging.dir).toBeNull();
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBe(held);
+
+      // Stopped, not abandoned: the machine is still listening, so the cancel
+      // goes out once the outstanding segments have been acknowledged.
+      acknowledge(controller);
+      acknowledge(controller);
+      expect(writes.map((write) => String(write.data))).toContain('\x85');
+    });
+
+    test('a client disconnecting with no jog running sends nothing', () => {
+      const { controller, writes } = setup();
+
+      controller.removeConnection({ id: 'test' });
+
+      expect(writes).toEqual([]);
+    });
+
     test.each([
       ['gcode:stop with force', ['gcode:stop', { force: true }]],
       ['gcode:pause', ['gcode:pause']],
