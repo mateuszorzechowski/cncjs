@@ -1083,15 +1083,25 @@ describe('GrblController', () => {
      * Before this, the loop fed segments until the axis ran out of travel: up to
      * `$130`, a metre on the bench machine, with nobody watching.
      */
+    /** Hold a key the way `CNCEngine` does, from a named socket. */
+    const holdFrom = async (controller, id) => {
+      controller.commandSocket = { id };
+      try {
+        controller.command('jogStart', { x: -1 }, 600);
+      } finally {
+        controller.commandSocket = null;
+      }
+      await delay(STALLED);
+    };
+
     test('a client disconnecting ends the jog it was holding', async () => {
       const { controller, writes } = setup();
 
-      controller.command('jogStart', { x: -1 }, 600);
-      await delay(STALLED);
+      await holdFrom(controller, 'pendant');
       const held = jogLines(writes).length;
       expect(held).toBeGreaterThan(0);
 
-      controller.removeConnection({ id: 'test' });
+      controller.removeConnection({ id: 'pendant' });
 
       expect(controller.jogging.dir).toBeNull();
       await delay(STALLED);
@@ -1102,6 +1112,36 @@ describe('GrblController', () => {
       acknowledge(controller);
       acknowledge(controller);
       expect(writes.map((write) => String(write.data))).toContain('\x85');
+    });
+
+    /*
+     * And nobody else's departure touches it.
+     *
+     * Measured on the bench network: a device reconnecting its socket killed a
+     * jog another client was holding, 0.8s in. A pendant whose jog stops by
+     * itself when a phone in somebody's pocket wakes up is a worse bug than the
+     * one the case above fixes.
+     */
+    test('another client disconnecting leaves the jog alone', async () => {
+      const { controller, writes } = setup();
+
+      await holdFrom(controller, 'pendant');
+      const held = jogLines(writes).length;
+
+      controller.removeConnection({ id: 'somebody-elses-phone' });
+
+      expect(controller.jogging.dir).toEqual({ x: -1 });
+      expect(controller.jogTimer).not.toBeNull();
+
+      /*
+       * Still *armed* is the claim, and it has to be shown rather than assumed:
+       * by now the loop is stalled on `MAX_IN_FLIGHT` with nothing
+       * acknowledging, so it would send no more segments either way. An
+       * acknowledgement is what tells the two apart.
+       */
+      acknowledge(controller);
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBeGreaterThan(held);
     });
 
     test('a client disconnecting with no jog running sends nothing', () => {

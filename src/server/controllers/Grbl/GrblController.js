@@ -536,6 +536,8 @@ class GrblController {
       this.jogging = {
         dir: null,
         feedrate: 0,
+        // The socket that asked for the current hold, or null.
+        owner: null,
         inFlight: 0,
         stopping: false,
         leadSeconds: hostTiming().leadSeconds,
@@ -1609,18 +1611,21 @@ class GrblController {
        * **Stopped rather than abandoned:** the machine is still listening, so the
        * cancel goes out properly and the position stays known.
        *
-       * The trade, said out loud: with two pendants attached and one of them
-       * closing, this stops a jog the *other* one may still be holding. That is
-       * the safe direction — an operator whose jog stopped presses again, and the
-       * alternative is a machine crossing the table with nobody watching — and
-       * the controller cannot tell them apart, because `socket.on('command')`
-       * does not pass the socket through to `command()`.
+       * **Only the client that started it, and that precision is not a nicety.**
+       * The first version of this stopped any held jog whenever any client left,
+       * on the reasoning that two pendants are rare. Measured on this network
+       * ten minutes later: a device reconnecting its socket killed a jog another
+       * client was holding, 0.8s in. A pendant whose jog stops by itself when a
+       * phone in somebody's pocket wakes up is a worse bug than the one this
+       * fixes. `CNCEngine` records who asked; see `jogStart`.
        *
        * It does **not** cover a client that is wedged rather than gone: the
        * socket stays open, so this never fires, and socket.io takes up to its
        * ping timeout to notice. The travel limit is the only backstop there.
        */
-      this.endHeldJog();
+      if (this.jogging.owner === socket.id) {
+        this.endHeldJog();
+      }
     }
 
     emit(eventName, ...args) {
@@ -1971,6 +1976,9 @@ class GrblController {
 
           this.jogging.dir = dir;
           this.jogging.feedrate = feedrate;
+          // Whose hold this is. See `removeConnection`: a jog ends when the
+          // client holding it goes away, and only that one.
+          this.jogging.owner = this.commandSocket?.id ?? null;
           this.jogging.stopping = false;
           // Read once per hold rather than per tick: the lead an operator was
           // told about is the lead this jog uses, start to finish.

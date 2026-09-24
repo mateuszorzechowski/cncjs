@@ -441,7 +441,27 @@ class CNCEngine {
             return;
           }
 
-          controller.command.apply(controller, [cmd].concat(args));
+          /*
+           * Who asked, for the one command that outlives the request.
+           *
+           * A held jog is started by one client and ends when *that* client
+           * lets go, so the controller has to know whose it is — otherwise a
+           * disconnect can only be treated as "somebody left", and stopping
+           * the jog on that is wrong the moment a second device is attached.
+           * Measured on this network: a phone's socket reconnecting killed a
+           * jog another client was holding, 0.8s into it.
+           *
+           * Set around the call rather than passed as an argument, because
+           * `command` is the shared shape of all four controllers and three of
+           * them have no use for it. Safe because the handlers that read it run
+           * synchronously before their first `await`.
+           */
+          controller.commandSocket = socket;
+          try {
+            controller.command.apply(controller, [cmd].concat(args));
+          } finally {
+            controller.commandSocket = null;
+          }
         });
 
         socket.on('write', (port, data, context = {}) => {
