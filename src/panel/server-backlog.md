@@ -405,51 +405,86 @@ jako brak pokrycia, nie zamiecione.
 
 ---
 
-## Awaryjny stop: 500 ms żyje w zegarze przeglądarki
+## ~~Awaryjny stop: 500 ms żyje w zegarze przeglądarki~~ — ZMIERZONE I W POŁOWIE NAPRAWIONE 2026-09-24
 
-**Panel chciał:** wielkiego czerwonego przycisku. Decyzja Mateusza z
-2026-09-20: najpierw wstrzymanie posuwu, po chwili miękki reset — bo sam reset
-zatrzymuje, porzucając planer, czyli z pozycją, której potem nikt nie zna, a
-samo wstrzymanie jest odwracalne i dlatego nie jest zatrzymaniem.
+**Pomiar, o który ten wpis prosił, został zrobiony — i zmienił rozpoznanie.**
+Zlecony przez Mateusza („zmierz co Grbl robi z `!` w jogu"). Na COM3, Grbl 1.1h,
+posuw 600 mm/min, status odpytywany co 20 ms.
 
-**Serwer ma:** dwie osobne komendy (`feedhold`, `reset`) i jedną złożoną,
-`gcode:stop` z `{ force: true }`, która robi dokładnie to samo co panel —
-`!`, `await delay(500)`, `\x18` — tylko u siebie. Nie jest to jednak zamiennik:
-**bramkuje oba kroki stanem**. `!` leci wyłącznie przy `Run`, a `\x18`
-wyłącznie przy `Hold`. Maszyna w `Jog` albo `Home` nie dostaje ani jednego z
-nich, a to są stany, w których ruch trwa.
+### Co Grbl robi z `!` w jogu
 
-**Skutek — to, co panel robi dzisiaj:**
-`controller.command('feedhold')`, `setTimeout(…, 500)` w karcie przeglądarki,
-`controller.command('reset')`. Pokrycie stanów jest lepsze od serwerowego (oba
-bajty lecą bezwarunkowo), ale **dostarczenie drugiej połowy nie jest niczym
-zagwarantowane**:
+**`!` w jogu jest anulowaniem jogu, nie wstrzymaniem.** Maszyna hamuje do zera w
+**63 ms i 0,8 mm**, reszta ruchu jest odrzucana, a stan ląduje w **`Idle`** —
+nigdy w `Hold`. `~` po tym nie wznawia niczego (sprawdzone: zostaje `Idle`).
 
-- karta uśpiona, zamknięta albo zwinięta w tle w ciągu tych 500 ms zostawia
-  maszynę **we wstrzymaniu, nie po resecie** — czyli w stanie, który wygląda
-  na zatrzymanie i wznawia się przez Cycle Start;
-- zegary w karcie w tle są dławione (na telefonie do sekund), a panel jest
-  PWA, którą operator trzyma w kieszeni;
-- zerwane łącze między dwoma poleceniami daje to samo.
+Skutek dla `gcode:stop { force: true }`: **żadna z jego dwóch bramek nie ma jak
+się otworzyć na maszynie w jogu.** `activeState` to `Jog`, nie `Run`, więc `!`
+nie leci; pół sekundy później jest `Idle`, nie `Hold`, więc `\x18` też nie. To
+nie jest usterka tamtej komendy — ona jest o **zatrzymywaniu programu**, gdzie
+stany naprawdę idą `Run` → `Hold`. Wczorajszy zapis nazwał ją „tą samą sekwencją
+po właściwej stronie gniazda"; jest to sekwencja o czymś innym.
 
-To jest ten sam argument, który przeniósł jog ciągły na serwer: **stronę, która
-gwarantuje ciąg dalszy, ma tylko ta, która trzyma port.** Tym razem dotyczy
-przycisku bezpieczeństwa.
+### Czego ten wpis nie przewidział, a co było groźne
 
-**Propozycja:** jedna komenda serwera — `estop` — która wysyła `!`
-bezwarunkowo, odczekuje i wysyła `\x18` bezwarunkowo, bez bramkowania stanem.
-Wtedy druga aplikacja na tym samym porcie ma ten sam czerwony przycisk za
-darmo, a zamknięcie karty w środku sekwencji nic nie zmienia. Odczekanie
-powinno wyjść z `$120`–`$122` i posuwu, a nie ze stałej 500 ms — serwer ma
-jedno i drugie, panel ma tylko drugie (komentarz w `commands.js` mówi to
-wprost: „NOT MEASURED").
+**Pętla jogu ciągłego to trzecia kolejka tego sterownika, a ścieżki stopu znały
+tylko dwie.** `reset` robił `workflow.stop()` i `feeder.reset()` — i nic o
+`jogging`. Zmierzony przebieg przy trzymanym klawiszu, dokładnie to, co wysyła
+`commands.js`:
 
-**Czego nie zmierzyłem i trzeba przy maszynie:** co Grbl 1.1 robi z `!` w
-stanie `Jog`. Dokumentacja opisuje wstrzymanie jako anulowanie jogu, więc
-maszyna wychodzi z tego prawdopodobnie w `Idle`, a nie w `Hold` — i wtedy
-bramka `activeState === 'Hold'` w `gcode:stop` nie puści resetu nawet po
-wstrzymaniu, które się udało. Zanim ktokolwiek ruszy ten przycisk, to jest
-pomiar do zrobienia.
+| | przed | po |
+| --- | --- | --- |
+| droga od naciśnięcia do zatrzymania | **4,244 mm** | **0,988 mm** |
+| `$J=` wysłane po `reset` | **2** | **0** |
+| `$J=` wysłane po `$X` | **163** | **0** |
+| ruch po `$X`, z niczym trzymanym | **23,536 mm** | **0,000 mm** |
+| stan końcowy | `Alarm`, pozycja unieważniona | `Idle`, pozycja znana |
+
+Mechanizm, bo jest pouczający: `!` zatrzymywało maszynę, ale pętla wysyłała
+następny odcinek 150 ms później i maszyna **znowu jechała** — stąd 3,5 mm
+przejechane już po tym, jak raz stanęła. Potem `\x18` dawał
+`ALARM:3 (Abort during cycle)`, pętla zostawała z dwoma odcinkami w locie i
+**żadnym potwierdzeniem**, więc stawała na `MAX_IN_FLIGHT` — uzbrojona.
+A następnie operator robił jedyną rzecz, jaką może zrobić z alarmem, `$X`, i
+**`ok` z tego odblokowania było potwierdzeniem, na które pętla czekała.**
+Ruszała z miejsca: 163 odcinki, 23,5 mm, nic trzymanego, i zatrzymało to tylko
+`jogCancel` wysłane z zewnątrz.
+
+**Naprawione (PR #97), trzy rzeczy:**
+- `abandonJog()` — porzuca kierunek **i zeruje licznik odcinków w locie**, bez
+  wysyłania czegokolwiek, bo nic by nie doszło.
+- `reset` woła to przed bajtem. Bramka alarmowa niżej złapałaby to też, ale
+  dopiero gdy `ALARM:3` wróci — zmierzone 32 ms po `\x18`, a w tym okienku
+  wyszły dwa kolejne odcinki.
+- zegar jogu porzuca jog, gdy sterownik jest w alarmie, i **ten warunek stoi
+  przed sprawdzeniem kolejki** — bo alarm przychodzi właśnie wtedy, gdy kolejka
+  jest pełna i nic jej nie zwalnia. Przestawienie tych dwóch warunków wywala
+  osobny przypadek testowy.
+- `feedhold` **kończy** trzymany jog zamiast go wstrzymywać, bo Grbl nie umie
+  wstrzymać jogu. Idzie przez `stopJog()`, czyli `0x85` po potwierdzeniach —
+  ścieżka, która sama zmierzyła się najlepiej: 0,82 mm i `Idle`.
+
+Pomiary porównawcze czterech przepisów na stop, przy 600 mm/min:
+
+| przepis | droga | stan końcowy |
+| --- | --- | --- |
+| `jogCancel` (`0x85`) przez serwer | 0,82 mm | `Idle`, pozycja znana |
+| `!` powtarzane 10× przez sekundę | 1,18 mm | `Hold:0` (po czterech walkach) |
+| `\x18` samo | ~0,3 mm | `Alarm`, planer porzucony |
+| `!` + 500 ms + `\x18` (panel) | **4,24 mm → 0,99 mm** | `Alarm` → `Idle` |
+
+### Co zostaje jako decyzja
+
+**Dla jogu problem zegara w przeglądarce w dużej mierze zniknął**: po poprawce
+`feedhold` zostawia maszynę zatrzymaną w `Idle`, więc karta, która umrze przed
+`reset`, zostawia maszynę **stojącą**, a nie „we wstrzymaniu wyglądającym na
+zatrzymanie".
+
+**Dla programu zostaje jak było.** W trakcie programu `!` daje prawdziwy `Hold`,
+a `~` go wznawia — więc druga połowa sekwencji nadal siedzi w `setTimeout` karty
+przeglądarki, a karta na telefonie może ten zegar zdławić do sekund. Tu wciąż
+warto rozważyć `estop` po stronie serwera, z odczekaniem policzonym z
+`$120`–`$122` zamiast stałej 500 ms. Wpis zostaje otwarty **tylko w tym
+zakresie**.
 
 ---
 

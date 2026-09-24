@@ -1723,6 +1723,31 @@ class GrblController {
         'feedhold': () => {
           this.event.trigger('feedhold');
 
+          /*
+           * A held jog is *ended* here, not paused, because Grbl has no way to
+           * pause one.
+           *
+           * Measured 2026-09-24: `!` during a jog is honoured as a **jog
+           * cancel**. The machine decelerates to a standstill in about 63ms and
+           * 0.8mm, the rest of the move is discarded, and it lands in `Idle` —
+           * never in `Hold`, and `~` afterwards resumes nothing.
+           *
+           * Which means that against *this* loop a bare `!` is not a stop at
+           * all. The machine came to a standstill and then set off again at
+           * full feed 150ms later, on the next segment: 4.2mm of travel from
+           * one press at 600 mm/min, most of it after it had already stopped.
+           * Sending `!` ten times over a second only reproduced the fight —
+           * stop, restart, stop, restart — until the in-flight cap starved the
+           * loop and the machine reached a real `Hold:0`.
+           *
+           * So the direction is dropped first and `stopJog` sees the segments
+           * already sent out before cancelling, which is the path that measures
+           * cleanest on its own: 0.8mm, ending in `Idle`, position still known.
+           */
+          if (this.jogging.dir) {
+            this.stopJog();
+          }
+
           this.write('!');
         },
         'cyclestart': () => {
@@ -1750,6 +1775,23 @@ class GrblController {
           this.workflow.stop();
 
           this.feeder.reset();
+
+          /*
+           * And the jog loop, which nothing here used to tell.
+           *
+           * `workflow.stop()` and `feeder.reset()` clear the two queues this
+           * controller has always had; continuous jogging added a third and
+           * this line is the one that was missing. Before it, a stop pressed
+           * with a key held left the loop armed through the alarm and moving
+           * again on the `ok` from the operator's `$X` — see `abandonJog` for
+           * the measurement.
+           *
+           * Before the byte, not after. The alarm guard in the jog clock would
+           * catch this too, but only once `ALARM:3` has come back from the
+           * firmware: measured at 32ms after `0x18`, and two more segments went
+           * out inside that window.
+           */
+          this.abandonJog();
 
           this.write('\x18'); // ^x
         },
@@ -2341,6 +2383,26 @@ class GrblController {
           this.haltJogClock();
           return;
         }
+        /*
+         * A machine in alarm is not a machine that is behind — it is one that
+         * has stopped listening, and this loop has to end rather than wait.
+         *
+         * **Before the in-flight check, and that ordering is the whole fix.**
+         * An alarm arrives with segments outstanding and no acknowledgements
+         * coming for them, so a loop that tested the queue first returned here
+         * every tick, armed, for as long as the alarm lasted — and then set off
+         * again on the `ok` from the `$X` that cleared it. Measured: 23.5mm of
+         * travel with nothing held. See `abandonJog`.
+         *
+         * Same test the feeder has made from its first line, for the same
+         * reason, and it is worth them looking alike: `isAlarm()` is what
+         * "nothing you send will arrive" is called here.
+         */
+        if (this.runner.isAlarm()) {
+          log.warn('Abandoning the jog: the controller is in alarm');
+          this.abandonJog();
+          return;
+        }
         // Behind on acknowledgements: let the firmware catch up rather than
         // queue work that a turn would then have to wait behind. The time
         // is not consumed, so the next segment covers it.
@@ -2566,6 +2628,39 @@ class GrblController {
 
       this.jogging.stopping = false;
       this.write('\x85');
+    }
+
+    /**
+     * Drop a held jog without sending anything, because nothing would arrive.
+     *
+     * `stopJog` ends a jog the polite way: it waits for the segments already
+     * sent to be acknowledged and then cancels with `0x85`. That is right when
+     * a key came up and wrong when the machine has stopped listening — a soft
+     * reset, a limit, an alarm from any cause — because the acknowledgements it
+     * waits for are never coming, so the loop sits armed instead of ending.
+     *
+     * **Measured on the machine, 2026-09-24, and this is the reason this
+     * method exists.** With a key held, the panel's stop (`feedhold`, then
+     * `reset` 500ms later) left this loop alive: `0x18` put Grbl in
+     * `ALARM:3 (Abort during cycle)`, the loop had two segments outstanding
+     * and no acknowledgement for them, so it stalled on `MAX_IN_FLIGHT` —
+     * *waiting*. Then the operator cleared the alarm the only way there is,
+     * `$X`, and **the `ok` from that unlock was the acknowledgement the loop
+     * was starved of.** It resumed on the spot: 163 segments, 23.5mm of travel
+     * with nothing held, and it only stopped because something cancelled it.
+     *
+     * So the counter is cleared as well as the direction. A stale
+     * acknowledgement arriving afterwards decrements nothing — the handlers
+     * guard on `> 0` — which is the behaviour wanted here: the `ok` from an
+     * operator's own `$X` must not be spent on a jog that no longer exists.
+     */
+    abandonJog() {
+      this.jogging.dir = null;
+      this.jogging.feedrate = 0;
+      this.jogging.pendingAt = null;
+      this.jogging.stopping = false;
+      this.jogging.inFlight = 0;
+      this.haltJogClock();
     }
 
     write(data, context) {

@@ -20,6 +20,7 @@ import {
   WRITE_SOURCE_CLIENT,
   WRITE_SOURCE_FEEDER,
 } from '../../constants';
+import { GRBL_ACTIVE_STATE_ALARM } from '../constants';
 
 import logger from '../../../lib/logger';
 
@@ -966,6 +967,110 @@ describe('GrblController', () => {
 
       expect(callback).toHaveBeenCalledWith(failure);
       expect(writes).toEqual([]);
+    });
+  });
+
+  describe('a held jog and the things that must end it', () => {
+    /*
+     * The loop that drives a held key is the third queue this controller has,
+     * and until 2026-09-24 the stop paths only knew about the other two.
+     *
+     * Measured on a Grbl 1.1h that night, with a key held and the panel's own
+     * stop sequence (`feedhold`, then `reset` 500ms later): `0x18` put the
+     * firmware in `ALARM:3 (Abort during cycle)` with two segments outstanding,
+     * so the loop stalled on `MAX_IN_FLIGHT` waiting for acknowledgements that
+     * were never coming. Then `$X` — the only way an operator can use the
+     * machine again — produced the `ok` it was starved of, and it resumed: 163
+     * segments and 23.5mm of travel with nothing held.
+     *
+     * These cases are that sequence, with the `ok` delivered by hand.
+     */
+    const jogLines = (writes) => writes
+      .map((write) => String(write.data))
+      .filter((data) => data.startsWith('$J='));
+
+    /** The acknowledgement an operator's `$X` produces. */
+    const acknowledge = (controller) => controller.runner.emit('ok', { raw: 'ok' });
+
+    // Long enough for the lead segment and at least one tick, which is all it
+    // takes to reach `MAX_IN_FLIGHT` when nothing is acknowledging.
+    const STALLED = 80;
+
+    test('reset abandons it, and the ok from a later $X does not restart it', async () => {
+      const { controller, writes } = setup();
+
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBeGreaterThan(0);
+
+      controller.command('feedhold');
+      await delay(30);
+      controller.command('reset');
+      const sentByTheStop = jogLines(writes).length;
+
+      acknowledge(controller);
+      await delay(STALLED);
+
+      expect(jogLines(writes).length).toBe(sentByTheStop);
+      expect(controller.jogging.dir).toBeNull();
+      expect(controller.jogging.inFlight).toBe(0);
+      expect(controller.jogTimer).toBeNull();
+    });
+
+    test('an alarm abandons it even while it is stalled on acknowledgements', async () => {
+      const { controller, writes } = setup();
+
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(STALLED);
+      const sentBeforeTheAlarm = jogLines(writes).length;
+
+      // A limit, a reset, a soft limit — the cause does not matter, only that
+      // nothing written from here on will arrive.
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+      await delay(STALLED);
+
+      expect(jogLines(writes).length).toBe(sentBeforeTheAlarm);
+      expect(controller.jogging.dir).toBeNull();
+      expect(controller.jogTimer).toBeNull();
+
+      // And it stays abandoned once the alarm is cleared.
+      acknowledge(controller);
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBe(sentBeforeTheAlarm);
+    });
+
+    test('feedhold ends it rather than pausing it', async () => {
+      const { controller, writes } = setup();
+
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(STALLED);
+      const held = jogLines(writes).length;
+
+      controller.command('feedhold');
+
+      // `!` still goes out — this is a feed hold, and the machine is stopping.
+      expect(writes.map((write) => write.data)).toContain('!');
+      // But the direction is gone, so no tick can send another segment. On the
+      // machine that restart was measured at 150ms and 3.5mm after the axis had
+      // already come to a standstill.
+      expect(controller.jogging.dir).toBeNull();
+
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBe(held);
+
+      // The cancel waits for the outstanding segments, so the acknowledgement
+      // is what releases `0x85`. That is the polite path and it is unchanged.
+      acknowledge(controller);
+      acknowledge(controller);
+      expect(writes.map((write) => write.data)).toContain('\x85');
+    });
+
+    test('feedhold with no jog running sends nothing but the hold', () => {
+      const { controller, writes } = setup();
+
+      controller.command('feedhold');
+
+      expect(writes.map((write) => write.data)).toEqual(['!']);
     });
   });
 
