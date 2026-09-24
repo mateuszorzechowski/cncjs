@@ -3,6 +3,7 @@ import {
   readPorts,
   baudrateChoices,
   controllerChoices,
+  preferredConnection,
   requestPorts,
   openPort,
   closePort,
@@ -145,5 +146,71 @@ describe('the three calls that reach the server', () => {
   test('a close that fails rejects rather than reporting success', async () => {
     controller.closePort.mockImplementation((port, done) => done({}));
     await expect(closePort('COM3')).rejects.toBeDefined();
+  });
+});
+
+describe('what the connection screen offers', () => {
+  // What a Windows bench lists: the onboard header first, the machine second.
+  const rows = [{ port: 'COM1' }, { port: 'COM3' }];
+  const offer = (over) => preferredConnection({ rows, ...over });
+
+  test('the first port listed is the last word, not the first', () => {
+    /*
+     * The defect this exists for. `COM1` is an onboard header with nothing on
+     * it and it sorts first; the machine is on `COM3`. Falling back to the
+     * list meant every disconnect offered a port that has never been right.
+     */
+    expect(offer({}).port).toBe('COM1');
+    expect(offer({ last: { port: 'COM3' } }).port).toBe('COM3');
+  });
+
+  test('what this panel is holding outranks what was last opened', () => {
+    // Attached to a port somebody else opened: the screen is about *this*
+    // connection, and Disconnect has to point at the right one.
+    expect(offer({ held: 'COM1', last: { port: 'COM3' } }).port).toBe('COM1');
+  });
+
+  test('and the operator outranks everything', () => {
+    expect(offer({
+      choice: { picked: 'COM1' }, held: 'COM3', last: { port: 'COM3' },
+    }).port).toBe('COM1');
+  });
+
+  test('a remembered port that is no longer plugged in does not win', () => {
+    // Derived rather than stored, so a port can be unplugged while the screen
+    // is open without leaving the button aimed at hardware that is not there.
+    expect(offer({ last: { port: 'COM9' } }).port).toBe('COM1');
+    expect(preferredConnection({ rows: [], last: { port: 'COM3' } }).port).toBe('');
+  });
+
+  test('the controller and the rate are remembered too', () => {
+    /*
+     * The half Mateusz asked for by name: connect `COM3` at Grbl/115200 on one
+     * client, and the next client must not be back at the defaults. There is
+     * no list to check these against, so a remembered value stands until the
+     * operator says otherwise.
+     */
+    expect(offer({ last: { port: 'COM3', controllerType: 'Marlin', baudrate: 9600 } }))
+      .toEqual({ port: 'COM3', controllerType: 'Marlin', baudrate: 9600 });
+
+    // Carried as a string by the server's own config, and still a number here.
+    expect(offer({ last: { baudrate: '250000' } }).baudrate).toBe(250000);
+  });
+
+  test('nothing remembered is the default, not an empty choice', () => {
+    expect(offer({})).toEqual({
+      port: 'COM1', controllerType: DEFAULT_CONTROLLER, baudrate: DEFAULT_BAUDRATE,
+    });
+    expect(offer({ last: null })).toMatchObject({ controllerType: DEFAULT_CONTROLLER });
+  });
+
+  test('the operator overrides the memory, one field at a time', () => {
+    const last = { port: 'COM3', controllerType: 'Marlin', baudrate: 9600 };
+    expect(offer({ choice: { pickedType: 'Grbl' }, last })).toEqual({
+      port: 'COM3', controllerType: 'Grbl', baudrate: 9600,
+    });
+    expect(offer({ choice: { pickedRate: 115200 }, last })).toEqual({
+      port: 'COM3', controllerType: 'Marlin', baudrate: 115200,
+    });
   });
 });

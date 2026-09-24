@@ -82,6 +82,23 @@ class Controller {
          * @param {object} refusal - `{ cmd, reason }`
          */
         'command:refused': [],
+
+        /**
+         * What was last opened, as the server remembers it.
+         *
+         * `{ port, controllerType, baudrate }`, or null on a server that has
+         * never opened one. Sent when a port is opened — to everybody, not
+         * only to the room — and once inside `startup` for a client that
+         * arrives afterwards.
+         *
+         * It is the server's memory rather than each client's because two
+         * pendants and the old application are the ordinary case: a choice
+         * kept in one browser is a choice the next device does not have.
+         *
+         * @event connection:last
+         * @param {object} connection - `{ port, controllerType, baudrate }`
+         */
+        'connection:last': [],
         /**
          * Where the machine can reach, in machine coordinates.
          *
@@ -132,6 +149,8 @@ class Controller {
     ports = [];
 
     loadedControllers = [];
+    // What the server last opened, from `startup`. See `connection:last`.
+    lastConnection = null;
     port = '';
     type = '';
     settings = {};
@@ -205,13 +224,18 @@ class Controller {
         });
 
         this.socket.on('startup', (data) => {
-            const { loadedControllers, baudrates, ports } = { ...data };
+            const { loadedControllers, baudrates, ports, lastConnection } = { ...data };
 
             this.loadedControllers = ensureArray(loadedControllers);
 
             // User-defined baud rates and ports
             this.baudrates = ensureArray(baudrates);
             this.ports = ensureArray(ports);
+
+            // What was last opened. Carried here as well as on its own event
+            // so a client that connects long after the last open still has
+            // it before it draws anything.
+            this.lastConnection = lastConnection || null;
 
             if (next) {
                 next(null);

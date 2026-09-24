@@ -656,7 +656,7 @@ class GrblController {
             this.emit('serialport:read', 'The controller is responding again.');
           }
 
-          this.ready = true;
+          this.becameReady();
 
           // Reset the state
           this.clearActionValues();
@@ -1049,7 +1049,7 @@ class GrblController {
           this.clearActionValues();
 
           // Set ready flag to true when a startup message has arrived
-          this.ready = true;
+          this.becameReady();
         }
 
         if (!this.initialized) {
@@ -1812,6 +1812,33 @@ class GrblController {
       if (changesWorkOffsets(line)) {
         this.offsetsStale = true;
       }
+    }
+
+    /**
+     * The machine has answered, whichever way it said so.
+     *
+     * Two things bring a Grbl up: its startup banner, which it prints when
+     * the port opens and after every reset, and a status report, which is
+     * what a controller that was already running answers with. Either is
+     * proof there is a machine on the end of the cable, and **both have to
+     * count** — the banner is the ordinary one, so a hook on the status
+     * report alone fires almost never. Found by measuring: with it on the
+     * status path only, a freshly opened Grbl was never remembered.
+     *
+     * Remembering the connection is here rather than at the open for the same
+     * reason it is a method at all. A driver can hold a port for hours with
+     * nothing answering — which is exactly what happens on this bench when
+     * something opens this Grbl as a Marlin at 9600, measured — and offering
+     * that back as the choice to make would be worse than offering nothing.
+     */
+    becameReady() {
+      this.ready = true;
+
+      this.engine.rememberConnection({
+        port: this.options.port,
+        controllerType: this.type,
+        baudrate: this.options.baudrate,
+      });
     }
 
     command(cmd, ...args) {
