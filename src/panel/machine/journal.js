@@ -44,16 +44,23 @@ const stores = (entry, q) => values([entry.event, entry.code, entry.port, entry.
  * `said` codes — so an entry that arrives on the socket lands exactly where
  * the next page would have put it.
  */
-export const passes = (entry, { level, source, since, until, q, said = [] }) => (
-  rank(entry.level) >= rank(level) &&
+export const passes = (entry, { level, levels, source, since, until, q, said = [] }) => (
+  (!level || rank(entry.level) >= rank(level)) &&
+  (!levels || levels.includes(entry.level)) &&
   (source === 'all' || entry.source === source) &&
   (!since || entry.time >= since) &&
   (!until || entry.time <= until) &&
   (!q || said.includes(entry.code) || stores(entry, q))
 );
 
-export const fetchJournal = ({ level, source, since, until, q, said = [], before, limit = 100 }) => {
-  const params = new URLSearchParams({ level, limit: String(limit) });
+export const fetchJournal = ({ level, levels, source, since, until, q, said = [], before, limit = 100 }) => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (level) {
+    params.set('level', level);
+  }
+  if (levels) {
+    params.set('levels', levels.join(','));
+  }
   if (source !== 'all') {
     params.set('source', source);
   }

@@ -11,7 +11,7 @@ const number = (value) => (value === undefined || value === '' ? undefined : Num
 /**
  * `GET /api/journal` — entries, newest first, filtered.
  *
- * Query: `level` (a floor), `source`, `event`, `device`, `since`, `until`
+ * Query: `level` (a floor), `levels` (comma-separated, each exact), `source`, `event`, `device`, `since`, `until`
  * (ISO times), `q` (text in any stored value), `said` (comma-separated codes
  * whose sentence in the panel contains `q`), `before` (the `next` of the
  * previous page), `limit`.
@@ -19,6 +19,7 @@ const number = (value) => (value === undefined || value === '' ? undefined : Num
 export const fetch = (req, res) => {
   const { level, source, event, device, since, until, q, before, limit } = req.query;
   const said = req.query.said ? String(req.query.said).split(',') : [];
+  const levels = req.query.levels ? String(req.query.levels).split(',') : undefined;
 
   if (level && !isLevel(level)) {
     res.status(ERR_BAD_REQUEST).send({ msg: `Unknown level; one of ${LEVELS.join(', ')}` });
@@ -26,7 +27,7 @@ export const fetch = (req, res) => {
   }
 
   const page = journal.query(
-    { level, source, event, device, since, until, q, said },
+    { level, levels, source, event, device, since, until, q, said },
     { before: number(before), limit: Math.min(number(limit) || 100, MAX_LIMIT) },
   );
 

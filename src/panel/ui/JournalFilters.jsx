@@ -6,8 +6,6 @@ import { LEVEL_KEYS, SOURCE_KEYS } from '../machine/journalWords';
 import { RANGES } from '../machine/useJournalFilters';
 import { t } from '../i18n';
 
-const rank = (level) => LEVELS.indexOf(level);
-
 const SOURCES = ['server', 'controller'];
 
 const CHOICES = [...RANGES, 'custom'];
@@ -50,8 +48,8 @@ const JournalFilters = ({ filters, counts, matched, kept, sheet = false }) => {
     label: t('journal.filter.level'),
     options: LEVELS,
     counts: counts || undefined,
-    isOn: (id) => rank(id) >= rank(filters.level),
-    onChange: filters.setLevel,
+    isOn: (id) => filters.levels[id],
+    onChange: filters.toggleLevel,
     format: (id) => t(LEVEL_KEYS[id]),
   };
   const sources = {
@@ -71,8 +69,8 @@ const JournalFilters = ({ filters, counts, matched, kept, sheet = false }) => {
   const custom = filters.range === 'custom'
     ? (
       <div className={sheet ? 'flex flex-col gap-2' : 'flex flex-wrap items-center gap-x-4 gap-y-2'}>
-        <DateTimeField native={sheet} label={t('journal.filter.from')} value={filters.from} onChange={filters.setFrom} time={START_OF_DAY} />
-        <DateTimeField native={sheet} label={t('journal.filter.to')} value={filters.to} onChange={filters.setTo} time={END_OF_DAY} />
+        <DateTimeField label={t('journal.filter.from')} value={filters.from} onChange={filters.setFrom} time={START_OF_DAY} />
+        <DateTimeField label={t('journal.filter.to')} value={filters.to} onChange={filters.setTo} time={END_OF_DAY} />
       </div>
     )
     : null;

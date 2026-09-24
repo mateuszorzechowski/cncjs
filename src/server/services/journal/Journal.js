@@ -50,8 +50,13 @@ const MAX_ENTRIES = 50000;
  */
 const values = (value) => (value && typeof value === 'object' ? Object.values(value).flatMap(values) : [value]);
 
-export const matches = (entry, { level, source, event, device, since, until, q, said = [] } = {}) => {
+export const matches = (entry, { level, levels, source, event, device, since, until, q, said = [] } = {}) => {
   if (level && rank(entry.level) < rank(level)) {
+    return false;
+  }
+  // Picked one by one, as the panel's filter does: `info` and `error`
+  // without `warn` is a real question.
+  if (levels && !levels.includes(entry.level)) {
     return false;
   }
   if (source && entry.source !== source) {
@@ -252,7 +257,7 @@ class Journal extends events.EventEmitter {
    * One pass over what is held, which is at most `MAX_ENTRIES`.
    */
   query(filter = {}, { before, limit = 100 } = {}) {
-    const { level, ...rest } = filter;
+    const { level, levels, ...rest } = filter;
     const records = [];
     const counts = { debug: 0, info: 0, warn: 0, error: 0 };
     let matched = 0;
@@ -261,7 +266,7 @@ class Journal extends events.EventEmitter {
       const entry = this.entries[i];
       if (matches(entry, rest)) {
         counts[entry.level] = (counts[entry.level] || 0) + 1;
-        if (!level || rank(entry.level) >= rank(level)) {
+        if (matches(entry, { level, levels })) {
           matched += 1;
           if (before === undefined || entry.id < before) {
             if (records.length < limit) {
