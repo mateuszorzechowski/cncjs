@@ -1,5 +1,6 @@
 import { upload } from '../api.gcode';
 import store from '../../store';
+import journal from '../../services/journal';
 
 jest.mock('../../store', () => ({ get: jest.fn() }));
 
@@ -32,6 +33,8 @@ describe('uploading a program', () => {
 
     expect(res.statusCode).toBe(409);
     expect(res.body.reason).toBe('program-running');
+    expect(journal.query({ event: 'refused' }, { limit: 1 }).records[0])
+      .toMatchObject({ code: 'program-running', port: 'COM3', data: { cmd: 'gcode:load', name: 'next.nc' } });
     expect(controller.command).not.toHaveBeenCalled();
   });
 

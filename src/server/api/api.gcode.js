@@ -1,5 +1,6 @@
 import get from 'lodash/get';
 import store from '../store';
+import journal from '../services/journal';
 import {
   ERR_BAD_REQUEST,
   ERR_CONFLICT,
@@ -34,6 +35,7 @@ export const upload = (req, res) => {
   // any other and meets the same rule — see `program-gate.js`.
   const reason = controller.clientRefusal?.('gcode:load');
   if (reason) {
+    journal.record({ level: 'warn', source: 'server', event: 'refused', code: reason, port, data: { cmd: 'gcode:load', name } });
     res.status(ERR_CONFLICT).send({
       msg: 'A program is under way',
       reason

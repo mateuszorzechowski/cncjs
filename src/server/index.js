@@ -20,6 +20,7 @@ import uniqWith from 'lodash/uniqWith';
 import settings from './config/settings';
 import app from './app';
 import cncengine from './services/cncengine';
+import journal from './services/journal';
 import monitor from './services/monitor';
 import config from './services/configstore';
 import createWebApp from './lib/create-web-app';
@@ -57,6 +58,13 @@ const createServer = (options, callback) => {
 
   // rcfile
   settings.rcfile = rcfile;
+
+  // The journal lives beside the configuration, and keeps the level it was
+  // last set to. See `services/journal`.
+  journal.open({
+    file: path.join(path.dirname(rcfile), '.cncjs-journal.jsonl'),
+    level: config.get('journal.level', 'info'),
+  });
 
   { // secret
     if (!config.get('secret')) {

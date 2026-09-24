@@ -24,6 +24,7 @@ import x from '../../lib/json-stringify';
 import logger from '../../lib/logger';
 import translateExpression from '../../lib/translate-expression';
 import config from '../../services/configstore';
+import journal from '../../services/journal';
 import monitor from '../../services/monitor';
 import taskRunner from '../../services/taskrunner';
 import store from '../../store';
@@ -106,6 +107,7 @@ class GrblController {
         this.ready = false;
         if (err) {
           log.warn(`Disconnected from serial port "${this.options.port}":`, err);
+          this.note({ level: 'error', source: 'server', event: 'port', code: 'lost', data: { message: String(err.message || err) } });
         }
 
         this.close(err => {
@@ -557,6 +559,7 @@ class GrblController {
         this.noteOffsetChange(line);
         this.connection.write(line + '\n');
         log.silly(`> ${line}`);
+        this.note({ level: 'debug', source: 'controller', event: 'sent', data: { line } });
       });
       this.sender.on('hold', noop);
       this.sender.on('unhold', noop);
@@ -642,14 +645,31 @@ class GrblController {
       this.workflow = new Workflow();
       this.workflow.on('start', (...args) => {
         this.emit('workflow:state', this.workflow.state);
+        this.programRunning = true;
+        this.noteProgram('info', 'start');
         this.sender.rewind();
       });
       this.workflow.on('stop', (...args) => {
         this.emit('workflow:state', this.workflow.state);
+        // Before the rewind, while the sender still knows how far it got.
+        // Finished means it was *running* when it stopped and its last line
+        // had come back. A program paused on an error has often streamed
+        // every line already, so `finishTime` alone called an abort a finish
+        // — seen on the live journal, 2026-09-24.
+        const finished = this.programRunning && this.sender.state.finishTime > 0;
+        this.programRunning = false;
+        this.noteProgram('info', finished ? 'finish' : 'abort');
         this.sender.rewind();
       });
       this.workflow.on('pause', (...args) => {
         this.emit('workflow:state', this.workflow.state);
+
+        // Why: an `M0`, `M1` or `M6` in the file, an error, or somebody's press.
+        const why = args[0] || {};
+        this.programRunning = false;
+        this.noteProgram(why.err ? 'warn' : 'info', 'pause', {
+          reason: why.err ? 'error' : (why.data || 'request'),
+        });
 
         if (args.length > 0) {
           const reason = { ...args[0] };
@@ -660,6 +680,8 @@ class GrblController {
       });
       this.workflow.on('resume', (...args) => {
         this.emit('workflow:state', this.workflow.state);
+        this.programRunning = true;
+        this.noteProgram('info', 'resume');
 
         // Reset feeder prior to resume program execution
         this.feeder.reset();
@@ -852,6 +874,18 @@ class GrblController {
           const line = ensureString(lines[received - 1]).trim();
           const ln = received + 1;
 
+          this.note({
+            level: 'error',
+            source: 'controller',
+            event: 'error',
+            code: error ? `error:${code}` : res.raw,
+            program: { name: this.sender.state.name, line: ln },
+            // The line Grbl refused: the oldest one not yet answered. Not
+            // `line` above, which is the one before it, and which the old
+            // console has always shown.
+            data: { sent: ensureString(lines[received]).trim() },
+          });
+
           this.emit('serialport:read', `> ${line} (ln=${ln})`);
           if (error) {
             // Grbl v1.1
@@ -924,6 +958,7 @@ class GrblController {
           // Grbl v0.9
           this.emit('serialport:read', res.raw);
         }
+        this.note({ level: 'error', source: 'controller', event: 'error', code: error ? `error:${code}` : res.raw });
 
         // Feeder
         this.feeder.next();
@@ -932,6 +967,8 @@ class GrblController {
       this.runner.on('alarm', (res) => {
         const code = Number(res.message) || undefined;
         const alarm = _.find(GRBL_ALARMS, { code: code });
+
+        this.note({ level: 'error', source: 'controller', event: 'alarm', code: alarm ? `ALARM:${code}` : res.raw });
 
         if (alarm) {
           // Grbl v1.1
@@ -1078,6 +1115,7 @@ class GrblController {
 
       this.runner.on('feedback', (res) => {
         this.emit('serialport:read', res.raw);
+        this.note({ level: 'info', source: 'controller', event: 'message', data: { text: res.raw } });
       });
 
       this.runner.on('settings', (res) => {
@@ -1094,6 +1132,7 @@ class GrblController {
 
       this.runner.on('startup', (res) => {
         this.emit('serialport:read', res.raw);
+        this.note({ level: 'info', source: 'controller', event: 'startup', data: { text: res.raw } });
 
         if (!this.ready) {
           // The startup message always prints upon startup, after a reset, or at program end.
@@ -1833,6 +1872,14 @@ class GrblController {
     }
 
     emit(eventName, ...args) {
+      if (eventName === 'serialport:write' || eventName === 'serialport:read') {
+        const line = String(args[0]).trim();
+        // A status query is ten a second and says nothing; the answer to one
+        // is not emitted here at all.
+        if (line && line !== '?') {
+          this.note({ level: 'debug', source: 'controller', event: eventName === 'serialport:write' ? 'sent' : 'received', data: { line } });
+        }
+      }
       Object.keys(this.sockets).forEach(id => {
         const socket = this.sockets[id];
         socket.emit(eventName, ...args);
@@ -1876,6 +1923,36 @@ class GrblController {
      */
     sayJogWasCut(owner) {
       this.sockets[owner]?.emit('command:refused', { cmd: 'jogStart', reason: 'not-confirmed' });
+      this.note({
+        level: 'warn', source: 'server', event: 'refused', code: 'not-confirmed', device: this.jogging.device, data: { cmd: 'jogStart' },
+      });
+    }
+
+    /**
+     * Keep an entry in the journal, for this port.
+     *
+     * See `services/journal`: facts and codes, never a sentence — the panel
+     * words it. Everything this controller records goes through here so the
+     * port, and the device that asked, are never forgotten.
+     */
+    note(fields) {
+      // Whoever sent the command being carried out, when there is one: an
+      // entry recorded inside a client's request is that client's doing.
+      const device = this.commandSocket?.device;
+      journal.record({ port: this.options.port, ...(device ? { device } : {}), ...fields });
+    }
+
+    /** A program event, with the program's name and how far it had got. */
+    noteProgram(level, code, data) {
+      const { name, total, received } = this.sender.state;
+      this.note({
+        level,
+        source: 'server',
+        event: 'program',
+        code,
+        program: { name, total, line: received },
+        ...(data ? { data } : {}),
+      });
     }
 
     /**
@@ -1900,6 +1977,9 @@ class GrblController {
 
     refuse(cmd, reason) {
       log.warn(`Refused "${cmd}": ${reason}`);
+      this.note({
+        level: 'warn', source: 'server', event: 'refused', code: reason, device: this.commandSocket?.device, data: { cmd },
+      });
       if (this.commandSocket) {
         this.commandSocket.emit('command:refused', { cmd, reason });
       }
@@ -3265,6 +3345,7 @@ class GrblController {
 
       if (before !== device) {
         this.emit('controller:motion', device);
+        this.note({ level: 'debug', source: 'server', event: 'motion', device });
       }
 
       this.armMotionLease();

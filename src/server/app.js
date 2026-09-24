@@ -443,6 +443,11 @@ const appMain = () => {
     app.put(urljoin(settings.route, 'api/events/:id'), api.events.update);
     app.delete(urljoin(settings.route, 'api/events/:id'), api.events.__delete);
 
+    // Journal
+    app.get(urljoin(settings.route, 'api/journal'), api.journal.fetch);
+    app.get(urljoin(settings.route, 'api/journal/settings'), api.journal.readSettings);
+    app.put(urljoin(settings.route, 'api/journal/settings'), api.journal.updateSettings);
+
     // Machines
     app.get(urljoin(settings.route, 'api/machines'), api.machines.fetch);
     app.post(urljoin(settings.route, 'api/machines'), api.machines.create);
