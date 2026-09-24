@@ -343,7 +343,11 @@
     "queueNote": "zapas ruchu, który serwer trzyma przed maszyną",
     "reply": "Odpowiedź",
     "replyNote": "ile sterownik odpowiada przez swój kabel",
+    "braking": "Hamowanie",
+    "brakingNote": "własne maszyny, z jej przyspieszenia — tego nie skróci żaden szybszy komputer",
     "panel": "Pulpit",
-    "panelNote": "najgorsza przerwa między potwierdzeniami tego panelu"
+    "panelNote": "najgorsza przerwa między potwierdzeniami tego panelu; decyduje, jak daleko pojedzie maszyna, gdy ta strona przestanie odpowiadać z wciśniętym klawiszem",
+    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
+    "atFeed": "drogi przy {{feedrate}} mm/min"
   }
 }

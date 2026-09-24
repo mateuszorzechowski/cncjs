@@ -343,7 +343,11 @@
     "queueNote": "travel the server keeps ahead of the machine",
     "reply": "Reply",
     "replyNote": "how long the controller takes to answer over its cable",
+    "braking": "Braking",
+    "brakingNote": "the machine's own, from its acceleration — the part no faster computer removes",
     "panel": "Pendant",
-    "panelNote": "the worst gap between this panel's own confirmations"
+    "panelNote": "the worst gap between this panel's own confirmations; it decides how far the machine goes if this page stops responding with a key down",
+    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
+    "atFeed": "distances at {{feedrate}} mm/min"
   }
 }

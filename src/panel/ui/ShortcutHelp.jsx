@@ -94,7 +94,14 @@ const ShortcutHelp = ({
       </div>
       {/* Where that last figure comes from, part by part. It was a sentence
         * here and it outgrew one — see `JogTiming`. */}
-      <JogTiming timing={timing} linkMs={linkMs} beatMs={beatMs} />
+      <JogTiming
+        timing={timing}
+        linkMs={linkMs}
+        beatMs={beatMs}
+        settings={settings}
+        xySpeed={xySpeed}
+        zSpeed={zSpeed}
+      />
 
       <p className="m-0 text-note text-mut">{t('shortcuts.note')}</p>
     </Sheet>
