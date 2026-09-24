@@ -4,6 +4,7 @@ import * as gcode from './api.gcode';
 import * as controllers from './api.controllers';
 import * as watch from './api.watch';
 import * as events from './api.events';
+import * as journal from './api.journal';
 import * as machines from './api.machines';
 import * as macros from './api.macros';
 import * as mdi from './api.mdi';
@@ -17,6 +18,7 @@ export {
   controllers,
   watch,
   events,
+  journal,
   machines,
   macros,
   mdi,

@@ -9,6 +9,8 @@ import logger from '../../lib/logger';
 import settings from '../../config/settings';
 import store from '../../store';
 import config from '../configstore';
+import journal from '../journal';
+import { commandEntry } from '../journal/commands';
 import taskRunner from '../taskrunner';
 import monitor from '../monitor';
 import {
@@ -45,6 +47,20 @@ const CONNECTION_KEY = 'state.connection';
  * what a *client* may do during a program must not refuse the program's own
  * work. Only Grbl has such a rule; the other three carry on as they did.
  */
+/**
+ * Keep a client's command in the journal, once it has been let in.
+ *
+ * Here rather than in each controller, because this is where the device that
+ * sent it is known and where every controller's commands pass. Which ones are
+ * kept, and at what level, is `journal/commands`.
+ */
+const journalCommand = (socket, port, cmd, detail) => {
+  const entry = commandEntry(cmd, detail);
+  if (entry) {
+    journal.record({ ...entry, port, device: socket.device });
+  }
+};
+
 export const admits = (controller, cmd, data) => {
   const reason = controller.clientRefusal?.(cmd, data);
   if (reason) {
@@ -81,6 +97,13 @@ class CNCEngine {
     controllerClass = {};
 
     listener = {
+      // To everybody, not to a port's room: the journal is the server's, and
+      // a panel with no port open still wants to read why the last one closed.
+      journalEntry: (entry) => {
+        if (this.io) {
+          this.io.emit('journal:entry', entry);
+        }
+      },
       taskStart: (...args) => {
         if (this.io) {
           this.io.emit('task:start', ...args);
@@ -210,6 +233,7 @@ class CNCEngine {
       taskRunner.on('error', this.listener.taskError);
       config.on('change', this.listener.configChange);
       monitor.on('change', this.listener.watchDirectoryChange);
+      journal.on('entry', this.listener.journalEntry);
 
       // System Trigger: Startup
       this.event.trigger('startup');
@@ -489,6 +513,16 @@ class CNCEngine {
             // System Trigger: Open a serial port
             this.event.trigger('port:open');
 
+            journal.record({
+              level: 'info',
+              source: 'server',
+              event: 'port',
+              code: 'open',
+              port,
+              device: socket.device,
+              data: { controllerType: controller.type, baudrate: controller.options.baudrate },
+            });
+
             this.rememberConnection({
               port,
               controllerType: controller.type,
@@ -525,6 +559,8 @@ class CNCEngine {
 
           // System Trigger: Close a serial port
           this.event.trigger('port:close');
+
+          journal.record({ level: 'info', source: 'server', event: 'port', code: 'close', port, device: socket.device });
 
           // Leave the room
           socket.leave(port);
@@ -567,6 +603,7 @@ class CNCEngine {
           controller.commandSocket = socket;
           try {
             if (admits(controller, cmd)) {
+              journalCommand(socket, port, cmd, cmd === 'gcode' ? { line: args[0] } : undefined);
               controller.command.apply(controller, [cmd].concat(args));
             }
           } finally {
@@ -586,6 +623,7 @@ class CNCEngine {
           controller.commandSocket = socket;
           try {
             if (admits(controller, 'write', data)) {
+              journalCommand(socket, port, 'write', { line: String(data).trim() });
               controller.write(data, context);
             }
           } finally {
@@ -605,6 +643,7 @@ class CNCEngine {
           controller.commandSocket = socket;
           try {
             if (admits(controller, 'write', data)) {
+              journalCommand(socket, port, 'write', { line: String(data).trim() });
               controller.writeln(data, context);
             }
           } finally {
@@ -627,6 +666,7 @@ class CNCEngine {
       taskRunner.removeListener('error', this.listener.taskError);
       config.removeListener('change', this.listener.configChange);
       monitor.removeListener('change', this.listener.watchDirectoryChange);
+      journal.removeListener('entry', this.listener.journalEntry);
     }
 }
 
