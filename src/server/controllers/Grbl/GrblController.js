@@ -52,6 +52,7 @@ import GrblRunner from './GrblRunner';
 import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, jogStepLine, stopSeconds } from './jog';
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { activeWcsNumber, zeroLine } from './zero';
+import { changesWorkOffsets } from './offsets';
 import { machineEnvelope } from './envelope';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
@@ -137,6 +138,21 @@ class GrblController {
         state: false, // wait for a message containing the current G-code parser modal state
         reply: false // wait for an `ok` or `error` response
       },
+      /**
+       * `$#`, asked again after something moved a work offset.
+       *
+       * The same pair of flags `$G` has, and for the same reason: the `ok`
+       * that follows the answer is indistinguishable from the `ok` after a
+       * line the feeder sent, so it has to be claimed rather than left to
+       * advance somebody else's queue.
+       *
+       * `state` is "asked, answer not here yet"; `reply` is "answer here, the
+       * next `ok` is mine".
+       */
+      queryParameters: {
+        state: false,
+        reply: false
+      },
       queryStatusReport: false,
 
       // Respond to user input
@@ -146,9 +162,21 @@ class GrblController {
 
     actionTime = {
       queryParserState: 0,
+      queryParameters: 0,
       queryStatusReport: 0,
       senderFinishTime: 0
     };
+
+    /**
+     * Whether the work offsets this server is holding are still the machine's.
+     *
+     * `$#` is asked once, when the port opens, and the answer is then kept for
+     * ever — right until somebody sets a zero, after which the server, the old
+     * application and the panel are all drawing a work origin the machine no
+     * longer has. Set by any line that moves one; cleared when the re-read
+     * goes out. See `offsets.js`.
+     */
+    offsetsStale = false;
 
     // Message Slot
     messageSlot = null;
@@ -373,6 +401,7 @@ class GrblController {
           source: WRITE_SOURCE_FEEDER
         });
 
+        this.noteOffsetChange(line);
         this.connection.write(line + '\n');
         log.silly(`> ${line}`);
       });
@@ -508,6 +537,7 @@ class GrblController {
           return;
         }
 
+        this.noteOffsetChange(line);
         this.connection.write(line + '\n');
         log.silly(`> ${line}`);
       });
@@ -665,6 +695,20 @@ class GrblController {
       });
 
       this.runner.on('ok', (res) => {
+        /*
+         * The acknowledgement of our own `$#`, claimed before anything else
+         * can mistake it for its own.
+         *
+         * Eleven lines come back from `$#` and then one `ok`. Left to fall
+         * through, that `ok` advances the feeder a line early — which is why
+         * asking for the offsets naively, straight after the line that
+         * changed them, breaks the queue rather than merely being untidy.
+         */
+        if (this.actionMask.queryParameters.reply) {
+          this.actionMask.queryParameters.reply = false;
+          return;
+        }
+
         if (this.actionMask.queryParserState.reply) {
           this.sampleAck();
 
@@ -850,6 +894,20 @@ class GrblController {
         this.emit('serialport:read', res.raw);
 
         const { name, value } = res;
+
+        /*
+         * `PRB` is the last of the eleven lines `$#` answers with, so it is
+         * where the answer ends and the `ok` after it becomes ours. Grbl's own
+         * order, and the only thing in the reply that marks its end.
+         *
+         * Only for a `$#` this loop asked for. The one `initController` sends
+         * goes out before any client can have queued anything, so its `ok`
+         * falls through to an empty feeder exactly as it always has.
+         */
+        if (this.actionMask.queryParameters.state && name === 'PRB') {
+          this.actionMask.queryParameters.state = false;
+          this.actionMask.queryParameters.reply = true;
+        }
 
         if (name === 'PRB') {
           log.debug('[autolevel] PRB parameter received:', value);
@@ -1081,6 +1139,40 @@ class GrblController {
         }
       }, 500);
 
+      /**
+       * Ask for the work offsets again, once something has moved one.
+       *
+       * **Only when nothing else is using the queue.** The same guard `$G`
+       * carries: a job running is a job whose acknowledgements are being
+       * counted, and three bytes of ours in the middle of that is three bytes
+       * the sender did not account for. A machine that is not idle is one
+       * whose offsets can wait, because nothing is drawing them at that
+       * moment anyway.
+       *
+       * The flag is cleared when the question goes out rather than when the
+       * answer arrives: a second `G10` while this one is in flight sets it
+       * again, and the re-read that follows is the one that sees both.
+       */
+      const queryParameters = () => {
+        if (!this.ready || !this.offsetsStale) {
+          return;
+        }
+        if (this.actionMask.queryParameters.state || this.actionMask.queryParameters.reply) {
+          return;
+        }
+        if (this.workflow.state !== WORKFLOW_STATE_IDLE || !this.runner.isIdle()) {
+          return;
+        }
+        if (!this.isOpen()) {
+          return;
+        }
+
+        this.offsetsStale = false;
+        this.actionMask.queryParameters.state = true;
+        this.actionTime.queryParameters = new Date().getTime();
+        this.connection.write('$#\n');
+      };
+
       this.queryTimer = setInterval(() => {
         if (this.isClose()) {
           // Serial port is closed
@@ -1129,6 +1221,9 @@ class GrblController {
 
         // $G - Parser State
         queryParserState();
+
+        // $# - Work offsets, but only once something has moved one
+        queryParameters();
 
         // Check if the machine has stopped movement after completion
         if (this.actionTime.senderFinishTime > 0) {
@@ -1663,6 +1758,22 @@ class GrblController {
       log.warn(`Refused "${cmd}": ${reason}`);
       if (this.commandSocket) {
         this.commandSocket.emit('command:refused', { cmd, reason });
+      }
+    }
+
+    /**
+     * Notice a line that moves a work offset, so `$#` gets asked again.
+     *
+     * Called from all three paths a line can leave by — the feeder, the
+     * sender, and a raw client write — because all three can carry a `G10`:
+     * the panel's `zero`, a program, and a line typed into a console. The line
+     * on the wire is the one thing they have in common.
+     *
+     * The re-read itself waits for an idle machine; see `queryParameters`.
+     */
+    noteOffsetChange(line) {
+      if (changesWorkOffsets(line)) {
+        this.offsetsStale = true;
       }
     }
 
@@ -3092,6 +3203,7 @@ class GrblController {
         ...context,
         source: WRITE_SOURCE_CLIENT
       });
+      this.noteOffsetChange(cmd);
       this.connection.write(data);
       log.silly(`> ${data}`);
     }

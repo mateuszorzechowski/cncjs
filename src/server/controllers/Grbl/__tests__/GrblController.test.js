@@ -188,12 +188,20 @@ const acknowledge = (controller) => controller.runner.emit('ok', { raw: 'ok' });
 // to reach `MAX_IN_FLIGHT` when nothing is acknowledging.
 const STALLED = 80;
 
-const setup = (configValues = {}) => {
+/**
+ * A controller with its query timer stopped, which is what almost every case
+ * wants: the loop writes `?` and `$G` on its own and those are somebody
+ * else's subject. `{ ticking: true }` leaves it running for the cases that
+ * are *about* the loop.
+ */
+const setup = (configValues = {}, { ticking = false } = {}) => {
   jest.spyOn(config, 'get').mockImplementation((key, defaultValue) => {
     return (Object.prototype.hasOwnProperty.call(configValues, key) ? configValues[key] : defaultValue);
   });
   const { controller, writes } = createController(GrblController);
-  clearInterval(controller.queryTimer);
+  if (!ticking) {
+    clearInterval(controller.queryTimer);
+  }
   const socketEvents = [];
   controller.sockets.test = { emit: (event, ...args) => socketEvents.push({ event, args }) };
   activeControllers.push(controller);
@@ -1491,6 +1499,14 @@ describe('intent commands', () => {
   afterEach(() => {
     while (activeControllers.length > 0) {
       const controller = activeControllers.pop();
+      /*
+       * In the order a real close has them. `close()` drops `ready` before
+       * anything is torn down, and that flag is what stops the throttled `$G`
+       * from waking up 500ms later against a controller whose `workflow` has
+       * been set to null. A test that only destroys skips the first half and
+       * blames the second.
+       */
+      controller.ready = false;
       controller.destroy();
     }
     jest.restoreAllMocks();
@@ -1812,6 +1828,97 @@ describe('intent commands', () => {
       controller.command('gcode:start');
 
       expect(controller.workflow.state).toBe(WORKFLOW_STATE_RUNNING);
+    });
+  });
+
+  describe('work offsets go stale and are read again', () => {
+    const idle = (controller) => {
+      controller.ready = true;
+      controller.runner.state.status.activeState = 'Idle';
+    };
+
+    const asked = (writes) => writes.filter(write => write.data === '$#' + '\n').length;
+
+    test('a line that moves an offset marks them stale', () => {
+      const { controller } = setup();
+
+      expect(controller.offsetsStale).toBe(false);
+      controller.command('gcode', 'G10 L20 P1 Z0');
+      expect(controller.offsetsStale).toBe(true);
+    });
+
+    test('an ordinary line does not', () => {
+      const { controller } = setup();
+
+      controller.command('gcode', 'G0 X0 Y0');
+      expect(controller.offsetsStale).toBe(false);
+    });
+
+    test('a program carrying one counts too', () => {
+      const { controller } = setup();
+
+      // The panel's `zero` is not the only way an offset moves: a job can
+      // carry `G10`, and so can a line typed into a console.
+      controller.command('gcode:load', 'test.gcode', 'G10 L2 P1 X-100');
+      controller.command('gcode:start');
+      controller.runner.parse('ok');
+
+      expect(controller.offsetsStale).toBe(true);
+    });
+
+    test('asks `$#` again once the machine is idle', async () => {
+      const { controller, writes } = setup({}, { ticking: true });
+      idle(controller);
+
+      controller.command('gcode', 'G10 L20 P1 Z0');
+      controller.runner.parse('ok');
+      await delay(250);
+
+      expect(asked(writes)).toBe(1);
+      // Asked once, not once every hundred milliseconds for ever.
+      expect(controller.offsetsStale).toBe(false);
+      await delay(250);
+      expect(asked(writes)).toBe(1);
+    });
+
+    test('does not ask while a program is running', async () => {
+      const { controller, writes } = setup({}, { ticking: true });
+      idle(controller);
+
+      controller.command('gcode:load', 'test.gcode', 'G10 L2 P1 X-100');
+      controller.command('gcode:start');
+      await delay(250);
+
+      /*
+       * Three bytes of ours in the middle of a job is three bytes the sender
+       * did not account for. The offsets can wait: nothing is drawing them
+       * while the machine is cutting.
+       */
+      expect(asked(writes)).toBe(0);
+      expect(controller.offsetsStale).toBe(true);
+    });
+
+    test('the `ok` that answers `$#` is not the feeder’s to eat', () => {
+      const { controller, writes } = setup();
+
+      /*
+       * Eleven lines come back from `$#` and then one `ok`. Left to fall
+       * through, that `ok` advances the feeder a line early — which is why
+       * asking for the offsets naively, straight after the line that changed
+       * them, breaks the queue rather than merely being untidy.
+       */
+      controller.command('gcode', ['G0 X0', 'G0 Y0']);
+      expect(writes.map(write => write.data)).toEqual(['G0 X0' + '\n']);
+
+      controller.actionMask.queryParameters.state = true;
+      controller.runner.parse('[PRB:0.000,0.000,0.000:0]');
+      controller.runner.parse('ok');
+
+      // Still one line out: the second is waiting for its own acknowledgement.
+      expect(writes.map(write => write.data)).toEqual(['G0 X0' + '\n']);
+
+      controller.runner.parse('ok');
+      expect(writes.map(write => write.data)).toEqual(['G0 X0' + '\n', 'G0 Y0' + '\n']);
     });
   });
 

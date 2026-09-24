@@ -85,7 +85,7 @@ czasie programu dokładnie z tego powodu i to jest wzór do naśladowania.
 
 Poniżej zostaje oryginalny opis, bo tłumaczy, skąd to się wzięło.
 
-## Układy współrzędnych G54–G59 nigdy nie są odpytywane
+## ~~Układy współrzędnych G54–G59 nigdy nie są odpytywane~~ — DRUGA POŁOWA ZROBIONA 2026-09-24
 
 **Panel chciał:** narysować na ekranie Ścieżka, gdzie w maszynie leżą kolejne
 zera robocze — „czy moje G55 jest tam, gdzie je zostawiłem". Mateusz wymienił
@@ -122,9 +122,36 @@ i nie zmieniało żadnego przesunięcia, bez słowa na ekranie.
 a nie feederem, bo tylko wtedy przejdzie w alarmie. I warto zapytać ponownie
 po wyjściu z alarmu.
 
-**Propozycja:** `$#` obok `$$` przy otwarciu portu, i ponownie po `G10`/`G92`,
-bo to są komendy, które te wartości zmieniają. Wtedy `parameters` jest
-prawdziwe u wszystkich i panel może skasować swoje pytanie.
+**Zrobione, obie połowy.** `$#` idzie obok `$$` przy otwarciu portu (PR #77,
+potwierdzone na maszynie), a od 2026-09-24 **pada ponownie po każdej linii,
+która przesunięcie zmienia**.
+
+Jak to wygląda:
+
+- **Czytana jest linia, nie komenda.** `zero` z panelu przychodzi jako
+  intencja, więc tę jedną dałoby się złapać tam, gdzie się składa — ale `G10`
+  potrafi nieść też program na senderze i linia wpisana w konsolę. Wspólne mają
+  jedno: linię na kablu. Stąd `offsets.js` i `noteOffsetChange` w trzech
+  miejscach, w których linia wychodzi.
+- **Pytanie czeka na spokój.** Ta sama bramka co `$G`: `workflow` bezczynny i
+  `runner.isIdle()`. Trzy bajty w środku zadania to trzy bajty, których sender
+  nie policzył, a przesunięcia mogą poczekać — w trakcie cięcia i tak nikt ich
+  nie rysuje.
+- **`ok` po `$#` jest zabierane, nie oddawane feederowi.** `$#` odpowiada
+  jedenastoma liniami i jednym `ok`; puszczone dalej, to `ok` przesuwa feeder o
+  linię za wcześnie. **To jest cała treść ostrzeżenia „naiwne `$#` psuje
+  kolejkę".** Koniec odpowiedzi rozpoznaje `PRB` — ostatnia z jedenastu linii,
+  kolejność samego Grbla, na której `initController` milcząco polegał od
+  początku.
+- **`G28` bez `.1` celowo nie liczy się jako zmiana.** Pozycje `G28`/`G30` też
+  są w `$#`, ale ustawia je `G28.1`, a gołe `G28` to zwykły dojazd do bazy i to
+  jego forma trafia do programów. Łapanie słowa oznaczałoby odczyt po każdym
+  dojeździe w każdym zadaniu.
+
+**Czego nie zmierzono na maszynie:** samego odświeżenia po `G10`. `G10 L20`
+pisze do EEPROM-u Grbla, a `G54` na tym stole to prawdziwa wartość Mateusza —
+więc sprawdzone jest to na sterowniku, z prawdziwą pętlą zapytań, prawdziwym
+feederem i prawdziwym parserem, ale bez portu.
 
 ---
 
