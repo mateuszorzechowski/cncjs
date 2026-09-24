@@ -559,6 +559,46 @@ osobną propozycją z listy CO DALEJ, nie częścią tego wpisu.
 
 ---
 
+## Bramka między programem a jogiem działa tylko w jedną stronę
+
+**Zmierzone w kodzie 2026-09-24, przy analizie arbitracji między klientami.**
+
+`jogStart` **odmawia**, gdy program biegnie:
+
+```js
+if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
+  log.warn('Refusing to jog while a job is running');
+  return;
+}
+```
+
+`gcode:start` **nie odmawia**, gdy biegnie jog. Cały handler to
+`workflow.start()`, `feeder.reset()`, `sender.next()` — nie pyta o `jogging` i
+nie pyta o stan maszyny. Więc program zaczyna strumieniować do planera, w którym
+pętla jogu wciąż składa `$J=`, i **dwa źródła ruchu piszą do jednego planera**.
+
+**Skutek:** to nie jest nieporządek, to kolizja. Jog jedzie w swoją stronę,
+program w swoją, a `sender` liczy znaki w buforze Grbla, którego drugie źródło mu
+nie zgłasza. Na maszynie z mechaniką to najazd.
+
+**Jak to osiągnąć:** dwa klienty, co na tym stole jest codziennością — stara
+aplikacja w jednej karcie i panel w drugiej. Jedno urządzenie tego nie zrobi,
+bo `useHoldToJog` puszcza klawisz na `blur` i `visibilitychange`, a jednym palcem
+nie da się trzymać klawisza i nacisnąć Start na innym ekranie.
+
+**Propozycja:** ta sama bramka w drugą stronę — `gcode:start` odmawia, gdy
+`this.jogging.dir` albo maszyna nie jest w spoczynku, i **mówi dlaczego**, bo
+inaczej Start staje się przyciskiem, który czasem nic nie robi. To jest usterka
+niezależna od tego, czy w ogóle wprowadzimy arbitrację między klientami: bramka
+istnieje, jest jednokierunkowa i druga strona nie została napisana.
+
+**Uwaga o szerszej decyzji:** jeśli kiedyś wejdzie miękka dzierżawa ruchu
+(„zatrzymać może każdy, ruszyć nie każdy"), to `gcode:start` musi być po stronie
+ruchu, nie po stronie stopu. Ale dzierżawa tego wpisu nie zastępuje — bez niej
+też trzeba to zamknąć.
+
+---
+
 ## Zakres ruchu liczony dwa razy, po obu stronach gniazda
 
 **Panel chciał:** nie wysyłać kroku jogu, który wyjdzie za koniec osi. Z
