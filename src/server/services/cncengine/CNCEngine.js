@@ -121,16 +121,21 @@ class CNCEngine {
      * memory per browser: connect `COM3` on the laptop, and the phone still
      * offers `COM1`. Reported by Mateusz, in those words.
      *
-     * **Written when the controller answers, not when the port opens**, and
-     * that distinction is the whole of it on this bench. A client in WSL
-     * opens `COM3` as `Marlin` at 9600 within a second of every server start
-     * and wins the race; on a Grbl that driver never becomes ready — empty
-     * settings, no position, for hours. Remembering the open recorded
-     * `Marlin@9600`, measured, and would have offered it back as the choice
-     * to make. A controller that has answered is a choice that worked.
+     * **Written when a port is opened, whether or not anything answers on it**,
+     * and that was argued the other way first. A client in WSL opens `COM3`
+     * as `Marlin` at 9600 within a second of every server start and wins the
+     * race; on a Grbl that driver never becomes ready, so recording only a
+     * controller that *answered* would keep that squatter out of the memory.
+     * It also threw away the connection an operator had just made by hand:
+     * connect as Marlin, get no reading, disconnect — and the screen went
+     * back to offering Grbl, forgetting the attempt. Mateusz, on seeing it:
+     * *"it ought to stay Marlin anyway"*.
      *
-     * Called by the controller rather than from the socket handler for the
-     * same reason: it records what *happened*, not what somebody asked for.
+     * He is right, and the reason is which case is the ordinary one. Getting
+     * a connection right is a loop — change one setting, try again — and a
+     * screen that resets the other two settings between tries is fighting the
+     * person using it. The squatter is a fault of this one bench, it is
+     * written down, and one deliberate connection corrects the memory.
      *
      * **Remembering is not connecting.** Nothing here opens anything; the
      * screen pre-selects and the operator still presses Connect. Opening a
@@ -444,6 +449,12 @@ class CNCEngine {
 
             // System Trigger: Open a serial port
             this.event.trigger('port:open');
+
+            this.rememberConnection({
+              port,
+              controllerType: controller.type,
+              baudrate: controller.options.baudrate,
+            });
 
             if (store.get(`controllers["${port}"]`)) {
               log.error(`Serial port "${port}" was not properly closed`);
