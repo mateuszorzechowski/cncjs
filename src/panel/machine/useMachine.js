@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import controller from './controller';
+import { deviceId } from './device';
 import { signIn } from './session';
 import { fetchOpenController } from './snapshot';
 import { readMachine } from './readings';
@@ -76,6 +77,30 @@ export const useMachine = () => {
      * such thing to report.
      */
     envelope: null,
+    /*
+     * Which device the server is letting move the machine, or null when
+     * nobody is. Compared with this panel's own id rather than shown: a
+     * pendant needs to know whether the keys under its thumb are live, not
+     * whose they are. See `machine/device`.
+     */
+    motion: null,
+    /*
+     * This panel's own identity, so the reading above can be compared with it.
+     *
+     * Read once for the life of the page. It cannot change while the panel is
+     * open, and a hook that read it per render would be asking storage a
+     * settled question a hundred times a second.
+     */
+    device: deviceId(),
+    /*
+     * Whether a program is running, as the server's workflow reports it.
+     *
+     * Nothing was listening for this, which left `program-running` as a
+     * refusal that could only ever arrive *after* a press. Greying out is
+     * first on this panel and a message is for the race; without this reading
+     * there was only the message.
+     */
+    workflow: 'idle',
   }));
 
   /**
@@ -175,6 +200,7 @@ export const useMachine = () => {
         // no longer hear.
         setSnapshot((previous) => ({
           ...previous, port: '', type: '', baudrate: null, state: {}, attached: false,
+          motion: null, workflow: 'idle',
         }));
       },
       'controller:state': (type, state) => {
@@ -210,6 +236,32 @@ export const useMachine = () => {
        */
       'controller:envelope': (envelope) => {
         setSnapshot((previous) => ({ ...previous, envelope }));
+      },
+      /**
+       * Which device is allowed to move the machine.
+       *
+       * Two pendants and the old application in a tab is the ordinary case
+       * here, and nothing arbitrated between them: a travel fired from one
+       * device while another was tapping a step key put two sources of motion
+       * into one planner. The server now hands movement to whoever last used
+       * it, briefly, and says so — to everybody, because greying a key out is
+       * something the *other* devices have to do.
+       *
+       * Null is a real answer and not an absence: it means nobody holds it.
+       */
+      'controller:motion': (device) => {
+        setSnapshot((previous) => ({ ...previous, motion: device || null }));
+      },
+      /**
+       * Whether a program is running.
+       *
+       * The server has broadcast this from the beginning and this panel was
+       * not listening, which is why `program-running` could only ever arrive
+       * as a notice after a press. Now the controls that a program owns are
+       * dark while it owns them.
+       */
+      'workflow:state': (workflow) => {
+        setSnapshot((previous) => ({ ...previous, workflow }));
       },
       'controller:settings': (type, settings) => {
         setSnapshot((previous) => ({ ...previous, type, settings }));
@@ -310,6 +362,8 @@ export const useMachine = () => {
           state: {},
           settings: {},
           job: null,
+          motion: null,
+          workflow: 'idle',
         }));
       },
     };
@@ -330,7 +384,10 @@ export const useMachine = () => {
         }
         tokenRef.current = token;
 
-        controller.connect('', { auth: { token } }, () => {
+        // The identity the movement lease is held against. Sent at the
+        // handshake rather than with each command: it is who this client is,
+        // not what it is asking for, and the server reads it once.
+        controller.connect('', { auth: { token, device: deviceId() } }, () => {
           if (live) {
             setSnapshot((previous) => ({ ...previous, connection: 'open' }));
           }

@@ -109,8 +109,12 @@ const JogWidget = ({ machine, className = '' }) => {
    * and a held jog is refused by Grbl itself. The keys stayed blue and the
    * machine stayed still. Same gate the zeroing screen and the travels have —
    * see `readings.canSendGcode`.
+   *
+   * And since the lease, one condition more: movement may belong to another
+   * device or to a running program, in which case the server refuses it and
+   * these keys have to say so before they are pressed rather than after.
    */
-  const canMove = connected && machine.canSendGcode;
+  const canMove = connected && machine.canMove;
 
   const holdToJog = useHoldToJog({
     step: (dir) => stepJog(dir),
@@ -139,7 +143,7 @@ const JogWidget = ({ machine, className = '' }) => {
      * no machine. Whether *this* machine will take a move is `canJog`, and
      * homing is deliberately outside both — it is what clears an alarm. */
     disabled: !connected,
-    canJog: machine.canSendGcode,
+    canJog: machine.canMove,
     canHome: machine.canHome,
     canGoZero: canGoToWorkZero(machine.envelope),
   };

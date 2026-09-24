@@ -55,6 +55,7 @@ import { activeWcsNumber, zeroLine } from './zero';
 import { changesWorkOffsets } from './offsets';
 import { machineEnvelope } from './envelope';
 import { goToPointLines, goToWorkZeroLines } from './travel';
+import { leaseHolder, motionRefusal, renewed } from './lease';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
 import {
@@ -589,6 +590,17 @@ class GrblController {
       this.jogTimer = null;
 
       /*
+       * Who is allowed to move the machine, and until when. See `lease.js`.
+       *
+       * Null is free rather than held-by-nobody, and it is the state this
+       * comes back to: the claim expires on its own, because a lease that has
+       * to be handed back is one that gets stranded by a pendant put down
+       * mid-jog.
+       */
+      this.motionLease = null;
+      this.motionLeaseTimer = null;
+
+      /*
        * How long the firmware takes to answer, in seconds.
        *
        * Measured off the parser-state query that is being sent anyway, so it
@@ -669,6 +681,26 @@ class GrblController {
         }
 
         this.actionMask.queryStatusReport = false;
+
+        /*
+         * A move outlives the command that asked for it, and so does the
+         * claim.
+         *
+         * The lease is sized to cover the gap between a command being accepted
+         * and the machine being visibly in motion — not to cover the move
+         * itself, which can be a travel across the table or a homing cycle and
+         * has no upper bound worth guessing at. So while the machine reports
+         * that it is moving, whoever set it moving goes on holding it.
+         *
+         * Only a holder is renewed. A machine moving with no lease behind it
+         * is one this server did not start — a line typed into the console, or
+         * a `$H` from the old application — and inventing an owner for that
+         * would hand movement to whichever device happened to ask last.
+         */
+        const holder = leaseHolder(this.motionLease, Date.now());
+        if (holder && this.isInMotion()) {
+          this.holdMotion(holder);
+        }
 
         if (this.actionMask.replyStatusReport) {
           this.actionMask.replyStatusReport = false;
@@ -1457,6 +1489,11 @@ class GrblController {
 
       this.haltJogClock();
 
+      if (this.motionLeaseTimer) {
+        clearTimeout(this.motionLeaseTimer);
+        this.motionLeaseTimer = null;
+      }
+
       if (this.runner) {
         this.runner.removeAllListeners();
         this.runner = null;
@@ -1721,6 +1758,18 @@ class GrblController {
         // workflow state
         socket.emit('workflow:state', this.workflow.state);
       }
+
+      /*
+       * Who is moving the machine, if anybody.
+       *
+       * Replayed like the rest of it, because a device that attaches in the
+       * middle of somebody else's jog would otherwise draw every key live
+       * until that jog ended — and the first thing it would then do is refuse
+       * the press. Sent even when nobody holds it: null is the answer, and a
+       * client with no answer at all cannot tell it apart from a server too
+       * old to have one.
+       */
+      socket.emit('controller:motion', leaseHolder(this.motionLease, Date.now()));
     }
 
     removeConnection(socket) {
@@ -1890,6 +1939,18 @@ class GrblController {
           }
           if (this.isTravelling()) {
             this.refuse(cmd, 'machine-moving');
+            return;
+          }
+          /*
+           * And the lease, which the two checks above do not replace.
+           *
+           * They are about one planner: a jog this server is driving, or a
+           * machine already in motion. Neither sees a travel that has been
+           * *accepted* and has not reached the machine yet — the gap the lease
+           * exists to cover — so a program could still be started into a
+           * go-to-zero another device asked for a moment ago.
+           */
+          if (!this.claimMotion(cmd)) {
             return;
           }
 
@@ -2080,7 +2141,24 @@ class GrblController {
         'statusreport': () => {
           this.write('?');
         },
+        /**
+         * Send the machine to its limit switches.
+         *
+         * **The one move that was arbitrated by nothing at all.** It is also
+         * the longest and the most committed — half a minute of travel at
+         * seek rate that cannot be steered — so a second device starting a
+         * travel into it is the worst version of the collision the lease
+         * exists for.
+         *
+         * Still live in alarm, and that is not an oversight: homing is the
+         * only thing an alarm does not swallow, and it is the way out of one.
+         * The lease says nothing about alarm.
+         */
         'homing': () => {
+          if (!this.claimMotion(cmd)) {
+            return;
+          }
+
           this.event.trigger('homing');
 
           this.writeln('$H');
@@ -2143,10 +2221,15 @@ class GrblController {
             this.refuse(cmd, 'alarm');
             return;
           }
-
           const lines = goToWorkZeroLines(this.runner.settings?.settings);
           if (!lines) {
             this.refuse(cmd, 'no-travel');
+            return;
+          }
+          // Last, because claiming is a side effect: a request that was going
+          // to be refused anyway must not take movement away from whoever has
+          // it for the next three quarters of a second.
+          if (!this.claimMotion(cmd)) {
             return;
           }
 
@@ -2179,10 +2262,12 @@ class GrblController {
             this.refuse(cmd, 'no-travel');
             return;
           }
-
           const lines = goToPointLines(settings, point);
           if (!lines) {
             this.refuse(cmd, 'out-of-envelope');
+            return;
+          }
+          if (!this.claimMotion(cmd)) {
             return;
           }
 
@@ -2278,10 +2363,6 @@ class GrblController {
             this.refuse(cmd, 'alarm');
             return;
           }
-          if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
-            this.refuse(cmd, 'program-running');
-            return;
-          }
 
           const line = jogStepLine({
             dir,
@@ -2293,6 +2374,9 @@ class GrblController {
 
           if (!line) {
             this.refuse(cmd, 'no-room');
+            return;
+          }
+          if (!this.claimMotion(cmd)) {
             return;
           }
 
@@ -2312,14 +2396,20 @@ class GrblController {
            */
           const owner = this.commandSocket?.id ?? null;
 
-          if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
-            // Said back rather than only logged. The refusal was real and
-            // correct — the planner belongs to the job — and it was invisible
-            // to the pendant whose key had just gone down.
-            this.refuse(cmd, 'program-running');
+          if (!dir || !(feedrate > 0)) {
             return;
           }
-          if (!dir || !(feedrate > 0)) {
+          /*
+           * Said back rather than only logged, and now there are two answers
+           * rather than one. A program running is still the planner belonging
+           * to the job; another device driving is the lease. Both were
+           * invisible to the pendant whose key had just gone down.
+           *
+           * `owner` above is a different question and stays a socket: it is
+           * who to stop this jog for when a connection goes away, and a
+           * connection is the thing that went away.
+           */
+          if (!this.claimMotion(cmd)) {
             return;
           }
 
@@ -2958,6 +3048,113 @@ class GrblController {
     /** Whether the machine is in the middle of a move this loop did not start. */
     isTravelling() {
       return this.runner.state?.status?.activeState === 'Jog';
+    }
+
+    /**
+     * Whether the machine is moving because somebody asked it to.
+     *
+     * Wider than `isTravelling`, and deliberately a separate reading. That one
+     * answers "is there a jog-shaped move to cancel before I start mine",
+     * which is about one planner and one byte on the wire. This one answers
+     * "is the machine still doing what it was told", which is what keeps a
+     * claim alive — and a homing cycle is half a minute of exactly that.
+     *
+     * `Run` is not here. A program running is answered before the lease is
+     * ever consulted, with a reason of its own.
+     */
+    isInMotion() {
+      const active = this.runner?.state?.status?.activeState;
+      return active === 'Jog' || active === 'Home';
+    }
+
+    /**
+     * Whether whoever sent this command may move the machine, said out loud
+     * when they may not.
+     *
+     * Every command that puts the tool in motion goes through here, and
+     * nothing that stops it does. That asymmetry is the decision: *"anyone may
+     * stop it; not everyone may start it"* (2026-09-24). A stop asked for by
+     * the wrong person costs a press; a start does not.
+     *
+     * **The identity is the device, not the socket.** socket.io issues a new
+     * id on every reconnection, and a phone that dips behind a wall reconnects
+     * — so a claim held against a socket id would be lost by its own owner,
+     * mid-jog, to itself. `CNCEngine` reads it off the handshake.
+     */
+    claimMotion(cmd) {
+      const device = this.commandSocket?.device ?? null;
+      const now = Date.now();
+
+      const reason = motionRefusal({
+        programRunning: this.workflow.state !== WORKFLOW_STATE_IDLE,
+        lease: this.motionLease,
+        device,
+        now,
+      });
+
+      if (reason) {
+        this.refuse(cmd, reason);
+        return false;
+      }
+
+      this.holdMotion(device, now);
+      return true;
+    }
+
+    /**
+     * Renew a claim, and tell every attached client when it changes hands.
+     *
+     * Broadcast on change only. This is called on every status report of a
+     * long travel, and a panel that had to filter out a hundred identical
+     * events a second would be a panel doing the server's job.
+     *
+     * To the room rather than to the claimant: greying a key out is something
+     * *other* devices have to do, which makes this the opposite of a refusal.
+     */
+    holdMotion(device, now = Date.now()) {
+      const before = leaseHolder(this.motionLease, now);
+
+      this.motionLease = renewed(device, now);
+
+      if (before !== device) {
+        this.emit('controller:motion', device);
+      }
+
+      this.armMotionLease();
+    }
+
+    /**
+     * Say when the claim has run out, once, however often it is renewed.
+     *
+     * A client cannot work this out for itself from the event: the lease ends
+     * at a moment rather than on a message, and a pendant that started its own
+     * timer would be greying its keys by a clock that is not the server's.
+     *
+     * One timer, not one per renewal. A held jog renews this a hundred times a
+     * second, so the timer that is already pending checks the lease when it
+     * fires and waits out the remainder if it has moved on.
+     */
+    armMotionLease() {
+      if (this.motionLeaseTimer) {
+        return;
+      }
+
+      // A millisecond past the end, so a timer that fires exactly on the
+      // boundary does not find the lease still held and arm itself again for
+      // nothing.
+      const remaining = Math.max(0, this.motionLease.until - Date.now()) + 1;
+
+      this.motionLeaseTimer = setTimeout(() => {
+        this.motionLeaseTimer = null;
+
+        if (leaseHolder(this.motionLease, Date.now())) {
+          this.armMotionLease();
+          return;
+        }
+
+        this.motionLease = null;
+        this.emit('controller:motion', null);
+      }, remaining);
     }
 
     /**

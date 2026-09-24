@@ -238,9 +238,33 @@ const readJob = (job) => {
  * into a controller payload, so the four firmwares' disagreements are settled
  * here and only here.
  */
+/**
+ * Why this panel may not move the machine, or null when it may.
+ *
+ * **One reading for two refusals, because they grey out the same keys.** The
+ * server decides both — a program owns the planner while it runs, and the
+ * device that last moved the machine holds it for a moment afterwards — and
+ * this is the panel reading that decision rather than predicting it.
+ *
+ * It is deliberately not folded into `canSendGcode`. Zeroing writes an offset
+ * and moves nothing, so the server does not arbitrate it, and a panel that
+ * greyed the zero buttons out while somebody else jogged would be inventing a
+ * restriction the machine does not have — the same mistake as reading `Door`
+ * as an alarm.
+ */
+export const movementHeld = (workflow, motion, device) => {
+  if (workflow && workflow !== 'idle') {
+    return 'program-running';
+  }
+  if (motion && motion !== device) {
+    return 'held-elsewhere';
+  }
+  return null;
+};
+
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
-  envelope,
+  envelope, motion, workflow, device,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -249,6 +273,7 @@ export const readMachine = ({
   // window in which every jog key looked pressable and did nothing.
   const connected = Boolean(port) && connection === 'open' && Boolean(attached);
   const active = connected ? activeStateOf(type, state) : null;
+  const held = movementHeld(workflow, motion, device);
 
   // Two kinds of word, and only one of them is language. The four states the
   // panel invents for itself are keys, translated where the chip is drawn;
@@ -341,6 +366,25 @@ export const readMachine = ({
      * the panel inventing a restriction the machine does not have.
      */
     canSendGcode: connected && active?.word !== ALARM,
+    /**
+     * Whether this panel may set the machine moving.
+     *
+     * `canSendGcode` and then some. A line that reaches the firmware is the
+     * first condition and the one alarm decides; the second is whether
+     * movement belongs to this device at all, which is the server's lease and
+     * its running program. Both are read rather than guessed — see
+     * `movementHeld`.
+     */
+    canMove: connected && active?.word !== ALARM && !held,
+    /**
+     * Why movement is not this panel's to ask for, or null when it is.
+     *
+     * `canMove` is what a control is greyed out by; this is what a screen with
+     * room for a sentence says instead of leaving the operator to guess which
+     * of the two it is. Never shown as a refusal — a refusal is for a press
+     * that lost a race, and this is the state before the press.
+     */
+    held,
     overrides: overridesOf(type, state),
     tool: toolOf(type, state),
     position: positions(type, state, 'wpos'),
@@ -352,7 +396,11 @@ export const readMachine = ({
     // Whether this machine can be sent home. Not a preference — whether
     // limit switches exist and are turned on, which only the firmware
     // knows. See `homing.js`.
-    canHome: connected && canHome(type, settings),
+    //
+    // Held like every other move, and *unlike* every other move it survives
+    // an alarm: homing is what clears one. So it is composed from `canHome`
+    // and the lease rather than from `canMove`.
+    canHome: connected && canHome(type, settings) && !held,
     // Carried whole because more than one thing needs it: homing reads
     // `$22`, a held jog reads the axis travel so it cannot ask for more
     // than the machine has.

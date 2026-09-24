@@ -45,6 +45,10 @@ const KEYS = {
   jogging: 'refusal.jogging',
   // The machine is under way — another client's travel, most likely.
   'machine-moving': 'refusal.machineMoving',
+  // Movement belongs to another device for a moment. The lease that lets two
+  // pendants share one machine; the keys are dark for as long as it is held,
+  // so this only ever arrives for a press that beat the news of it.
+  'held-elsewhere': 'refusal.heldElsewhere',
   // A panel newer than the server it is talking to. The only refusal here
   // that is about the installation rather than about the machine.
   'unknown-command': 'refusal.unknownCommand',

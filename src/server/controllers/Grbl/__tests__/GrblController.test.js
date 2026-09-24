@@ -22,6 +22,7 @@ import {
 } from '../../constants';
 import { GRBL_ACTIVE_STATE_ALARM } from '../constants';
 import { HOLD_CEILING_SECONDS } from '../stop';
+import { LEASE_MS } from '../lease';
 
 import logger from '../../../lib/logger';
 
@@ -1828,6 +1829,229 @@ describe('intent commands', () => {
       controller.command('gcode:start');
 
       expect(controller.workflow.state).toBe(WORKFLOW_STATE_RUNNING);
+    });
+  });
+
+  describe('a soft lease on movement', () => {
+    /*
+     * Two devices, which is the ordinary case on this bench: the pendant in
+     * somebody's hand and the old application in a tab, or two phones. The
+     * identity is the *device* and not the socket, because socket.io issues a
+     * new id on every reconnection and a claim held against one would be lost
+     * by its own owner, mid-jog, to itself.
+     */
+    const from = (controller, device) => {
+      const refusals = [];
+      controller.commandSocket = {
+        id: `socket-${device}`,
+        device,
+        emit: (event, payload) => refusals.push(payload),
+      };
+      return refusals;
+    };
+
+    const reports = (controller) => {
+      controller.runner.settings = {
+        ...controller.runner.settings,
+        settings: { $130: '1000', $131: '700', $132: '150', $23: '0' },
+      };
+      controller.runner.state.status.mpos = { x: '-500', y: '-350', z: '-75' };
+    };
+
+    const step = (controller) => {
+      controller.command('jogStep', { dir: { x: 1 }, distance: 10, feedrate: 1500 });
+    };
+
+    test('the device that last moved the machine keeps it, and the others are told', () => {
+      const { controller, writes, socketEvents } = setup();
+      reports(controller);
+
+      from(controller, 'pendant');
+      step(controller);
+
+      const refusals = from(controller, 'phone');
+      step(controller);
+
+      // One line on the wire, from the device that got there first.
+      expect(writes.map(write => write.data)).toEqual(['$J=G91 G21 X10 F1500' + '\n']);
+      expect(refusals).toEqual([{ cmd: 'jogStep', reason: 'held-elsewhere' }]);
+
+      // And everybody attached is told whose it is, so the second device's
+      // keys are dark *before* a thumb comes down on one.
+      expect(socketEvents.filter(({ event }) => event === 'controller:motion'))
+        .toEqual([{ event: 'controller:motion', args: ['pendant'] }]);
+    });
+
+    test('and goes on holding it through a run of taps', () => {
+      const { controller, writes, socketEvents } = setup();
+      reports(controller);
+      const refusals = from(controller, 'pendant');
+
+      step(controller);
+      step(controller);
+      step(controller);
+
+      expect(refusals).toEqual([]);
+      expect(writes).toHaveLength(3);
+      // Renewed, not re-taken: a claim is by somebody, and a pendant that
+      // announced itself on every tap would be a hundred events a second
+      // during a held jog.
+      expect(socketEvents.filter(({ event }) => event === 'controller:motion')).toHaveLength(1);
+    });
+
+    test('until it runs out, and then the other device may have it', () => {
+      const { controller, writes } = setup();
+      reports(controller);
+
+      const start = Date.now();
+      jest.spyOn(Date, 'now').mockReturnValue(start);
+
+      from(controller, 'pendant');
+      step(controller);
+
+      // Three quarters of a second later, with nothing moving. The claim is
+      // not handed back — it expires, because a pendant put down mid-jog
+      // would otherwise own the machine until somebody noticed.
+      jest.spyOn(Date, 'now').mockReturnValue(start + LEASE_MS);
+
+      const refusals = from(controller, 'phone');
+      step(controller);
+
+      expect(refusals).toEqual([]);
+      expect(writes).toHaveLength(2);
+    });
+
+    /*
+     * The lease covers the gap between a command being accepted and the
+     * machine being visibly in motion — not the move itself, which has no
+     * upper bound worth guessing at. So a status report saying the machine is
+     * still moving renews it, and `Home` counts as much as `Jog`: a homing
+     * cycle is half a minute of exactly this.
+     */
+    test.each(['Jog', 'Home'])('a move keeps the claim alive while the machine is in %s', (state) => {
+      const { controller } = setup();
+      reports(controller);
+
+      const start = Date.now();
+      jest.spyOn(Date, 'now').mockReturnValue(start);
+      from(controller, 'pendant');
+      step(controller);
+
+      jest.spyOn(Date, 'now').mockReturnValue(start + LEASE_MS - 1);
+      controller.runner.state.status.activeState = state;
+      controller.runner.emit('status', { raw: `<${state}|MPos:0.000,0.000,0.000>` });
+
+      jest.spyOn(Date, 'now').mockReturnValue(start + LEASE_MS + 1);
+      const refusals = from(controller, 'phone');
+      step(controller);
+
+      expect(refusals).toEqual([{ cmd: 'jogStep', reason: 'held-elsewhere' }]);
+    });
+
+    test('a machine moving with no claim behind it does not acquire one', () => {
+      const { controller, socketEvents } = setup();
+
+      // A line typed into the console, or a `$H` from the old application.
+      // Inventing an owner for that would hand movement to whichever device
+      // happened to ask last.
+      controller.runner.state.status.activeState = 'Jog';
+      controller.runner.emit('status', { raw: '<Jog|MPos:0.000,0.000,0.000>' });
+
+      expect(socketEvents.filter(({ event }) => event === 'controller:motion')).toEqual([]);
+    });
+
+    test('anyone may stop it', () => {
+      const { controller, writes } = setup();
+
+      from(controller, 'pendant');
+      controller.command('jogStart', { x: 1 }, 600);
+
+      const refusals = from(controller, 'phone');
+      controller.command('jogStop');
+
+      /*
+       * *"Anyone may stop it; not everyone may start it"* (2026-09-24). The
+       * person who can see the machine is the person who should be able to
+       * stop it, and a stop asked for by the wrong device costs a press.
+       */
+      expect(refusals).toEqual([]);
+      expect(controller.jogging.dir).toBeNull();
+      // The cancel itself waits on the segment already sent being
+      // acknowledged — `0x85` cannot empty the firmware's receive buffer — so
+      // what a stop looks like here is a loop that has stopped feeding and is
+      // seeing the last one out.
+      expect(controller.jogging.stopping).toBe(true);
+      expect(writes).toHaveLength(1);
+    });
+
+    test('homing is arbitrated too, and it is the move that was not', () => {
+      const { controller, writes } = setup();
+      reports(controller);
+
+      from(controller, 'pendant');
+      step(controller);
+
+      const refusals = from(controller, 'phone');
+      controller.command('homing');
+
+      // Half a minute of travel at seek rate that cannot be steered, and
+      // until now nothing stood between it and a travel from another device.
+      expect(refusals).toEqual([{ cmd: 'homing', reason: 'held-elsewhere' }]);
+      expect(writes.map(write => write.data)).not.toContain('$H' + '\n');
+    });
+
+    test('a program is refused into a move another device has just asked for', () => {
+      const { controller } = setup();
+      reports(controller);
+
+      from(controller, 'pendant');
+      step(controller);
+
+      const refusals = from(controller, 'phone');
+      controller.command('gcode:load', 'test.gcode', 'G0 X0');
+      controller.command('gcode:start');
+
+      /*
+       * Neither of the two checks `gcode:start` already had sees this. They
+       * are about one planner — a jog this server drives, or a machine
+       * already reporting motion — and a travel that has been accepted and
+       * has not reached the machine yet is neither.
+       */
+      expect(refusals).toEqual([{ cmd: 'gcode:start', reason: 'held-elsewhere' }]);
+      expect(controller.workflow.state).toBe(WORKFLOW_STATE_IDLE);
+    });
+
+    test('and a program running is answered as a program, to everybody', () => {
+      const { controller } = setup();
+      reports(controller);
+
+      const refusals = from(controller, 'pendant');
+      controller.command('gcode:load', 'test.gcode', LONG_PROGRAM);
+      controller.command('gcode:start');
+      step(controller);
+
+      // Including the device that pressed Start. The planner belongs to the
+      // job, and `held-elsewhere` there would be true and useless.
+      expect(refusals).toEqual([{ cmd: 'jogStep', reason: 'program-running' }]);
+    });
+
+    test('a request that was going to be refused does not take the claim', () => {
+      const { controller } = setup();
+      reports(controller);
+
+      from(controller, 'pendant');
+      step(controller);
+
+      // Outside the travel, so the travel is refused for its own reason —
+      // and claiming is a side effect that must not happen on the way to a
+      // refusal.
+      const phone = from(controller, 'phone');
+      controller.command('goToPoint', { x: 500, y: -200 });
+      expect(phone).toEqual([{ cmd: 'goToPoint', reason: 'out-of-envelope' }]);
+
+      const pendant = from(controller, 'pendant');
+      step(controller);
+      expect(pendant).toEqual([]);
     });
   });
 

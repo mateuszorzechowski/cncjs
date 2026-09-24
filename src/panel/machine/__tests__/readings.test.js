@@ -82,6 +82,57 @@ describe('readMachine, on a machine that will not take a line', () => {
   });
 });
 
+describe('readMachine, when movement belongs to somebody else', () => {
+  const pendant = (extra) => readMachine({
+    connection: 'open', port: 'COM3', type: 'Grbl', attached: true,
+    device: 'pendant',
+    settings: { $22: '1' },
+    state: { status: { activeState: 'Idle' } },
+    ...extra,
+  });
+
+  test('a machine this panel is driving is this panel to move', () => {
+    expect(pendant({ motion: 'pendant' }).canMove).toBe(true);
+    expect(pendant({ motion: 'pendant' }).held).toBeNull();
+    expect(pendant({ motion: null }).canMove).toBe(true);
+  });
+
+  test('another device holding it puts every movement key out', () => {
+    // Read from the server rather than predicted. The lease is the server's
+    // and expires on its clock; a panel that timed it itself would be greying
+    // keys by a clock that is not the one enforcing anything.
+    expect(pendant({ motion: 'phone' }).canMove).toBe(false);
+    expect(pendant({ motion: 'phone' }).held).toBe('held-elsewhere');
+  });
+
+  test('and so does a running program, which nothing was listening for', () => {
+    // `workflow:state` has always been broadcast and this panel ignored it,
+    // which left `program-running` as a refusal that could only ever arrive
+    // after a press. Greying out is first here.
+    expect(pendant({ workflow: 'running' }).canMove).toBe(false);
+    expect(pendant({ workflow: 'running' }).held).toBe('program-running');
+    expect(pendant({ workflow: 'paused' }).canMove).toBe(false);
+  });
+
+  test('homing goes dark with them, though an alarm leaves it live', () => {
+    // The one thing an alarm does not take away, because it is the way out of
+    // one — so it is composed from the lease and not from `canMove`.
+    expect(pendant({ state: { status: { activeState: 'Alarm' } } }).canHome).toBe(true);
+    expect(pendant({ state: { status: { activeState: 'Alarm' } } }).canMove).toBe(false);
+    expect(pendant({ motion: 'phone' }).canHome).toBe(false);
+    expect(pendant({ workflow: 'running' }).canHome).toBe(false);
+  });
+
+  test('zeroing is not held, because the server does not hold it', () => {
+    // It writes an offset and moves nothing. A panel that greyed the zero
+    // buttons out while somebody else jogged would be inventing a restriction
+    // the machine does not have — the same mistake as reading `Door` as an
+    // alarm.
+    expect(pendant({ motion: 'phone' }).canSendGcode).toBe(true);
+    expect(pendant({ workflow: 'running' }).canSendGcode).toBe(true);
+  });
+});
+
 describe('readMachine, with a controller answering', () => {
   test.each([
     ['Run', 'running'],

@@ -231,8 +231,14 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
    * and said nothing — the same silence the zeroing screen was given a gate
    * for once it was measured. See `readings.canSendGcode`.
    */
+  /*
+   * And a fifth, which is not about this machine at all: movement belongs to
+   * whoever last used it, and to a program while one runs. The server refuses
+   * a travel then, so the button goes dark before it is pressed — and this is
+   * a screen with room to say which of the two it is.
+   */
   const canGo = Boolean(
-    machine.connected && machine.canSendGcode && point && canGoToPoint(machine.envelope, point)
+    machine.connected && machine.canMove && point && canGoToPoint(machine.envelope, point)
   );
   const goNote = (() => {
     if (!machine.connected) {
@@ -240,6 +246,12 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
     }
     if (!machine.canSendGcode) {
       return t('path.go.alarm');
+    }
+    if (machine.held === 'program-running') {
+      return t('path.go.programRunning');
+    }
+    if (machine.held === 'held-elsewhere') {
+      return t('path.go.heldElsewhere');
     }
     if (!point) {
       return t('path.go.noPoint');

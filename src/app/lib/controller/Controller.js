@@ -115,6 +115,23 @@ class Controller {
          * @param {object} envelope - `{ min, max }` or null
          */
         'controller:envelope': [],
+
+        /**
+         * Which device is allowed to move the machine at this moment.
+         *
+         * The device's own identifier, as it gave it at the handshake, or null
+         * when nobody holds it. Sent to everybody attached to the port and
+         * only when it changes hands, so a client compares it with its own id
+         * and greys out what it may not press.
+         *
+         * The lease is how two pendants share one machine: whoever last moved
+         * it holds it for a moment and everybody else is refused with
+         * `held-elsewhere`. Stopping is never arbitrated.
+         *
+         * @event controller:motion
+         * @param {string} device - the holder's id, or null
+         */
+        'controller:motion': [],
         'message': [],
         'watchdir:change': [],
 
