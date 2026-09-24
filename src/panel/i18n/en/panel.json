@@ -108,7 +108,8 @@
     "feed": "feed",
     "spindle": "spindle",
     "start": "Start job",
-    "pause": "Pause"
+    "pause": "Pause",
+    "resume": "Resume"
   },
   "tool": {
     "number": "T{{number}}",

@@ -108,7 +108,8 @@
     "feed": "posuw",
     "spindle": "wrzeciono",
     "start": "Start zadania",
-    "pause": "Pauza"
+    "pause": "Pauza",
+    "resume": "Wznów"
   },
   "tool": {
     "number": "T{{number}}",

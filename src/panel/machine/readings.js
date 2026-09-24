@@ -465,6 +465,9 @@ export const readMachine = ({
      */
     envelope: connected ? (envelope || null) : null,
     job: readJob(job),
+    // The sender's own state — `idle`, `running` or `paused` — for the job
+    // buttons, which have to tell a pause from a run. See `machine/program`.
+    workflow: connected ? (workflow || 'idle') : null,
   };
 };
 
