@@ -3,6 +3,7 @@ import { programRefusal } from '../program-gate';
 const IDLE = { workflow: 'idle', firmware: 'Idle' };
 const RUNNING = { workflow: 'running', firmware: 'Run' };
 const TOOL_CHANGE = { workflow: 'paused', firmware: 'Idle' };
+const JOGGING_IN_A_PAUSE = { workflow: 'paused', firmware: 'Jog' };
 const FEED_HOLD = { workflow: 'paused', firmware: 'Hold' };
 
 const CONTROL = [
@@ -41,6 +42,20 @@ describe('paused with the firmware idle — a tool change', () => {
 
   test.each(PROGRAM)('%s is refused, because it would replace the paused job', (cmd) => {
     expect(programRefusal(cmd, TOOL_CHANGE)).toBe('program-running');
+  });
+});
+
+describe('paused, with a jog under way — the tool change, a moment later', () => {
+  test.each([...CONTROL, ...MANUAL])('%s goes through', (cmd) => {
+    // Grbl reports `Jog` the instant a jog starts, and the held key keeps
+    // saying so with `jogHold` every 100ms. Refusing that cut the jog through
+    // its deadman and told the operator a program was running — found by
+    // Mateusz jogging after a program paused on an error, 2026-09-24.
+    expect(programRefusal(cmd, JOGGING_IN_A_PAUSE)).toBeNull();
+  });
+
+  test.each(PROGRAM)('%s is still refused', (cmd) => {
+    expect(programRefusal(cmd, JOGGING_IN_A_PAUSE)).toBe('program-running');
   });
 });
 
