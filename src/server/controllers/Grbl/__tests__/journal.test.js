@@ -196,4 +196,23 @@ describe('the wire, at debug', () => {
       expect.objectContaining({ level: 'debug', source: 'controller', event: 'sent', data: { line: '$X' } }),
     ]);
   });
+
+  test('keeps the answers to jog segments too, which never reach the panel', () => {
+    // They are consumed by the jog's own count before anything is emitted, so
+    // the wire looked one-sided: twenty segments out and nothing back, and no
+    // way to tell from the journal whether the count ever came right.
+    journal.setLevel('debug');
+    const controller = setup();
+    controller.jogging.inFlight = 2;
+    const from = mark();
+
+    controller.runner.parse('ok');
+    controller.runner.parse('error:15');
+
+    expect(recordedSince(from)).toEqual([
+      expect.objectContaining({ level: 'debug', source: 'controller', event: 'received', data: { line: 'ok', jog: true } }),
+      expect.objectContaining({ level: 'debug', source: 'controller', event: 'received', data: { line: 'error:15', jog: true } }),
+    ]);
+    expect(controller.jogging.inFlight).toBe(0);
+  });
 });
