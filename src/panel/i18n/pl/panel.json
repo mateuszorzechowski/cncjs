@@ -10,11 +10,11 @@
     "probe": "Sonda",
     "diagShort": "Diag",
     "diag": "Diagnostyka",
-    "alarms": "Alarmy",
     "settings": "Ustawienia",
     "homing": "Bazowanie",
     "mdi": "MDI",
-    "more": "Więcej"
+    "more": "Więcej",
+    "journal": "Dziennik"
   },
   "topbar": {
     "controller": "sterownik",
@@ -360,5 +360,151 @@
     "panelNote": "najgorsza przerwa między potwierdzeniami tego panelu; decyduje, jak daleko pojedzie maszyna, gdy ta strona przestanie odpowiadać z wciśniętym klawiszem",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
     "atFeed": "drogi przy {{feedrate}} mm/min"
+  },
+  "journal": {
+    "title": "Dziennik",
+    "failed": "nie udało się odczytać dziennika: {{status}}",
+    "empty": "Na tym poziomie nic jeszcze nie zapisano.",
+    "more": "Starsze wpisy",
+    "filter": {
+      "level": "Poziom",
+      "source": "Źródło"
+    },
+    "keep": {
+      "label": "Dziennik zapisuje od",
+      "note": "Ustawienie serwera, takie samo na każdym urządzeniu. Debug zapisuje też każdą linię na kablu — włącz, gdy czegoś szukasz."
+    },
+    "level": {
+      "debug": "Debug",
+      "info": "Info",
+      "warn": "Uwaga",
+      "error": "Błąd"
+    },
+    "source": {
+      "all": "Wszystko",
+      "server": "Serwer",
+      "controller": "Sterownik"
+    },
+    "event": {
+      "alarm": "Alarm",
+      "error": "Błąd",
+      "message": "Komunikat",
+      "startup": "Start",
+      "sent": "Wysłano",
+      "received": "Odebrano",
+      "program": "Program",
+      "refused": "Odmowa",
+      "command": "Komenda",
+      "port": "Port",
+      "motion": "Ruch"
+    },
+    "program": {
+      "start": "Start {{name}}",
+      "resume": "Wznowiono {{name}} od linii {{line}}",
+      "finish": "Zakończono {{name}}",
+      "abort": "Przerwano {{name}} na linii {{line}} z {{total}}"
+    },
+    "pause": {
+      "m0": "Pauza na M0, linia {{line}}",
+      "m1": "Pauza na M1, linia {{line}}",
+      "m6": "Pauza na wymianę narzędzia (M6), linia {{line}}",
+      "error": "Pauza na błędzie, linia {{line}}",
+      "request": "Pauza na żądanie, linia {{line}}"
+    },
+    "command": {
+      "reset": "Reset — duży STOP albo Reset",
+      "estop": "Przerwij: wstrzymanie, potem reset",
+      "unlock": "Odblokowano alarm ($X)",
+      "homing": "Bazowanie ($H)",
+      "feedhold": "Wstrzymanie posuwu",
+      "cyclestart": "Wznowienie cyklu",
+      "sleep": "Uśpienie ($SLP)",
+      "zero": "Ustawiono zero robocze",
+      "goToWorkZero": "Dojazd do zera roboczego",
+      "goToPoint": "Dojazd do punktu",
+      "macro": "Uruchomiono makro",
+      "line": "Linia z konsoli: {{line}}",
+      "jogStart": "Start jogu",
+      "jogStep": "Krok jogu",
+      "jogStop": "Koniec jogu"
+    },
+    "port": {
+      "open": "Otwarto jako {{type}}, {{baudrate}}",
+      "close": "Zamknięto",
+      "lost": "Utracono połączenie: {{message}}"
+    },
+    "motion": {
+      "held": "Ruch prowadzi {{device}}",
+      "free": "Ruch wolny"
+    },
+    "detail": {
+      "time": "Czas",
+      "port": "Port",
+      "device": "Urządzenie",
+      "program": "Program",
+      "programLine": "Linia",
+      "lineOf": "{{line}} z {{total}}",
+      "sent": "Odrzucona linia",
+      "line": "Linia",
+      "text": "Treść",
+      "cmd": "Komenda",
+      "controller": "Sterownik",
+      "baudrate": "Prędkość",
+      "message": "Komunikat",
+      "name": "Plik",
+      "id": "Wpis"
+    }
+  },
+  "grbl": {
+    "alarm": {
+      "1": "Zadziałała krańcówka (twardy limit). Pozycja maszyny jest najpewniej utracona przez gwałtowne zatrzymanie. Zalecane ponowne bazowanie.",
+      "2": "Miękki limit: cel ruchu z G-code przekracza zakres maszyny. Pozycja maszyny zachowana. Alarm można bezpiecznie odblokować.",
+      "3": "Reset w trakcie ruchu. Pozycja maszyny jest najpewniej utracona przez gwałtowne zatrzymanie. Zalecane ponowne bazowanie.",
+      "4": "Błąd sondy: sonda nie jest w oczekiwanym stanie przed startem cyklu (dla G38.2 i G38.3 nie może być wyzwolona, dla G38.4 i G38.5 musi być).",
+      "5": "Błąd sondy: sonda nie dotknęła detalu w zaprogramowanym zakresie ruchu dla G38.2 i G38.4.",
+      "6": "Błąd bazowania: trwający cykl bazowania został zresetowany.",
+      "7": "Błąd bazowania: w trakcie cyklu otwarto drzwi bezpieczeństwa.",
+      "8": "Błąd bazowania: odjazd nie zwolnił krańcówki. Zwiększ odległość odjazdu albo sprawdź okablowanie.",
+      "9": "Błąd bazowania: nie znaleziono krańcówki w zakresie szukania. Zwiększ maksymalny zakres, zmniejsz odjazd albo sprawdź okablowanie.",
+      "10": "Błąd bazowania: druga krańcówka osi podwójnej nie zadziałała w ustawionej odległości po pierwszej. Zwiększ tę odległość albo sprawdź okablowanie."
+    },
+    "error": {
+      "1": "Słowa G-code składają się z litery i wartości. Nie znaleziono litery.",
+      "2": "Brak oczekiwanej wartości słowa G-code albo niepoprawny format liczby.",
+      "3": "Polecenie systemowe Grbla ('$') nie zostało rozpoznane albo nie jest obsługiwane.",
+      "4": "Otrzymano wartość ujemną tam, gdzie oczekiwana jest dodatnia.",
+      "5": "Bazowanie nie powiodło się: bazowanie nie jest włączone w ustawieniach.",
+      "6": "Minimalny czas impulsu kroku musi być dłuższy niż 3 µs.",
+      "7": "Odczyt EEPROM nie powiódł się. Uszkodzone wartości przywrócono do domyślnych.",
+      "8": "Polecenia '$' Grbla można używać tylko w stanie IDLE. Chroni to płynność pracy w trakcie zadania.",
+      "9": "Polecenia G-code są zablokowane w stanie alarmu albo jogu.",
+      "10": "Miękkich limitów nie da się włączyć bez włączonego bazowania.",
+      "11": "Przekroczono maksymalną liczbę znaków w linii. Odebrana linia nie została wykonana.",
+      "12": "Wartość ustawienia '$' powoduje przekroczenie maksymalnej obsługiwanej częstotliwości kroków.",
+      "13": "Wykryto otwarcie drzwi bezpieczeństwa i włączono stan drzwi.",
+      "14": "Informacje o kompilacji albo linia startowa przekroczyły limit długości linii w EEPROM. Nie zapisano.",
+      "15": "Cel jogu przekracza zakres ruchu maszyny. Polecenie jogu zostało zignorowane.",
+      "16": "Polecenie jogu nie ma znaku '=' albo zawiera niedozwolony G-code.",
+      "17": "Tryb lasera wymaga wyjścia PWM.",
+      "20": "W bloku znaleziono nieobsługiwane albo niepoprawne polecenie G-code.",
+      "21": "W bloku jest więcej niż jedno polecenie G-code z tej samej grupy modalnej.",
+      "22": "Posuw nie został jeszcze ustawiony albo jest nieokreślony.",
+      "23": "Polecenie G-code w bloku wymaga wartości całkowitej.",
+      "24": "W bloku jest więcej niż jedno polecenie G-code wymagające słów osi.",
+      "25": "W bloku powtórzono słowo G-code.",
+      "26": "Brak słów osi w bloku dla polecenia G-code albo bieżącego stanu modalnego, które ich wymagają.",
+      "27": "Niepoprawny numer linii.",
+      "28": "Polecenie G-code nie ma wymaganego słowa wartości.",
+      "29": "Układy współrzędnych G59.x nie są obsługiwane.",
+      "30": "G53 jest dozwolone tylko w trybach ruchu G0 i G1.",
+      "31": "W bloku są słowa osi, których nie używa żadne polecenie ani bieżący stan modalny.",
+      "32": "Łuki G2 i G3 wymagają co najmniej jednego słowa osi w płaszczyźnie łuku.",
+      "33": "Niepoprawny cel polecenia ruchu.",
+      "34": "Niepoprawna wartość promienia łuku.",
+      "35": "Łuki G2 i G3 wymagają co najmniej jednego słowa przesunięcia (I, J, K) w płaszczyźnie łuku.",
+      "36": "W bloku są niewykorzystane słowa wartości.",
+      "37": "Dynamiczna korekcja długości narzędzia G43.1 nie jest przypisana do skonfigurowanej osi długości narzędzia.",
+      "38": "Numer narzędzia większy niż maksymalna obsługiwana wartość."
+    }
   }
 }

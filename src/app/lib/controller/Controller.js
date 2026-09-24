@@ -132,6 +132,17 @@ class Controller {
          * @param {string} device - the holder's id, or null
          */
         'controller:motion': [],
+
+        /**
+         * One entry of the server's journal, as it is recorded.
+         *
+         * To every socket, whether or not it holds a port: the journal is the
+         * server's. See `src/server/services/journal`.
+         *
+         * @event journal:entry
+         * @param {object} entry - `{ id, time, level, source, event, code, port, device, program, data }`
+         */
+        'journal:entry': [],
         'message': [],
         'watchdir:change': [],
 
