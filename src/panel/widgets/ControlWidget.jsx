@@ -4,6 +4,9 @@ import controller from '../machine/controller';
 import { CONTROLS, controlsFor, sendControl } from '../machine/control';
 import { t } from '../i18n';
 
+/** Hold is amber and resume blue, as they are in the status bar. */
+const TONES = { hold: 'hold', resume: 'primary' };
+
 const LABELS = {
   unlock: () => t('control.unlock'),
   hold: () => t('control.hold'),
@@ -27,6 +30,7 @@ const ControlWidget = ({ machine, className = '' }) => {
       {CONTROLS.map((id) => (
         <Button
           key={id}
+          tone={TONES[id] || 'outline'}
           compact
           disabled={!live[id]}
           onClick={() => sendControl(controller, id, machine.workflow)}

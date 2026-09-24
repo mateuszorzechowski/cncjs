@@ -4,7 +4,9 @@
  * One component rather than a class string copied into each widget. The
  * mockup uses five fills and they mean things: accent is the action a screen
  * is for, outline is the one beside it, soft is an action that will exist but
- * does not yet, green starts work and red stops it. Those are decisions about
+ * does not yet, green starts work and red stops it. Amber, the sixth, holds
+ * it — pause and feed hold — and blue, the accent, is what resumes it
+ * (Mateusz, 2026-09-24). Those are decisions about
  * the machine, not about colour, and they belong in one file where changing
  * one changes all of them.
  *
@@ -20,6 +22,7 @@ const TONES = {
     'disabled:opacity-45 disabled:hover:border-line disabled:hover:text-ink',
   soft: `border border-acc bg-accS text-acc hover:brightness-95 ${OFF}`,
   go: `border border-grn bg-grn text-white hover:brightness-95 ${OFF}`,
+  hold: `border border-amb bg-amb text-white hover:brightness-95 ${OFF}`,
   stop: `border border-red bg-red text-white hover:brightness-90 ${OFF}`,
 };
 
