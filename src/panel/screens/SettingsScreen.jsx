@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
+import JournalLevelChoice from '../ui/JournalLevelChoice';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import ThemeChoice from '../ui/ThemeChoice';
 import ConnectScreen from './ConnectScreen';
@@ -87,6 +88,8 @@ const SettingsScreen = ({ machine }) => {
                 * it is the one thing on this tab that changes something the
                 * operator is looking at while they change it. */}
               <ThemeChoice />
+              <span className="h-px bg-line" />
+              <JournalLevelChoice />
               <span className="h-px bg-line" />
               <AppScreen />
             </Card>

@@ -13,6 +13,7 @@ import StateHelp from './ui/StateHelp';
 import { applyUpdate, isUpdateReady, watchUpdate } from './machine/update';
 import Dashboard from './screens/Dashboard';
 import JogScreen from './screens/JogScreen';
+import JournalScreen from './screens/JournalScreen';
 import PathScreen from './screens/PathScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ZeroScreen from './screens/ZeroScreen';
@@ -41,7 +42,8 @@ const DESTINATIONS = [
   { id: 'path', key: 'nav.path', ready: true },
   { id: 'probe', key: 'nav.probe', ready: false },
   { id: 'diag', key: 'nav.diag', ready: false },
-  { id: 'alarms', key: 'nav.alarms', ready: false },
+  // What happened, in place of the alarm list it was drawn as (2026-09-24).
+  { id: 'journal', key: 'nav.journal', ready: true },
   { id: 'homing', key: 'nav.homing', ready: false },
   { id: 'mdi', key: 'nav.mdi', ready: false },
   /*
@@ -61,7 +63,7 @@ const DESTINATIONS = [
  * What a phone sees without pulling, and what pulling reveals.
  *
  * The bottom row is the drawing's own five — `pulpit`, `jog`, `zero`,
- * `pliki`, `alarmy`. It went to six when the connection arrived, then to four
+ * `pliki`, `alarmy` — with the last now the journal that replaced it. It went to six when the connection arrived, then to four
  * when that turned out to be a tab too many; with the menu drawn as icons the
  * width argument is gone and the drawing's list is the right one again.
  *
@@ -69,7 +71,7 @@ const DESTINATIONS = [
  * from a phone, which is what adding tabs to the bar was trying and failing
  * to buy.
  */
-const PHONE_IDS = ['dashboard', 'jog', 'zero', 'files', 'alarms'];
+const PHONE_IDS = ['dashboard', 'jog', 'zero', 'files', 'journal'];
 const PHONE_DESTINATIONS = PHONE_IDS
   .map((id) => DESTINATIONS.find((d) => d.id === id))
   .map((d) => (d.id === 'zero' ? { ...d, label: t('nav.zeroShort') } : d));
@@ -96,6 +98,7 @@ const PHONE_REST = DESTINATIONS
  */
 const SCREENS = {
   jog: JogScreen,
+  journal: JournalScreen,
   path: PathScreen,
   zero: ZeroScreen,
   settings: SettingsScreen,

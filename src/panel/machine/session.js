@@ -35,6 +35,15 @@ const reach = async (url, options) => {
   }
 };
 
+/*
+ * The token of the last sign-in, for the few requests made outside
+ * `useMachine` — the journal's. Held here because this is where it comes from;
+ * nothing writes it but `signIn`.
+ */
+let current = null;
+
+export const currentToken = () => current;
+
 export const signIn = async ({ name = '', password = '' } = {}) => {
   const res = await reach('/api/signin', {
     method: 'POST',
@@ -54,6 +63,7 @@ export const signIn = async ({ name = '', password = '' } = {}) => {
     throw new Error(t('error.noToken'));
   }
 
+  current = token;
   return { token, accountsEnabled: Boolean(enabled) };
 };
 

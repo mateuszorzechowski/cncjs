@@ -66,6 +66,9 @@ const KEYS = {
  * affordable, and the code itself is worth more to whoever is reading it than
  * a shrug — so it goes in the sentence, the way a port name does.
  */
+/** The same words, for the journal, which reads refusals back later. */
+export const REFUSAL_KEYS = KEYS;
+
 export const refusalMessage = (refusal) => {
   if (!refusal || !refusal.reason) {
     return null;

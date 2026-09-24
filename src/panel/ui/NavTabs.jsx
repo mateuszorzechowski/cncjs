@@ -41,7 +41,8 @@ const MARKS = {
   jog: 'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',
   zero: 'M12 3v18M3 12h18M12 12m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0',
   files: 'M4 4h6l2 3h8v13H4zM4 9h16',
-  alarms: 'M12 4a6 6 0 0 0-6 6v4l-2 3h16l-2-3v-4a6 6 0 0 0-6-6zM10 20a2 2 0 0 0 4 0',
+  // Lines of a record, not a bell: it is what happened, not only alarms.
+  journal: 'M5 5h14v14H5zM8 9h8M8 12h8M8 15h5',
   // The cut itself: a route across the work.
   path: 'M3 17l4-8 4 5 3-8 3 6 4-4',
   // A tip coming down onto a surface until it touches.
