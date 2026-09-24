@@ -98,6 +98,7 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
             {t('job.start')}
           </Button>
           <Button
+            tone={program.paused ? 'primary' : 'hold'}
             disabled={!program.canPause}
             onClick={() => pressPause(controller, program.paused)}
             className="h-chiph min-w-0"

@@ -66,7 +66,7 @@ const JobStatusLine = ({ job, error, canStart, onStart, canPause, paused, onPaus
     </Button>
     {/* One button, two faces: a paused program is resumed where it was
       * paused, so the hand that pressed Pause finds Resume under it. */}
-    <Button disabled={!canPause} onClick={onPause} className="h-9">
+    <Button tone={paused ? 'primary' : 'hold'} disabled={!canPause} onClick={onPause} className="h-9">
       {paused ? t('job.resume') : t('job.pause')}
     </Button>
   </>
