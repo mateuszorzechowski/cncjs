@@ -1,3 +1,4 @@
+import DateTimeField from './DateTimeField';
 import SegmentedChoice from './SegmentedChoice';
 import TextField from './TextField';
 import { LEVELS } from '../machine/journal';
@@ -12,6 +13,11 @@ const SOURCES = ['server', 'controller'];
 const CHOICES = [...RANGES, 'custom'];
 
 const CUSTOM = ['custom'];
+
+// Where a first pick lands in the day: a window starts at midnight and ends
+// a minute before the next.
+const START_OF_DAY = { hours: 0, minutes: 0 };
+const END_OF_DAY = { hours: 23, minutes: 59 };
 
 const RANGE_KEYS = {
   m15: 'journal.range.m15',
@@ -65,8 +71,8 @@ const JournalFilters = ({ filters, counts, matched, kept, sheet = false }) => {
   const custom = filters.range === 'custom'
     ? (
       <div className={sheet ? 'flex flex-col gap-2' : 'flex flex-wrap items-center gap-x-4 gap-y-2'}>
-        <TextField caption type="datetime-local" label={t('journal.filter.from')} value={filters.from} onChange={(e) => filters.setFrom(e.target.value)} />
-        <TextField caption type="datetime-local" label={t('journal.filter.to')} value={filters.to} onChange={(e) => filters.setTo(e.target.value)} />
+        <DateTimeField native={sheet} label={t('journal.filter.from')} value={filters.from} onChange={filters.setFrom} time={START_OF_DAY} />
+        <DateTimeField native={sheet} label={t('journal.filter.to')} value={filters.to} onChange={filters.setTo} time={END_OF_DAY} />
       </div>
     )
     : null;
@@ -88,8 +94,8 @@ const JournalFilters = ({ filters, counts, matched, kept, sheet = false }) => {
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <SegmentedChoice compact {...levels} />
-      <SegmentedChoice compact {...sources} />
+      <SegmentedChoice compact joined {...levels} />
+      <SegmentedChoice compact joined {...sources} />
       <TextField
         type="search"
         label={t('journal.filter.search')}
