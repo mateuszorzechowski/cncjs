@@ -46,6 +46,16 @@ module.exports = ({ mode, outputPath }) => ({
     clean: true,
     path: outputPath,
     /*
+     * Always write in development, even an identical bundle.
+     *
+     * The e2e preflight decides freshness by modification time, and webpack
+     * otherwise skips a file whose content has not changed — so after a
+     * `git pull` rewrote sources with the same content, no rebuild could
+     * ever bring the bundle's time back ahead of them, and the preflight's
+     * own advice ("rebuild") could not work. Found 2026-09-24.
+     */
+    compareBeforeEmit: mode === 'production',
+    /*
      * The worker keeps its name; everything else gets a content hash in
      * production. A hashed service worker is one the browser can never find
      * again: the page registers `/panel/sw.js` by that literal path, and a

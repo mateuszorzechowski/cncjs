@@ -1,4 +1,7 @@
-const { duplicateRoles } = require('../preflight');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { duplicateRoles, newestUnder } = require('../preflight');
 
 /**
  * Telling one watcher from two.
@@ -74,5 +77,49 @@ describe('duplicateRoles', () => {
 
   it('says nothing about a machine with nothing running', () => {
     expect(duplicateRoles([])).toEqual([]);
+  });
+});
+
+/**
+ * What counts as the panel's source, when asking whether its bundle is stale.
+ *
+ * Wrong once for a note (`server-backlog.md`) and once for a test: both sit
+ * under `src/panel`, neither is read by webpack, and editing either refused a
+ * run that could pass.
+ */
+describe('newestUnder', () => {
+  const tree = () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-'));
+    const at = (file, when) => {
+      const full = path.join(root, file);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, '');
+      fs.utimesSync(full, when / 1000, when / 1000);
+    };
+    return { root, at };
+  };
+
+  test('is the newest file webpack builds from', () => {
+    const { root, at } = tree();
+    at('machine/readings.js', 1000000);
+    at('ui/Button.jsx', 2000000);
+
+    expect(newestUnder(root)).toBe(2000000);
+  });
+
+  test('ignores a test, which is never bundled', () => {
+    const { root, at } = tree();
+    at('machine/readings.js', 1000000);
+    at('machine/__tests__/readings.test.js', 9000000);
+
+    expect(newestUnder(root)).toBe(1000000);
+  });
+
+  test('ignores a note', () => {
+    const { root, at } = tree();
+    at('machine/readings.js', 1000000);
+    at('server-backlog.md', 9000000);
+
+    expect(newestUnder(root)).toBe(1000000);
   });
 });

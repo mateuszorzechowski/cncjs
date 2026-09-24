@@ -56,6 +56,17 @@ const IGNORED_REQUESTS = [
    * recorded as one.
    */
   /\/socket\.io\/\?.*transport=polling.*[?&]sid=/i,
+  /*
+   * The old application's Commands, which the server no longer has.
+   *
+   * **Known, and decided.** The Commands API ran shell commands a client had
+   * stored, and it was removed (PR #111); Mateusz chose to leave the old
+   * application untouched rather than take its Commands tab out (2026-09-24),
+   * so its header asks for the list on every page and gets 404. Forgiven for
+   * exactly this path, so every other 404 — including another endpoint that
+   * goes missing — still fails the suite.
+   */
+  /\/api\/commands(\?|$)/i,
 ];
 
 const matches = (patterns, text) => patterns.some((re) => re.test(text));

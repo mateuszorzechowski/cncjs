@@ -36,8 +36,13 @@ const APP_OUTPUT = path.join(ROOT, 'output', 'cncjs', 'app');
  * a note declared the bundle stale and refused a run that was perfectly able
  * to pass. That happened on the first real use of this check, which is the
  * argument for the list rather than for the directory.
+ *
+ * Nor anything under `__tests__`: a test is a `.js` file webpack never
+ * bundles, so editing one declared the bundle stale and refused a smoke run
+ * — the fourth time this check was wrong about a healthy tree (2026-09-24).
  */
 const BUILT_FROM = /\.(jsx?|css|json|html)$/i;
+const NOT_BUILT = new Set(['__tests__']);
 
 /** The newest modification time among a directory's buildable files, or 0. */
 const newestUnder = (dir) => {
@@ -52,7 +57,9 @@ const newestUnder = (dir) => {
     for (const entry of entries) {
       const full = path.join(at, entry.name);
       if (entry.isDirectory()) {
-        walk(full);
+        if (!NOT_BUILT.has(entry.name)) {
+          walk(full);
+        }
       } else if (BUILT_FROM.test(entry.name)) {
         const { mtimeMs } = fs.statSync(full);
         newest = Math.max(newest, mtimeMs);
@@ -616,4 +623,4 @@ const preflight = async (baseUrl, projects, { filtered = false } = {}) => {
   };
 };
 
-module.exports = { preflight, FOR_PROJECT, duplicateRoles };
+module.exports = { preflight, FOR_PROJECT, duplicateRoles, newestUnder };
