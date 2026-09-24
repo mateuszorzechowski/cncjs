@@ -64,6 +64,12 @@ export const useMachine = () => {
     // The program the sender is holding, as text. See the `gcode:load`
     // handler below for why a panel gets this without asking.
     gcode: null,
+    /*
+     * The last command the server would not carry out, and why. Null until
+     * one is, which on a panel whose buttons are dark before they are pressed
+     * is almost always. See `machine/refusal`.
+     */
+    refusal: null,
   }));
 
   /**
@@ -216,6 +222,24 @@ export const useMachine = () => {
       },
       'gcode:unload': () => {
         setSnapshot((previous) => ({ ...previous, gcode: null }));
+      },
+
+      /**
+       * A command this panel sent that the server will not carry out.
+       *
+       * Only ever the race — a control is dark before it is pressed, so the
+       * press that gets this far was live when the thumb came down and was
+       * not by the time it landed.
+       *
+       * Counted, because two identical refusals are two presses. Without a
+       * number that changes, the second one is the same object as the first
+       * and nothing downstream can tell it happened at all.
+       */
+      'command:refused': ({ cmd, reason }) => {
+        setSnapshot((previous) => ({
+          ...previous,
+          refusal: { cmd, reason, seq: (previous.refusal?.seq ?? 0) + 1 },
+        }));
       },
 
       /*

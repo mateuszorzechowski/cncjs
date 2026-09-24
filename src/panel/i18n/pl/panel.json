@@ -237,6 +237,12 @@
     "refreshWhy": "Pobiera z serwera najnowszą wersję panelu.",
     "updateReady": "Na serwerze czeka nowsza wersja panelu. Odśwież, żeby ją wziąć."
   },
+  "refusal": {
+    "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",
+    "noWcs": "Maszyna nie podała, w którym układzie współrzędnych pracuje.",
+    "unknownCommand": "Ten serwer nie zna komendy {{cmd}}. Jest starszy niż ten panel.",
+    "other": "Serwer odmówił komendy {{cmd}}: {{reason}}."
+  },
   "notice": {
     "warning": "Ostrzeżenie"
   },

@@ -8,6 +8,7 @@ import { BITE_FILL, BITE_LINE, BITE_VIEWBOX } from './ui/navEdge';
 import StatusBar from './ui/StatusBar';
 import TopBar from './ui/TopBar';
 import StatusSheet from './ui/StatusSheet';
+import RefusalNotice from './ui/RefusalNotice';
 import StateHelp from './ui/StateHelp';
 import { applyUpdate, isUpdateReady, watchUpdate } from './machine/update';
 import Dashboard from './screens/Dashboard';
@@ -207,8 +208,8 @@ const Panel = ({ machine, screen, onScreen }) => {
           * the layout, and the layout is what this element owns.
           */}
         <main
-          className={`flex min-h-0 min-w-0 flex-1 flex-col p-shellPad ${phone
-            ? 'relative pb-0 [--thumbGutter:var(--shellPad)] [&_section:last-child]:pb-[calc(var(--pad)+var(--navBite))]'
+          className={`relative flex min-h-0 min-w-0 flex-1 flex-col p-shellPad ${phone
+            ? 'pb-0 [--thumbGutter:var(--shellPad)] [&_section:last-child]:pb-[calc(var(--pad)+var(--navBite))]'
             : ''}`}
         >
           {/*
@@ -304,6 +305,16 @@ const Panel = ({ machine, screen, onScreen }) => {
               </svg>
             </div>
           ) : null}
+
+          {/*
+            * Why the last press did nothing, on whichever screen it came from.
+            *
+            * Over the content rather than in it, and inert — see
+            * `RefusalNotice`. `main` is the positioning parent, which is what
+            * the `relative` above is for; it used to be there only on a phone,
+            * for the bite.
+            */}
+          <RefusalNotice refusal={machine.refusal} />
 
           <FooterSlotProvider value={setFooter}>
             {Screen
