@@ -28,7 +28,7 @@ import { t } from '../i18n';
  * beneath it.
  */
 const ZHeightWidget = ({ machine, label = t('zheight.title'), className = '' }) => {
-  const { position, machinePosition, modal, connected, canSendGcode, type } = machine;
+  const { position, machinePosition, modal, canZero: mayZero, type } = machine;
   /*
    * Dark for either reason, and the second one was missing here.
    *
@@ -37,9 +37,10 @@ const ZHeightWidget = ({ machine, label = t('zheight.title'), className = '' }) 
    * from a corner of the dashboard, never did. So in alarm its buttons looked
    * live, the press reached the server and the server threw the line away.
    * Found by pressing it at an alarmed machine to watch the refusal arrive —
-   * which is a refusal that should never have had the chance.
+   * which is a refusal that should never have had the chance. A program
+   * under way is the other reason now — see `readings.canZero`.
    */
-  const canZero = connected && canSendGcode && activeWcsNumber(modal) > 0;
+  const canZero = mayZero && activeWcsNumber(modal) > 0;
   const machineZ = formatPosition(machinePosition.z);
 
   return (

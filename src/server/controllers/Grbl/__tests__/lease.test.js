@@ -50,26 +50,6 @@ describe('whether this device may move the machine', () => {
     })).toBe('held-elsewhere');
   });
 
-  test('no, while a program is running — to anybody, including whoever started it', () => {
-    // The planner belongs to the job. The device that pressed Start has no
-    // more right to jog into it than any other, and saying `held-elsewhere` to
-    // the operator holding the pendant that started it would be true and
-    // useless.
-    expect(motionRefusal({
-      programRunning: true,
-      lease: renewed(PENDANT, 1000),
-      device: PENDANT,
-      now: 1100,
-    })).toBe('program-running');
-
-    expect(motionRefusal({
-      programRunning: true,
-      lease: null,
-      device: PENDANT,
-      now: 1100,
-    })).toBe('program-running');
-  });
-
   test('no, to a client with no identity, while another holds it', () => {
     // A client that sends none gets its socket id from `CNCEngine`, so this is
     // really about the null never leaking through. Two nulls comparing equal

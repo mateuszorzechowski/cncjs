@@ -239,6 +239,19 @@ const readJob = (job) => {
  * here and only here.
  */
 /**
+ * Whether a program under way leaves nothing to this panel but stopping it.
+ *
+ * The server's rule (`program-gate.js`), read here so a key is dark before it
+ * is pressed. Running, the job owns the machine. Paused with the firmware
+ * standing still is a tool change, and the operator may jog, touch off and
+ * zero; paused in `Hold` — a feed hold, an `M0` — is as good as running,
+ * since Grbl refuses a jog there itself.
+ */
+export const programHolds = (workflow, word) => (
+  workflow === 'running' || (workflow === 'paused' && word !== 'Idle')
+);
+
+/**
  * Why this panel may not move the machine, or null when it may.
  *
  * **One reading for two refusals, because they grey out the same keys.** The
@@ -250,10 +263,10 @@ const readJob = (job) => {
  * and moves nothing, so the server does not arbitrate it, and a panel that
  * greyed the zero buttons out while somebody else jogged would be inventing a
  * restriction the machine does not have — the same mistake as reading `Door`
- * as an alarm.
+ * as an alarm. A program is another matter — see `programHolds`.
  */
-export const movementHeld = (workflow, motion, device) => {
-  if (workflow && workflow !== 'idle') {
+export const movementHeld = (workflow, motion, device, word) => {
+  if (programHolds(workflow, word)) {
     return 'program-running';
   }
   if (motion && motion !== device) {
@@ -273,7 +286,7 @@ export const readMachine = ({
   // window in which every jog key looked pressable and did nothing.
   const connected = Boolean(port) && connection === 'open' && Boolean(attached);
   const active = connected ? activeStateOf(type, state) : null;
-  const held = movementHeld(workflow, motion, device);
+  const held = movementHeld(workflow, motion, device, active?.word);
 
   // Two kinds of word, and only one of them is language. The four states the
   // panel invents for itself are keys, translated where the chip is drawn;
@@ -366,6 +379,15 @@ export const readMachine = ({
      * the panel inventing a restriction the machine does not have.
      */
     canSendGcode: connected && active?.word !== ALARM,
+    /**
+     * Whether a work offset may be written now.
+     *
+     * A line that reaches the firmware, and no program for it to land in the
+     * middle of: a `G10 L20` between two lines of a job moves every cut still
+     * to come, so the server refuses it (`program-running`). The lease is not
+     * part of it — zeroing moves nothing.
+     */
+    canZero: connected && active?.word !== ALARM && held !== 'program-running',
     /**
      * Whether this panel may set the machine moving.
      *

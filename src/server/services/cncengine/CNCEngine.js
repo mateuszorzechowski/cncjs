@@ -37,6 +37,23 @@ const log = logger('service:cncengine');
  */
 const CONNECTION_KEY = 'state.connection';
 
+/**
+ * Whether a client's request may be carried out now, said out loud when not.
+ *
+ * Asked here, at the door, rather than inside `command`, because the server
+ * calls `command` itself — a tool change, a G-code event — and a rule about
+ * what a *client* may do during a program must not refuse the program's own
+ * work. Only Grbl has such a rule; the other three carry on as they did.
+ */
+export const admits = (controller, cmd, data) => {
+  const reason = controller.clientRefusal?.(cmd, data);
+  if (reason) {
+    controller.refuse(cmd, reason);
+    return false;
+  }
+  return true;
+};
+
 // Case-insensitive equality checker.
 // @param {string} str1 First string to check.
 // @param {string} str2 Second string to check.
@@ -549,7 +566,9 @@ class CNCEngine {
            */
           controller.commandSocket = socket;
           try {
-            controller.command.apply(controller, [cmd].concat(args));
+            if (admits(controller, cmd)) {
+              controller.command.apply(controller, [cmd].concat(args));
+            }
           } finally {
             controller.commandSocket = null;
           }
@@ -564,7 +583,14 @@ class CNCEngine {
             return;
           }
 
-          controller.write(data, context);
+          controller.commandSocket = socket;
+          try {
+            if (admits(controller, 'write', data)) {
+              controller.write(data, context);
+            }
+          } finally {
+            controller.commandSocket = null;
+          }
         });
 
         socket.on('writeln', (port, data, context = {}) => {
@@ -576,7 +602,14 @@ class CNCEngine {
             return;
           }
 
-          controller.writeln(data, context);
+          controller.commandSocket = socket;
+          try {
+            if (admits(controller, 'write', data)) {
+              controller.writeln(data, context);
+            }
+          } finally {
+            controller.commandSocket = null;
+          }
         });
       });
     }
