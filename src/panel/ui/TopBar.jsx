@@ -1,4 +1,5 @@
 import Button from './Button';
+import HelpButton from './HelpButton';
 import StateChip from './StateChip';
 import { t } from '../i18n';
 
@@ -44,7 +45,7 @@ import { t } from '../i18n';
  * rail's own width. On a phone there is no rail to line up with and the chip
  * has no box, so it keeps the bar's ordinary margin instead.
  */
-const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpdate }) => (
+const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpdate, help }) => (
   /*
     * The safe area is padded here rather than on the body.
     *
@@ -59,6 +60,9 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpd
     <StateChip tone={status.tone} label={t('topbar.state')} onPress={onStatus}>
       {status.word}
     </StateChip>
+    {/* The open screen's help, beside the chip and as tall as it, on a phone
+      * only — wider, the screen's card has room for its own. `headerSlot`. */}
+    {help ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:hidden" /> : null}
 
     {/* Top left, a line each. Which controller and which port are two
       * separate facts and read faster stacked than joined with a dot; kept

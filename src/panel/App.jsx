@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { t } from './i18n';
 import { FooterSlotProvider } from './ui/footerSlot';
+import { HeaderHelpProvider } from './ui/headerSlot';
 import { ShellNodeProvider, ShellWidthProvider, useIsPhone, useMeasuredShell } from './ui/shell';
 import NavRail from './ui/NavRail';
 import NavTabs from './ui/NavTabs';
@@ -107,6 +108,9 @@ const SCREENS = {
 const Panel = ({ machine, screen, onScreen }) => {
   const phone = useIsPhone();
   const [footer, setFooter] = useState(null);
+  // The open screen's own help, drawn in the top bar on a phone. See
+  // `ui/headerSlot`.
+  const [screenHelp, setScreenHelp] = useState(null);
   /*
    * What the state chip opens, and what that opens in turn.
    *
@@ -167,6 +171,7 @@ const Panel = ({ machine, screen, onScreen }) => {
         onStop={stop}
         updateReady={updateReady}
         onUpdate={applyUpdate}
+        help={screenHelp}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -316,11 +321,13 @@ const Panel = ({ machine, screen, onScreen }) => {
             */}
           <RefusalNotice refusal={machine.refusal} />
 
-          <FooterSlotProvider value={setFooter}>
-            {Screen
-              ? <Screen machine={machine} />
-              : <Dashboard machine={machine} onGo={onScreen} />}
-          </FooterSlotProvider>
+          <HeaderHelpProvider value={setScreenHelp}>
+            <FooterSlotProvider value={setFooter}>
+              {Screen
+                ? <Screen machine={machine} />
+                : <Dashboard machine={machine} onGo={onScreen} />}
+            </FooterSlotProvider>
+          </HeaderHelpProvider>
         </main>
       </div>
 

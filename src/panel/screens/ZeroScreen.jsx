@@ -3,6 +3,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import DroStack from '../ui/DroStack';
 import ZeroHelp from '../ui/ZeroHelp';
+import { useHeaderHelp } from '../ui/headerSlot';
 import { zero, activeWcsNumber } from '../machine/zero';
 import { t } from '../i18n';
 
@@ -34,6 +35,7 @@ import { t } from '../i18n';
 const ZeroScreen = ({ machine }) => {
   const { position, machinePosition, modal, connected, canSendGcode, canZero: mayZero, status, type } = machine;
   const [help, setHelp] = useState(false);
+  useHeaderHelp(t('zero.help.open'), () => setHelp(true));
 
   /*
    * Which coordinate system, and the refusal when there is none.
