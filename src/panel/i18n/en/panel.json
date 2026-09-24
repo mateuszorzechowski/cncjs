@@ -28,7 +28,8 @@
     "connecting": "Connecting",
     "noPort": "No port",
     "attaching": "Attaching",
-    "noReading": "No reading"
+    "noReading": "No reading",
+    "paused": "Paused"
   },
   "sheet": {
     "close": "Close",
@@ -109,7 +110,8 @@
     "spindle": "spindle",
     "start": "Start job",
     "pause": "Pause",
-    "resume": "Resume"
+    "resume": "Resume",
+    "abort": "Abort"
   },
   "tool": {
     "number": "T{{number}}",
@@ -297,11 +299,12 @@
     "goConnect": "Go to the connection"
   },
   "stateHelp": {
+    "paused": "The program was paused by the server, not by the controller: the server stopped sending lines, and Grbl finished what was in its buffer and is standing still. A program stops like this on M6 (tool change), on an error in the file, or after the Pause button. You may jog and zero; Resume sends the rest, Abort ends the program.",
     "title": "States",
     "open": "What the states mean",
     "sends": "Commands arrive",
     "drops": "Nothing arrives",
-    "alarm": "The machine will not move until it is homed or unlocked. The panel will not unlock it for you: that gives an unreferenced machine permission to move, and what is on the other end of the cable is your business.",
+    "alarm": "The machine will not move until it is homed or unlocked. The panel will not unlock it by itself — the Unlock button in the Commands card does, when you say so, because that gives an unreferenced machine permission to move, and what is on the other end of the cable is your business.",
     "door": "A hold that arrived from outside — a guard, or an interlock. It looks like an alarm and is not: the machine resumes, and commands are sent as usual.",
     "note": "Alarm is the only state in which the server refuses to send — for Grbl, Smoothie and TinyG it drops the line rather than handing it to the machine, and the controls that would write are switched off while it lasts. Marlin has no notion of alarm at all: the gate is there in the code and always lets the line past, so nothing is ever held back on one.",
     "ours": "Panel states",
@@ -328,7 +331,7 @@
     "shutdown": "The controller shut down after a critical fault. The panel still sends — it is TinyG refusing, until a reset.",
     "panic": "A critical failure. The panel still sends; TinyG will take nothing before a reset.",
     "blind": "Sent blind",
-    "alarmGrbl": "The machine will not move until it is homed or unlocked. Opening the port resets Grbl, and with homing enabled ($22=1) that is exactly how it comes up. The panel will not unlock it for you: that gives an unreferenced machine permission to move, and what is on the other end of the cable is your business."
+    "alarmGrbl": "The machine will not move until it is homed or unlocked. Opening the port resets Grbl, and with homing enabled ($22=1) that is exactly how it comes up. The panel will not unlock it by itself — the Unlock button in the Commands card does, when you say so, because that gives an unreferenced machine permission to move, and what is on the other end of the cable is your business. After a STOP in motion (ALARM:3) the position is lost, and homing is the right way out."
   },
   "error": {
     "unreachable": "the server is not answering",

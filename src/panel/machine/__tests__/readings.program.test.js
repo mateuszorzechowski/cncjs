@@ -28,6 +28,18 @@ describe('readMachine, while a program is under way', () => {
     expect(pendant(toolChange).canZero).toBe(true);
   });
 
+  test('a pause the sender made says Pauza, not the Idle the firmware reports', () => {
+    // An `M6`, an error in the file or the Pause button: the program is
+    // stopped and Grbl has nothing left to do, so it says Idle — and a chip
+    // reading IDLE over a job that is half done reads as a job that is over.
+    const paused = pendant({ workflow: 'paused' });
+    expect(paused.status).toMatchObject({ key: 'status.paused', word: null, tone: 'ready' });
+    // The firmware's word wins whenever it has one worth saying.
+    expect(pendant({ workflow: 'paused', state: { status: { activeState: 'Hold' } } }).status.word).toBe('Hold');
+    expect(pendant({ workflow: 'paused', state: { status: { activeState: 'Jog' } } }).status.word).toBe('Jog');
+    expect(pendant({ workflow: 'idle' }).status.word).toBe('Idle');
+  });
+
   test('and the pad stays live while that jog is moving', () => {
     // Grbl reports `Jog` the instant the key goes down. A pad that went dark
     // then would let go of the key under the operator's finger.

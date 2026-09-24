@@ -19,8 +19,6 @@ import ZeroScreen from './screens/ZeroScreen';
 import { useMachine } from './machine/useMachine';
 import { adviceFor } from './machine/advice';
 import { emergencyStop } from './machine/commands';
-import controller from './machine/controller';
-import { pressPause, programControls, startProgram } from './machine/program';
 
 /**
  * Every destination the mockup draws, with `ready` saying which ones exist.
@@ -131,16 +129,12 @@ const Panel = ({ machine, screen, onScreen }) => {
   const Screen = SCREENS[screen];
 
   /*
-   * Wrapped rather than handed to `onStop` directly.
-   *
-   * As a handler it would be called with the click event as its first
-   * argument, and `emergencyStop` reads that argument as the controller type —
-   * so a SyntheticEvent would mean every machine, Grbl included, quietly took
-   * the fallback path with the gap back in a browser timer. The kind of wrong
-   * that keeps working.
+   * Wrapped rather than handed to `onStop` directly, so the click event is
+   * never an argument. `emergencyStop` takes none today; `controlledStop`,
+   * which this button used to be, read its first as the controller type, and
+   * a SyntheticEvent there sent every machine down the fallback path.
    */
-  const stop = () => emergencyStop(machine.type);
-  const program = programControls(machine);
+  const stop = () => emergencyStop();
 
   return (
     <>
@@ -366,9 +360,7 @@ const Panel = ({ machine, screen, onScreen }) => {
           content={footer}
           job={machine.job}
           error={machine.error}
-          {...program}
-          onStart={() => startProgram(controller)}
-          onPause={() => pressPause(controller, program.paused)}
+          machine={machine}
         />
       )}
     </>

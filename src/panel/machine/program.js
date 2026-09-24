@@ -1,5 +1,6 @@
 /**
- * The two job buttons in the status bar: Start, and Pause that becomes Resume.
+ * The two job buttons: Start and Pause before a program, Pause-or-Resume and
+ * Abort once it is under way.
  *
  * They were drawn from the start and wired to nothing (`canStart={false}`),
  * which went unnoticed until a paused tool change turned out to have no way

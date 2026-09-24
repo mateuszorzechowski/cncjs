@@ -1,4 +1,4 @@
-import Button from './Button';
+import JobButtons from './JobButtons';
 import Meter from './Meter';
 import { t } from '../i18n';
 
@@ -21,7 +21,7 @@ import { t } from '../i18n';
  * something goes wrong — which is the moment an operator can least afford the
  * controls to move.
  */
-const JobStatusLine = ({ job, error, canStart, onStart, canPause, paused, onPause }) => (
+const JobStatusLine = ({ machine, job, error }) => (
   <>
     <span className={`min-w-0 truncate font-num text-base ${error ? 'text-red' : 'text-mut'}`}>
       {error || (job ? job.name : t('job.noFile'))}
@@ -61,14 +61,7 @@ const JobStatusLine = ({ job, error, canStart, onStart, canPause, paused, onPaus
       </>
     ) : <span className="flex-1" />}
 
-    <Button tone="go" disabled={!canStart} onClick={onStart} className="h-9 tracking-[0.12em]">
-      {t('job.start')}
-    </Button>
-    {/* One button, two faces: a paused program is resumed where it was
-      * paused, so the hand that pressed Pause finds Resume under it. */}
-    <Button tone={paused ? 'primary' : 'hold'} disabled={!canPause} onClick={onPause} className="h-9">
-      {paused ? t('job.resume') : t('job.pause')}
-    </Button>
+    <JobButtons machine={machine} className="h-9" />
   </>
 );
 

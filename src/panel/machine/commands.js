@@ -22,12 +22,37 @@ const GRBL = 'Grbl';
 const HOLD_BEFORE_RESET = 500;
 
 /**
- * The big red button. Feed hold first, soft reset after.
+ * The big red button: stop now, whatever it costs.
  *
- * Reset alone stops just as fast but stops by abandoning the motion planner: on
- * a machine at feed rate that is a stop with unknown position afterwards. A hold
- * alone is recoverable and therefore not a stop at all — Cycle Start resumes it.
- * Chosen by Mateusz on 2026-09-20, and unchanged.
+ * A soft reset and nothing before it. Grbl cuts the step pulses and the
+ * spindle the moment the byte lands — a feed hold would leave the spindle
+ * turning through the whole deceleration, which is the wrong thing to be
+ * doing when this button is the one being hit. The price is the position:
+ * reset in motion is ALARM:3, and the machine has to be homed again.
+ *
+ * **Category 0 in IEC 60204-1 terms, and not a safety device.** It travels
+ * through a browser, a network, a server and a USB cable; a hardware stop in
+ * the drive and spindle supply is the only one that works when any of those
+ * does not. Decided by Mateusz on 2026-09-24, replacing his own "hold first"
+ * of 2026-09-20 for this button — that stop lives on as `controlledStop`,
+ * under the job's own Stop and Abort.
+ *
+ * Every firmware the server drives has a `reset`, and it is the same
+ * command for all of them.
+ */
+export const emergencyStop = () => {
+  controller.command('reset');
+};
+
+/**
+ * The job's own Stop and Abort. Feed hold first, soft reset after.
+ *
+ * Reset alone stops by abandoning the motion planner: on a machine at feed
+ * rate that is a stop with unknown position afterwards. Holding first keeps
+ * the position, so the job can be set up again without homing. A hold alone
+ * is recoverable and therefore not a stop at all — Cycle Start resumes it.
+ * Chosen by Mateusz on 2026-09-20 for the big button; since 2026-09-24 it is
+ * the operational stop and the big button is `emergencyStop`.
  *
  * **What changed on 2026-09-24 is who counts the gap.** It was a `setTimeout`
  * here, which meant the second half of a safety control was undeliverable if the
@@ -45,7 +70,7 @@ const HOLD_BEFORE_RESET = 500;
  *
  * @param {string} type The controller type, from `machine.type`.
  */
-export const emergencyStop = (type) => {
+export const controlledStop = (type) => {
   if (type === GRBL) {
     controller.command('estop');
     return;
