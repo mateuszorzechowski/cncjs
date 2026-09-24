@@ -86,7 +86,7 @@ const JogWidget = ({ machine, className = '' }) => {
     dir,
     distance: stepFor(dir, coarse),
     feedrate: rateFor(dir),
-    settings: machine.settings,
+    envelope: machine.envelope,
     position: machine.machinePosition,
   });
 
@@ -134,14 +134,14 @@ const JogWidget = ({ machine, className = '' }) => {
   const keys = {
     onJog: holdToJog,
     onHome: () => home(controller),
-    onGoZero: () => goToWorkZero(machine.type, machine.settings),
+    onGoZero: () => goToWorkZero(),
     /* The whole pad, and only for the reason the whole pad shares: there is
      * no machine. Whether *this* machine will take a move is `canJog`, and
      * homing is deliberately outside both — it is what clears an alarm. */
     disabled: !connected,
     canJog: machine.canSendGcode,
     canHome: machine.canHome,
-    canGoZero: canGoToWorkZero(machine.settings),
+    canGoZero: canGoToWorkZero(machine.envelope),
   };
 
   // The two axis groups, one description each. Both arrangements show the same

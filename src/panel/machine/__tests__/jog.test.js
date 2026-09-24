@@ -1,8 +1,15 @@
 import controller from '../controller';
 import {
-  jogLines, jog, jogCancel, jogRoom, jogStart, jogStop, jogTravel,
+  jogLines, jog, jogRoom, jogStart, jogStop,
   canJogContinuously, XY_STEPS, Z_STEPS, FEEDRATES,
 } from '../jog';
+
+// Where the machine can reach, as the server sends it: 200mm on X and Y, 80 on
+// Z, homing to the maximum — so the reachable volume is negative.
+const ENVELOPE = {
+  min: { x: -200, y: -200, z: -80 },
+  max: { x: 0, y: 0, z: 0 },
+};
 
 jest.mock('../controller', () => ({ command: jest.fn() }));
 
@@ -77,13 +84,12 @@ describe('sending', () => {
      * nothing. The side holding the port has `$130`-`$132` and `$23` and the
      * position, and can answer `no-room` besides.
      */
-    const travel = { settings: { $130: '200', $131: '200', $132: '80' } };
     jog({
       type: 'Grbl',
       dir: { x: 1 },
       distance: 10,
       feedrate: 1500,
-      settings: travel,
+      envelope: ENVELOPE,
       position: { x: '-3', y: '-100', z: '-40' },
     });
     expect(controller.command.mock.calls).toEqual([
@@ -99,26 +105,24 @@ describe('sending', () => {
   });
 
   test('a tap is shortened to what is left of the travel, where it is composed', () => {
-    const travel = { settings: { $130: '200', $131: '200', $132: '80' } };
     jog({
       type: 'Marlin',
       dir: { x: 1 },
       distance: 10,
       feedrate: 1500,
-      settings: travel,
+      envelope: ENVELOPE,
       position: { x: '-3', y: '-100', z: '-40' },
     });
     expect(controller.command).toHaveBeenCalledWith('gcode', 'G1 X3 F1500');
   });
 
   test('a tap at the very end sends nothing at all', () => {
-    const travel = { settings: { $130: '200', $131: '200', $132: '80' } };
     const sent = jog({
       type: 'Marlin',
       dir: { x: 1 },
       distance: 10,
       feedrate: 1500,
-      settings: travel,
+      envelope: ENVELOPE,
       position: { x: '0', y: '-100', z: '-40' },
     });
     expect(sent).toBe(false);
@@ -140,16 +144,6 @@ describe('sending', () => {
     ]);
   });
 
-  test('cancelling is Grbl only, and says nothing elsewhere', () => {
-    // A cancel button that quietly does nothing on Marlin would be worse than
-    // no button: the move is in the planner and runs to the end either way.
-    jogCancel('Grbl');
-    expect(controller.command).toHaveBeenCalledWith('jogCancel');
-
-    controller.command.mockClear();
-    jogCancel('Marlin');
-    expect(controller.command).not.toHaveBeenCalled();
-  });
 });
 
 describe('what the panel offers', () => {
@@ -163,8 +157,6 @@ describe('what the panel offers', () => {
 });
 
 describe('holding a jog key', () => {
-  // No `$23`, so the travel is [-range, 0] — a Grbl that homes to the maximum.
-  const settings = { settings: { $130: '200.000', $131: '200.000', $132: '80.000' } };
   // Where the tool is, when a test cares. Middle of the table.
   const middle = { x: '-100', y: '-100', z: '-40' };
 
@@ -178,17 +170,14 @@ describe('holding a jog key', () => {
     expect(canJogContinuously('Marlin')).toBe(false);
   });
 
-  test('asks for no more travel than the machine reports having', () => {
-    expect(jogTravel('x', settings)).toBe(200);
-    expect(jogTravel('z', settings)).toBe(80);
-  });
-
   test('measures the room left towards the end being driven at', () => {
     // Travel is [-200, 0] and the tool is halfway, so either way is 100.
-    expect(jogRoom('x', 1, settings, middle)).toBe(100);
-    expect(jogRoom('x', -1, settings, middle)).toBe(100);
+    expect(jogRoom('x', 1, ENVELOPE, middle)).toBe(100);
+    expect(jogRoom('x', -1, ENVELOPE, middle)).toBe(100);
     // Z is [-80, 0] at -40.
-    expect(jogRoom('z', 1, settings, middle)).toBe(40);
+    expect(jogRoom('z', 1, ENVELOPE, middle)).toBe(40);
+    // And nothing to measure against is nothing to say.
+    expect(jogRoom('x', 1, null, middle)).toBeNull();
   });
 
   test('a tap asks for the room left rather than the whole step', () => {
@@ -199,20 +188,13 @@ describe('holding a jog key', () => {
      */
     // Travel is [-200, 0]; at -10 there is 10mm left towards zero.
     const nearTheEnd = { x: '-10', y: '-100', z: '-40' };
-    jog({ type: 'Marlin', dir: { x: 1 }, distance: 50, feedrate: 1500, settings, position: nearTheEnd });
+    jog({
+      type: 'Marlin', dir: { x: 1 }, distance: 50, feedrate: 1500, envelope: ENVELOPE, position: nearTheEnd,
+    });
 
     const sent = controller.command.mock.calls.map((c) => c[1]).join(' ');
     expect(sent).toContain('X10');
     expect(sent).not.toContain('X50');
-  });
-
-  test('falls back to a bounded distance when the machine has not said', () => {
-    // The distance is what happens if the release is never seen. Unbounded is
-    // not an option; 100mm is far enough to be useful and near enough that a
-    // lost release is a mistake rather than an accident.
-    expect(jogTravel('x', {})).toBe(100);
-    expect(jogTravel('x', { settings: { $130: 'nonsense' } })).toBe(100);
-    expect(jogTravel('x', { settings: { $130: '0' } })).toBe(100);
   });
 
   test('asks the server to jog, rather than running the loop here', () => {

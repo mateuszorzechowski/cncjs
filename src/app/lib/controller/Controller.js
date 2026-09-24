@@ -82,6 +82,22 @@ class Controller {
          * @param {object} refusal - `{ cmd, reason }`
          */
         'command:refused': [],
+        /**
+         * Where the machine can reach, in machine coordinates.
+         *
+         * `{ min: {x,y,z}, max: {x,y,z} }`, or null when the firmware has not
+         * said how far its axes travel. Worked out by the server from
+         * `$130`-`$132` and the homing mask in `$23`, because the side that
+         * *enforces* the bound is the side that should say where it is —
+         * clients were decoding those four registers for themselves.
+         *
+         * Sent when the settings change, and once to a client that has just
+         * attached.
+         *
+         * @event controller:envelope
+         * @param {object} envelope - `{ min, max }` or null
+         */
+        'controller:envelope': [],
         'message': [],
         'watchdir:change': [],
 

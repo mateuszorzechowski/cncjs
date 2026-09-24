@@ -1,5 +1,4 @@
 import {
-  machineEnvelope,
   workOrigins,
 } from '../machine/envelope';
 
@@ -85,14 +84,13 @@ export const toolPoint = (machinePosition) => {
  * dragged view stuttered against it.
  *
  * @param {object} settings The controller's settings, whole.
+ * @param {object|null} envelope Where the machine can reach, from the server.
  * @param {string} wcs The active coordinate system, e.g. `G54`.
  * @param {object} offset Machine minus work, settled to a value by the caller.
  * @param {object|null} toolpath The loaded program, from `readToolpath`.
  * @param {object} layers Which of the four are switched on.
  */
-export const composeScene = ({ settings, wcs, offset, toolpath, layers }) => {
-  const envelope = machineEnvelope(settings);
-
+export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers }) => {
   const program = toolpath ? shift(toolpath.bounds, offset) : null;
 
   /*

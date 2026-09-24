@@ -9,28 +9,14 @@
  * All of it is in **machine coordinates**, because that is the one frame
  * every outline shares. Work coordinates move when somebody sets a zero; the
  * machine's own travel does not.
+ *
+ * **The envelope itself is not in here any more.** Where the machine can
+ * reach used to be derived here out of `$130`-`$132` and the mask in `$23` —
+ * the same four registers the server reads to bound a jog. Two readings of
+ * the numbers somebody else enforces is a drawing that can disagree with the
+ * machine, so the server works it out and says so on `controller:envelope`.
+ * What is left here is what only a drawing needs.
  */
-
-// `$130`/`$131`/`$132` — how far each axis can travel, in millimetres.
-const TRAVEL = { x: '$130', y: '$131', z: '$132' };
-
-/**
- * `$23` — the homing direction invert mask, and the setting that decides
- * which side of zero the machine lives on.
- *
- * Grbl homes toward the positive end by default and sets machine zero there,
- * so the reachable volume is *negative*: `[-$130, 0]`. That is the source of
- * the "why are my machine coordinates all minus" question, and it is also why
- * an envelope drawn as `[0, travel]` comes out mirrored through the origin —
- * the right size, in the wrong place, which looks plausible enough to ship.
- *
- * A set bit flips that axis to home at the negative end, putting zero at the
- * minimum and the volume in `[0, $13x]`.
- *
- * One bit per axis, in X, Y, Z order.
- */
-const INVERT_MASK = '$23';
-const INVERT_BIT = { x: 1, y: 2, z: 4 };
 
 // `$20` — whether the firmware enforces the travel as a limit rather than
 // merely reporting it.
@@ -45,31 +31,6 @@ const AXES = ['x', 'y', 'z'];
 const setting = (settings, name) => {
   const value = Number.parseFloat(settings?.settings?.[name]);
   return Number.isFinite(value) ? value : null;
-};
-
-/**
- * The box the machine can reach, in machine coordinates.
- *
- * Null when any axis has not reported its travel: three quarters of an
- * envelope is not an envelope, and half-drawing one would put a wall where
- * there is none.
- */
-export const machineEnvelope = (settings) => {
-  const mask = setting(settings, INVERT_MASK) || 0;
-  const min = {};
-  const max = {};
-
-  for (const axis of AXES) {
-    const travel = setting(settings, TRAVEL[axis]);
-    if (travel === null || travel <= 0) {
-      return null;
-    }
-    const homesToMinimum = (mask & INVERT_BIT[axis]) !== 0;
-    min[axis] = homesToMinimum ? 0 : -travel;
-    max[axis] = homesToMinimum ? travel : 0;
-  }
-
-  return { min, max };
 };
 
 /**
@@ -173,4 +134,4 @@ export const workOffset = (machinePosition, position) => {
   return offset;
 };
 
-export default machineEnvelope;
+export default workOrigins;

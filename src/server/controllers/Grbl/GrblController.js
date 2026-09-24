@@ -178,6 +178,15 @@ class GrblController {
      */
     offsetsStale = false;
 
+    /**
+     * The box this machine can reach, or null until it has said.
+     *
+     * Derived from `$130`-`$132` and `$23`, kept here so a change can be
+     * noticed and broadcast rather than recomputed by every client on every
+     * settings message. See `envelope.js`.
+     */
+    envelope = null;
+
     // Message Slot
     messageSlot = null;
 
@@ -1199,6 +1208,27 @@ class GrblController {
           this.settings = this.runner.settings;
           this.emit('controller:settings', GRBL, this.settings);
           this.emit('Grbl:settings', this.settings); // Backward compatibility
+
+          /*
+           * And the box those settings describe, worked out once.
+           *
+           * Where a machine can reach is `$130`-`$132` read through the mask
+           * in `$23`, and every client that wanted it was decoding those four
+           * registers for itself — the panel to bound a jog and to draw the
+           * outline, the old application not at all. Two readings of the same
+           * numbers is two places for the next firmware quirk to be handled
+           * in, and only one of them is the place that *enforces* the bound.
+           *
+           * Beside `controller:settings` rather than inside it, for the same
+           * reason `controller:timing` is its own event: this is derived, and
+           * a derived field inside the runner's own settings object would be
+           * a fact about the firmware that the firmware never said.
+           */
+          const envelope = machineEnvelope(this.settings?.settings);
+          if (!_.isEqual(envelope, this.envelope)) {
+            this.envelope = envelope;
+            this.emit('controller:envelope', envelope);
+          }
         }
 
         // Grbl state
@@ -1656,6 +1686,13 @@ class GrblController {
       // How long this installation takes to stop, so a panel that connects
       // later is not left guessing at it.
       socket.emit('controller:timing', this.timing());
+
+      // And where the machine can reach, for the same reason: it is sent when
+      // the settings change, and a client that arrives after that would
+      // otherwise wait for the next change that may never come.
+      if (this.envelope) {
+        socket.emit('controller:envelope', this.envelope);
+      }
 
       if (!_.isEmpty(this.settings)) {
         // controller settings

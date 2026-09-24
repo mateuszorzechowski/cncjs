@@ -728,7 +728,7 @@ jest referencją, więc nie dokładamy w niej nasłuchu.
 
 ---
 
-## Zakres ruchu liczony dwa razy, po obu stronach gniazda
+## ~~Zakres ruchu liczony dwa razy, po obu stronach gniazda~~ — ZAMKNIĘTE 2026-09-24
 
 **Panel chciał:** nie wysyłać kroku jogu, który wyjdzie za koniec osi. Z
 `$20=1` firmware **odrzuca** taką linię, a nie przycina jej, więc przycisk przy
@@ -748,11 +748,29 @@ o zero robocze. To nie jest usterka, to dwa miejsca na jedną zmianę — a zmia
 przyjdzie, bo `$23` to nie jedyny sposób, w jaki maszyna może leżeć inaczej
 (`$132` na maszynie bez bazowania Z, `G53` przy `$20=0`).
 
-**Propozycja:** skoro serwer i tak to liczy, niech powie. Obwiednia w
-`controller:settings` albo obok niej — jedno pole z `min`/`max` na oś —
-zamyka trzy rzeczy naraz: panel przestaje dekodować `$23`, stara aplikacja
-dostaje obwiednię, której nie ma wcale, a scena ekranu Ścieżka rysuje to, czym
-serwer ogranicza jog, a nie swoją własną interpretację tych samych rejestrów.
+**Zrobione:** serwer liczy obwiednię raz i rozgłasza ją jako
+`controller:envelope` — `{ min, max }` na oś, albo `null`, gdy firmware nie
+podał zakresu. Wysyłana przy zmianie ustawień i raz do gniazda, które właśnie
+się dopięło.
+
+**Obok `controller:settings`, nie w środku.** Ten sam powód co przy
+`controller:timing`: to jest wartość wyliczona, a wstawiona do obiektu ustawień
+runnera byłaby faktem o firmwarze, którego firmware nigdy nie powiedział.
+
+**Panel skasował swoją kopię.** `machineEnvelope` wyszedł z
+`panel/machine/envelope.js`; `jogRoom`, `canGoToPoint`, `canGoToWorkZero` i
+scena biorą teraz `machine.envelope`. Przy okazji wyszło stamtąd to, co
+zostało po przeniesieniu jogu ciągłego na serwer: `jogTravel` (nieużywany) i
+`jogCancel` (dokładna kopia `jogStop`). W `goto.js` wyszło składanie linii dla
+„pozostałych" sterowników — nieosiągalne, bo obwiednię wysyła tylko Grbl, a bez
+niej przycisk jest wyszarzony.
+
+**Stara aplikacja dalej nie ma obwiedni** — zdarzenie do niej dociera, tylko
+nic go tam nie słucha. Referencja, nie dotykamy.
+
+Zmierzone na COM3: `controller:envelope
+{"min":{"x":-1000,"y":-700,"z":-150},"max":{"x":0,"y":0,"z":0}}`, czyli dokładnie
+`$130/$131/$132` przy `$23=0`. Ekran Ścieżka rysuje to samo co przedtem.
 
 ---
 

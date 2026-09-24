@@ -1,193 +1,81 @@
 import controller from '../controller';
-import {
-  cancelTravel, canGoToPoint, canGoToWorkZero, goToPoint, goToPointLines,
-  goToWorkZero, goToWorkZeroLines,
-} from '../goto';
+import { cancelTravel, canGoToPoint, canGoToWorkZero, goToPoint, goToWorkZero } from '../goto';
 
 jest.mock('../controller', () => ({ command: jest.fn() }));
 
-// A default Grbl: homes to the maximum, so the reachable volume is negative
-// and the top of Z travel is machine zero.
-const HOMES_TO_MAX = {
-  settings: {
-    $130: '1000', $131: '700', $132: '150', $23: '0', $110: '5000', $112: '3000',
-  },
+// Where the machine can reach, as the server sends it. A Grbl that homes to
+// the maximum puts zero at the top, so the reachable volume is negative.
+const ENVELOPE = {
+  min: { x: -1000, y: -700, z: -150 },
+  max: { x: 0, y: 0, z: 0 },
 };
 
-// The Z bit set in `$23`: this machine homes Z at the bottom, machine zero is
-// the table, and the top of travel is `$132`.
-const Z_HOMES_TO_MIN = {
-  settings: {
-    $130: '1000', $131: '700', $132: '150', $23: '4', $110: '5000', $112: '3000',
-  },
-};
-
-describe('going back to the work zero', () => {
+describe('what the panel sends', () => {
   beforeEach(() => controller.command.mockClear());
 
-  test('lifts Z before it crosses the work', () => {
-    // The whole reason this exists. cncjs sends a bare `G0 X0 Y0`, which on a
-    // machine with the tool down is a cut across the stock at that depth.
-    const lines = goToWorkZeroLines(HOMES_TO_MAX);
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toContain('Z');
-    expect(lines[1]).toContain('X0 Y0');
-    // The second move is in work coordinates — no `G53` on it.
-    expect(lines[1]).not.toContain('G53');
-  });
-
-  test('retracts to the top of travel, not to G53 Z0', () => {
-    // On this machine they are the same place, which is exactly why the next
-    // test matters: a version that hard-coded `Z0` would pass this one.
-    expect(goToWorkZeroLines(HOMES_TO_MAX)[0]).toBe('$J=G53 G90 G21 Z0 F3000');
-  });
-
-  test('travels as a jog, so it can be called off', () => {
-    // `G0` is in the planner the moment it is accepted and the only way out
-    // is a feed hold and a reset — which stops by abandoning the planner and
-    // leaves the position in doubt. `$J=` is cancelled cleanly.
-    expect(goToWorkZeroLines(HOMES_TO_MAX).every((l) => l.startsWith('$J='))).toBe(true);
-  });
-
-  test('runs at the axis maximum the firmware reports', () => {
-    const [z, xy] = goToWorkZeroLines(HOMES_TO_MAX);
-    expect(z).toContain('F3000');
-    expect(xy).toContain('F5000');
-  });
-
-  test('falls back to a bounded rate when the machine has not said', () => {
-    const quiet = { settings: { $130: '200', $131: '200', $132: '200', $23: '0' } };
-    expect(goToWorkZeroLines(quiet)[0]).toContain('F2000');
-  });
-
-  test('on a machine that homes Z at the bottom, the top is $132 and not zero', () => {
-    // `G53 Z0` here is the table. Getting this backwards drives the tool down
-    // the full travel instead of up it.
-    expect(goToWorkZeroLines(Z_HOMES_TO_MIN)[0]).toBe('$J=G53 G90 G21 Z150 F3000');
-  });
-
-  test('states absolute mode, because both lines are meaningless without it', () => {
-    // `G0 X0 Y0` in G91 means "do not move" — a button that silently does
-    // nothing, which is worse than one that errors.
-    expect(goToWorkZeroLines(HOMES_TO_MAX)[0]).toContain('G90');
-  });
-
-  test('offers nothing when the machine has not said how far Z goes', () => {
-    // Without a known top there is no retract, and what is left is the bare
-    // `G0 X0 Y0` this exists to avoid.
-    expect(goToWorkZeroLines({})).toBeNull();
-    expect(canGoToWorkZero({})).toBe(false);
-    expect(canGoToWorkZero(HOMES_TO_MAX)).toBe(true);
-  });
-
-  test('on Grbl it asks for the move and carries nothing', () => {
-    /*
-     * Nothing in this move belongs to the panel: where the top of the travel
-     * is comes from `$130`-`$132` and `$23`, and how fast to cross from
-     * `$110` and `$112`. All four are read by the side holding the port.
-     */
-    goToWorkZero('Grbl', HOMES_TO_MAX);
+  /*
+   * The intention, not the lines.
+   *
+   * Both travels were composed here out of four firmware settings —
+   * `$130`-`$132` and `$23` for where the top of the travel is, `$110` and
+   * `$112` for how fast to cross. All four are read by the side holding the
+   * port. See `src/server/controllers/Grbl/travel.js`.
+   */
+  test('going back to the work zero carries nothing', () => {
+    goToWorkZero();
     expect(controller.command.mock.calls).toEqual([['goToWorkZero']]);
   });
 
-  test('on Grbl it asks even when this panel cannot see a travel', () => {
-    // The panel's own reading greys the button out; it is not the authority.
-    // A press that gets here anyway is a race, and the server answers it.
-    goToWorkZero('Grbl', {});
-    expect(controller.command.mock.calls).toEqual([['goToWorkZero']]);
-  });
-
-  test('sends both lines, in order, for a controller that needs them', () => {
-    goToWorkZero('Marlin', HOMES_TO_MAX);
-    expect(controller.command.mock.calls).toEqual([
-      ['gcode', '$J=G53 G90 G21 Z0 F3000'],
-      ['gcode', '$J=G90 G21 X0 Y0 F5000'],
-    ]);
-
-    controller.command.mockClear();
-    goToWorkZero('Marlin', {});
-    expect(controller.command).not.toHaveBeenCalled();
-  });
-});
-
-describe('travelling to a point picked off the drawing', () => {
-  beforeEach(() => controller.command.mockClear());
-
-  test('lifts Z first, then travels in machine coordinates', () => {
-    // `G53` and not a work move: the scene is drawn in machine coordinates,
-    // so that is the frame the cursor reported in.
-    expect(goToPointLines(HOMES_TO_MAX, { x: -412.5, y: -233.25 })).toEqual([
-      '$J=G53 G90 G21 Z0 F3000',
-      '$J=G53 G90 G21 X-412.5 Y-233.25 F5000',
-    ]);
-  });
-
-  test('rounds off what the mouse knows and the machine does not', () => {
-    expect(goToPointLines(HOMES_TO_MAX, { x: -412.38471629, y: -233.0000004 })[1])
-      .toBe('$J=G53 G90 G21 X-412.385 Y-233 F5000');
-  });
-
-  test('refuses a point outside the machine travel', () => {
-    // Soft limits on, this alarms and needs a reset; off, it drives into a
-    // limit switch. Either way it is not something to find out by pointing
-    // slightly wide of the bed.
-    expect(goToPointLines(HOMES_TO_MAX, { x: -412, y: 50 })).toBeNull();
-    expect(goToPointLines(HOMES_TO_MAX, { x: -1400, y: -233 })).toBeNull();
-    expect(canGoToPoint(HOMES_TO_MAX, { x: -412, y: -233 })).toBe(true);
-  });
-
-  test('the edge of the travel is inside it', () => {
-    expect(goToPointLines(HOMES_TO_MAX, { x: -1000, y: 0 })).not.toBeNull();
-    expect(goToPointLines(HOMES_TO_MAX, { x: 0, y: -700 })).not.toBeNull();
-  });
-
-  test('refuses when there is no point, or no envelope to check it against', () => {
-    expect(goToPointLines(HOMES_TO_MAX, null)).toBeNull();
-    expect(goToPointLines({}, { x: -412, y: -233 })).toBeNull();
-    expect(canGoToPoint({}, { x: -412, y: -233 })).toBe(false);
-  });
-
-  test('on Grbl it sends the point and lets the server place it', () => {
-    goToPoint('Grbl', HOMES_TO_MAX, { x: -412.5, y: -233.25 });
+  test('going to a point carries the point', () => {
+    goToPoint({ x: -412.5, y: -233.25 });
     expect(controller.command.mock.calls).toEqual([
       ['goToPoint', { x: -412.5, y: -233.25 }],
     ]);
   });
 
-  test('on Grbl a point outside the travel is refused by the server, not by a silence', () => {
+  test('calling a travel off is the jog cancel, not a reset', () => {
     /*
-     * It used to be neither: the panel declined to compose the line and
-     * nothing anywhere said why. With `$20=1` the firmware refuses such a
-     * line outright rather than clipping it, so the button that was live
-     * simply did nothing.
+     * `0x85` drops what is left of the move and decelerates normally; the
+     * position stays known. A reset stops just as fast by abandoning the
+     * planner, and leaves the machine not knowing where it is.
      */
-    goToPoint('Grbl', HOMES_TO_MAX, { x: -412, y: 50 });
-    expect(controller.command.mock.calls).toEqual([
-      ['goToPoint', { x: -412, y: 50 }],
-    ]);
-  });
-
-  test('sends both lines, and nothing when it refuses, for a controller that needs them', () => {
-    goToPoint('Marlin', HOMES_TO_MAX, { x: -412.5, y: -233.25 });
-    expect(controller.command.mock.calls).toEqual([
-      ['gcode', '$J=G53 G90 G21 Z0 F3000'],
-      ['gcode', '$J=G53 G90 G21 X-412.5 Y-233.25 F5000'],
-    ]);
-
-    controller.command.mockClear();
-    goToPoint('Marlin', HOMES_TO_MAX, { x: -412, y: 50 });
-    expect(controller.command).not.toHaveBeenCalled();
+    cancelTravel();
+    expect(controller.command).toHaveBeenCalledWith('jogCancel');
   });
 });
 
-describe('calling a travel off', () => {
-  beforeEach(() => controller.command.mockClear());
+describe('when a travel is offered at all', () => {
+  test('only with an envelope, because only then is there a machine that can', () => {
+    /*
+     * The envelope comes from the side that makes the move: the server sends
+     * one for a Grbl that has reported its travel and for nothing else.
+     * Without one there is no known top to retract to, and what is left is
+     * the move being avoided — the old application's bare `G0 X0 Y0`.
+     */
+    expect(canGoToWorkZero(ENVELOPE)).toBe(true);
+    expect(canGoToWorkZero(null)).toBe(false);
+  });
 
-  test('uses the jog cancel, not a reset', () => {
-    // `0x85` drops what is left of the move and decelerates normally; the
-    // position stays known and the work offsets survive. A soft reset would
-    // also stop it and would take both with it.
-    cancelTravel();
-    expect(controller.command).toHaveBeenCalledWith('jogCancel');
+  test('and only to a point the machine can reach', () => {
+    /*
+     * Asked here so the button is dark rather than refused. With `$20=1` the
+     * firmware rejects a move outside the travel outright rather than
+     * clipping it, so pointing slightly wide of the bed did nothing at all
+     * and said nothing about why.
+     */
+    expect(canGoToPoint(ENVELOPE, { x: -412, y: -233 })).toBe(true);
+    expect(canGoToPoint(ENVELOPE, { x: -412, y: 50 })).toBe(false);
+    expect(canGoToPoint(ENVELOPE, { x: -1400, y: -233 })).toBe(false);
+  });
+
+  test('the edge of the travel is inside it', () => {
+    expect(canGoToPoint(ENVELOPE, { x: -1000, y: 0 })).toBe(true);
+    expect(canGoToPoint(ENVELOPE, { x: 0, y: -700 })).toBe(true);
+  });
+
+  test('nothing to point at, and nothing to point within', () => {
+    expect(canGoToPoint(ENVELOPE, null)).toBe(false);
+    expect(canGoToPoint(ENVELOPE, { x: -412 })).toBe(false);
+    expect(canGoToPoint(null, { x: -412, y: -233 })).toBe(false);
   });
 });

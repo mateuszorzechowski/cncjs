@@ -1,5 +1,4 @@
 import {
-  machineEnvelope,
   machineZeroIsGuess,
   softLimitsEnabled,
   workOffset,
@@ -21,55 +20,6 @@ const COM3 = {
 
 const withSettings = (overrides) => ({
   settings: { ...COM3.settings, ...overrides },
-});
-
-describe('machineEnvelope', () => {
-  test('puts the volume below zero when homing runs to the positive end', () => {
-    // The default, and the one that is drawn mirrored if `$23` is ignored:
-    // Grbl homes to the maximum and calls that spot zero, so everything the
-    // machine can reach is negative.
-    expect(machineEnvelope(COM3)).toEqual({
-      min: { x: -200, y: -200, z: -200 },
-      max: { x: 0, y: 0, z: 0 },
-    });
-  });
-
-  test('puts an inverted axis above zero, and only that axis', () => {
-    // `$23=3` is X and Y inverted, Z not. A mask read as a boolean would move
-    // all three, and the drawing would be right in plan and wrong in section.
-    expect(machineEnvelope(withSettings({ $23: '3' }))).toEqual({
-      min: { x: 0, y: 0, z: -200 },
-      max: { x: 200, y: 200, z: 0 },
-    });
-  });
-
-  test('reads the Z bit rather than the low bits', () => {
-    expect(machineEnvelope(withSettings({ $23: '4' }))).toEqual({
-      min: { x: -200, y: -200, z: 0 },
-      max: { x: 0, y: 0, z: 200 },
-    });
-  });
-
-  test('takes each axis travel from its own setting', () => {
-    const envelope = machineEnvelope(withSettings({ $131: '300', $132: '80' }));
-    expect(envelope.min).toEqual({ x: -200, y: -300, z: -80 });
-  });
-
-  test.each([
-    ['an axis has not reported', { $131: undefined }],
-    ['an axis reports nothing usable', { $131: '' }],
-    ['an axis reports zero travel', { $131: '0' }],
-    ['an axis reports negative travel', { $131: '-10' }],
-  ])('is nothing when %s', (_name, overrides) => {
-    // Three quarters of an envelope is not an envelope. Drawing one would put
-    // a wall where the machine has none.
-    expect(machineEnvelope(withSettings(overrides))).toBeNull();
-  });
-
-  test('is nothing when the controller has said nothing at all', () => {
-    expect(machineEnvelope(undefined)).toBeNull();
-    expect(machineEnvelope({})).toBeNull();
-  });
 });
 
 describe('softLimitsEnabled', () => {
