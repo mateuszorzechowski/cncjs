@@ -127,6 +127,17 @@ const Panel = ({ machine, screen, onScreen }) => {
   const [helping, setHelping] = useState(false);
   const Screen = SCREENS[screen];
 
+  /*
+   * Wrapped rather than handed to `onStop` directly.
+   *
+   * As a handler it would be called with the click event as its first
+   * argument, and `emergencyStop` reads that argument as the controller type —
+   * so a SyntheticEvent would mean every machine, Grbl included, quietly took
+   * the fallback path with the gap back in a browser timer. The kind of wrong
+   * that keeps working.
+   */
+  const stop = () => emergencyStop(machine.type);
+
   return (
     <>
       {/*
@@ -152,7 +163,7 @@ const Panel = ({ machine, screen, onScreen }) => {
          * nothing on the screen below can be pressed. */
         onStatus={() => setAlerting(true)}
         canStop={machine.connected}
-        onStop={emergencyStop}
+        onStop={stop}
         updateReady={updateReady}
         onUpdate={applyUpdate}
       />

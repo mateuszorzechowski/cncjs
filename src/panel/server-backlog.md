@@ -405,86 +405,99 @@ jako brak pokrycia, nie zamiecione.
 
 ---
 
-## ~~Awaryjny stop: 500 ms żyje w zegarze przeglądarki~~ — ZMIERZONE I W POŁOWIE NAPRAWIONE 2026-09-24
+## ~~Awaryjny stop: 500 ms żyje w zegarze przeglądarki~~ — ZAMKNIĘTE 2026-09-24
 
-**Pomiar, o który ten wpis prosił, został zrobiony — i zmienił rozpoznanie.**
-Zlecony przez Mateusza („zmierz co Grbl robi z `!` w jogu"). Na COM3, Grbl 1.1h,
-posuw 600 mm/min, status odpytywany co 20 ms.
+**Zmierzone, naprawione po obu stronach i zweryfikowane na maszynie.** Pomiar
+zlecony przez Mateusza („zmierz co Grbl robi z `!` w jogu"), a potem domknięcie
+całości na jego polecenie („dokończ w całości, żeby zamknąć ten temat"). Wszystko
+na COM3, Grbl 1.1h, status odpytywany co 20 ms.
 
-### Co Grbl robi z `!` w jogu
+### 1. Co Grbl robi z `!` w jogu
 
 **`!` w jogu jest anulowaniem jogu, nie wstrzymaniem.** Maszyna hamuje do zera w
-**63 ms i 0,8 mm**, reszta ruchu jest odrzucana, a stan ląduje w **`Idle`** —
-nigdy w `Hold`. `~` po tym nie wznawia niczego (sprawdzone: zostaje `Idle`).
+**63 ms i 0,8 mm**, reszta ruchu jest odrzucana, stan ląduje w **`Idle`** — nigdy
+w `Hold` — a `~` po tym nie wznawia niczego.
 
-Skutek dla `gcode:stop { force: true }`: **żadna z jego dwóch bramek nie ma jak
-się otworzyć na maszynie w jogu.** `activeState` to `Jog`, nie `Run`, więc `!`
-nie leci; pół sekundy później jest `Idle`, nie `Hold`, więc `\x18` też nie. To
-nie jest usterka tamtej komendy — ona jest o **zatrzymywaniu programu**, gdzie
-stany naprawdę idą `Run` → `Hold`. Wczorajszy zapis nazwał ją „tą samą sekwencją
-po właściwej stronie gniazda"; jest to sekwencja o czymś innym.
+Skutek dla `gcode:stop { force: true }`: żadna z jego dwóch bramek nie ma jak się
+otworzyć na maszynie w jogu. `activeState` to `Jog`, nie `Run`, a pół sekundy
+później `Idle`, nie `Hold`. To nie usterka tamtej komendy — ona jest o
+**zatrzymywaniu programu**, gdzie stany naprawdę idą `Run` → `Hold`.
 
-### Czego ten wpis nie przewidział, a co było groźne
+### 2. Czego ten wpis nie przewidział: pętla jogu przeżywała stop
 
-**Pętla jogu ciągłego to trzecia kolejka tego sterownika, a ścieżki stopu znały
-tylko dwie.** `reset` robił `workflow.stop()` i `feeder.reset()` — i nic o
-`jogging`. Zmierzony przebieg przy trzymanym klawiszu, dokładnie to, co wysyła
-`commands.js`:
+Jog ciągły to **trzecia kolejka** tego sterownika, a ścieżki stopu znały dwie.
+`!` zatrzymywało maszynę, pętla wysyłała następny odcinek 150 ms później i
+maszyna **znowu jechała**; potem `\x18` dawał `ALARM:3`, pętla stawała uzbrojona
+na `MAX_IN_FLIGHT` bez żadnego potwierdzenia — a `ok` z operatorskiego `$X` było
+dokładnie tym potwierdzeniem. **163 odcinki, 23,5 mm ruchu z niczym trzymanym.**
 
-| | przed | po |
+Naprawione tak, że **każda** ścieżka znacząca „przestań się ruszać" kończy pętlę:
+`reset` i `sleep` przez `abandonJog()` (nic nie wysyłają, bo nic by nie doszło),
+a `feedhold`, `gcode:pause` i `gcode:stop` przez `endHeldJog()` → `stopJog()`,
+czyli `0x85` po potwierdzeniach. Plus bramka w zegarze jogu: alarm porzuca jog, i
+**ten warunek stoi przed sprawdzeniem kolejki**, bo alarm przychodzi właśnie
+wtedy, gdy kolejka jest pełna i nic jej nie zwalnia.
+
+### 3. `estop` — 500 ms wyszło z przeglądarki i przestało być liczbą
+
+Panel wysyłał `feedhold`, `setTimeout(500)`, `reset`. Teraz na Grblu wysyła
+**jedną komendę**, a serwer: kończy trzymany jog, zatrzymuje sender i feeder,
+wysyła `!`, **patrzy w raport statusu, aż maszyna naprawdę stanie**, i dopiero
+wtedy `\x18`. Stała 500 ms zamieniła się w **warunek**, a liczba została tylko
+sufitem — policzonym z posuwu, który maszyna raportuje, i z `$120`–`$122`
+(`src/server/controllers/Grbl/stop.js`).
+
+Dwa szczegóły, które kosztowały pomiar:
+
+- **`Hold` to dwa stany i tylko jeden jest bezruchem.** Grbl raportuje `Hold:1`
+  w trakcie hamowania i `Hold:0` po. Reset przy `Hold:1` porzuca planer — czyli
+  robi dokładnie to, czego trzymanie najpierw miało uniknąć.
+- **Trzymany jog dostaje swój czas na wierzch.** Anulowanie jogu czeka na
+  potwierdzenia, więc bez tego reset lądował 25 ms po bajcie anulowania i maszyna
+  wstawała w **alarmie z porzuconą pozycją**. Droga była dobra, zły był stan.
+  Serwer zna ten czas — to `stopMs` z `controller:timing`.
+
+### Pomiary, przed i po
+
+| przy trzymanym klawiszu | przed | po |
 | --- | --- | --- |
-| droga od naciśnięcia do zatrzymania | **4,244 mm** | **0,988 mm** |
-| `$J=` wysłane po `reset` | **2** | **0** |
-| `$J=` wysłane po `$X` | **163** | **0** |
-| ruch po `$X`, z niczym trzymanym | **23,536 mm** | **0,000 mm** |
-| stan końcowy | `Alarm`, pozycja unieważniona | `Idle`, pozycja znana |
+| droga od naciśnięcia | 4,244 mm | **0,560 mm** |
+| `$J=` po resecie / po `$X` | 2 / **163** | 0 / **0** |
+| ruch po `$X`, nic trzymanego | **23,536 mm** | **0,000 mm** |
+| stan końcowy | `Alarm`, pozycja unieważniona | **`Idle`, pozycja znana** |
 
-Mechanizm, bo jest pouczający: `!` zatrzymywało maszynę, ale pętla wysyłała
-następny odcinek 150 ms później i maszyna **znowu jechała** — stąd 3,5 mm
-przejechane już po tym, jak raz stanęła. Potem `\x18` dawał
-`ALARM:3 (Abort during cycle)`, pętla zostawała z dwoma odcinkami w locie i
-**żadnym potwierdzeniem**, więc stawała na `MAX_IN_FLIGHT` — uzbrojona.
-A następnie operator robił jedyną rzecz, jaką może zrobić z alarmem, `$X`, i
-**`ok` z tego odblokowania było potwierdzeniem, na które pętla czekała.**
-Ruszała z miejsca: 163 odcinki, 23,5 mm, nic trzymanego, i zatrzymało to tylko
-`jogCancel` wysłane z zewnątrz.
-
-**Naprawione (PR #97), trzy rzeczy:**
-- `abandonJog()` — porzuca kierunek **i zeruje licznik odcinków w locie**, bez
-  wysyłania czegokolwiek, bo nic by nie doszło.
-- `reset` woła to przed bajtem. Bramka alarmowa niżej złapałaby to też, ale
-  dopiero gdy `ALARM:3` wróci — zmierzone 32 ms po `\x18`, a w tym okienku
-  wyszły dwa kolejne odcinki.
-- zegar jogu porzuca jog, gdy sterownik jest w alarmie, i **ten warunek stoi
-  przed sprawdzeniem kolejki** — bo alarm przychodzi właśnie wtedy, gdy kolejka
-  jest pełna i nic jej nie zwalnia. Przestawienie tych dwóch warunków wywala
-  osobny przypadek testowy.
-- `feedhold` **kończy** trzymany jog zamiast go wstrzymywać, bo Grbl nie umie
-  wstrzymać jogu. Idzie przez `stopJog()`, czyli `0x85` po potwierdzeniach —
-  ścieżka, która sama zmierzyła się najlepiej: 0,82 mm i `Idle`.
-
-Pomiary porównawcze czterech przepisów na stop, przy 600 mm/min:
-
-| przepis | droga | stan końcowy |
+| w trakcie programu | przed | po |
 | --- | --- | --- |
-| `jogCancel` (`0x85`) przez serwer | 0,82 mm | `Idle`, pozycja znana |
-| `!` powtarzane 10× przez sekundę | 1,18 mm | `Hold:0` (po czterech walkach) |
-| `\x18` samo | ~0,3 mm | `Alarm`, planer porzucony |
-| `!` + 500 ms + `\x18` (panel) | **4,24 mm → 0,99 mm** | `Alarm` → `Idle` |
+| od naciśnięcia do resetu | 500 ms (stała w karcie) | **135 ms (warunek)** |
+| droga od naciśnięcia | — | **0,596 mm** |
+| stan końcowy | zależny od tego, czy karta dożyła | **`Idle`, pozycja znana** |
 
-### Co zostaje jako decyzja
+Ślad z tego drugiego jest cały wpis w jednym miejscu:
 
-**Dla jogu problem zegara w przeglądarce w dużej mierze zniknął**: po poprawce
-`feedhold` zostawia maszynę zatrzymaną w `Idle`, więc karta, która umrze przed
-`reset`, zostawia maszynę **stojącą**, a nie „we wstrzymaniu wyglądającym na
-zatrzymanie".
+```
+8744  press, Run
+8746  !
+8772  <Hold:1|MPos:-33.032   <- hamuje
+8838  <Hold:1|MPos:-33.320
+8866  <Hold:0|MPos:-33.320   <- stanęła
+8879  0x18                   <- 13 ms później
+8916  <Idle|MPos:-33.320     <- pozycja znana
+```
 
-**Dla programu zostaje jak było.** W trakcie programu `!` daje prawdziwy `Hold`,
-a `~` go wznawia — więc druga połowa sekwencji nadal siedzi w `setTimeout` karty
-przeglądarki, a karta na telefonie może ten zegar zdławić do sekund. Tu wciąż
-warto rozważyć `estop` po stronie serwera, z odczekaniem policzonym z
-`$120`–`$122` zamiast stałej 500 ms. Wpis zostaje otwarty **tylko w tym
-zakresie**.
+### Co zostaje, a co nie
+
+**Nie zostaje nic po stronie Grbla.** Zegar przeglądarki zniknął, sekwencja jest
+niepodzielna, a wynik nie zależy od tego, czy karta przeżyje naciśnięcie.
+
+**Marlin, Smoothie i TinyG zostają na dwustopniowej ścieżce**, bo nie mają
+`estop`, a wymyślanie go dla firmware'u, którego nic na tym stole nie uruchamia,
+to stop, którego nikt nigdy nie widział działającego. Panel rozgałęzia się po
+`machine.type`, jak przy jogu i bazowaniu. **To jest jedyna pozostała pozycja
+tego tematu** i jest to świadoma decyzja, nie luka.
+
+**Panel nadal nie zdejmuje alarmu** — i to też jest decyzja, zapisana w
+`machine/advice.js`: *„unlocking is the operator's to do"*. Ekran alarmów jest
+osobną propozycją z listy CO DALEJ, nie częścią tego wpisu.
 
 ---
 

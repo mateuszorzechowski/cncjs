@@ -21,6 +21,7 @@ import {
   WRITE_SOURCE_FEEDER,
 } from '../../constants';
 import { GRBL_ACTIVE_STATE_ALARM } from '../constants';
+import { HOLD_CEILING_SECONDS } from '../stop';
 
 import logger from '../../../lib/logger';
 
@@ -175,6 +176,17 @@ const createTempFile = (content) => {
   tempFiles.push(filepath);
   return filepath;
 };
+
+const jogLines = (writes) => writes
+  .map((write) => String(write.data))
+  .filter((data) => data.startsWith('$J='));
+
+/** The acknowledgement an operator's `$X` produces. */
+const acknowledge = (controller) => controller.runner.emit('ok', { raw: 'ok' });
+
+// Long enough for the lead segment and at least one tick, which is all it takes
+// to reach `MAX_IN_FLIGHT` when nothing is acknowledging.
+const STALLED = 80;
 
 const setup = (configValues = {}) => {
   jest.spyOn(config, 'get').mockImplementation((key, defaultValue) => {
@@ -985,17 +997,6 @@ describe('GrblController', () => {
      *
      * These cases are that sequence, with the `ok` delivered by hand.
      */
-    const jogLines = (writes) => writes
-      .map((write) => String(write.data))
-      .filter((data) => data.startsWith('$J='));
-
-    /** The acknowledgement an operator's `$X` produces. */
-    const acknowledge = (controller) => controller.runner.emit('ok', { raw: 'ok' });
-
-    // Long enough for the lead segment and at least one tick, which is all it
-    // takes to reach `MAX_IN_FLIGHT` when nothing is acknowledging.
-    const STALLED = 80;
-
     test('reset abandons it, and the ok from a later $X does not restart it', async () => {
       const { controller, writes } = setup();
 
@@ -1065,12 +1066,198 @@ describe('GrblController', () => {
       expect(writes.map((write) => write.data)).toContain('\x85');
     });
 
+    /*
+     * Every path that means "stop moving" has to end the loop, and the invariant
+     * is worth cases of its own: a stop path that misses it looks fixed.
+     *
+     * `gcode:stop` is the one that matters in practice. It is the old
+     * application's Stop button, so it is reachable from another tab while the
+     * pendant holds a key — and its own tests are `Run` then `Hold`, neither of
+     * which a jog passes through.
+     */
+    test.each([
+      ['gcode:stop with force', ['gcode:stop', { force: true }]],
+      ['gcode:pause', ['gcode:pause']],
+      ['sleep', ['sleep']],
+    ])('%s ends a held jog', async (_name, [cmd, ...rest]) => {
+      const { controller, writes } = setup();
+
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(STALLED);
+      const held = jogLines(writes).length;
+      expect(held).toBeGreaterThan(0);
+
+      controller.command(cmd, ...rest);
+
+      expect(controller.jogging.dir).toBeNull();
+
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBe(held);
+
+      // And an acknowledgement arriving afterwards does not bring it back.
+      acknowledge(controller);
+      acknowledge(controller);
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBe(held);
+    });
+
     test('feedhold with no jog running sends nothing but the hold', () => {
       const { controller, writes } = setup();
 
       controller.command('feedhold');
 
       expect(writes.map((write) => write.data)).toEqual(['!']);
+    });
+  });
+
+  describe('estop', () => {
+    /*
+     * `command()` does not hand back the handler's promise, so these wait on the
+     * clock like the `gcode:stop` cases above. The waits are generous against
+     * the ceilings being exercised, which are 150ms and 267ms.
+     */
+    const reports = (controller, status) => {
+      controller.runner.state.status = { ...controller.runner.state.status, ...status };
+    };
+
+    // The bench machine: `$120`/`$121` 500, `$122` 300.
+    const BENCH = { settings: { $120: '500', $121: '500', $122: '300' } };
+    const data = (writes) => writes.map((write) => String(write.data));
+
+    test('holds, waits for the machine to stop, and only then resets', async () => {
+      const { controller, writes } = setup();
+      controller.runner.settings = BENCH;
+      reports(controller, { activeState: 'Run', feedrate: 600 });
+
+      controller.command('estop');
+
+      // The hold is immediate. Nothing else is.
+      expect(data(writes)).toEqual(['!']);
+      await delay(80);
+      expect(data(writes)).toEqual(['!']);
+
+      // And now the machine says it has come to rest.
+      reports(controller, { activeState: 'Hold', subState: 0, feedrate: 0 });
+      await delay(80);
+
+      expect(data(writes)).toEqual(['!', '\x18']);
+    });
+
+    test('does not reset while the machine is still braking', async () => {
+      const { controller, writes } = setup();
+      controller.runner.settings = BENCH;
+      reports(controller, { activeState: 'Run', feedrate: 3000 });
+
+      controller.command('estop');
+      // `Hold:1` is a hold in progress. Resetting here is precisely what
+      // holding first was chosen to avoid.
+      reports(controller, { activeState: 'Hold', subState: 1, feedrate: 3000 });
+      await delay(120);
+      expect(data(writes)).toEqual(['!']);
+
+      reports(controller, { activeState: 'Hold', subState: 0, feedrate: 0 });
+      await delay(120);
+      expect(data(writes)).toEqual(['!', '\x18']);
+    });
+
+    test('resets anyway when the machine never says it stopped', async () => {
+      const { controller, writes } = setup();
+      // No settings at all, so there is nothing to work a deadline out from and
+      // it gets the ceiling: a whole second of patience rather than the least.
+      reports(controller, { activeState: 'Run', feedrate: 600 });
+
+      controller.command('estop');
+
+      await delay(500);
+      expect(data(writes)).toEqual(['!']);
+
+      await delay(700);
+      // The reset is not optional. That is what makes the press a stop.
+      expect(data(writes)).toEqual(['!', '\x18']);
+    }, 15000);
+
+    test('ends a held jog before it holds', async () => {
+      const { controller, writes } = setup();
+      controller.runner.settings = BENCH;
+
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBeGreaterThan(0);
+      const sentByTheJog = jogLines(writes).length;
+
+      reports(controller, { activeState: 'Hold', subState: 0, feedrate: 0 });
+      controller.command('estop');
+
+      expect(controller.jogging.dir).toBeNull();
+      await delay(120);
+
+      expect(controller.jogTimer).toBeNull();
+      expect(jogLines(writes).length).toBe(sentByTheJog);
+      // Nothing follows the reset onto the wire, whoever acknowledges what.
+      acknowledge(controller);
+      acknowledge(controller);
+      await delay(STALLED);
+      expect(jogLines(writes).length).toBe(sentByTheJog);
+    });
+
+    test('stops the program and empties the feeder', async () => {
+      const { controller } = setup();
+      controller.runner.settings = BENCH;
+      reports(controller, { activeState: 'Hold', subState: 0, feedrate: 0 });
+
+      controller.command('gcode:load', 'part.nc', LONG_PROGRAM);
+      controller.command('gcode:start');
+      controller.command('gcode', ['G0 X1', 'G0 X2', 'G0 X3']);
+
+      controller.command('estop');
+      await delay(120);
+
+      expect(controller.workflow.state).toBe(WORKFLOW_STATE_IDLE);
+      expect(controller.feeder.size()).toBe(0);
+    });
+
+    /*
+     * The jog case gets more room, because ending a held jog is not the hold's
+     * doing and not instant: the cancel waits for the outstanding segments to be
+     * acknowledged first. Measured on the machine without this, the press reset
+     * 25ms after the cancel byte went out and the machine came up in alarm with
+     * its position abandoned.
+     *
+     * Compared rather than asserted against a number: what matters is that a
+     * held jog is given its stopping time on top, and that is the same claim on
+     * any host, however punctual its timers happen to be.
+     */
+    test('allows a held jog its own stopping time on top', async () => {
+      const { controller } = setup();
+      controller.runner.settings = BENCH;
+      reports(controller, { activeState: 'Hold', subState: 0, feedrate: 600 });
+      const waits = jest.spyOn(controller, 'waitForStandstill');
+
+      controller.command('estop');
+      await delay(120);
+      const withoutAJog = waits.mock.calls.at(-1)[0];
+
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(STALLED);
+      controller.command('estop');
+      await delay(120);
+      const withAJog = waits.mock.calls.at(-1)[0];
+
+      expect(withAJog).toBeGreaterThan(withoutAJog);
+      // And it is still bounded: a stop is not something to wait on for ever.
+      expect(withAJog).toBeLessThanOrEqual(HOLD_CEILING_SECONDS);
+    });
+
+    test('fires the hold event, so a script bound to it keeps working', async () => {
+      const { controller } = setup();
+      controller.runner.settings = BENCH;
+      const trigger = jest.spyOn(controller.event, 'trigger');
+      reports(controller, { activeState: 'Hold', subState: 0, feedrate: 0 });
+
+      controller.command('estop');
+      await delay(120);
+
+      expect(trigger).toHaveBeenCalledWith('feedhold');
     });
   });
 
