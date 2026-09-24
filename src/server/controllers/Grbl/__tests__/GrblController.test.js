@@ -433,6 +433,106 @@ describe('GrblController', () => {
     });
   });
 
+  describe('zero', () => {
+    // The socket that asked. `CNCEngine` sets this around the call; a refusal
+    // goes back to the client that made the request and to nobody else.
+    const asking = (controller) => {
+      const refusals = [];
+      controller.commandSocket = {
+        id: 'asking',
+        emit: (event, payload) => refusals.push({ event, payload }),
+      };
+      return refusals;
+    };
+
+    const working = (controller, wcs) => {
+      controller.runner.state.parserstate.modal.wcs = wcs;
+    };
+
+    test('writes the coordinate system the machine is working in', () => {
+      const { controller, writes } = setup();
+      working(controller, 'G55');
+
+      controller.command('zero', { axes: ['x', 'y'] });
+
+      // P2, because the machine said G55. The panel used to compose this from
+      // a reading it had to shadow; the reading lives here.
+      expect(writes.map(write => write.data)).toEqual(['G10 L20 P2 X0 Y0\n']);
+    });
+
+    test('refuses in alarm instead of being swallowed by the feeder', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      working(controller, 'G54');
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+
+      controller.command('zero', { axes: ['z'] });
+
+      /*
+       * Measured on the machine, 2026-09-23: pressing Zero Z on an alarmed
+       * Grbl put `G10 L20 P1 Z0` on the socket, left `Stopped sending G-code
+       * commands in Alarm mode` in a log nobody at the machine is reading, and
+       * changed no offset. Nothing on screen said a word.
+       */
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([
+        { event: 'command:refused', payload: { cmd: 'zero', reason: 'alarm' } },
+      ]);
+    });
+
+    test('refuses rather than guessing when no coordinate system is known', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      working(controller, undefined);
+
+      controller.command('zero', { axes: ['z'] });
+
+      expect(writes).toEqual([]);
+      expect(refusals.map(({ payload }) => payload.reason)).toEqual(['no-wcs']);
+    });
+
+    test('says which of the two is missing', () => {
+      const { controller } = setup();
+      const refusals = asking(controller);
+      working(controller, 'G54');
+
+      // An empty request is not an unknown coordinate system, and a refusal
+      // that named one would be this side making something up in its turn.
+      controller.command('zero', { axes: [] });
+
+      expect(refusals.map(({ payload }) => payload.reason)).toEqual(['no-axes']);
+    });
+
+    test('a refusal reaches the client that asked and nobody else', () => {
+      const { controller, socketEvents } = setup();
+      asking(controller);
+      working(controller, undefined);
+
+      controller.command('zero', { axes: ['z'] });
+
+      // A second pendant that pressed nothing has no use for this. The port's
+      // room is for what the machine is doing, not for one request.
+      expect(socketEvents.filter(({ event }) => event === 'command:refused')).toEqual([]);
+    });
+  });
+
+  describe('a command this server has never heard of', () => {
+    test('is refused rather than logged and dropped', () => {
+      const { controller } = setup();
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push({ event, payload }) };
+
+      controller.command('teleport');
+
+      // A panel newer than the server it is talking to would otherwise get a
+      // control that looks live and does nothing, with the only evidence in a
+      // log file on the machine in the garage.
+      expect(refusals).toEqual([
+        { event: 'command:refused', payload: { cmd: 'teleport', reason: 'unknown-command' } },
+      ]);
+    });
+  });
+
   describe('sender workflow', () => {
     test('gcode:load loads the program with an appended dwell and reports the sender state', () => {
       const { controller, writes, socketEvents } = setup();

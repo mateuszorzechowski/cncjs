@@ -32,7 +32,7 @@ import { t } from '../i18n';
  */
 
 const ZeroScreen = ({ machine }) => {
-  const { position, machinePosition, modal, connected, canSendGcode, status } = machine;
+  const { position, machinePosition, modal, connected, canSendGcode, status, type } = machine;
   const [help, setHelp] = useState(false);
 
   /*
@@ -93,7 +93,7 @@ const ZeroScreen = ({ machine }) => {
     </Button>
   );
 
-  const zeroing = (...axes) => () => zero({ modal, axes });
+  const zeroing = (...axes) => () => zero({ type, modal, axes });
 
   return (
     <Card

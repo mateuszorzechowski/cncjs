@@ -188,7 +188,9 @@ const toolOf = (type, state) => {
  * into a controller payload, so the four firmwares' disagreements are settled
  * here and only here.
  */
-export const readMachine = ({ connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs }) => {
+export const readMachine = ({
+  connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
+}) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
   // anything at all — it begins `if (!this.port) return` and fails silently —
@@ -322,6 +324,19 @@ export const readMachine = ({ connection, error, port, type, baudrate, state, se
      * one without the other.
      */
     gcode: gcode || null,
+    /**
+     * The last command the server refused, and why.
+     *
+     * Carried through untouched rather than turned into a sentence here: this
+     * tier runs with no browser and no i18next, and the words live where the
+     * notice is drawn. See `machine/refusal`.
+     *
+     * It is not gated on `connected`. A refusal is evidence about a press that
+     * has already happened, and a panel that dropped it because the link went
+     * down a moment later would be hiding the answer to the question the
+     * operator is about to ask.
+     */
+    refusal: refusal || null,
     job: job && job.total > 0
 ? {
       name: job.name || '',

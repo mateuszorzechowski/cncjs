@@ -1,0 +1,54 @@
+/**
+ * What to say when the server will not do what it was asked.
+ *
+ * **This is the second half of greying a button out, and it is the half that
+ * was missing.** Every control that writes is dark before it is pressed —
+ * `canSendGcode`, `canHome`, `canGoToWorkZero` — and that covers the ordinary
+ * case completely. What it cannot cover is the race: a button that was live
+ * when the thumb came down and is not by the time the command lands. Before
+ * `command:refused` the panel had no way to know that had happened, and the
+ * press simply vanished.
+ *
+ * So this is for the exception, not the rule. A panel that talked about every
+ * refusal would be talking about things the operator can already see.
+ *
+ * The reason is a code and the sentence is here, because what a refusal reads
+ * like is the panel's business and which refusal it is is the server's. Keys
+ * are written out rather than assembled from the code: `t(`refusal.${reason}`)`
+ * would be shorter and would be a key nothing can grep for — the resources
+ * test looks for quoted dotted literals, so four real keys would read as four
+ * nobody asks for and a misspelt one would reach an operator.
+ */
+
+const KEYS = {
+  // The one state where every control looks alive and the server drops the
+  // line before the cable. Measured at the machine, not reasoned about.
+  alarm: 'refusal.alarm',
+  // No parser state, so there is no coordinate system to name. Zeroing the
+  // wrong one is silent and is found by a tool moving under power.
+  'no-wcs': 'refusal.noWcs',
+  // A panel newer than the server it is talking to. The only refusal here
+  // that is about the installation rather than about the machine.
+  'unknown-command': 'refusal.unknownCommand',
+};
+
+/**
+ * The key and its values, or null when there is nothing to show.
+ *
+ * An unrecognised code still gets said. A server that grows a reason this
+ * panel has not been taught about is exactly when silence is least
+ * affordable, and the code itself is worth more to whoever is reading it than
+ * a shrug — so it goes in the sentence, the way a port name does.
+ */
+export const refusalMessage = (refusal) => {
+  if (!refusal || !refusal.reason) {
+    return null;
+  }
+
+  const key = KEYS[refusal.reason];
+  return key
+    ? { key, values: { cmd: refusal.cmd } }
+    : { key: 'refusal.other', values: { cmd: refusal.cmd, reason: refusal.reason } };
+};
+
+export default refusalMessage;

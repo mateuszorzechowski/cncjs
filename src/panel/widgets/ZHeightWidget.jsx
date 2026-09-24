@@ -15,7 +15,8 @@ import { t } from '../i18n';
  * what an operator means after jogging down onto the corner of the stock.
  * Both buttons stay dead unless the controller has said which coordinate
  * system is active, because that command has to name one and a guess is
- * discovered only by a tool moving to the wrong place under power.
+ * discovered only by a tool moving to the wrong place under power — and dead
+ * in alarm, where the server drops the line before the cable.
  *
  * The figure is `--val`, not `--dro`. It was the largest thing on the panel
  * until the readout above it started carrying Z as well, and two copies of one
@@ -27,8 +28,18 @@ import { t } from '../i18n';
  * beneath it.
  */
 const ZHeightWidget = ({ machine, label = t('zheight.title'), className = '' }) => {
-  const { position, machinePosition, modal, connected } = machine;
-  const canZero = connected && activeWcsNumber(modal) > 0;
+  const { position, machinePosition, modal, connected, canSendGcode, type } = machine;
+  /*
+   * Dark for either reason, and the second one was missing here.
+   *
+   * The zeroing screen has gated on `canSendGcode` since the alarm swallow was
+   * measured; this card, which has been driving two thirds of the same command
+   * from a corner of the dashboard, never did. So in alarm its buttons looked
+   * live, the press reached the server and the server threw the line away.
+   * Found by pressing it at an alarmed machine to watch the refusal arrive —
+   * which is a refusal that should never have had the chance.
+   */
+  const canZero = connected && canSendGcode && activeWcsNumber(modal) > 0;
   const machineZ = formatPosition(machinePosition.z);
 
   return (
@@ -49,14 +60,14 @@ const ZHeightWidget = ({ machine, label = t('zheight.title'), className = '' }) 
           <Button
             tone="primary"
             disabled={!canZero}
-            onClick={() => zero({ modal, axes: ['z'] })}
+            onClick={() => zero({ type, modal, axes: ['z'] })}
             className="h-ctl flex-1 @xl:w-chipw @xl:flex-none"
           >
             {t('zheight.zeroZ')}
           </Button>
           <Button
             disabled={!canZero}
-            onClick={() => zero({ modal, axes: ['x', 'y'] })}
+            onClick={() => zero({ type, modal, axes: ['x', 'y'] })}
             className="h-ctl flex-1 @xl:w-chipw @xl:flex-none"
           >
             {t('zheight.zeroXY')}

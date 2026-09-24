@@ -291,6 +291,7 @@ does it stay behind in the old application, or does it go?
   The chips are the missing half, and they are missing deliberately rather
   than forgotten: switching the coordinate system is a modal G-code that
   changes where every later move goes, and it wanted deciding with Mateusz
-  in front of it rather than on the way past. `machine/zero.js` already
-  refuses to write an offset when the controller has not said which system
-  is active, so nothing here guesses in the meantime.
+  in front of it rather than on the way past. Nothing guesses in the
+  meantime: on Grbl the server refuses a `zero` it cannot name a system for
+  and says so, and `machine/zero.js` refuses to compose the line for the
+  firmwares that still need it composed here.

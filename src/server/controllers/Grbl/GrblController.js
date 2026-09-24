@@ -51,6 +51,7 @@ import { in2mm, mapPositionToUnits, mapValueToUnits } from '../utils/units';
 import GrblRunner from './GrblRunner';
 import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, stopSeconds } from './jog';
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
+import { activeWcsNumber, zeroLine } from './zero';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
 import {
@@ -1635,6 +1636,34 @@ class GrblController {
       });
     }
 
+    /**
+     * Tell whoever asked that this will not happen, and why.
+     *
+     * **The gap this closes is silence.** A command this controller will not
+     * carry out left a line in the server's log and nothing at all on the
+     * socket, so the only way a panel could keep its buttons honest was to
+     * predict the refusal from the readings — which is how `canSendGcode` came
+     * to exist, and which can only ever cover the refusals a client has been
+     * taught about.
+     *
+     * A reason rather than a sentence. What a refusal reads like belongs to
+     * whoever draws it, in whatever language they are drawing it in; this side
+     * knows why, and `alarm` is the whole of what it knows.
+     *
+     * **To the client that asked, not to the port's room.** A refusal is about
+     * one request. A second pendant that pressed nothing has no use for it, and
+     * a panel that showed everybody else's mistakes would be showing noise.
+     * `CNCEngine` sets `commandSocket` around the call, so this is only
+     * readable from a handler that has not yet awaited anything — which is
+     * exactly where a refusal is decided.
+     */
+    refuse(cmd, reason) {
+      log.warn(`Refused "${cmd}": ${reason}`);
+      if (this.commandSocket) {
+        this.commandSocket.emit('command:refused', { cmd, reason });
+      }
+    }
+
     command(cmd, ...args) {
       const handler = {
         'gcode:load': () => {
@@ -1869,6 +1898,46 @@ class GrblController {
           this.event.trigger('homing');
 
           this.writeln('$H');
+        },
+        /**
+         * Set the work zero of some axes to where the tool is now.
+         *
+         * `zero({ axes: ['x', 'y'] })` — the intention, not the line. Which
+         * coordinate system that writes is this side's to know, because this
+         * side is what reads the parser state; a panel composing `G10 L20 P<n>`
+         * had to shadow that reading and be wrong about it in silence.
+         *
+         * **Both refusals were invisible before, and one of them was measured.**
+         * In alarm the feeder drops the line before the cable and leaves a
+         * warning in a log nobody at the machine is reading — pressing Zero Z on
+         * an alarmed Grbl changed no offset and said nothing (2026-09-23). With
+         * no parser state there is no system to name, and a fallback to `P1`
+         * would be a guess discovered by a tool moving to the wrong place under
+         * power.
+         */
+        'zero': () => {
+          const [{ axes } = {}] = args;
+
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+          // Before the line is attempted, so the reason names the thing that is
+          // actually missing: `zeroLine` is null for an unknown system and for
+          // an empty request alike, and reporting a coordinate system for the
+          // second would be this side making something up in its turn.
+          if (!activeWcsNumber(this.runner.getModalGroup())) {
+            this.refuse(cmd, 'no-wcs');
+            return;
+          }
+
+          const line = zeroLine({ modal: this.runner.getModalGroup(), axes });
+          if (!line) {
+            this.refuse(cmd, 'no-axes');
+            return;
+          }
+
+          this.command('gcode', line);
         },
         'sleep': () => {
           this.event.trigger('sleep');
@@ -2448,8 +2517,17 @@ class GrblController {
         },
       }[cmd];
 
+      /*
+       * A command this controller has never heard of, said out loud.
+       *
+       * It was a line in the log and nothing on the socket, which is the worst
+       * shape a version mismatch can take: a panel newer than the server it is
+       * talking to gets a control that looks live and does nothing, and the
+       * only evidence is on the machine in the garage. The refusal channel
+       * costs nothing here and turns that into something the operator can read.
+       */
       if (!handler) {
-        log.error(`Unknown command: ${cmd}`);
+        this.refuse(cmd, 'unknown-command');
         return;
       }
 

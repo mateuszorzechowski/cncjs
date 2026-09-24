@@ -405,6 +405,61 @@ jako brak pokrycia, nie zamiecione.
 
 ---
 
+## Kontrakt intencji — PIERWSZA POŁOWA ZROBIONA 2026-09-24
+
+**Decyzja Mateusza (2026-09-24):** komenda niesie wartość, serwer rozgłasza
+ostatnio użytą jako odczyt, a **każda komenda odmawia z kodem powodu**. Konsola
+zostaje poza kontraktem — `gcode`, `write` i `writeln` zostają na powierzchni
+serwera na stałe, bo surowy G-code to sens konsoli.
+
+**Zrobione:** kanał odmowy i `zero`.
+
+- **`command:refused { cmd, reason }`** — nowe zdarzenie, wysyłane **do gniazda,
+  które pytało**, nie do pokoju portu. Odmowa dotyczy jednego żądania; drugi
+  pendant, który niczego nie nacisnął, nie ma z niej pożytku. `CNCEngine`
+  ustawia `commandSocket` dookoła wywołania, więc czyta się je z uchwytu, który
+  jeszcze nie czekał na nic — czyli dokładnie tam, gdzie odmowa zapada.
+- **`zero({ axes })`** — panel wysyła intencję, serwer składa
+  `G10 L20 P<n>`. Numer `P` bierze się z `parserstate`, którego serwer i tak
+  słucha; panel musiał go dublować i mylić się w ciszy. Odmowy: `alarm`
+  (zmierzone na maszynie 2026-09-23 — feeder wyrzuca linię przed kablem i
+  zostawia wpis w logu, którego nikt przy maszynie nie czyta), `no-wcs`,
+  `no-axes`.
+- **Komenda, której serwer nie zna, też odmawia** (`unknown-command`). Było:
+  `log.error` i cisza. Panel nowszy od serwera dostawał sterowanie, które
+  wygląda na żywe i nic nie robi, a jedyny ślad leżał w pliku w garażu.
+
+**Powód jest kodem, nie zdaniem.** Jak odmowa brzmi, należy do tego, kto ją
+rysuje, i w jakim języku ją rysuje; serwer wie tylko, dlaczego. Panel ma na to
+`machine/refusal.js` i jedno miejsce, w którym to widać — `ui/RefusalNotice`,
+nad treścią, bez zdarzeń wskaźnika, bo wsunięte w kolumnę przesuwałoby ekran
+pod kciukiem.
+
+**Wyszarzenie zostaje pierwsze.** Napis jest wyłącznie na wyścig: przycisk był
+żywy, gdy go naciskano, i przestał być, zanim komenda doleciała. Przy okazji
+wyszło, że **karta `Wysokość Z` na pulpicie nie bramkowała `canSendGcode`** —
+ekran Zerowania tak, ta karta nie, więc w alarmie jej przyciski wyglądały na
+żywe. Naprawione razem z tym wpisem.
+
+**Zostaje do zrobienia** — te trzy dalej składa panel:
+
+| dziś w panelu | intencja | odmowy |
+| --- | --- | --- |
+| `goto.js` — `$J=G53 …` ×2 | `goToWorkZero()` | `alarm`, `no-travel` |
+| `goto.js` — `$J=G53 …` ×2 | `goToPoint({x,y})` | `alarm`, `out-of-envelope` |
+| `jog.js` — `$J=G91 …` | `jogStep({dir, distance, feedrate})` | `alarm`, `no-room` |
+
+Wszystkie trzy potrzebują obwiedni po stronie serwera — którą serwer już liczy
+(`roomFor` w `controllers/Grbl/jog.js`), tylko nie rozgłasza. To jest ten sam
+wpis co „Zakres ruchu liczony dwa razy" niżej.
+
+**Marlin, Smoothie i TinyG zostają na złożonej linii.** Ten sam wybór co przy
+`estop`: sterownik, którego nic na tym stole nie uruchomi, dostałby komendę,
+której nikt nigdy nie widział działającej. `machine/zero.js` trzyma dla nich
+`zeroLine` i wysyła `gcode`, tak jak wcześniej.
+
+---
+
 ## ~~Awaryjny stop: 500 ms żyje w zegarze przeglądarki~~ — ZAMKNIĘTE 2026-09-24
 
 **Zmierzone, naprawione po obu stronach i zweryfikowane na maszynie.** Pomiar

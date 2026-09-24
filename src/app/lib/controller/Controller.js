@@ -64,6 +64,24 @@ class Controller {
          * @param {object} timing - `{ tickMs, leadMs, ackMs, stopMs }`
          */
         'controller:timing': [],
+
+        /**
+         * A command the server will not carry out, said out loud.
+         *
+         * Sent to the client that asked and to nobody else — a refusal is
+         * about one request, not about the machine. Before it, a command the
+         * controller declined left a line in the server's log and nothing at
+         * all on the socket, so the only way a client could keep its controls
+         * honest was to predict the refusal from the readings.
+         *
+         * `reason` is a code rather than a sentence: what a refusal reads like
+         * belongs to whoever draws it, in whatever language it is being drawn
+         * in. `alarm`, `no-wcs`, `no-axes`, `unknown-command`.
+         *
+         * @event command:refused
+         * @param {object} refusal - `{ cmd, reason }`
+         */
+        'command:refused': [],
         'message': [],
         'watchdir:change': [],
 
