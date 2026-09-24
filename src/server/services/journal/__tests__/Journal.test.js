@@ -103,6 +103,23 @@ describe('finding entries', () => {
     expect(last.records.map((e) => e.id)).toEqual([1]);
     expect(last.next).toBeNull();
   });
+
+  test('how many, beside the page: per level, matched, and kept', () => {
+    const journal = new Journal();
+    journal.record(ALARM);
+    journal.record(ALARM);
+    journal.record(REFUSED);
+    journal.record(START);
+
+    const page = journal.query({ level: 'warn', source: 'controller' }, { limit: 1 });
+    // Per level with everything but the level applied, so each button says
+    // what pressing it would show.
+    expect(page.counts).toEqual({ debug: 0, info: 0, warn: 0, error: 2 });
+    expect(page.matched).toBe(2);
+    expect(page.kept).toBe(4);
+    expect(page.records).toHaveLength(1);
+    expect(page.next).toBe(2);
+  });
 });
 
 describe('on disk', () => {

@@ -12,16 +12,31 @@
  * available to something that is not looking at the fill.
  *
  * `compact` is for a filter rather than a setting: options as wide as their
- * labels, a smaller face, and the chosen one tinted rather than filled, so
- * a row of them can sit beside other controls without being the loudest
- * thing on the screen — *"filtry delikatniejsze, w jednej linii, mniejsze
- * buttony"* (Mateusz, 2026-09-24). Same height, because a touch target
- * does not get smaller for being quiet.
+ * labels, so a row of them can sit beside other controls — *"filtry w jednej
+ * linii, mniejsze buttony"* (Mateusz, 2026-09-24). The same face and height,
+ * because these are the panel's buttons and a touch target does not get
+ * smaller for being a filter.
+ *
+ * For the journal's filters, three more, all optional:
+ * - `isOn(option)` in place of `value` when more than one can be on — a
+ *   level is a floor, so `Warn` lights `Warn` and `Error`; sources are a
+ *   set;
+ * - `counts`, what each option stands for, shown after its name;
+ * - `columns`, tiles in a grid instead of a row, for a phone's sheet.
  */
-const SegmentedChoice = ({ options, value, onChange, format = String, label, unit, disabled, compact = false }) => (
-  <div className={`flex h-chiph shrink-0 ${compact ? 'gap-1' : 'gap-2'}`} role="group" aria-label={label}>
+const COLUMNS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 4: 'grid-cols-4' };
+
+const SegmentedChoice = ({
+  options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, counts, columns,
+}) => (
+  <div
+    className={columns ? `grid gap-2 ${COLUMNS[columns]}` : 'flex h-chiph shrink-0 gap-2'}
+    role="group"
+    aria-label={label}
+  >
     {options.map((option) => {
-      const chosen = option === value;
+      const chosen = isOn ? isOn(option) : option === value;
+      const count = counts ? counts[option] : undefined;
       return (
         <button
           key={option}
@@ -35,13 +50,13 @@ const SegmentedChoice = ({ options, value, onChange, format = String, label, uni
           disabled={disabled}
           onClick={() => onChange(option)}
           className={[
-            'h-full rounded-ctl border transition-colors',
-            compact
-              ? 'shrink-0 px-3 text-note font-semibold'
-              : 'min-w-0 flex-1 basis-0 px-1 font-num text-base font-semibold',
-            chosen && compact ? 'border-acc bg-accS text-acc' : '',
-            chosen && !compact ? 'border-acc bg-acc text-white' : '',
-            chosen ? '' : 'border-line bg-surf text-ink hover:border-acc hover:text-acc',
+            'flex items-center gap-2 rounded-ctl border font-num text-base font-semibold transition-colors',
+            columns ? 'h-chiph justify-between px-3' : 'h-full justify-center',
+            !columns && compact ? 'shrink-0 px-3' : '',
+            !columns && !compact ? 'min-w-0 flex-1 basis-0 px-1' : '',
+            chosen
+              ? 'border-acc bg-acc text-white'
+              : 'border-line bg-surf text-ink hover:border-acc hover:text-acc',
             // Dimmed, not repainted: which step is selected is still the
             // answer to "what happens when I reconnect and press a key", and
             // a disabled control that drops its selection hides that.
@@ -49,6 +64,7 @@ const SegmentedChoice = ({ options, value, onChange, format = String, label, uni
           ].join(' ')}
         >
           {format(option)}
+          {count === undefined ? null : <span className="tabular-nums opacity-75">{count}</span>}
         </button>
       );
     })}

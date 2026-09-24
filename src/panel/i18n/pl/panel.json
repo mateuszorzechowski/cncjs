@@ -371,7 +371,11 @@
       "source": "Źródło",
       "from": "Od",
       "to": "Do",
-      "search": "Szukaj w dzienniku"
+      "search": "Szukaj w dzienniku",
+      "time": "Czas",
+      "open": "Filtry",
+      "title": "Filtry",
+      "reset": "Wyczyść"
     },
     "keep": {
       "label": "Dziennik zapisuje od",
@@ -384,7 +388,6 @@
       "error": "Błąd"
     },
     "source": {
-      "all": "Wszystko",
       "server": "Serwer",
       "controller": "Sterownik"
     },
@@ -456,7 +459,16 @@
       "message": "Komunikat",
       "name": "Plik",
       "id": "Wpis"
-    }
+    },
+    "range": {
+      "m15": "15 min",
+      "h1": "1 h",
+      "today": "Dziś",
+      "all": "Wszystko",
+      "custom": "Własny zakres…"
+    },
+    "count": "{{matched}} z {{kept}} wpisów",
+    "show": "Pokaż wpisy: {{count}}"
   },
   "grbl": {
     "alarm": {

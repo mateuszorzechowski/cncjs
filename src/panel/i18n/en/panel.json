@@ -371,7 +371,11 @@
       "source": "Source",
       "from": "From",
       "to": "To",
-      "search": "Search the journal"
+      "search": "Search the journal",
+      "time": "Time",
+      "open": "Filters",
+      "title": "Filters",
+      "reset": "Reset"
     },
     "keep": {
       "label": "Journal keeps from",
@@ -384,7 +388,6 @@
       "error": "Error"
     },
     "source": {
-      "all": "All",
       "server": "Server",
       "controller": "Controller"
     },
@@ -456,7 +459,16 @@
       "message": "Message",
       "name": "File",
       "id": "Entry"
-    }
+    },
+    "range": {
+      "m15": "15 min",
+      "h1": "1 h",
+      "today": "Today",
+      "all": "All",
+      "custom": "Custom range…"
+    },
+    "count": "{{matched}} of {{kept}} entries",
+    "show": "Show {{count}} entries"
   },
   "grbl": {
     "alarm": {
