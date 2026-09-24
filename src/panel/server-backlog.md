@@ -405,51 +405,197 @@ jako brak pokrycia, nie zamiecione.
 
 ---
 
-## Awaryjny stop: 500 ms żyje w zegarze przeglądarki
+## ~~Awaryjny stop: 500 ms żyje w zegarze przeglądarki~~ — ZAMKNIĘTE 2026-09-24
 
-**Panel chciał:** wielkiego czerwonego przycisku. Decyzja Mateusza z
-2026-09-20: najpierw wstrzymanie posuwu, po chwili miękki reset — bo sam reset
-zatrzymuje, porzucając planer, czyli z pozycją, której potem nikt nie zna, a
-samo wstrzymanie jest odwracalne i dlatego nie jest zatrzymaniem.
+**Zmierzone, naprawione po obu stronach i zweryfikowane na maszynie.** Pomiar
+zlecony przez Mateusza („zmierz co Grbl robi z `!` w jogu"), a potem domknięcie
+całości na jego polecenie („dokończ w całości, żeby zamknąć ten temat"). Wszystko
+na COM3, Grbl 1.1h, status odpytywany co 20 ms.
 
-**Serwer ma:** dwie osobne komendy (`feedhold`, `reset`) i jedną złożoną,
-`gcode:stop` z `{ force: true }`, która robi dokładnie to samo co panel —
-`!`, `await delay(500)`, `\x18` — tylko u siebie. Nie jest to jednak zamiennik:
-**bramkuje oba kroki stanem**. `!` leci wyłącznie przy `Run`, a `\x18`
-wyłącznie przy `Hold`. Maszyna w `Jog` albo `Home` nie dostaje ani jednego z
-nich, a to są stany, w których ruch trwa.
+### 1. Co Grbl robi z `!` w jogu
 
-**Skutek — to, co panel robi dzisiaj:**
-`controller.command('feedhold')`, `setTimeout(…, 500)` w karcie przeglądarki,
-`controller.command('reset')`. Pokrycie stanów jest lepsze od serwerowego (oba
-bajty lecą bezwarunkowo), ale **dostarczenie drugiej połowy nie jest niczym
-zagwarantowane**:
+**`!` w jogu jest anulowaniem jogu, nie wstrzymaniem.** Maszyna hamuje do zera w
+**63 ms i 0,8 mm**, reszta ruchu jest odrzucana, stan ląduje w **`Idle`** — nigdy
+w `Hold` — a `~` po tym nie wznawia niczego.
 
-- karta uśpiona, zamknięta albo zwinięta w tle w ciągu tych 500 ms zostawia
-  maszynę **we wstrzymaniu, nie po resecie** — czyli w stanie, który wygląda
-  na zatrzymanie i wznawia się przez Cycle Start;
-- zegary w karcie w tle są dławione (na telefonie do sekund), a panel jest
-  PWA, którą operator trzyma w kieszeni;
-- zerwane łącze między dwoma poleceniami daje to samo.
+Skutek dla `gcode:stop { force: true }`: żadna z jego dwóch bramek nie ma jak się
+otworzyć na maszynie w jogu. `activeState` to `Jog`, nie `Run`, a pół sekundy
+później `Idle`, nie `Hold`. To nie usterka tamtej komendy — ona jest o
+**zatrzymywaniu programu**, gdzie stany naprawdę idą `Run` → `Hold`.
 
-To jest ten sam argument, który przeniósł jog ciągły na serwer: **stronę, która
-gwarantuje ciąg dalszy, ma tylko ta, która trzyma port.** Tym razem dotyczy
-przycisku bezpieczeństwa.
+### 2. Czego ten wpis nie przewidział: pętla jogu przeżywała stop
 
-**Propozycja:** jedna komenda serwera — `estop` — która wysyła `!`
-bezwarunkowo, odczekuje i wysyła `\x18` bezwarunkowo, bez bramkowania stanem.
-Wtedy druga aplikacja na tym samym porcie ma ten sam czerwony przycisk za
-darmo, a zamknięcie karty w środku sekwencji nic nie zmienia. Odczekanie
-powinno wyjść z `$120`–`$122` i posuwu, a nie ze stałej 500 ms — serwer ma
-jedno i drugie, panel ma tylko drugie (komentarz w `commands.js` mówi to
-wprost: „NOT MEASURED").
+Jog ciągły to **trzecia kolejka** tego sterownika, a ścieżki stopu znały dwie.
+`!` zatrzymywało maszynę, pętla wysyłała następny odcinek 150 ms później i
+maszyna **znowu jechała**; potem `\x18` dawał `ALARM:3`, pętla stawała uzbrojona
+na `MAX_IN_FLIGHT` bez żadnego potwierdzenia — a `ok` z operatorskiego `$X` było
+dokładnie tym potwierdzeniem. **163 odcinki, 23,5 mm ruchu z niczym trzymanym.**
 
-**Czego nie zmierzyłem i trzeba przy maszynie:** co Grbl 1.1 robi z `!` w
-stanie `Jog`. Dokumentacja opisuje wstrzymanie jako anulowanie jogu, więc
-maszyna wychodzi z tego prawdopodobnie w `Idle`, a nie w `Hold` — i wtedy
-bramka `activeState === 'Hold'` w `gcode:stop` nie puści resetu nawet po
-wstrzymaniu, które się udało. Zanim ktokolwiek ruszy ten przycisk, to jest
-pomiar do zrobienia.
+Naprawione tak, że **każda** ścieżka znacząca „przestań się ruszać" kończy pętlę:
+`reset` i `sleep` przez `abandonJog()` (nic nie wysyłają, bo nic by nie doszło),
+a `feedhold`, `gcode:pause` i `gcode:stop` przez `endHeldJog()` → `stopJog()`,
+czyli `0x85` po potwierdzeniach. Plus bramka w zegarze jogu: alarm porzuca jog, i
+**ten warunek stoi przed sprawdzeniem kolejki**, bo alarm przychodzi właśnie
+wtedy, gdy kolejka jest pełna i nic jej nie zwalnia.
+
+### 3. `estop` — 500 ms wyszło z przeglądarki i przestało być liczbą
+
+Panel wysyłał `feedhold`, `setTimeout(500)`, `reset`. Teraz na Grblu wysyła
+**jedną komendę**, a serwer: kończy trzymany jog, zatrzymuje sender i feeder,
+wysyła `!`, **patrzy w raport statusu, aż maszyna naprawdę stanie**, i dopiero
+wtedy `\x18`. Stała 500 ms zamieniła się w **warunek**, a liczba została tylko
+sufitem — policzonym z posuwu, który maszyna raportuje, i z `$120`–`$122`
+(`src/server/controllers/Grbl/stop.js`).
+
+Dwa szczegóły, które kosztowały pomiar:
+
+- **`Hold` to dwa stany i tylko jeden jest bezruchem.** Grbl raportuje `Hold:1`
+  w trakcie hamowania i `Hold:0` po. Reset przy `Hold:1` porzuca planer — czyli
+  robi dokładnie to, czego trzymanie najpierw miało uniknąć.
+- **Trzymany jog dostaje swój czas na wierzch.** Anulowanie jogu czeka na
+  potwierdzenia, więc bez tego reset lądował 25 ms po bajcie anulowania i maszyna
+  wstawała w **alarmie z porzuconą pozycją**. Droga była dobra, zły był stan.
+  Serwer zna ten czas — to `stopMs` z `controller:timing`.
+
+### 4. Kto odpowiada za stop i anulowanie — i ostatnia dziura
+
+Pytanie Mateusza po tych poprawkach: *„przeglądarka jest odpowiedzialna za stop i
+anulowanie?"*. Rozstrzyga się na dwóch pytaniach, nie jednym.
+
+**Czy ma zdecydować, że stop ma nastąpić** — tak, i to się nie przenosi. Tylko
+przeglądarka wie, że operator nacisnął przycisk albo puścił palec.
+
+**Czy ma to wykonać** — już nie. Stop na Grblu to jedna komenda, a anulowanie
+jogu to `jogStop`, po którym serwer czeka na potwierdzenia i wysyła `0x85`.
+Przeglądarka mówi „teraz", serwer robi resztę. Zostaje przy niej jeszcze jedna
+rzecz i jest właściwa: okno 250 ms rozstrzygające **dotknięcie kontra
+przytrzymanie**, bo to jest pytanie o intencję człowieka, nie o maszynę.
+
+**Ale z tego pytania wyszła ostatnia dziura, i była poważna.** Puszczenie
+klawisza to **jedyna** rzecz, która kończy jog ciągły — a klient, którego już nie
+ma, nigdy go nie wyśle. `removeConnection` usuwało gniazdo z puli i nic więcej.
+
+Zmierzone: gniazdo trzymające klawisz zabite bez żadnego puszczenia, drugie
+patrzy —
+
+| po zniknięciu klienta | przed | po |
+| --- | --- | --- |
+| droga w pierwszych 3 s | **29,532 mm** | **0,860 mm** |
+| stan po 3 s | **`Jog`** — dalej jedzie | **`Idle`** |
+| droga w kolejnych 1,5 s | **14,764 mm** | **0,000 mm** |
+
+Czyli przed poprawką maszyna jechała **do końca zakresu osi** — na tym stole do
+metra — z nikim, kto by patrzył. `removeConnection` traktuje teraz zniknięcie
+klienta jak puszczenie klawisza (`endHeldJog()`, więc grzecznie: `0x85` po
+potwierdzeniach, pozycja zostaje znana).
+
+**Cena, powiedziana wprost:** przy dwóch pendantach zamknięcie jednego zatrzyma
+jog, który drugi może jeszcze trzymać. To jest bezpieczna strona — operator
+naciśnie znowu — a sterownik i tak nie umie ich rozróżnić, bo
+`socket.on('command')` nie przekazuje gniazda do `command()`.
+
+**Czego to nie pokrywa i co zostaje na Twoją decyzję:** klienta, który **zawiesił
+się, ale nie zniknął**. Gniazdo stoi otwarte, więc `removeConnection` nie pada, a
+socket.io potrzebuje do tego swojego ping timeoutu (`pingInterval` 10 s +
+`pingTimeout` 8 s). Jedynym zabezpieczeniem jest wtedy **limit zakresu osi** —
+`roomFor` zatrzymuje pętlę na krawędzi obwiedni, co na tym stole znaczy „do metra
+w tym kierunku".
+
+Prawdziwa odpowiedź na to jest **czuwak**: panel odnawia przytrzymanie co
+N milisekund, serwer porzuca jog, gdy nie usłyszał w 2N. To zmiana protokołu jogu
+i dlatego jej nie zrobiłem sam. Do rozstrzygnięcia z Mateuszem.
+
+**Przy okazji poprawiony komentarz, który przestał być prawdą.**
+`ui/useHoldToJog.jsx` twierdził: *„the stream's own segment length is the backstop
+underneath all of them ... even a release that is never seen stops the machine
+almost at once"*. Było prawdą, gdy pętla siedziała w przeglądarce. Przeniesienie
+jej na serwer (2026-09-22) zabrało ten bezpiecznik i **nikt nie poprawił
+zdania** — a to jest dokładnie ten rodzaj notatki, na którym ktoś oprze decyzję o
+usunięciu jednego z czterech nasłuchów.
+
+### Pomiary, przed i po
+
+| przy trzymanym klawiszu | przed | po |
+| --- | --- | --- |
+| droga od naciśnięcia | 4,244 mm | **0,560 mm** |
+| `$J=` po resecie / po `$X` | 2 / **163** | 0 / **0** |
+| ruch po `$X`, nic trzymanego | **23,536 mm** | **0,000 mm** |
+| stan końcowy | `Alarm`, pozycja unieważniona | **`Idle`, pozycja znana** |
+
+| w trakcie programu | przed | po |
+| --- | --- | --- |
+| od naciśnięcia do resetu | 500 ms (stała w karcie) | **135 ms (warunek)** |
+| droga od naciśnięcia | — | **0,596 mm** |
+| stan końcowy | zależny od tego, czy karta dożyła | **`Idle`, pozycja znana** |
+
+Ślad z tego drugiego jest cały wpis w jednym miejscu:
+
+```
+8744  press, Run
+8746  !
+8772  <Hold:1|MPos:-33.032   <- hamuje
+8838  <Hold:1|MPos:-33.320
+8866  <Hold:0|MPos:-33.320   <- stanęła
+8879  0x18                   <- 13 ms później
+8916  <Idle|MPos:-33.320     <- pozycja znana
+```
+
+### Co zostaje, a co nie
+
+**Po stronie Grbla zostaje jedna rzecz i jest nazwana wyżej: czuwak na
+zawieszonego klienta.** Zegar przeglądarki zniknął, sekwencja stopu jest
+niepodzielna, a klient, który *zniknął*, kończy jog. Klient, który stoi z
+otwartym gniazdem i nie odpowiada, opiera się tylko na limicie zakresu osi.
+
+**Marlin, Smoothie i TinyG zostają na dwustopniowej ścieżce**, bo nie mają
+`estop`, a wymyślanie go dla firmware'u, którego nic na tym stole nie uruchamia,
+to stop, którego nikt nigdy nie widział działającego. Panel rozgałęzia się po
+`machine.type`, jak przy jogu i bazowaniu. **To jest jedyna pozostała pozycja
+tego tematu** i jest to świadoma decyzja, nie luka.
+
+**Panel nadal nie zdejmuje alarmu** — i to też jest decyzja, zapisana w
+`machine/advice.js`: *„unlocking is the operator's to do"*. Ekran alarmów jest
+osobną propozycją z listy CO DALEJ, nie częścią tego wpisu.
+
+---
+
+## Bramka między programem a jogiem działa tylko w jedną stronę
+
+**Zmierzone w kodzie 2026-09-24, przy analizie arbitracji między klientami.**
+
+`jogStart` **odmawia**, gdy program biegnie:
+
+```js
+if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
+  log.warn('Refusing to jog while a job is running');
+  return;
+}
+```
+
+`gcode:start` **nie odmawia**, gdy biegnie jog. Cały handler to
+`workflow.start()`, `feeder.reset()`, `sender.next()` — nie pyta o `jogging` i
+nie pyta o stan maszyny. Więc program zaczyna strumieniować do planera, w którym
+pętla jogu wciąż składa `$J=`, i **dwa źródła ruchu piszą do jednego planera**.
+
+**Skutek:** to nie jest nieporządek, to kolizja. Jog jedzie w swoją stronę,
+program w swoją, a `sender` liczy znaki w buforze Grbla, którego drugie źródło mu
+nie zgłasza. Na maszynie z mechaniką to najazd.
+
+**Jak to osiągnąć:** dwa klienty, co na tym stole jest codziennością — stara
+aplikacja w jednej karcie i panel w drugiej. Jedno urządzenie tego nie zrobi,
+bo `useHoldToJog` puszcza klawisz na `blur` i `visibilitychange`, a jednym palcem
+nie da się trzymać klawisza i nacisnąć Start na innym ekranie.
+
+**Propozycja:** ta sama bramka w drugą stronę — `gcode:start` odmawia, gdy
+`this.jogging.dir` albo maszyna nie jest w spoczynku, i **mówi dlaczego**, bo
+inaczej Start staje się przyciskiem, który czasem nic nie robi. To jest usterka
+niezależna od tego, czy w ogóle wprowadzimy arbitrację między klientami: bramka
+istnieje, jest jednokierunkowa i druga strona nie została napisana.
+
+**Uwaga o szerszej decyzji:** jeśli kiedyś wejdzie miękka dzierżawa ruchu
+(„zatrzymać może każdy, ruszyć nie każdy"), to `gcode:start` musi być po stronie
+ruchu, nie po stronie stopu. Ale dzierżawa tego wpisu nie zastępuje — bez niej
+też trzeba to zamknąć.
 
 ---
 

@@ -50,6 +50,7 @@ import { isM0, isM1, isM6, replaceM6 } from '../utils/gcode';
 import { in2mm, mapPositionToUnits, mapValueToUnits } from '../utils/units';
 import GrblRunner from './GrblRunner';
 import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, stopSeconds } from './jog';
+import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
 import {
@@ -535,6 +536,8 @@ class GrblController {
       this.jogging = {
         dir: null,
         feedrate: 0,
+        // The socket that asked for the current hold, or null.
+        owner: null,
         inFlight: 0,
         stopping: false,
         leadSeconds: hostTiming().leadSeconds,
@@ -1594,6 +1597,35 @@ class GrblController {
       log.debug(`Remove socket connection: id=${socket.id}`);
       this.sockets[socket.id] = undefined;
       delete this.sockets[socket.id];
+
+      /*
+       * And a held jog ends with the client, because nobody is left to let go.
+       *
+       * A continuous jog is one command and then silence until the release, so
+       * the release is the only thing that stops it — and a client that has gone
+       * will never send one. Nothing else here would notice: this method used to
+       * remove a socket from a pool and no more, while the loop went on feeding
+       * segments until the axis ran out of travel. Up to `$130` of it, which on
+       * this bench is a metre.
+       *
+       * **Stopped rather than abandoned:** the machine is still listening, so the
+       * cancel goes out properly and the position stays known.
+       *
+       * **Only the client that started it, and that precision is not a nicety.**
+       * The first version of this stopped any held jog whenever any client left,
+       * on the reasoning that two pendants are rare. Measured on this network
+       * ten minutes later: a device reconnecting its socket killed a jog another
+       * client was holding, 0.8s in. A pendant whose jog stops by itself when a
+       * phone in somebody's pocket wakes up is a worse bug than the one this
+       * fixes. `CNCEngine` records who asked; see `jogStart`.
+       *
+       * It does **not** cover a client that is wedged rather than gone: the
+       * socket stays open, so this never fires, and socket.io takes up to its
+       * ping timeout to notice. The travel limit is the only backstop there.
+       */
+      if (this.jogging.owner === socket.id) {
+        this.endHeldJog();
+      }
     }
 
     emit(eventName, ...args) {
@@ -1670,6 +1702,18 @@ class GrblController {
           const [options] = args;
           const { force = false } = { ...options };
           if (force) {
+            /*
+             * The jog loop first, because neither gate below can see it.
+             *
+             * This is the old application's Stop button
+             * (`widgets/Visualizer/index.jsx`), so it is reachable from another
+             * tab while the pendant holds a key. Its two tests are `Run` then
+             * `Hold`, which is what stopping a *program* looks like; a jog
+             * passes through neither, so without this line the whole handler
+             * writes nothing at a machine that is moving.
+             */
+            this.endHeldJog();
+
             let activeState;
 
             activeState = _.get(this.state, 'status.activeState', '');
@@ -1693,6 +1737,8 @@ class GrblController {
           this.event.trigger('gcode:pause');
 
           this.workflow.pause();
+          // Same byte as `feedhold`, same reason for this line. See `endHeldJog`.
+          this.endHeldJog();
           this.write('!');
         },
         'resume': () => {
@@ -1723,7 +1769,93 @@ class GrblController {
         'feedhold': () => {
           this.event.trigger('feedhold');
 
+          this.endHeldJog();
+
           this.write('!');
+        },
+        /**
+         * The big red button, as one command.
+         *
+         * Hold, wait for the machine to actually stop, reset. The order is
+         * Mateusz's decision of 2026-09-20 and is unchanged; what moves here is
+         * *where the waiting happens*.
+         *
+         * **It was a `setTimeout` in a browser tab.** Half a second, not
+         * measured, with the reset undeliverable if the tab slept or closed
+         * inside it — and a phone throttles background timers to seconds, so
+         * for a pendant that is the ordinary case rather than the edge one. On
+         * this side of the socket the wait does not have to be a guess at all:
+         * the status report says when the axes have stopped, so the reset goes
+         * out then, and `holdSeconds` is only a ceiling worked out from the feed
+         * rate the machine reports and the acceleration in `$120`-`$122`.
+         *
+         * Measured on a Grbl 1.1h: the whole press lands in about 130ms of a
+         * program at 600 mm/min, against the flat 500 it replaces, and the
+         * ceiling is double the old constant so it can only ever be more
+         * patient than that, never less.
+         *
+         * All three queues first. A held jog has to be ended rather than held —
+         * Grbl has no way to pause one, see `endHeldJog` — and the feeder and
+         * the sender are stopped so nothing follows the reset onto the wire.
+         */
+        'estop': async () => {
+          /*
+           * The hold's own trigger, not a new one.
+           *
+           * This command replaces a `feedhold` the panel used to send, so a
+           * script somebody has bound to that event must go on firing. And a
+           * new `estop` event would be a name nothing in Settings can bind to,
+           * which is half a feature — the old application's event list is not
+           * part of this change.
+           */
+          this.event.trigger('feedhold');
+
+          // Read before it is cleared: a held jog costs this press extra time,
+          // and the reason is below.
+          const heldJog = Boolean(this.jogging.dir);
+
+          this.endHeldJog();
+          this.workflow.stop();
+          this.feeder.reset();
+
+          this.write('!');
+
+          /*
+           * A held jog needs its own stopping time added, or the reset lands
+           * mid-cancel.
+           *
+           * Ending a held jog is not instant and not the hold's doing: the
+           * cancel waits for the segments already sent to be acknowledged
+           * before `0x85` goes out, which is what `stopMs` measures — lead plus
+           * reply, on this host, from its own jogging. Measured on the machine
+           * without this: the press reset at 152ms, 25ms after the cancel byte,
+           * so the soft reset landed while the axis was still decelerating and
+           * the machine came up in **alarm with its position abandoned** — the
+           * exact outcome holding first exists to avoid. The travel was right
+           * either way; what was wrong was the state left behind.
+           *
+           * And the standstill cannot be *seen* in this case, which is why a
+           * ceiling is all there is to lean on: a jog reports `Jog` until the
+           * cancel completes, so `hasStopped` stays false throughout.
+           */
+          const seconds = holdSeconds({
+            feedrate: this.runner.state?.status?.feedrate,
+            acceleration: slowestAcceleration(this.runner.settings?.settings),
+            // One query period, because that is the soonest a standstill can be
+            // seen, plus what ending a held jog costs when there is one.
+            latencySeconds: 0.1 + (heldJog ? (this.timing().stopMs / 1000) : 0),
+          });
+
+          const stopped = await this.waitForStandstill(seconds);
+          if (!stopped) {
+            // Said out loud, because it means the machine did not report coming
+            // to rest within a time worked out from its own settings. The reset
+            // still goes out — that is what a stop is for — but somebody should
+            // know the hold was not seen to land.
+            log.warn(`Resetting without having seen the machine stop: waited ${Math.round(seconds * 1000)}ms`);
+          }
+
+          this.write('\x18'); // ^x
         },
         'cyclestart': () => {
           this.event.trigger('cyclestart');
@@ -1741,6 +1873,14 @@ class GrblController {
         'sleep': () => {
           this.event.trigger('sleep');
 
+          /*
+           * Abandoned rather than cancelled: a sleeping Grbl answers nothing,
+           * so a cancel waiting on an acknowledgement would wait for ever —
+           * which is the same trap `reset` fell into. Only `$SLP` itself gets
+           * through, and it does not need the planner emptied first.
+           */
+          this.abandonJog();
+
           this.writeln('$SLP');
         },
         'unlock': () => {
@@ -1750,6 +1890,23 @@ class GrblController {
           this.workflow.stop();
 
           this.feeder.reset();
+
+          /*
+           * And the jog loop, which nothing here used to tell.
+           *
+           * `workflow.stop()` and `feeder.reset()` clear the two queues this
+           * controller has always had; continuous jogging added a third and
+           * this line is the one that was missing. Before it, a stop pressed
+           * with a key held left the loop armed through the alarm and moving
+           * again on the `ok` from the operator's `$X` — see `abandonJog` for
+           * the measurement.
+           *
+           * Before the byte, not after. The alarm guard in the jog clock would
+           * catch this too, but only once `ALARM:3` has come back from the
+           * firmware: measured at 32ms after `0x18`, and two more segments went
+           * out inside that window.
+           */
+          this.abandonJog();
 
           this.write('\x18'); // ^x
         },
@@ -1780,6 +1937,17 @@ class GrblController {
          */
         'jogStart': () => {
           const [dir, feedrate] = args;
+
+          /*
+           * Read now, not where it is stored.
+           *
+           * `CNCEngine` clears `commandSocket` the moment this handler returns,
+           * and the take-over path below finishes in a `setTimeout` — so
+           * reading it there would always find null and leave the jog with no
+           * owner, or worse, with the previous one's. Captured here, used by
+           * both paths.
+           */
+          const owner = this.commandSocket?.id ?? null;
 
           if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
             log.warn('Refusing to jog while a job is running');
@@ -1813,12 +1981,15 @@ class GrblController {
             const ourOwnBraking = this.jogging.stopping
               || (Date.now() - (this.jogging.cancelledAt ?? 0) < 1000);
 
-            this.takeOverWith(dir, feedrate, ourOwnBraking);
+            this.takeOverWith(dir, feedrate, ourOwnBraking, owner);
             return;
           }
 
           this.jogging.dir = dir;
           this.jogging.feedrate = feedrate;
+          // Whose hold this is. See `removeConnection`: a jog ends when the
+          // client holding it goes away, and only that one.
+          this.jogging.owner = owner;
           this.jogging.stopping = false;
           // Read once per hold rather than per tick: the lead an operator was
           // told about is the lead this jog uses, start to finish.
@@ -2341,6 +2512,26 @@ class GrblController {
           this.haltJogClock();
           return;
         }
+        /*
+         * A machine in alarm is not a machine that is behind — it is one that
+         * has stopped listening, and this loop has to end rather than wait.
+         *
+         * **Before the in-flight check, and that ordering is the whole fix.**
+         * An alarm arrives with segments outstanding and no acknowledgements
+         * coming for them, so a loop that tested the queue first returned here
+         * every tick, armed, for as long as the alarm lasted — and then set off
+         * again on the `ok` from the `$X` that cleared it. Measured: 23.5mm of
+         * travel with nothing held. See `abandonJog`.
+         *
+         * Same test the feeder has made from its first line, for the same
+         * reason, and it is worth them looking alike: `isAlarm()` is what
+         * "nothing you send will arrive" is called here.
+         */
+        if (this.runner.isAlarm()) {
+          log.warn('Abandoning the jog: the controller is in alarm');
+          this.abandonJog();
+          return;
+        }
         // Behind on acknowledgements: let the firmware catch up rather than
         // queue work that a turn would then have to wait behind. The time
         // is not consumed, so the next segment covers it.
@@ -2414,7 +2605,7 @@ class GrblController {
      *   Sending a second one is harmless but pointless, and it muddies the
      *   wire when reading a trace.
      */
-    takeOverWith(dir, feedrate, alreadyCancelled = false) {
+    takeOverWith(dir, feedrate, alreadyCancelled = false, owner = null) {
       if (!alreadyCancelled) {
         this.write('\x85');
       }
@@ -2452,6 +2643,7 @@ class GrblController {
 
         this.jogging.dir = dir;
         this.jogging.feedrate = feedrate;
+        this.jogging.owner = owner;
         this.jogging.stopping = false;
         this.jogging.leadSeconds = hostTiming().leadSeconds;
         this.jogging.ticks = [];
@@ -2566,6 +2758,96 @@ class GrblController {
 
       this.jogging.stopping = false;
       this.write('\x85');
+    }
+
+    /**
+     * Wait until the machine has come to rest, or until it has had long enough.
+     *
+     * Polled rather than driven by an event, because the evidence is the status
+     * report and that arrives on its own clock — every 100ms, from the query
+     * loop that is running anyway. Nothing extra is asked of the machine.
+     *
+     * @returns {Promise<boolean>} Whether it stopped, or the deadline expired.
+     */
+    async waitForStandstill(seconds) {
+      const deadline = Date.now() + (seconds * 1000);
+
+      /*
+       * `this.runner?` and not `this.runner.` — the port can close while this is
+       * waiting, and `destroy()` sets the runner to null. Without the guard the
+       * wait throws a TypeError from inside a stop, which is the worst place to
+       * find one; found by a test that tore its controller down mid-press.
+       */
+      while (Date.now() < deadline && this.runner) {
+        if (hasStopped(this.runner?.state?.status)) {
+          return true;
+        }
+        // eslint-disable-next-line no-await-in-loop
+        await delay(20);
+      }
+
+      return hasStopped(this.runner?.state?.status);
+    }
+
+    /**
+     * End a held jog before writing anything that means "stop moving".
+     *
+     * **Grbl has no way to pause a jog, so a hold has to end one.** Measured
+     * 2026-09-24: `!` during a jog is honoured as a *jog cancel* — the machine
+     * decelerates to a standstill in about 63ms and 0.8mm, the rest of the move
+     * is discarded, and it lands in `Idle`, never in `Hold`, with `~` afterwards
+     * resuming nothing.
+     *
+     * Which means that against this loop a bare `!` is not a stop at all. The
+     * machine came to a standstill and then set off again at full feed 150ms
+     * later, on the next segment: 4.2mm from one press at 600 mm/min, most of it
+     * after it had already stopped. Sending `!` ten times over a second only
+     * reproduced the fight — stop, restart, stop, restart — until the in-flight
+     * cap starved the loop and a real `Hold:0` was reached.
+     *
+     * `stopJog` rather than `abandonJog`, because these are the paths where the
+     * machine is still listening: it waits for the segments already sent to be
+     * acknowledged and then cancels with `0x85`, which is the recipe that
+     * measures cleanest on its own — 0.82mm, ending in `Idle` with the position
+     * still known.
+     */
+    endHeldJog() {
+      if (this.jogging.dir) {
+        this.stopJog();
+      }
+    }
+
+    /**
+     * Drop a held jog without sending anything, because nothing would arrive.
+     *
+     * `stopJog` ends a jog the polite way: it waits for the segments already
+     * sent to be acknowledged and then cancels with `0x85`. That is right when
+     * a key came up and wrong when the machine has stopped listening — a soft
+     * reset, a limit, an alarm from any cause — because the acknowledgements it
+     * waits for are never coming, so the loop sits armed instead of ending.
+     *
+     * **Measured on the machine, 2026-09-24, and this is the reason this
+     * method exists.** With a key held, the panel's stop (`feedhold`, then
+     * `reset` 500ms later) left this loop alive: `0x18` put Grbl in
+     * `ALARM:3 (Abort during cycle)`, the loop had two segments outstanding
+     * and no acknowledgement for them, so it stalled on `MAX_IN_FLIGHT` —
+     * *waiting*. Then the operator cleared the alarm the only way there is,
+     * `$X`, and **the `ok` from that unlock was the acknowledgement the loop
+     * was starved of.** It resumed on the spot: 163 segments, 23.5mm of travel
+     * with nothing held, and it only stopped because something cancelled it.
+     *
+     * So the counter is cleared as well as the direction. A stale
+     * acknowledgement arriving afterwards decrements nothing — the handlers
+     * guard on `> 0` — which is the behaviour wanted here: the `ok` from an
+     * operator's own `$X` must not be spent on a jog that no longer exists.
+     */
+    abandonJog() {
+      this.jogging.dir = null;
+      this.jogging.feedrate = 0;
+      this.jogging.pendingAt = null;
+      this.jogging.stopping = false;
+      this.jogging.inFlight = 0;
+      this.haltJogClock();
     }
 
     write(data, context) {

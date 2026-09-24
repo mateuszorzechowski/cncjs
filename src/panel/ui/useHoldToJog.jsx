@@ -22,9 +22,20 @@ import { useEffect, useRef } from 'react';
  * expected one; pointer cancel is the browser taking the gesture away,
  * usually because it became a scroll; the window losing focus and the page
  * being hidden are the ones that matter most, because a jog that outlives the
- * page is a jog nobody is watching. The stream's own segment length is the
- * backstop underneath all of them: it is a fraction of a second of travel, so
- * even a release that is never seen stops the machine almost at once.
+ * page is a jog nobody is watching.
+ *
+ * **And there is no longer a cheap backstop under them, which is why the list
+ * has to be complete.** It used to say there was: the loop lived here and sent
+ * a fraction of a second of travel at a time, so a release nobody saw cost
+ * almost nothing. The loop moved to the server on 2026-09-22 and took that
+ * with it — the server keeps feeding segments until something tells it to
+ * stop. Two things do, and neither is quick: the axis running out of travel,
+ * and the socket closing, which `GrblController.removeConnection` now treats as
+ * a release. A *wedged* page is covered by neither, because its socket stays
+ * open.
+ *
+ * So these four listeners are the safety, not a convenience. Removing one is
+ * not a tidy-up.
  */
 const HOLD_AFTER = 250;
 
