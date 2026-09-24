@@ -251,6 +251,7 @@
     "machineMoving": "The machine is moving. Wait for it to come to rest.",
     "unknownCommand": "This server does not know the command {{cmd}}. It is older than this panel.",
     "heldElsewhere": "Another device is moving the machine. Wait for it to finish.",
+    "notConfirmed": "The jog was stopped because this panel did not confirm the key was still down. Press again.",
     "other": "The server refused {{cmd}}: {{reason}}."
   },
   "notice": {

@@ -97,7 +97,10 @@ const JogWidget = ({ machine, className = '' }) => {
    * `machine/jog.js` and `src/server/controllers/Grbl/jog.js`.
    */
   const stream = useJogStream({
-    start: (dir) => jogStart(type, dir, rateFor(dir)),
+    // The link goes with it: how long the panel may go without confirming the
+    // hold is partly how long a confirmation takes to arrive. See
+    // `machine/deadman`.
+    start: (dir) => jogStart(type, dir, rateFor(dir), machine.linkMs),
     stop: () => jogStop(type),
   });
 

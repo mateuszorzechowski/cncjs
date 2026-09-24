@@ -8,10 +8,11 @@ const { test, expect, TEST_PORT } = require('./fixtures');
  * client shared with the old application, and a machine on a serial port at
  * the end of it.
  *
- * **Nothing here moves the machine.** The panel is opened, read, and closed.
- * The stop is never pressed: it sends a feed hold and a soft reset, and
- * resetting the controller mid-tier would leave every case after it looking at
- * a machine that had just rebooted.
+ * **What moves the machine here, moves it back.** Every case that jogs ends
+ * with the axis where it found it, because the next one reads a position. The
+ * stop is never pressed: it sends a feed hold and a soft reset, and resetting
+ * the controller mid-tier would leave every case after it looking at a machine
+ * that had just rebooted.
  *
  * The port is opened through the old application. The panel has had a
  * connection screen of its own since 2026-09-23 and could now open it
@@ -218,6 +219,129 @@ test.describe('panel, connected', () => {
     // And nothing was sent either way: this case reads the screen and stops.
     // `G10 L20` writes Grbl's EEPROM, and what the work zero on this machine
     // should be is not a test's decision.
+  });
+
+  test('a held jog that stops being confirmed is ended, in millimetres', async ({ grbl, context }) => {
+    /*
+     * The one command with no end of its own, and the only tier that can see
+     * what it costs.
+     *
+     * Measured 2026-09-24, before there was a deadman: a wedged client held a
+     * jog for 15.8 seconds and 166mm at 600 mm/min, and the only thing that
+     * stopped it was the axis running out of travel. Nothing else would have
+     * — `removeConnection` covers a client that goes, and a client that wedges
+     * stays connected.
+     *
+     * A client that declares a tolerance and then never confirms is exactly a
+     * wedged one, without having to wedge a browser to produce it.
+     */
+    const panel = await openPanel(grbl, context);
+
+    const mposX = async () => {
+      const state = await grbl.readControllerState();
+      return parseFloat(state.controller.state.status.mpos.x);
+    };
+
+    const start = await mposX();
+
+    const cut = await panel.evaluate(async ({ port, toleranceMs }) => {
+      // The server serves its own socket.io client (`serveClient: true`), and
+      // the panel keeps its own inside the React tree without exposing it —
+      // so this is a second client rather than a reach into the first.
+      await new Promise((resolve, reject) => {
+        const tag = document.createElement('script');
+        tag.src = '/socket.io/socket.io.js';
+        tag.onload = resolve;
+        tag.onerror = () => reject(new Error('the server did not serve its socket.io client'));
+        document.head.appendChild(tag);
+      });
+
+      const signIn = await fetch('/api/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: '', password: '' }),
+      });
+      const { token } = await signIn.json();
+
+      // Kept on the window so the move back at the end of the case can use the
+      // same client — and therefore the same device, which is what the
+      // movement lease is held against.
+      const socket = window.io('/', { auth: { token, device: 'a-pendant-that-wedges' } });
+      window.deadmanSocket = socket;
+      await new Promise((resolve, reject) => {
+        socket.on('connect', resolve);
+        socket.on('connect_error', reject);
+      });
+
+      /*
+       * Attached, not merely connected.
+       *
+       * A refusal goes to a socket in the port's room, and `open` is what
+       * joins one — the server keeps no other list. A client that sends
+       * commands without attaching can still move the machine and will never
+       * hear a word back about it, which is worth knowing and is not what this
+       * case is about.
+       */
+      await new Promise((resolve) => {
+        socket.emit('open', port, { controllerType: 'Grbl', baudrate: 115200, rtscts: false }, resolve);
+        setTimeout(resolve, 3000);
+      });
+
+      const told = new Promise((resolve) => socket.on('command:refused', resolve));
+
+      // Negative, because machine zero is a corner of the travel and `$20=1`
+      // refuses a move that leaves it rather than clipping it. And then
+      // nothing: no confirmation ever follows.
+      socket.emit('command', port, 'jogStart', { x: -1 }, 600, toleranceMs);
+
+      const answer = await Promise.race([
+        told,
+        new Promise((resolve) => { setTimeout(() => resolve(null), 10000); }),
+      ]);
+
+      return { answer, socketId: socket.id };
+    }, { port: grbl.port, toleranceMs: 300 });
+
+    // Said rather than only logged, because the client worth telling is the
+    // one whose link hiccupped and whose key is still down.
+    expect(cut.answer).toEqual({ cmd: 'jogStart', reason: 'not-confirmed' });
+
+    await expect
+      .poll(async () => {
+        const state = await grbl.readControllerState();
+        return String(state?.controller?.state?.status?.activeState || '').toLowerCase();
+      }, { timeout: 20000 })
+      .toBe('idle');
+
+    const travelled = Math.abs(await mposX() - start);
+
+    /*
+     * The number this case exists to produce. A third of a second of tolerance
+     * at 600 mm/min is about 3mm of travel, plus the queue and the machine's
+     * own deceleration; anything near the 166mm that was measured without a
+     * deadman means it is not working.
+     */
+    expect(travelled).toBeGreaterThan(0);
+    expect(travelled).toBeLessThan(20);
+
+    // Written down rather than only asserted: the figure is the point of the
+    // case, and a bound that passes says nothing about which side of it the
+    // machine is on.
+    test.info().annotations.push({
+      type: 'travel after the deadman',
+      description: `${travelled.toFixed(2)} mm at 600 mm/min, against 166 mm measured without one`,
+    });
+
+    // And back where it started, so the next case finds the machine where this
+    // one did. The same client, because the lease belongs to the device that
+    // was driving and a second one would be refused.
+    await panel.evaluate(({ port, distance }) => {
+      window.deadmanSocket.emit('command', port, 'jogStep', {
+        dir: { x: 1 }, distance, feedrate: 600,
+      });
+    }, { port: grbl.port, distance: travelled });
+
+    await expect.poll(mposX, { timeout: 20000 }).toBeCloseTo(start, 1);
   });
 
 });
