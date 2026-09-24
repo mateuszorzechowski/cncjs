@@ -37,7 +37,8 @@ const SegmentedChoice = ({
     aria-label={label}
   >
     {options.map((option, index) => {
-      const chosen = isOn ? isOn(option) : option === value;
+      const on = (which) => (isOn ? isOn(which) : which === value);
+      const chosen = on(option);
       const count = counts ? counts[option] : undefined;
       return (
         <button
@@ -58,7 +59,7 @@ const SegmentedChoice = ({
             joined ? '-ml-px first:ml-0 first:rounded-l-ctl last:rounded-r-ctl' : 'rounded-ctl',
             joined && chosen ? 'relative' : '',
             // Two chosen side by side would read as one wide button.
-            joined && chosen && index > 0 && (isOn ? isOn(options[index - 1]) : false) ? 'border-l-panel' : '',
+            joined && chosen && index > 0 && on(options[index - 1]) ? 'border-l-panel' : '',
             columns ? 'h-chiph justify-between px-3' : 'h-full justify-center',
             !columns && compact ? 'shrink-0 px-3' : '',
             !columns && !compact ? 'min-w-0 flex-1 basis-0 px-1' : '',

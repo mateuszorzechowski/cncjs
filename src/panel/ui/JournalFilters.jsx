@@ -108,7 +108,7 @@ const JournalFilters = ({ filters, counts, matched, kept, sheet = false }) => {
       <span className="h-0 basis-full @7xl/shell:hidden" />
       <span className="hidden h-6 w-px bg-line @7xl/shell:block" />
       <span className="@7xl/shell:hidden"><Caption>{t('journal.filter.time')}</Caption></span>
-      <SegmentedChoice compact {...ranges} options={CHOICES} />
+      <SegmentedChoice compact joined {...ranges} options={CHOICES} />
       {custom}
       <span className="ml-auto shrink-0 font-num text-note text-mut">
         {t('journal.count', { matched, kept })}
