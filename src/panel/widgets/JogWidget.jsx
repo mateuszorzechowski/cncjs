@@ -129,10 +129,12 @@ const JogWidget = ({ machine, className = '' }) => {
   const keys = {
     onJog: holdToJog,
     onHome: () => home(controller),
-    onGoZero: () => goToWorkZero(machine.settings),
+    onGoZero: () => goToWorkZero(machine.type, machine.settings),
     disabled: !connected,
     canHome: machine.canHome,
-    canGoZero: canGoToWorkZero(machine.settings),
+    /* Dark in alarm as well: the server drops a travel before the cable
+     * there, so a key that looked live reached nothing. */
+    canGoZero: machine.canSendGcode && canGoToWorkZero(machine.settings),
   };
 
   // The two axis groups, one description each. Both arrangements show the same

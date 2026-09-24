@@ -222,10 +222,23 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
    * somewhere the machine can actually reach. A single greyed-out button with
    * no explanation is the same shape for all three.
    */
-  const canGo = Boolean(machine.connected && point && canGoToPoint(machine.settings, point));
+  /*
+   * And the fourth way it can be dead, which the server used to swallow.
+   *
+   * In alarm every controller the server drives resets its feeder and throws
+   * the line away before the cable. A travel asked for then reached nothing
+   * and said nothing — the same silence the zeroing screen was given a gate
+   * for once it was measured. See `readings.canSendGcode`.
+   */
+  const canGo = Boolean(
+    machine.connected && machine.canSendGcode && point && canGoToPoint(machine.settings, point)
+  );
   const goNote = (() => {
     if (!machine.connected) {
       return t('path.go.disconnected');
+    }
+    if (!machine.canSendGcode) {
+      return t('path.go.alarm');
     }
     if (!point) {
       return t('path.go.noPoint');
@@ -244,7 +257,7 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
   const pick = (picked) => {
     setPoint(picked);
     if (clickDrives && picked && machine.connected && canGoToPoint(machine.settings, picked)) {
-      goToPoint(machine.settings, picked);
+      goToPoint(machine.type, machine.settings, picked);
     }
   };
 
@@ -298,7 +311,7 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
         offset={live}
         clickDrives={clickDrives}
         onClickDrives={() => setClickDrives((on) => !on)}
-        onGoToPoint={() => goToPoint(machine.settings, point)}
+        onGoToPoint={() => goToPoint(machine.type, machine.settings, point)}
         canGoToPoint={canGo}
         goNote={goNote}
         /*

@@ -1,6 +1,9 @@
 import controller from './controller';
 import { machineEnvelope } from './envelope';
 
+/** The one firmware whose server side composes these itself. */
+const GRBL = 'Grbl';
+
 /**
  * How fast a travel move runs, and why it is a jog rather than a rapid.
  *
@@ -119,31 +122,59 @@ export const goToPointLines = (settings, point) => {
 /** Whether the point under the cursor is somewhere the machine could go. */
 export const canGoToPoint = (settings, point) => goToPointLines(settings, point) !== null;
 
-/** Retract, then travel to a point picked off the drawing. */
-export const goToPoint = (settings, point) => {
+/**
+ * Retract, then travel to a point picked off the drawing.
+ *
+ * **On Grbl what crosses the socket is the point.** Composing the two lines
+ * here meant decoding four firmware settings — `$130`-`$132`, `$23`, `$110`
+ * and `$112` — to work out where the top of the travel is and how fast to get
+ * there, all of which the server reads already. It also meant a point outside
+ * the travel could only be *predicted* to fail: with `$20=1` the firmware
+ * refuses the line outright rather than clipping it, so pointing slightly wide
+ * of the bed did nothing at all and said nothing about why. The server refuses
+ * it with `out-of-envelope` now.
+ *
+ * The other firmwares keep the composed lines, the same choice `estop` and
+ * `zero` made.
+ */
+export const goToPoint = (type, settings, point) => {
+  if (type === GRBL) {
+    controller.command('goToPoint', { x: point?.x, y: point?.y });
+    return;
+  }
+
   const lines = goToPointLines(settings, point);
   if (!lines) {
-    return null;
+    return;
   }
   lines.forEach((line) => {
     controller.command('gcode', line);
   });
-  return lines;
 };
 
 /** Whether there is a known top of travel to retract to first. */
 export const canGoToWorkZero = (settings) => goToWorkZeroLines(settings) !== null;
 
-/** Retract, then travel to the work zero of whichever system is active. */
-export const goToWorkZero = (settings) => {
+/**
+ * Retract, then travel to the work zero of whichever system is active.
+ *
+ * `goToWorkZero()` carries nothing on Grbl, because nothing in it belongs to
+ * this side: where the top of the travel is and how fast to cross are both
+ * read out of the firmware, which the server is already holding.
+ */
+export const goToWorkZero = (type, settings) => {
+  if (type === GRBL) {
+    controller.command('goToWorkZero');
+    return;
+  }
+
   const lines = goToWorkZeroLines(settings);
   if (!lines) {
-    return null;
+    return;
   }
   lines.forEach((line) => {
     controller.command('gcode', line);
   });
-  return lines;
 };
 
 /**
