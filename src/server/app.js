@@ -436,14 +436,6 @@ const appMain = () => {
     // Controllers
     app.get(urljoin(settings.route, 'api/controllers'), api.controllers.get);
 
-    // Commands
-    app.get(urljoin(settings.route, 'api/commands'), api.commands.fetch);
-    app.post(urljoin(settings.route, 'api/commands'), api.commands.create);
-    app.get(urljoin(settings.route, 'api/commands/:id'), api.commands.read);
-    app.put(urljoin(settings.route, 'api/commands/:id'), api.commands.update);
-    app.delete(urljoin(settings.route, 'api/commands/:id'), api.commands.__delete);
-    app.post(urljoin(settings.route, 'api/commands/run/:id'), api.commands.run);
-
     // Events
     app.get(urljoin(settings.route, 'api/events'), api.events.fetch);
     app.post(urljoin(settings.route, 'api/events/'), api.events.create);

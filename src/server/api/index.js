@@ -3,7 +3,6 @@ import * as state from './api.state';
 import * as gcode from './api.gcode';
 import * as controllers from './api.controllers';
 import * as watch from './api.watch';
-import * as commands from './api.commands';
 import * as events from './api.events';
 import * as machines from './api.machines';
 import * as macros from './api.macros';
@@ -17,7 +16,6 @@ export {
   gcode,
   controllers,
   watch,
-  commands,
   events,
   machines,
   macros,
