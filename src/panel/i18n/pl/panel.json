@@ -506,5 +506,18 @@
       "37": "Dynamiczna korekcja długości narzędzia G43.1 nie jest przypisana do skonfigurowanej osi długości narzędzia.",
       "38": "Numer narzędzia większy niż maksymalna obsługiwana wartość."
     }
+  },
+  "alarm": {
+    "lockTitle": "Blokada bazowania",
+    "lock": "Maszyna wstała po resecie albo otwarciu portu, a bazowanie jest włączone ($22=1). Nic jeszcze nie zostało zbazowane w tej sesji, więc sterownik nie wie, gdzie jest.",
+    "position": {
+      "kept": "Pozycja zachowana — można odblokować.",
+      "lost": "Pozycja najpewniej utracona — trzeba bazować.",
+      "unknown": "Pozycja nieznana — trzeba bazować."
+    },
+    "home": "Bazuj",
+    "unlock": "Odblokuj",
+    "unlockWarning": "Odblokuj tylko, jeśli wiesz, gdzie jest maszyna — współrzędne mogą nie odpowiadać rzeczywistości.",
+    "code": "ALARM:{{code}}"
   }
 }

@@ -1,5 +1,6 @@
 import Sheet from './Sheet';
 import Button from './Button';
+import AlarmAdvice from './AlarmAdvice';
 import { NO_READING } from '../machine/readings';
 import { t } from '../i18n';
 
@@ -123,6 +124,10 @@ const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) 
         {error ? <span className="text-note text-red">{error}</span> : null}
       </div>
     </div>
+
+    {/* Which alarm, what it cost, and the way out — before the layers,
+      * because it is the reason the sheet was opened. */}
+    {machine.alarmed ? <AlarmAdvice machine={machine} /> : null}
 
     <div className="flex flex-col gap-2 border-b border-line pb-3">
       <Layer

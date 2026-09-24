@@ -506,5 +506,18 @@
       "37": "G43.1 dynamic tool length offset is not assigned to configured tool length axis.",
       "38": "Tool number greater than max supported value."
     }
+  },
+  "alarm": {
+    "lockTitle": "Homing lock",
+    "lock": "The machine came up after a reset or a port opening with homing enabled ($22=1). Nothing has been homed this session, so the controller does not know where it is.",
+    "position": {
+      "kept": "Position kept — safe to unlock.",
+      "lost": "Position most likely lost — home the machine.",
+      "unknown": "Position unknown — home the machine."
+    },
+    "home": "Home",
+    "unlock": "Unlock",
+    "unlockWarning": "Unlock only if you know where the machine is — the coordinates may not match reality.",
+    "code": "ALARM:{{code}}"
   }
 }

@@ -278,7 +278,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
-  envelope, motion, workflow, device,
+  envelope, motion, workflow, device, alarm,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -479,6 +479,11 @@ export const readMachine = ({
     // The sender's own state — `idle`, `running` or `paused` — for the job
     // buttons, which have to tell a pause from a run. See `machine/program`.
     workflow: connected ? (workflow || 'idle') : null,
+    // In alarm, and which: Grbl's number, or null for the homing lock that
+    // has none. Read only while the machine says `Alarm`, so a number the
+    // server has not yet cleared is never shown over a machine that is not.
+    alarmed: connected && active?.word === ALARM,
+    alarm: connected && active?.word === ALARM ? (alarm ?? null) : null,
   };
 };
 
