@@ -9,7 +9,6 @@ import { t } from '../i18n';
  */
 
 export const LEVELS = ['debug', 'info', 'warn', 'error'];
-export const SOURCES = ['all', 'server', 'controller'];
 
 const rank = (level) => LEVELS.indexOf(level);
 

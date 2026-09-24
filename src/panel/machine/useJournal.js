@@ -24,6 +24,7 @@ export const useJournal = ({ level, source, since, until, q }) => {
   const [next, setNext] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tally, setTally] = useState({ counts: null, matched: 0, kept: 0 });
   const filterRef = useRef(filter);
   filterRef.current = filter;
 
@@ -36,6 +37,7 @@ export const useJournal = ({ level, source, since, until, q }) => {
         if (live) {
           setEntries(page.records);
           setNext(page.next);
+          setTally({ counts: page.counts, matched: page.matched, kept: page.kept });
         }
       })
       .catch((e) => live && setError(e.message))
@@ -46,9 +48,18 @@ export const useJournal = ({ level, source, since, until, q }) => {
   }, [level, source, since, until, q, said]);
 
   useEffect(() => {
+    // Counted the way the server counts: per level with the rest of the
+    // filter applied, matched with all of it, kept regardless.
     const arrived = (entry) => {
-      if (passes(entry, filterRef.current)) {
-        setEntries((shown) => (shown.some((e) => e.id === entry.id) ? shown : [entry, ...shown]));
+      const shown = passes(entry, filterRef.current);
+      const levelled = passes(entry, { ...filterRef.current, level: 'debug' });
+      setTally((was) => ({
+        counts: was.counts && levelled ? { ...was.counts, [entry.level]: (was.counts[entry.level] || 0) + 1 } : was.counts,
+        matched: was.matched + (shown ? 1 : 0),
+        kept: was.kept + 1,
+      }));
+      if (shown) {
+        setEntries((list) => (list.some((e) => e.id === entry.id) ? list : [entry, ...list]));
       }
     };
     controller.addListener('journal:entry', arrived);
@@ -69,7 +80,7 @@ export const useJournal = ({ level, source, since, until, q }) => {
       .finally(() => setLoading(false));
   }, [next]);
 
-  return { entries, more: Boolean(next), loading, error, loadMore };
+  return { entries, ...tally, more: Boolean(next), loading, error, loadMore };
 };
 
 export default useJournal;

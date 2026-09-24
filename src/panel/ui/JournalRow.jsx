@@ -22,15 +22,11 @@ const DETAILS = {
   name: 'journal.detail.name',
 };
 
-// The day as well as the time — *"data i godzina"* (Mateusz, 2026-09-24): the
-// journal keeps months, and a time alone reads as today. No year; the whole
-// of it is in the entry's details.
-const date = new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit' });
-const time = new Intl.DateTimeFormat(undefined, {
+// The time of day only: the day is the heading above its entries
+// (`JournalDay`), as in the drawing of 2026-09-24.
+const clock = new Intl.DateTimeFormat(undefined, {
   hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3, hour12: false,
 });
-// Two formats joined by a space, not one: one puts a comma between them.
-const clock = (at) => `${date.format(at)} ${time.format(at)}`;
 const day = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
 
 const said = (entry) => {
@@ -63,17 +59,20 @@ const JournalRow = ({ entry, open, onToggle }) => {
         onClick={onToggle}
         className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5 text-left text-note"
       >
-        <span className="shrink-0 font-num tabular-nums text-mut">{clock(new Date(entry.time))}</span>
+        <span className="shrink-0 font-num tabular-nums text-mut">{clock.format(new Date(entry.time))}</span>
         <span className={`w-16 shrink-0 font-semibold uppercase tracking-[0.06em] ${TONE[entry.level] || TONE.info}`}>
           {t(LEVEL_KEYS[entry.level] || LEVEL_KEYS.info)}
         </span>
         <span className="w-20 shrink-0 text-mut">{t(SOURCE_KEYS[entry.source] || SOURCE_KEYS.server)}</span>
-        <span className="w-24 shrink-0 font-semibold text-ink">
-          {EVENT_KEYS[entry.event] ? t(EVENT_KEYS[entry.event]) : entry.event}
+        {/* The code beside what happened, and the message after both in a
+          * column of its own, so every message starts at the same place —
+          * *"osobna kolumna oprocz wiadomosci"* (2026-09-24). */}
+        <span className="w-48 shrink-0 truncate">
+          <span className="font-semibold text-ink">
+            {EVENT_KEYS[entry.event] ? t(EVENT_KEYS[entry.event]) : entry.event}
+          </span>
+          {entry.code ? <span className="ml-1.5 font-num text-cap text-mut">{entry.code}</span> : null}
         </span>
-        {/* A column of its own even when empty, so every message starts at the
-          * same place — *"osobna kolumna oprocz wiadomosci"* (2026-09-24). */}
-        <span className="w-32 shrink-0 truncate font-num text-mut">{entry.code}</span>
         <span className="min-w-0 flex-1 basis-60 text-ink">{said(entry)}</span>
       </button>
 

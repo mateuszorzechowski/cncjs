@@ -134,7 +134,6 @@ export const LEVEL_KEYS = {
 };
 
 export const SOURCE_KEYS = {
-  all: 'journal.source.all',
   server: 'journal.source.server',
   controller: 'journal.source.controller',
 };

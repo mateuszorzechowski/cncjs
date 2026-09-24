@@ -245,18 +245,35 @@ class Journal extends events.EventEmitter {
    *
    * `before` is the id to continue below — the `next` of the previous page —
    * so a page does not shift when new entries arrive while somebody reads.
+   *
+   * With the page come the numbers the filter bar shows: `counts` per level
+   * with every other filter applied — what each level button would show —
+   * `matched` for the whole filter, and `kept` for the journal as a whole.
+   * One pass over what is held, which is at most `MAX_ENTRIES`.
    */
   query(filter = {}, { before, limit = 100 } = {}) {
+    const { level, ...rest } = filter;
     const records = [];
-    for (let i = this.entries.length - 1; i >= 0 && records.length < limit; i -= 1) {
+    const counts = { debug: 0, info: 0, warn: 0, error: 0 };
+    let matched = 0;
+    let next = null;
+    for (let i = this.entries.length - 1; i >= 0; i -= 1) {
       const entry = this.entries[i];
-      if ((before === undefined || entry.id < before) && matches(entry, filter)) {
-        records.push(entry);
+      if (matches(entry, rest)) {
+        counts[entry.level] = (counts[entry.level] || 0) + 1;
+        if (!level || rank(entry.level) >= rank(level)) {
+          matched += 1;
+          if (before === undefined || entry.id < before) {
+            if (records.length < limit) {
+              records.push(entry);
+            } else if (next === null) {
+              next = records[records.length - 1].id;
+            }
+          }
+        }
       }
     }
-    const last = records[records.length - 1];
-    const more = last && this.entries.some((entry) => entry.id < last.id && matches(entry, filter));
-    return { records, next: more ? last.id : null };
+    return { records, next, counts, matched, kept: this.entries.length };
   }
 }
 
