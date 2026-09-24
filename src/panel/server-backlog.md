@@ -650,7 +650,7 @@ osobną propozycją z listy CO DALEJ, nie częścią tego wpisu.
 
 ---
 
-## Bramka między programem a jogiem działa tylko w jedną stronę
+## ~~Bramka między programem a jogiem działa tylko w jedną stronę~~ — ZAMKNIĘTE 2026-09-24
 
 **Zmierzone w kodzie 2026-09-24, przy analizie arbitracji między klientami.**
 
@@ -677,16 +677,27 @@ aplikacja w jednej karcie i panel w drugiej. Jedno urządzenie tego nie zrobi,
 bo `useHoldToJog` puszcza klawisz na `blur` i `visibilitychange`, a jednym palcem
 nie da się trzymać klawisza i nacisnąć Start na innym ekranie.
 
-**Propozycja:** ta sama bramka w drugą stronę — `gcode:start` odmawia, gdy
-`this.jogging.dir` albo maszyna nie jest w spoczynku, i **mówi dlaczego**, bo
-inaczej Start staje się przyciskiem, który czasem nic nie robi. To jest usterka
-niezależna od tego, czy w ogóle wprowadzimy arbitrację między klientami: bramka
-istnieje, jest jednokierunkowa i druga strona nie została napisana.
+**Zrobione:** `gcode:start` odmawia z `jogging`, gdy ten serwer prowadzi
+trzymany jog, i z `machine-moving`, gdy maszyna raportuje `Jog` — czyli gdy
+jedzie czyjś przejazd. **Mówi dlaczego**, bo inaczej Start staje się
+przyciskiem, który czasem nic nie robi.
 
-**Uwaga o szerszej decyzji:** jeśli kiedyś wejdzie miękka dzierżawa ruchu
-(„zatrzymać może każdy, ruszyć nie każdy"), to `gcode:start` musi być po stronie
-ruchu, nie po stronie stopu. Ale dzierżawa tego wpisu nie zastępuje — bez niej
-też trzeba to zamknąć.
+**`Run` celowo nie wchodzi do bramki.** Maszyna wykonująca linię podaną ręcznie
+jest zajęta przez moment i zaraz nie jest; odmawianie Startu z tego powodu
+zrobiłoby z przycisku coś, czego zawodności operator nie widzi. `Jog` to co
+innego — to albo własna pętla tego sterownika, albo cudzy przejazd, i o tę
+kolizję tu chodzi.
+
+**Uwaga o szerszej decyzji, dalej aktualna:** jeśli kiedyś wejdzie miękka
+dzierżawa ruchu („zatrzymać może każdy, ruszyć nie każdy"), to `gcode:start`
+musi być po stronie ruchu, nie po stronie stopu. Ta bramka tego nie zastępuje —
+jest o jednym planerze, nie o tym, kto prowadzi.
+
+**Czego to nie daje:** wyszarzenia. Panel nie ma jeszcze przycisku Start
+(`canStart={false}`), a stara aplikacja ma go i **nie słucha
+`command:refused`** — więc tam Start przy trzymanym jogu nie robi nic i nic nie
+mówi. To jest lepsze niż kolizja i gorsze niż ciemny przycisk; stara aplikacja
+jest referencją, więc nie dokładamy w niej nasłuchu.
 
 ---
 

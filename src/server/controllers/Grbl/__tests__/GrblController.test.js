@@ -1744,6 +1744,77 @@ describe('intent commands', () => {
     });
   });
 
+  describe('the gate between a program and a jog', () => {
+    const asking = (controller) => {
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push(payload) };
+      return refusals;
+    };
+
+    const loaded = (controller) => {
+      controller.command('gcode:load', 'test.gcode', 'G0 X0');
+    };
+
+    test('a program does not start into a jog this server is driving', () => {
+      const { controller } = setup();
+      const refusals = asking(controller);
+      loaded(controller);
+
+      controller.command('jogStart', { x: 1 }, 600);
+      controller.command('gcode:start');
+
+      /*
+       * Two sources of motion in one planner, with the sender counting
+       * characters in a buffer the jog loop never reports to it. On a machine
+       * with mechanics that is a crash, not untidiness.
+       */
+      expect(refusals).toEqual([{ cmd: 'gcode:start', reason: 'jogging' }]);
+      expect(controller.workflow.state).toBe(WORKFLOW_STATE_IDLE);
+    });
+
+    test('nor into a travel somebody else asked for', () => {
+      const { controller } = setup();
+      const refusals = asking(controller);
+      loaded(controller);
+
+      // `Jog` and no loop of ours: another client's go-to-zero or click on
+      // the preview is under way.
+      controller.runner.state.status.activeState = 'Jog';
+      controller.command('gcode:start');
+
+      expect(refusals).toEqual([{ cmd: 'gcode:start', reason: 'machine-moving' }]);
+      expect(controller.workflow.state).toBe(WORKFLOW_STATE_IDLE);
+    });
+
+    test('starts once the jog has been let go of', () => {
+      const { controller } = setup();
+      loaded(controller);
+
+      controller.command('jogStart', { x: 1 }, 600);
+      controller.command('jogCancel');
+      controller.jogging.dir = null;
+      controller.command('gcode:start');
+
+      expect(controller.workflow.state).toBe(WORKFLOW_STATE_RUNNING);
+    });
+
+    test('a machine merely executing a line is not a machine to refuse', () => {
+      const { controller } = setup();
+      loaded(controller);
+
+      /*
+       * `Run` is deliberately outside the gate. A machine executing a line
+       * somebody fed by hand is busy for a moment and then is not, and
+       * refusing Start for that would make the button unreliable in a way an
+       * operator cannot see the cause of.
+       */
+      controller.runner.state.status.activeState = 'Run';
+      controller.command('gcode:start');
+
+      expect(controller.workflow.state).toBe(WORKFLOW_STATE_RUNNING);
+    });
+  });
+
   describe('a command this server has never heard of', () => {
     test('is refused rather than logged and dropped', () => {
       const { controller } = setup();

@@ -245,6 +245,8 @@
     "outOfEnvelope": "That point is outside the machine travel.",
     "noRoom": "The axis has reached the end of its travel in that direction.",
     "programRunning": "A program is running, so the machine will not take a move.",
+    "jogging": "Somebody is holding a jog key. The program will not start while the machine is being driven by hand.",
+    "machineMoving": "The machine is moving. Wait for it to come to rest.",
     "unknownCommand": "This server does not know the command {{cmd}}. It is older than this panel.",
     "other": "The server refused {{cmd}}: {{reason}}."
   },
