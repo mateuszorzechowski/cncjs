@@ -3,6 +3,8 @@ import Card from '../ui/Card';
 import { useIsPhone } from '../ui/shell';
 import Meter from '../ui/Meter';
 import { NO_READING } from '../machine/readings';
+import controller from '../machine/controller';
+import { pressPause, programControls, startProgram } from '../machine/program';
 import { t } from '../i18n';
 
 const reading = (value) => (value === null || value === undefined ? NO_READING : value);
@@ -34,11 +36,8 @@ const jobTime = (job) => {
  * counters of a program nobody has started; the decision comes off
  * `finishTime` instead. See `readJob` in `machine/readings`.
  *
- * Start and Pause are drawn and dead. Running a file is the one thing on
- * this panel that moves a machine for minutes without anyone's hand on it,
- * and the sender commands behind these two have not been wired or tested
- * against a controller yet. They are shown because a control that appears
- * later moves everything around it when it does.
+ * Start and Pause are the status bar's two, for a phone that has no status
+ * bar — the same readings and the same commands; see `machine/program`.
  *
  * This card yields height to the readout beside it. The dashboard's right
  * column is full at 768 and something has to; the position is what the
@@ -48,6 +47,7 @@ const jobTime = (job) => {
 const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
   const phone = useIsPhone();
   const { job, tool } = machine;
+  const program = programControls(machine);
 
   return (
     <Card label={label} className={`@container min-h-0 ${className}`} bodyClassName="justify-between gap-2">
@@ -89,8 +89,21 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
         * too many. */}
       {phone ? (
         <div className="flex gap-3">
-          <Button tone="go" disabled className="h-chiph min-w-0 flex-1">{t('job.start')}</Button>
-          <Button disabled className="h-chiph min-w-0">{t('job.pause')}</Button>
+          <Button
+            tone="go"
+            disabled={!program.canStart}
+            onClick={() => startProgram(controller)}
+            className="h-chiph min-w-0 flex-1"
+          >
+            {t('job.start')}
+          </Button>
+          <Button
+            disabled={!program.canPause}
+            onClick={() => pressPause(controller, program.paused)}
+            className="h-chiph min-w-0"
+          >
+            {program.paused ? t('job.resume') : t('job.pause')}
+          </Button>
         </div>
       ) : null}
     </Card>
