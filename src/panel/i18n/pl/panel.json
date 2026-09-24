@@ -28,7 +28,8 @@
     "connecting": "Łączenie",
     "noPort": "Brak portu",
     "attaching": "Przypinanie",
-    "noReading": "Brak odczytu"
+    "noReading": "Brak odczytu",
+    "paused": "Pauza"
   },
   "sheet": {
     "close": "Zamknij",
@@ -109,7 +110,8 @@
     "spindle": "wrzeciono",
     "start": "Start zadania",
     "pause": "Pauza",
-    "resume": "Wznów"
+    "resume": "Wznów",
+    "abort": "Przerwij"
   },
   "tool": {
     "number": "T{{number}}",
@@ -297,11 +299,12 @@
     "goConnect": "Przejdź do połączenia"
   },
   "stateHelp": {
+    "paused": "Program zapauzowany przez serwer, nie przez sterownik: serwer przestał wysyłać linie, a Grbl dokończył to, co miał w buforze, i stoi. Tak zatrzymuje się program na M6 (wymiana narzędzia), na błędzie w pliku albo po przycisku Pauza. Wolno jogować i zerować; Wznów wysyła dalsze linie, Przerwij kończy program.",
     "title": "Stany",
     "open": "Co znaczą stany",
     "sends": "Komendy dochodzą",
     "drops": "Nic nie dochodzi",
-    "alarm": "Maszyna nie ruszy, dopóki nie zostanie zbazowana albo odblokowana. Panel jej za Ciebie nie odblokuje: to daje niezbazowanej maszynie zgodę na ruch, a co jest po drugiej stronie kabla, wiesz Ty.",
+    "alarm": "Maszyna nie ruszy, dopóki nie zostanie zbazowana albo odblokowana. Panel nie odblokuje jej sam — robi to przycisk Odblokuj w karcie Komend, na Twoje polecenie, bo to daje niezbazowanej maszynie zgodę na ruch, a co jest po drugiej stronie kabla, wiesz Ty.",
     "door": "Wstrzymanie, które przyszło z zewnątrz — osłona albo blokada. Wygląda jak alarm i nim nie jest: maszyna wznawia, a komendy idą normalnie.",
     "note": "Alarm to jedyny stan, w którym serwer odmawia wysłania — dla Grbla, Smoothie i TinyG wyrzuca wiersz, zamiast podać go maszynie, a kontrolki, które by pisały, są na ten czas wyłączone. Marlin nie zna alarmu w ogóle: jego bramka jest w kodzie, ale zawsze przepuszcza, więc tam nic nie jest wstrzymywane.",
     "ours": "Stany panelu",
@@ -328,7 +331,7 @@
     "shutdown": "Sterownik wyłączył się po błędzie krytycznym. Panel nadal wysyła — to TinyG odmawia, aż do resetu.",
     "panic": "Awaria krytyczna. Panel nadal wysyła; TinyG nie przyjmie niczego przed resetem.",
     "blind": "Wysyłane w ciemno",
-    "alarmGrbl": "Maszyna nie ruszy, dopóki nie zostanie zbazowana albo odblokowana. Otwarcie portu resetuje Grbl, a przy włączonym bazowaniu ($22=1) właśnie tak wstaje. Panel jej za Ciebie nie odblokuje: to daje niezbazowanej maszynie zgodę na ruch, a co jest po drugiej stronie kabla, wiesz Ty."
+    "alarmGrbl": "Maszyna nie ruszy, dopóki nie zostanie zbazowana albo odblokowana. Otwarcie portu resetuje Grbl, a przy włączonym bazowaniu ($22=1) właśnie tak wstaje. Panel nie odblokuje jej sam — robi to przycisk Odblokuj w karcie Komend, na Twoje polecenie, bo to daje niezbazowanej maszynie zgodę na ruch, a co jest po drugiej stronie kabla, wiesz Ty. Po STOP-ie w ruchu (ALARM:3) pozycja jest utracona i właściwym wyjściem jest bazowanie."
   },
   "error": {
     "unreachable": "serwer nie odpowiada",

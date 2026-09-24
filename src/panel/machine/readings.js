@@ -325,6 +325,16 @@ export const readMachine = ({
   } else if (port && !attached) {
     key = 'status.attaching';
     tone = 'inactive';
+  } else if (connected && workflow === 'paused' && active?.word === 'Idle') {
+    /*
+     * A pause the sender made: an `M6`, an error in the file, the Pause
+     * button once Grbl has run out its buffer. The firmware says Idle because
+     * it has nothing left to do, and IDLE over a job half done reads as a job
+     * that is over (Mateusz, 2026-09-24). Only over `Idle` — `Hold` and `Jog`
+     * during a pause are the firmware saying something worth reading.
+     */
+    key = 'status.paused';
+    tone = 'ready';
   } else if (connected) {
     key = active ? null : 'status.noReading';
     word = active ? active.word : null;

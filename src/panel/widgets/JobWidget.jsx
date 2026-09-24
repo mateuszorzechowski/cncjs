@@ -1,10 +1,8 @@
-import Button from '../ui/Button';
 import Card from '../ui/Card';
+import JobButtons from '../ui/JobButtons';
 import { useIsPhone } from '../ui/shell';
 import Meter from '../ui/Meter';
 import { NO_READING } from '../machine/readings';
-import controller from '../machine/controller';
-import { pressPause, programControls, startProgram } from '../machine/program';
 import { t } from '../i18n';
 
 const reading = (value) => (value === null || value === undefined ? NO_READING : value);
@@ -37,7 +35,7 @@ const jobTime = (job) => {
  * `finishTime` instead. See `readJob` in `machine/readings`.
  *
  * Start and Pause are the status bar's two, for a phone that has no status
- * bar — the same readings and the same commands; see `machine/program`.
+ * bar — the same component; see `ui/JobButtons`.
  *
  * This card yields height to the readout beside it. The dashboard's right
  * column is full at 768 and something has to; the position is what the
@@ -47,7 +45,6 @@ const jobTime = (job) => {
 const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
   const phone = useIsPhone();
   const { job, tool } = machine;
-  const program = programControls(machine);
 
   return (
     <Card label={label} className={`@container min-h-0 ${className}`} bodyClassName="justify-between gap-2">
@@ -89,22 +86,7 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
         * too many. */}
       {phone ? (
         <div className="flex gap-3">
-          <Button
-            tone="go"
-            disabled={!program.canStart}
-            onClick={() => startProgram(controller)}
-            className="h-chiph min-w-0 flex-1"
-          >
-            {t('job.start')}
-          </Button>
-          <Button
-            tone={program.paused ? 'primary' : 'hold'}
-            disabled={!program.canPause}
-            onClick={() => pressPause(controller, program.paused)}
-            className="h-chiph min-w-0"
-          >
-            {program.paused ? t('job.resume') : t('job.pause')}
-          </Button>
+          <JobButtons machine={machine} className="h-chiph min-w-0" grow />
         </div>
       ) : null}
     </Card>

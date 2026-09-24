@@ -4,8 +4,18 @@ import controller from '../machine/controller';
 import { CONTROLS, controlsFor, sendControl } from '../machine/control';
 import { t } from '../i18n';
 
-/** Hold is amber and resume blue, as they are in the status bar. */
-const TONES = { hold: 'hold', resume: 'primary' };
+/**
+ * Hold amber and resume blue, as in the status bar; unlock blue too, since it
+ * is the way on out of an alarm. Never two blues live at once — unlock wants
+ * an alarm and resume a hold.
+ *
+ * **Reset stays red.** On a standing machine it is a tool — waking it from
+ * `$SLP`, leaving check mode, clearing a hold without resuming it, putting
+ * the parser back to its defaults — but it is the same byte as the big STOP,
+ * and pressed in motion it is that stop, position lost and all. An outline
+ * would promise something harmless (Mateusz, 2026-09-24).
+ */
+const TONES = { unlock: 'primary', hold: 'hold', resume: 'primary', reset: 'stop' };
 
 const LABELS = {
   unlock: () => t('control.unlock'),
@@ -30,7 +40,7 @@ const ControlWidget = ({ machine, className = '' }) => {
       {CONTROLS.map((id) => (
         <Button
           key={id}
-          tone={TONES[id] || 'outline'}
+          tone={TONES[id]}
           compact
           disabled={!live[id]}
           onClick={() => sendControl(controller, id, machine.workflow)}

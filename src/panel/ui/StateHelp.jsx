@@ -111,6 +111,7 @@ const OURS = [
   { word: 'status.noPort', means: 'stateHelp.noPort', send: SENT.no },
   { word: 'status.attaching', means: 'stateHelp.attaching', send: SENT.no },
   { word: 'status.noReading', means: 'stateHelp.noReading', send: SENT.blind },
+  { word: 'status.paused', means: 'stateHelp.paused', send: SENT.yes },
 ];
 
 /*
