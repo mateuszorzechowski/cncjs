@@ -1,4 +1,5 @@
 import { ensureArray } from 'ensure-type';
+import isEqual from 'lodash/isEqual';
 import noop from 'lodash/noop';
 import { SerialPort } from 'serialport';
 import { Server as SocketIOServer } from 'socket.io';
@@ -26,6 +27,15 @@ import {
 } from '../../access-control';
 
 const log = logger('service:cncengine');
+
+/**
+ * Where the last connection is kept, in `.cncrc`.
+ *
+ * Under `state` because that is the blob this server already persists for
+ * things a client would otherwise have to remember for itself, and it is
+ * served by `/api/state`.
+ */
+const CONNECTION_KEY = 'state.connection';
 
 // Case-insensitive equality checker.
 // @param {string} str1 First string to check.
@@ -94,6 +104,50 @@ class CNCEngine {
         taskRunner.run(commands);
       }
     });
+
+    /**
+     * Remember what was last opened, and tell everybody.
+     *
+     * **A connection screen has to offer a choice, and the choice it should
+     * offer is the one that was made.** Without this the panel falls back to
+     * the first port the operating system lists — which on this bench is
+     * `COM1`, an onboard port with nothing on it, while the machine is on
+     * `COM3`. So every disconnect threw the selection away, and every reload
+     * started from a port that has never been right.
+     *
+     * **Kept here rather than in a browser, because it has to be the same
+     * answer for everybody.** Two pendants and the old application are the
+     * ordinary case on this bench, and a memory in `localStorage` is a
+     * memory per browser: connect `COM3` on the laptop, and the phone still
+     * offers `COM1`. Reported by Mateusz, in those words.
+     *
+     * **Written when the controller answers, not when the port opens**, and
+     * that distinction is the whole of it on this bench. A client in WSL
+     * opens `COM3` as `Marlin` at 9600 within a second of every server start
+     * and wins the race; on a Grbl that driver never becomes ready — empty
+     * settings, no position, for hours. Remembering the open recorded
+     * `Marlin@9600`, measured, and would have offered it back as the choice
+     * to make. A controller that has answered is a choice that worked.
+     *
+     * Called by the controller rather than from the socket handler for the
+     * same reason: it records what *happened*, not what somebody asked for.
+     *
+     * **Remembering is not connecting.** Nothing here opens anything; the
+     * screen pre-selects and the operator still presses Connect. Opening a
+     * port unasked is the one thing a connection screen must never do.
+     */
+    rememberConnection(connection) {
+      if (isEqual(config.get(CONNECTION_KEY, null), connection)) {
+        return;
+      }
+
+      config.set(CONNECTION_KEY, connection);
+      log.debug(`Remembered connection: ${JSON.stringify(connection)}`);
+
+      if (this.io) {
+        this.io.emit('connection:last', connection);
+      }
+    }
 
     // @param {object} server The HTTP server instance.
     // @param {string} controller Specify CNC controller.
@@ -208,7 +262,11 @@ class CNCEngine {
 
           // User-defined baud rates and ports
           baudrates: ensureArray(config.get('baudrates', [])),
-          ports: ensureArray(config.get('ports', []))
+          ports: ensureArray(config.get('ports', [])),
+
+          // What was last opened, so a screen that has to offer a choice can
+          // offer the one that was made. See `rememberConnection`.
+          lastConnection: config.get(CONNECTION_KEY, null),
         });
 
         socket.on('disconnect', () => {

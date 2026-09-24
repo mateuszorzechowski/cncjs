@@ -20,6 +20,18 @@ import { requestPorts } from './ports';
  */
 export const usePorts = (linked) => {
   const [answer, setAnswer] = useState({ list: [], controllers: [], baudrates: [] });
+  /*
+   * What the server last opened, so the screen can offer the choice that was
+   * made rather than the first port the operating system happens to list.
+   *
+   * The server's memory and not this panel's, because the answer has to be
+   * the same on every device: connect `COM3` on the laptop and the phone must
+   * not still be offering `COM1`. It arrives inside `startup` for a client
+   * that has just attached, and on its own event when somebody opens a port
+   * while this screen is up — so two pendants stay in step without either of
+   * them reloading.
+   */
+  const [last, setLast] = useState(() => controller.lastConnection || null);
   // Separate from the list: an empty list from a server that has answered
   // means "no serial ports on this computer", and an empty list from one that
   // has not means nothing at all. They are drawn differently.
@@ -68,9 +80,13 @@ export const usePorts = (linked) => {
     // and also why no case here can cover it.
     controller.addListener('serialport:change', refresh);
 
+    const remembered = (connection) => setLast(connection || null);
+    controller.addListener('connection:last', remembered);
+
     return () => {
       controller.removeListener('serialport:list', received);
       controller.removeListener('serialport:change', refresh);
+      controller.removeListener('connection:last', remembered);
     };
   }, [refresh]);
 
@@ -80,10 +96,14 @@ export const usePorts = (linked) => {
   useEffect(() => {
     if (linked) {
       refresh();
+      // The socket may have carried `startup` before this hook existed — the
+      // connection screen is not the first thing mounted — so the field is
+      // read here as well as listened for.
+      setLast(controller.lastConnection || null);
     }
   }, [linked, refresh]);
 
-  return { ...answer, asked, refresh };
+  return { ...answer, asked, refresh, last };
 };
 
 export default usePorts;

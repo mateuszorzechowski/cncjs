@@ -12,8 +12,7 @@ import {
   readPorts,
   baudrateChoices,
   controllerChoices,
-  DEFAULT_BAUDRATE,
-  DEFAULT_CONTROLLER,
+  preferredConnection,
   PORT_OPEN,
 } from '../machine/ports';
 import { t } from '../i18n';
@@ -42,10 +41,19 @@ import { t } from '../i18n';
  */
 
 const ConnectScreen = ({ machine }) => {
-  const { list, controllers, baudrates, asked, refresh } = usePorts(machine.linked);
+  const { list, controllers, baudrates, asked, refresh, last } = usePorts(machine.linked);
   const [picked, setPicked] = useState('');
-  const [controllerType, setControllerType] = useState(DEFAULT_CONTROLLER);
-  const [baudrate, setBaudrate] = useState(DEFAULT_BAUDRATE);
+  /*
+   * Empty means "the operator has not said on this screen", which is a
+   * different thing from any particular controller or rate: it is what lets
+   * the server's memory show through until somebody overrides it.
+   *
+   * Derived rather than held, for the same reason the port is — the
+   * remembered connection arrives over the socket, so a `useState` seeded at
+   * mount would be seeded with nothing and stay that way.
+   */
+  const [pickedType, setPickedType] = useState('');
+  const [pickedRate, setPickedRate] = useState(0);
   const [busy, setBusy] = useState(false);
   // Which sheet is open: `port`, `controller`, `baudrate` or none.
   const [editing, setEditing] = useState(null);
@@ -78,16 +86,11 @@ const ConnectScreen = ({ machine }) => {
   const held = machine.connected ? machine.port : '';
   const rows = useMemo(() => readPorts(list, held), [list, held]);
 
-  /*
-   * Which row is selected, without a piece of state that can go stale.
-   *
-   * A port can be unplugged while the screen is open, and a `picked` that is
-   * no longer in the list would leave the button pointing at hardware that is
-   * not there. Deriving it means the selection falls back on its own: to the
-   * port this panel holds, or failing that to the first one offered.
-   */
-  const selected = [picked, held, rows.length ? rows[0].port : '']
-    .find((port) => rows.some((row) => row.port === port)) || '';
+  // What this screen is offering: the operator's choice, this panel's port,
+  // the server's memory, the list. See `preferredConnection`.
+  const { port: selected, controllerType, baudrate } = preferredConnection({
+    rows, choice: { picked, pickedType, pickedRate }, held, last,
+  });
 
   /*
    * Whether this panel is holding a port -- asked of the machine rather than
@@ -157,7 +160,7 @@ const ConnectScreen = ({ machine }) => {
       label={t('connect.controller')}
       options={controllerChoices(controllers)}
       value={controllerType}
-      onChange={setControllerType}
+      onChange={setPickedType}
     />
   );
 
@@ -176,7 +179,7 @@ const ConnectScreen = ({ machine }) => {
           compact
           tone={rate === baudrate ? 'primary' : 'outline'}
           aria-pressed={rate === baudrate}
-          onClick={() => setBaudrate(rate)}
+          onClick={() => setPickedRate(rate)}
           className="h-chiph font-num"
         >
           {rate}

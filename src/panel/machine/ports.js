@@ -92,6 +92,42 @@ export const controllerChoices = (loaded = []) => (
 export const requestPorts = () => controller.listPorts();
 
 /**
+ * What the connection screen should be offering, and why not the list order.
+ *
+ * Four answers in order of authority: what the operator picked on this screen,
+ * what this panel is already holding, **what the server last opened**, and
+ * only then whatever the operating system listed first.
+ *
+ * **The third is the one that was missing.** The first port Windows lists is
+ * `COM1` — an onboard header with nothing on it — while the machine is on
+ * `COM3`, so every disconnect threw the choice away and offered a port that
+ * has never been right. Reported by Mateusz, together with the half that
+ * matters more: the memory has to be *shared*, because two pendants and the
+ * old application are the ordinary case here and a choice kept in one browser
+ * is a choice the next device does not have. So it is the server's memory,
+ * carried on `connection:last`.
+ *
+ * Derived rather than stored, so nothing here can go stale: a port can be
+ * unplugged while the screen is open, and a remembered one that is no longer
+ * in the list simply does not win.
+ *
+ * The controller and the rate answer the same way, minus the list — there is
+ * nothing to check them against, so a remembered value stands until the
+ * operator says otherwise.
+ *
+ * @param {object[]} rows What `readPorts` returned.
+ * @param {object} choice `{ picked, pickedType, pickedRate }` — this screen.
+ * @param {string} held The port this panel is holding, or ''.
+ * @param {object|null} last `{ port, controllerType, baudrate }` from the server.
+ */
+export const preferredConnection = ({ rows = [], choice = {}, held = '', last = null }) => ({
+  port: [choice.picked, held, last?.port, rows.length ? rows[0].port : '']
+    .find((port) => rows.some((row) => row.port === port)) || '',
+  controllerType: choice.pickedType || last?.controllerType || DEFAULT_CONTROLLER,
+  baudrate: choice.pickedRate || Number(last?.baudrate) || DEFAULT_BAUDRATE,
+});
+
+/**
  * Open a port, or attach to one that is already open.
  *
  * The same call does both — the server joins the socket to the port's room
