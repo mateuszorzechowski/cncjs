@@ -91,26 +91,33 @@ export const jogRoom = (axis, sign, settings, position) => {
 /**
  * Move by one step, never past the end of the travel.
  *
- * **A tap has the same problem a held key had, and it was easier to miss.**
- * A relative step off the end of the axis is refused outright by a firmware
- * with soft limits on — not clipped — so at the edge of the table the key did
- * nothing at all and said nothing about why. Held keys were bounded first;
- * this is the same rule for the other half of the control, and without it the
- * pad reads as "sometimes it works".
+ * **On Grbl the step crosses the socket as a direction and a distance.** The
+ * bounding is what made this a client's business at all: with `$20=1` the
+ * firmware refuses a relative move that would leave the travel outright — it
+ * does not clip it — so at the edge of the table the key did nothing at all
+ * and said nothing about why, and the panel learned to shorten the step by
+ * carrying `$130`-`$132` and `$23` around. The side holding the port has all
+ * of that, and can answer `no-room` besides.
  *
- * The step is shortened to what is left rather than refused, so the tool ends
- * up exactly at the limit instead of a millimetre short of it. Nothing is
- * sent once there is nothing left to give.
+ * The other firmwares keep the composed line, the same choice `estop`, `zero`
+ * and the travels made. There the step is still shortened to what is left
+ * rather than refused, so the tool ends up exactly at the limit instead of a
+ * millimetre short of it, and nothing is sent once there is nothing to give.
  */
-export const jog = ({ type, moves, feedrate, settings, position }) => {
+export const jog = ({ type, dir, distance, feedrate, settings, position }) => {
+  if (type === GRBL) {
+    controller.command('jogStep', { dir, distance, feedrate });
+    return true;
+  }
+
   const bounded = {};
 
-  for (const axis of Object.keys(moves)) {
-    const want = moves[axis];
-    const room = jogRoom(axis, Math.sign(want), settings, position);
-    const allowed = room === null ? Math.abs(want) : Math.min(Math.abs(want), Math.max(0, room));
+  for (const axis of Object.keys(dir)) {
+    const sign = Math.sign(dir[axis]);
+    const room = jogRoom(axis, sign, settings, position);
+    const allowed = room === null ? distance : Math.min(distance, Math.max(0, room));
     if (allowed > 0) {
-      bounded[axis] = Math.sign(want) * allowed;
+      bounded[axis] = sign * allowed;
     }
   }
 

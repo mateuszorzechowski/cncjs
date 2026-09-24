@@ -69,30 +69,54 @@ describe('jogLines, on a firmware without $J=', () => {
 describe('sending', () => {
   beforeEach(() => controller.command.mockClear());
 
-  test('a tap is shortened to what is left of the travel', () => {
+  test('on Grbl a tap is a direction and a distance', () => {
     /*
-     * The same trap a held key fell into, and easier to miss: a relative step
-     * off the end of the axis is refused outright with soft limits on — not
-     * clipped — so at the edge of the table the key did nothing and said
-     * nothing. Shortened rather than refused, so the tool lands exactly on
-     * the limit.
+     * The shortening is what made this a client's business at all: a relative
+     * step off the end of the axis is refused outright with soft limits on —
+     * not clipped — so at the edge of the table the key did nothing and said
+     * nothing. The side holding the port has `$130`-`$132` and `$23` and the
+     * position, and can answer `no-room` besides.
      */
     const travel = { settings: { $130: '200', $131: '200', $132: '80' } };
     jog({
       type: 'Grbl',
-      moves: { x: 10 },
+      dir: { x: 1 },
+      distance: 10,
       feedrate: 1500,
       settings: travel,
       position: { x: '-3', y: '-100', z: '-40' },
     });
-    expect(controller.command).toHaveBeenCalledWith('gcode', '$J=G91 G21 X3 F1500');
+    expect(controller.command.mock.calls).toEqual([
+      ['jogStep', { dir: { x: 1 }, distance: 10, feedrate: 1500 }],
+    ]);
+  });
+
+  test('on Grbl a corner is the same call, with two axes in it', () => {
+    jog({ type: 'Grbl', dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500 });
+    expect(controller.command).toHaveBeenCalledWith(
+      'jogStep', { dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500 }
+    );
+  });
+
+  test('a tap is shortened to what is left of the travel, where it is composed', () => {
+    const travel = { settings: { $130: '200', $131: '200', $132: '80' } };
+    jog({
+      type: 'Marlin',
+      dir: { x: 1 },
+      distance: 10,
+      feedrate: 1500,
+      settings: travel,
+      position: { x: '-3', y: '-100', z: '-40' },
+    });
+    expect(controller.command).toHaveBeenCalledWith('gcode', 'G1 X3 F1500');
   });
 
   test('a tap at the very end sends nothing at all', () => {
     const travel = { settings: { $130: '200', $131: '200', $132: '80' } };
     const sent = jog({
-      type: 'Grbl',
-      moves: { x: 10 },
+      type: 'Marlin',
+      dir: { x: 1 },
+      distance: 10,
       feedrate: 1500,
       settings: travel,
       position: { x: '0', y: '-100', z: '-40' },
@@ -103,12 +127,12 @@ describe('sending', () => {
 
   test('without a position the step is sent as asked', () => {
     // No boundary to measure against, so nothing to shorten it to.
-    jog({ type: 'Grbl', moves: { x: 10 }, feedrate: 1500 });
+    jog({ type: 'Smoothie', dir: { x: 1 }, distance: 10, feedrate: 1500 });
     expect(controller.command).toHaveBeenCalledWith('gcode', '$J=G91 G21 X10 F1500');
   });
 
   test('every line goes through the controller, in order', () => {
-    jog({ type: 'Marlin', moves: { x: 1 }, feedrate: 500 });
+    jog({ type: 'Marlin', dir: { x: 1 }, distance: 1, feedrate: 500 });
     expect(controller.command.mock.calls).toEqual([
       ['gcode', 'G91'],
       ['gcode', 'G1 X1 F500'],
@@ -175,7 +199,7 @@ describe('holding a jog key', () => {
      */
     // Travel is [-200, 0]; at -10 there is 10mm left towards zero.
     const nearTheEnd = { x: '-10', y: '-100', z: '-40' };
-    jog({ type: 'Grbl', moves: { x: 50 }, feedrate: 1500, settings, position: nearTheEnd });
+    jog({ type: 'Marlin', dir: { x: 1 }, distance: 50, feedrate: 1500, settings, position: nearTheEnd });
 
     const sent = controller.command.mock.calls.map((c) => c[1]).join(' ');
     expect(sent).toContain('X10');

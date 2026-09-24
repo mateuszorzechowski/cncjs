@@ -243,6 +243,8 @@
     "noWcs": "The machine has not reported which coordinate system it is working in.",
     "noTravel": "The machine has not reported how far its axes travel, so this move cannot be planned.",
     "outOfEnvelope": "That point is outside the machine travel.",
+    "noRoom": "The axis has reached the end of its travel in that direction.",
+    "programRunning": "A program is running, so the machine will not take a move.",
     "unknownCommand": "This server does not know the command {{cmd}}. It is older than this panel.",
     "other": "The server refused {{cmd}}: {{reason}}."
   },

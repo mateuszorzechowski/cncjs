@@ -81,20 +81,14 @@ const JogWidget = ({ machine, className = '' }) => {
    * way" is a corner, and is what the old application's keypad has always
    * sent.
    */
-  const stepJog = (dir, coarse) => {
-    const distance = stepFor(dir, coarse);
-    const moves = {};
-    for (const axis of Object.keys(dir)) {
-      moves[axis] = dir[axis] * distance;
-    }
-    return jog({
-      type,
-      moves,
-      feedrate: rateFor(dir),
-      settings: machine.settings,
-      position: machine.machinePosition,
-    });
-  };
+  const stepJog = (dir, coarse) => jog({
+    type,
+    dir,
+    distance: stepFor(dir, coarse),
+    feedrate: rateFor(dir),
+    settings: machine.settings,
+    position: machine.machinePosition,
+  });
 
   /*
    * **One stream, shared by the keys and the pad**, so a direction held with
@@ -107,10 +101,21 @@ const JogWidget = ({ machine, className = '' }) => {
     stop: () => jogStop(type),
   });
 
+  /*
+   * Live only while the machine will actually take a move.
+   *
+   * In alarm both halves of this control are dead and neither used to look
+   * it: a step goes through the feeder, which throws every line away there,
+   * and a held jog is refused by Grbl itself. The keys stayed blue and the
+   * machine stayed still. Same gate the zeroing screen and the travels have —
+   * see `readings.canSendGcode`.
+   */
+  const canMove = connected && machine.canSendGcode;
+
   const holdToJog = useHoldToJog({
     step: (dir) => stepJog(dir),
     stream,
-    enabled: connected,
+    enabled: canMove,
   });
 
   /*
@@ -122,7 +127,7 @@ const JogWidget = ({ machine, className = '' }) => {
   useJogKeys({
     step: stepJog,
     stream,
-    enabled: connected,
+    enabled: canMove,
     onHelp: () => setHelping(true),
   });
 
@@ -130,11 +135,13 @@ const JogWidget = ({ machine, className = '' }) => {
     onJog: holdToJog,
     onHome: () => home(controller),
     onGoZero: () => goToWorkZero(machine.type, machine.settings),
+    /* The whole pad, and only for the reason the whole pad shares: there is
+     * no machine. Whether *this* machine will take a move is `canJog`, and
+     * homing is deliberately outside both — it is what clears an alarm. */
     disabled: !connected,
+    canJog: machine.canSendGcode,
     canHome: machine.canHome,
-    /* Dark in alarm as well: the server drops a travel before the cable
-     * there, so a key that looked live reached nothing. */
-    canGoZero: machine.canSendGcode && canGoToWorkZero(machine.settings),
+    canGoZero: canGoToWorkZero(machine.settings),
   };
 
   // The two axis groups, one description each. Both arrangements show the same

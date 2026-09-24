@@ -49,7 +49,7 @@ import * as builtinCommand from '../utils/builtin-command';
 import { isM0, isM1, isM6, replaceM6 } from '../utils/gcode';
 import { in2mm, mapPositionToUnits, mapValueToUnits } from '../utils/units';
 import GrblRunner from './GrblRunner';
-import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, stopSeconds } from './jog';
+import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, jogStepLine, stopSeconds } from './jog';
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { activeWcsNumber, zeroLine } from './zero';
 import { machineEnvelope } from './envelope';
@@ -2069,6 +2069,51 @@ class GrblController {
          * Refused while a program is running. The planner belongs to the job
          * then, and a jog would interleave with it.
          */
+        /**
+         * Move one step in some direction, and stop there.
+         *
+         * `jogStep({ dir, distance, feedrate })` — a tap of the same key
+         * `jogStart` holds. `dir` is the same axis-to-sign map, so the two are
+         * one control at two scales rather than two kinds of thing.
+         *
+         * **The bounding is here because the firmware will not do it.** With
+         * `$20=1` Grbl refuses a relative move that would leave the travel
+         * outright — it does not clip it — so at the edge of the table the key
+         * did nothing at all, silently. The panel learned to shorten the step
+         * itself, which meant a client carrying `$130`-`$132` and `$23` to
+         * answer a question the side holding the port can answer.
+         *
+         * `no-room` when there is nothing left to give in that direction. That
+         * is not the same as a step being clipped: a shortened step still
+         * moves, and is not worth interrupting anybody about.
+         */
+        'jogStep': () => {
+          const [{ dir, distance, feedrate } = {}] = args;
+
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+          if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
+            this.refuse(cmd, 'program-running');
+            return;
+          }
+
+          const line = jogStepLine({
+            dir,
+            distance,
+            feedrate,
+            settings: this.runner.settings?.settings,
+            mpos: this.runner.getMachinePosition(),
+          });
+
+          if (!line) {
+            this.refuse(cmd, 'no-room');
+            return;
+          }
+
+          this.command('gcode', line);
+        },
         'jogStart': () => {
           const [dir, feedrate] = args;
 
@@ -2084,7 +2129,10 @@ class GrblController {
           const owner = this.commandSocket?.id ?? null;
 
           if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
-            log.warn('Refusing to jog while a job is running');
+            // Said back rather than only logged. The refusal was real and
+            // correct — the planner belongs to the job — and it was invisible
+            // to the pendant whose key had just gone down.
+            this.refuse(cmd, 'program-running');
             return;
           }
           if (!dir || !(feedrate > 0)) {

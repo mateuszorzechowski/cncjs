@@ -405,14 +405,14 @@ jako brak pokrycia, nie zamiecione.
 
 ---
 
-## Kontrakt intencji — TRZY Z CZTERECH ZROBIONE 2026-09-24
+## Kontrakt intencji — ZROBIONY 2026-09-24
 
 **Decyzja Mateusza (2026-09-24):** komenda niesie wartość, serwer rozgłasza
 ostatnio użytą jako odczyt, a **każda komenda odmawia z kodem powodu**. Konsola
 zostaje poza kontraktem — `gcode`, `write` i `writeln` zostają na powierzchni
 serwera na stałe, bo surowy G-code to sens konsoli.
 
-**Zrobione:** kanał odmowy, `zero`, `goToWorkZero` i `goToPoint`.
+**Zrobione:** kanał odmowy, `zero`, `goToWorkZero`, `goToPoint` i `jogStep`.
 
 - **`command:refused { cmd, reason }`** — nowe zdarzenie, wysyłane **do gniazda,
   które pytało**, nie do pokoju portu. Odmowa dotyczy jednego żądania; drugi
@@ -455,19 +455,39 @@ ekran Zerowania tak, ta karta nie, więc w alarmie jej przyciski wyglądały na
   jogu i przejazd do punktu na Ścieżce. Ten drugi ma już miejsce, w którym mówi,
   czemu jest martwy (`goNote`), więc dostał tam zdanie o alarmie.
 
-**Zostaje do zrobienia** — tę jedną dalej składa panel:
+- **`jogStep({dir, distance, feedrate})`** — to przycinanie kroku do obwiedni
+  robiło z tego w ogóle sprawę klienta: przy `$20=1` firmware odrzuca ruch
+  względny wychodzący poza zakres **w całości**, nie przycina go, więc na skraju
+  stołu klawisz nie robił nic i nic o tym nie mówił. Panel nauczył się skracać
+  krok sam, nosząc za to `$130`–`$132` i `$23`. Strona trzymająca port ma
+  wszystko to plus pozycję, i umie jeszcze odpowiedzieć `no-room`.
 
-| dziś w panelu | intencja | odmowy |
-| --- | --- | --- |
-| `jog.js` — `$J=G91 …` | `jogStep({dir, distance, feedrate})` | `alarm`, `no-room` |
+  Dwie rzeczy różnią krok od odcinka jogu ciągłego i obie są celowe. Krok to
+  **długość na oś**, nie długość drogi — narożnik przy kroku 10 jedzie 10 na
+  każdej osi, czyli 10√2, i tak zawsze działał keypad. I **każda oś przycinana
+  jest osobno**, więc przekątna na skraju X jedzie dalej w Y; odcinek trzyma kąt,
+  bo tam klawisz jest wciąż wciśnięty, a przy stuknięciu alternatywą jest
+  klawisz, który na skraju nie robi nic — czyli ta sama usterka, którą
+  przycinanie miało naprawić.
+
+  **`jogStart` też wreszcie mówi, czemu odmawia.** Bramka „nie w trakcie
+  programu" była tam od zawsze i kończyła się w `log.warn` — czyli w pliku,
+  którego przy maszynie nikt nie czyta. Teraz to `program-running`.
+
+  **I klawisze kierunków są w alarmie wyszarzone.** Były żywe: krok szedł przez
+  feeder, który w alarmie wyrzuca każdą linię, a jog ciągły odrzuca sam Grbl.
+  Pad ma teraz trzy osobne zdolności zamiast jednej — `disabled` (nie ma
+  maszyny), `canJog` (ta maszyna przyjmie ruch) i `canHome`, bo **bazowanie jest
+  tym, co alarm zdejmuje, i musi zostać żywe w środku alarmu**.
 
 Obwiednia po stronie serwera jest, tylko nie jest rozgłaszana — panel dalej
 dekoduje `$23` u siebie, żeby wyszarzać i rysować. To jest ten sam wpis co
-„Zakres ruchu liczony dwa razy" niżej.
+„Zakres ruchu liczony dwa razy" niżej, i jedyne, co z tego tematu zostaje.
 
-**I jedna rzecz, która wyszła przy oglądaniu jogu w alarmie:** klawisze
-kierunków są tam **żywe**, a Grbl odmawia jogu w alarmie. To ta sama dziura co
-przy „do zera", tylko po drugiej stronie pada — zamknąć razem z `jogStep`.
+**Czego panel dalej nie wie:** czy trwa program. `workflow:state` idzie po
+gnieździe, `useMachine` go nie słucha, więc `program-running` może dziś tylko
+wyskoczyć jako napis — wyszarzenia przed naciśnięciem nie ma. To domyka wpis
+„Bramka między programem a jogiem…" niżej, który i tak trzeba otworzyć.
 
 **Marlin, Smoothie i TinyG zostają na złożonej linii.** Ten sam wybór co przy
 `estop`: sterownik, którego nic na tym stole nie uruchomi, dostałby komendę,

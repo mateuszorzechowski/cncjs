@@ -219,3 +219,52 @@ export const jogSegmentLine = ({ dir, feedrate, settings, mpos, seconds = SEGMEN
 
   return `$J=G91 G21 ${words} F${feedrate}`;
 };
+
+/**
+ * The `$J=` line for one tap of a jog key, or null when there is nowhere left
+ * to go.
+ *
+ * **A tap had the same problem a held key had, and it was easier to miss.** A
+ * relative step off the end of the axis is refused outright by a firmware with
+ * soft limits on — not clipped — so at the edge of the table the key did
+ * nothing at all and said nothing about why.
+ *
+ * Two things here differ from a segment of a held jog, and both are
+ * deliberate.
+ *
+ * **The step is a length per axis, not a length of travel.** A corner tap at a
+ * step of 10 moves 10 on each axis and so travels 10√2 — which is what "one
+ * step that way" has always meant on a keypad, and what the old application
+ * sends. A segment divides by √(axes) instead, because there the arithmetic
+ * has to make the segment last exactly one tick.
+ *
+ * **Each axis is clipped on its own**, so a diagonal at the edge of X carries
+ * on in Y rather than stopping dead. A segment keeps the angle instead, and
+ * that is right for a hold: the key is still down, the operator is watching,
+ * and bending the move would take the tool somewhere it was not aimed. For a
+ * tap the alternative is a key that does nothing at the edge, which is the
+ * fault this bounding exists to fix in the first place.
+ */
+export const jogStepLine = ({ dir, distance, feedrate, settings, mpos }) => {
+  const axes = Object.keys(dir || {}).filter((axis) => AXES.includes(axis) && dir[axis]);
+  if (!axes.length || !(distance > 0) || !(feedrate > 0)) {
+    return null;
+  }
+
+  const moves = {};
+  for (const axis of axes) {
+    const sign = Math.sign(dir[axis]);
+    const room = roomFor(axis, sign, settings, mpos);
+    const allowed = room === null ? distance : Math.min(distance, Math.max(0, room));
+    if (allowed > 0) {
+      moves[axis] = sign * allowed;
+    }
+  }
+
+  const words = AXES
+    .filter((axis) => moves[axis] !== undefined)
+    .map((axis) => `${axis.toUpperCase()}${moves[axis]}`)
+    .join(' ');
+
+  return words ? `$J=G91 G21 ${words} F${feedrate}` : null;
+};

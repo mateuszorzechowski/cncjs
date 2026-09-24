@@ -68,31 +68,44 @@ const Corner = ({ corner, onJog, disabled }) => (
   </Key>
 );
 
-const JogPadTall = ({ onJog, onHome, onGoZero, disabled, canHome, canGoZero }) => (
-  <div
-    className="grid min-h-0 flex-1 grid-cols-3 grid-rows-4 gap-2"
-    role="group"
-    aria-label={t('jog.pad')}
-  >
-    <Corner corner={UP_LEFT} onJog={onJog} disabled={disabled} />
-    <Key hold={onJog({ y: 1 })} disabled={disabled} label={t('jog.yPlus')}>{t('jog.yPlus')}</Key>
-    <Corner corner={UP_RIGHT} onJog={onJog} disabled={disabled} />
+/*
+ * Three capabilities, not one, because they do not fail together.
+ *
+ * `disabled` is the whole pad: no machine, nothing to press. The other two are
+ * about what this machine will take right now, and in alarm they part company
+ * — the direction keys and the travel are dead, because Grbl refuses a jog
+ * there and the server drops a step before the cable, while homing is the one
+ * thing that clears an alarm and has to stay live inside it.
+ */
+const JogPadTall = ({ onJog, onHome, onGoZero, disabled, canJog, canHome, canGoZero }) => {
+  const stuck = disabled || !canJog;
 
-    <Key hold={onJog({ x: -1 })} disabled={disabled} label={t('jog.xMinus')}>{t('jog.xMinus')}</Key>
-    <Key onClick={onGoZero} disabled={disabled || !canGoZero} label={t('jog.goZero')}>
-      <Icon name="goZero" className="size-6" weight={2} />
-      <span className="text-cap font-medium">{t('jog.goZero')}</span>
-    </Key>
-    <Key hold={onJog({ x: 1 })} disabled={disabled} label={t('jog.xPlus')}>{t('jog.xPlus')}</Key>
+  return (
+    <div
+      className="grid min-h-0 flex-1 grid-cols-3 grid-rows-4 gap-2"
+      role="group"
+      aria-label={t('jog.pad')}
+    >
+      <Corner corner={UP_LEFT} onJog={onJog} disabled={stuck} />
+      <Key hold={onJog({ y: 1 })} disabled={stuck} label={t('jog.yPlus')}>{t('jog.yPlus')}</Key>
+      <Corner corner={UP_RIGHT} onJog={onJog} disabled={stuck} />
 
-    <Corner corner={DOWN_LEFT} onJog={onJog} disabled={disabled} />
-    <Key hold={onJog({ y: -1 })} disabled={disabled} label={t('jog.yMinus')}>{t('jog.yMinus')}</Key>
-    <Corner corner={DOWN_RIGHT} onJog={onJog} disabled={disabled} />
+      <Key hold={onJog({ x: -1 })} disabled={stuck} label={t('jog.xMinus')}>{t('jog.xMinus')}</Key>
+      <Key onClick={onGoZero} disabled={stuck || !canGoZero} label={t('jog.goZero')}>
+        <Icon name="goZero" className="size-6" weight={2} />
+        <span className="text-cap font-medium">{t('jog.goZero')}</span>
+      </Key>
+      <Key hold={onJog({ x: 1 })} disabled={stuck} label={t('jog.xPlus')}>{t('jog.xPlus')}</Key>
 
-    <Key hold={onJog({ z: 1 })} disabled={disabled} label={t('jog.zPlus')}>{t('jog.zPlus')}</Key>
-    <Key onClick={onHome} disabled={disabled || !canHome} label={t('jog.home')} quiet>{HOUSE}<span>{t('jog.home')}</span></Key>
-    <Key hold={onJog({ z: -1 })} disabled={disabled} label={t('jog.zMinus')}>{t('jog.zMinus')}</Key>
-  </div>
-);
+      <Corner corner={DOWN_LEFT} onJog={onJog} disabled={stuck} />
+      <Key hold={onJog({ y: -1 })} disabled={stuck} label={t('jog.yMinus')}>{t('jog.yMinus')}</Key>
+      <Corner corner={DOWN_RIGHT} onJog={onJog} disabled={stuck} />
+
+      <Key hold={onJog({ z: 1 })} disabled={stuck} label={t('jog.zPlus')}>{t('jog.zPlus')}</Key>
+      <Key onClick={onHome} disabled={disabled || !canHome} label={t('jog.home')} quiet>{HOUSE}<span>{t('jog.home')}</span></Key>
+      <Key hold={onJog({ z: -1 })} disabled={stuck} label={t('jog.zMinus')}>{t('jog.zMinus')}</Key>
+    </div>
+  );
+};
 
 export default JogPadTall;
