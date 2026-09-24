@@ -1,4 +1,5 @@
 import controller from './controller';
+import { BEAT_MS, jogToleranceMs, observeBeatGap } from './deadman';
 
 const GRBL = 'Grbl';
 const SMOOTHIE = 'Smoothie';
@@ -145,7 +146,57 @@ export const canJogContinuously = (type) => type === GRBL;
  * Only Grbl has this. On anything else the move is in the planner and runs to
  * the end, which is the honest answer rather than a button that pretends.
  */
+/*
+ * The beat that keeps a held jog alive, and when the last one went.
+ *
+ * Module state rather than a ref, because a jog outlives the component that
+ * started it: the keyboard hook and the pad both drive this stream, and a
+ * screen that re-rendered mid-hold would otherwise have two beats or none.
+ */
+let beatTimer = null;
+let lastBeatAt = 0;
+
+const stopBeating = () => {
+  if (beatTimer) {
+    clearInterval(beatTimer);
+    beatTimer = null;
+  }
+};
+
+/*
+ * Idempotent, because aiming a running jog somewhere else is `jogStart` again
+ * — and restarting the timer there would reset the rhythm on every direction
+ * change and record a short gap that never happened.
+ */
+const startBeating = () => {
+  if (beatTimer) {
+    return;
+  }
+
+  lastBeatAt = Date.now();
+  beatTimer = setInterval(() => {
+    // The port going away mid-hold is the one way this loop outlives the jog
+    // it belongs to: a release arrives from a key or from `blur`, and a socket
+    // that dropped sends neither. Left running it would beat into nothing for
+    // the life of the page.
+    if (!controller.port) {
+      stopBeating();
+      return;
+    }
+
+    const now = Date.now();
+    // How late this browser actually was, which is what the next jog's
+    // tolerance is sized from. Handed over as it happens rather than at the
+    // end of the jog: the figure is declared before a jog rather than used
+    // during one, so there is nothing to change mid-move.
+    observeBeatGap(now - lastBeatAt);
+    lastBeatAt = now;
+    controller.command('jogHold');
+  }, BEAT_MS);
+};
+
 export const jogStop = (type) => {
+  stopBeating();
   if (type === GRBL) {
     controller.command('jogCancel');
   }
@@ -169,10 +220,20 @@ export const jogStop = (type) => {
  * key there would commit to the whole distance before the finger came up —
  * that is not a control, it is a trap.
  */
-export const jogStart = (type, dir, feedrate) => {
+export const jogStart = (type, dir, feedrate, linkMs = null) => {
   if (!canJogContinuously(type)) {
     return false;
   }
-  controller.command('jogStart', dir, feedrate);
+  /*
+   * And how long this panel can go without saying the key is still down.
+   *
+   * Declared here because this is the side that knows: its own timers and its
+   * own link. The server clamps it and ends the jog when a confirmation is
+   * later than that — which is the only thing standing between a wedged tab
+   * and a machine that travels until the axis runs out. See
+   * `machine/deadman`.
+   */
+  controller.command('jogStart', dir, feedrate, jogToleranceMs(linkMs));
+  startBeating();
   return true;
 };

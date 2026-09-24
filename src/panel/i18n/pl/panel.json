@@ -251,6 +251,7 @@
     "machineMoving": "Maszyna jest w ruchu. Poczekaj, aż stanie.",
     "unknownCommand": "Ten serwer nie zna komendy {{cmd}}. Jest starszy niż ten panel.",
     "heldElsewhere": "Maszyną steruje teraz inne urządzenie. Poczekaj, aż skończy.",
+    "notConfirmed": "Jog został zatrzymany, bo panel nie potwierdził, że klawisz jest wciąż wciśnięty. Naciśnij ponownie.",
     "other": "Serwer odmówił komendy {{cmd}}: {{reason}}."
   },
   "notice": {

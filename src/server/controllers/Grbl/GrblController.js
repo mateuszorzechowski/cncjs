@@ -56,6 +56,7 @@ import { changesWorkOffsets } from './offsets';
 import { machineEnvelope } from './envelope';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
+import { deadmanMsFor, isAbandoned } from './deadman';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
 import {
@@ -583,6 +584,19 @@ class GrblController {
         owner: null,
         inFlight: 0,
         stopping: false,
+        /*
+         * How long this hold may go unconfirmed, and when it last was. Null
+         * for a client that did not ask for a deadman — see `deadman.js`,
+         * where declaring one is the client's to opt into.
+         */
+        deadmanMs: null,
+        confirmedAt: 0,
+        /*
+         * The device driving, as distinct from `owner`, which is its socket.
+         * A confirmation is checked against this: the socket is what a
+         * disconnect is about, the device is what a claim is about.
+         */
+        device: null,
         leadSeconds: hostTiming().leadSeconds,
         // How late each tick of the current jog ran. See `observeJogTicks`.
         ticks: [],
@@ -1840,6 +1854,24 @@ class GrblController {
      * readable from a handler that has not yet awaited anything — which is
      * exactly where a refusal is decided.
      */
+    /**
+     * Tell the client whose jog this was that the server ended it.
+     *
+     * **The only thing on this socket that is not an answer to a request.**
+     * Every other refusal is about a command somebody just sent; this is about
+     * one they sent a moment ago and have not taken back, so it cannot go
+     * through `refuse` — `commandSocket` is null by the time the jog clock
+     * runs, and the clock is where this is decided.
+     *
+     * Sent even though the client it is aimed at may be the one that wedged.
+     * The case worth telling is the other one: a link that hiccupped for
+     * longer than was declared, where the key is still down, the machine has
+     * stopped, and the panel would otherwise have nothing to say about why.
+     */
+    sayJogWasCut(owner) {
+      this.sockets[owner]?.emit('command:refused', { cmd: 'jogStart', reason: 'not-confirmed' });
+    }
+
     refuse(cmd, reason) {
       log.warn(`Refused "${cmd}": ${reason}`);
       if (this.commandSocket) {
@@ -2383,7 +2415,17 @@ class GrblController {
           this.command('gcode', line);
         },
         'jogStart': () => {
-          const [dir, feedrate] = args;
+          const [dir, feedrate, holdMs] = args;
+
+          /*
+           * How long this client says it can go without confirming the hold.
+           *
+           * Its figure, not ours: how punctual its timers are belongs to its
+           * browser and how long a beat takes to arrive belongs to the link,
+           * and this side knows neither. Clamped rather than trusted, and
+           * null when it did not ask — see `deadman.js`.
+           */
+          const deadmanMs = deadmanMsFor(holdMs);
 
           /*
            * Read now, not where it is stored.
@@ -2395,6 +2437,10 @@ class GrblController {
            * both paths.
            */
           const owner = this.commandSocket?.id ?? null;
+          // And who it is, which is a different question with a different
+          // lifetime: the socket is what a disconnect ends, the device is what
+          // a claim and a confirmation belong to.
+          const device = this.commandSocket?.device ?? null;
 
           if (!dir || !(feedrate > 0)) {
             return;
@@ -2437,21 +2483,42 @@ class GrblController {
             const ourOwnBraking = this.jogging.stopping
               || (Date.now() - (this.jogging.cancelledAt ?? 0) < 1000);
 
-            this.takeOverWith(dir, feedrate, ourOwnBraking, owner);
+            this.takeOverWith(dir, feedrate, ourOwnBraking, owner, deadmanMs, device);
             return;
           }
 
-          this.jogging.dir = dir;
-          this.jogging.feedrate = feedrate;
-          // Whose hold this is. See `removeConnection`: a jog ends when the
-          // client holding it goes away, and only that one.
-          this.jogging.owner = owner;
-          this.jogging.stopping = false;
-          // Read once per hold rather than per tick: the lead an operator was
-          // told about is the lead this jog uses, start to finish.
-          this.jogging.leadSeconds = hostTiming().leadSeconds;
-          this.jogging.ticks = [];
-          this.runJog();
+          this.armJog({ dir, feedrate, owner, device, deadmanMs });
+        },
+        /**
+         * Say that the key is still down.
+         *
+         * The other half of a declared deadman. A hold is the one command here
+         * with no end of its own, so a client that asked to be held to a
+         * tolerance has to keep saying so; a gap longer than it declared ends
+         * the jog. See `deadman.js` for what that is worth in millimetres.
+         *
+         * **From the device that is driving, and no other.** A second pendant
+         * confirming somebody else's hold would be the one thing this must not
+         * allow: a wedged client whose jog is kept alive by a bystander. The
+         * lease already says which device is driving, so that is what is
+         * asked.
+         */
+        'jogHold': () => {
+          if (!this.jogging.dir) {
+            return;
+          }
+
+          if ((this.commandSocket?.device ?? null) !== this.jogging.device) {
+            return;
+          }
+
+          this.jogging.confirmedAt = Date.now();
+          // A hold being confirmed is that device still driving, so the
+          // movement lease is renewed by it too. Without this a jog on a
+          // machine that is not reporting its motion would lose the lease
+          // underneath itself, and the next beat would be from a device the
+          // server no longer thought was driving.
+          this.holdMotion(this.jogging.device);
         },
         /** Stop jogging, and drop whatever is still queued. */
         'jogStop': () => {
@@ -2997,6 +3064,24 @@ class GrblController {
           this.abandonJog();
           return;
         }
+        /*
+         * A hold nobody is confirming any more.
+         *
+         * Before the in-flight check for the same reason the alarm guard is:
+         * a jog waiting on acknowledgements would otherwise sit here armed,
+         * and sitting armed is exactly the state this is meant to end.
+         *
+         * `stopJog` rather than `abandonJog` — the machine is still listening,
+         * so the cancel goes out properly and the position stays known.
+         */
+        if (isAbandoned({ ...this.jogging, now: Date.now() })) {
+          log.warn(
+            `Ending the jog: the client has not confirmed it for over ${this.jogging.deadmanMs}ms`
+          );
+          this.sayJogWasCut(this.jogging.owner);
+          this.stopJog();
+          return;
+        }
         // Behind on acknowledgements: let the firmware catch up rather than
         // queue work that a turn would then have to wait behind. The time
         // is not consumed, so the next segment covers it.
@@ -3043,6 +3128,43 @@ class GrblController {
           this.haltJogClock();
         }
       }, SEGMENT_SECONDS * 1000);
+    }
+
+    /**
+     * Put a held jog into force and start the clock.
+     *
+     * One place for the two ways a hold begins — a key pressed on a standing
+     * machine, and a key that has just taken a travel over — because they set
+     * the same seven things and a hold that began one way used to differ from
+     * one that began the other only by whatever the second copy had forgotten.
+     *
+     * @param {object} jog
+     * @param {object} jog.dir Axis-to-sign map, such as `{ x: 1, y: -1 }`.
+     * @param {number} jog.feedrate In mm/min.
+     * @param {string} jog.owner The socket whose hold this is. See
+     *   `removeConnection`: a jog ends when the client holding it goes away,
+     *   and only that one.
+     * @param {string|null} jog.device The device driving. What a confirmation
+     *   is checked against, since a socket can be replaced under one.
+     * @param {number|null} jog.deadmanMs How long this jog may go unconfirmed.
+     *   Null when the client did not ask for a deadman.
+     */
+    armJog({ dir, feedrate, owner, device = null, deadmanMs = null }) {
+      this.jogging.dir = dir;
+      this.jogging.feedrate = feedrate;
+      this.jogging.owner = owner;
+      this.jogging.stopping = false;
+      // Read once per hold rather than per tick: the lead an operator was
+      // told about is the lead this jog uses, start to finish.
+      this.jogging.leadSeconds = hostTiming().leadSeconds;
+      this.jogging.ticks = [];
+      // The press is itself a confirmation, so the first gap is measured from
+      // here rather than from nought — otherwise a jog would be abandoned on
+      // its own first tick.
+      this.jogging.deadmanMs = deadmanMs;
+      this.jogging.confirmedAt = Date.now();
+      this.jogging.device = device;
+      this.runJog();
     }
 
     /** Whether the machine is in the middle of a move this loop did not start. */
@@ -3177,7 +3299,7 @@ class GrblController {
      *   Sending a second one is harmless but pointless, and it muddies the
      *   wire when reading a trace.
      */
-    takeOverWith(dir, feedrate, alreadyCancelled = false, owner = null) {
+    takeOverWith(dir, feedrate, alreadyCancelled = false, owner = null, deadmanMs = null, device = null) {
       if (!alreadyCancelled) {
         this.write('\x85');
       }
@@ -3213,13 +3335,7 @@ class GrblController {
           log.warn('Machine did not report idle after a jog cancel; starting the jog anyway');
         }
 
-        this.jogging.dir = dir;
-        this.jogging.feedrate = feedrate;
-        this.jogging.owner = owner;
-        this.jogging.stopping = false;
-        this.jogging.leadSeconds = hostTiming().leadSeconds;
-        this.jogging.ticks = [];
-        this.runJog();
+        this.armJog({ dir, feedrate, owner, device, deadmanMs });
       };
 
       this.jogging.pendingAt = startedAt;

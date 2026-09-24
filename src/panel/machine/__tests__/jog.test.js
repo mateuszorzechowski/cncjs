@@ -1,8 +1,11 @@
 import controller from '../controller';
+import { BEAT_MS } from '../deadman';
 import {
   jogLines, jog, jogRoom, jogStart, jogStop,
   canJogContinuously, XY_STEPS, Z_STEPS, FEEDRATES,
 } from '../jog';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Where the machine can reach, as the server sends it: 200mm on X and Y, 80 on
 // Z, homing to the maximum — so the reachable volume is negative.
@@ -11,7 +14,10 @@ const ENVELOPE = {
   max: { x: 0, y: 0, z: 0 },
 };
 
-jest.mock('../controller', () => ({ command: jest.fn() }));
+// With a port, because a jog only happens against one — and the beat that
+// keeps a held jog alive stops itself when there is none, which is what keeps
+// it from outliving a socket that dropped mid-hold.
+jest.mock('../controller', () => ({ command: jest.fn(), port: 'COM3' }));
 
 describe('jogLines, on Grbl', () => {
   const grbl = (params) => jogLines({ type: 'Grbl', feedrate: 1500, ...params });
@@ -206,15 +212,50 @@ describe('holding a jog key', () => {
      * of direction.
      */
     expect(jogStart('Grbl', { x: 1 }, 1500)).toBe(true);
-    expect(controller.command).toHaveBeenCalledWith('jogStart', { x: 1 }, 1500);
+    expect(controller.command).toHaveBeenCalledWith('jogStart', { x: 1 }, 1500, expect.any(Number));
+    jogStop('Grbl');
+  });
+
+  test('and declares how long it may go without confirming the hold', () => {
+    /*
+     * A held jog is the one command with no end of its own. Measured
+     * 2026-09-24: a wedged client held one for 15.8 seconds and 166mm at
+     * 600 mm/min, and the only thing that stopped it was the axis running
+     * out of travel. The figure is this side's because the timers and the
+     * link are — see `machine/deadman`.
+     */
+    jogStart('Grbl', { x: 1 }, 1500, 63);
+
+    const [, , , tolerance] = controller.command.mock.calls[0];
+    expect(tolerance).toBeGreaterThan(0);
+    jogStop('Grbl');
+  });
+
+  test('and then says so, over and over, until the key comes up', async () => {
+    jogStart('Grbl', { x: 1 }, 1500);
+    controller.command.mockClear();
+
+    await sleep(BEAT_MS * 2.5);
+    const beats = controller.command.mock.calls.filter(([cmd]) => cmd === 'jogHold').length;
+
+    jogStop('Grbl');
+    controller.command.mockClear();
+    await sleep(BEAT_MS * 2.5);
+
+    expect(beats).toBeGreaterThan(0);
+    // And stops the moment it is let go of, rather than beating into a jog
+    // that is over.
+    expect(controller.command.mock.calls.filter(([cmd]) => cmd === 'jogHold')).toEqual([]);
   });
 
   test('aiming somewhere else is the same call again, with no cancel', () => {
     // Cancelling to turn was a race the machine kept losing.
     jogStart('Grbl', { x: 1 }, 1500);
     jogStart('Grbl', { x: 1, y: -1 }, 1500);
-    expect(controller.command).toHaveBeenLastCalledWith('jogStart', { x: 1, y: -1 }, 1500);
+    expect(controller.command)
+      .toHaveBeenLastCalledWith('jogStart', { x: 1, y: -1 }, 1500, expect.any(Number));
     expect(controller.command).not.toHaveBeenCalledWith('jogCancel');
+    jogStop('Grbl');
   });
 
   test('offers nothing on a controller that cannot be called off', () => {

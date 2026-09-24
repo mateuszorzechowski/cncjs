@@ -23,6 +23,7 @@ import {
 import { GRBL_ACTIVE_STATE_ALARM } from '../constants';
 import { HOLD_CEILING_SECONDS } from '../stop';
 import { LEASE_MS } from '../lease';
+import { DEADMAN_FLOOR_MS } from '../deadman';
 
 import logger from '../../../lib/logger';
 
@@ -1829,6 +1830,103 @@ describe('intent commands', () => {
       controller.command('gcode:start');
 
       expect(controller.workflow.state).toBe(WORKFLOW_STATE_RUNNING);
+    });
+  });
+
+  describe('a deadman on the held jog', () => {
+    /*
+     * A hold is the one command here with no end of its own. Measured
+     * 2026-09-24: a wedged client held one for 15.8 seconds and 166mm at
+     * 600 mm/min, and the only thing that stopped it was the axis running out
+     * of travel.
+     */
+    const from = (controller, device) => {
+      const refusals = [];
+      controller.commandSocket = {
+        id: `socket-${device}`,
+        device,
+        emit: (event, payload) => refusals.push({ event, payload }),
+      };
+      controller.sockets[`socket-${device}`] = {
+        emit: (event, payload) => refusals.push({ event, payload }),
+      };
+      return refusals;
+    };
+
+    // Comfortably past the floor, which is the shortest tolerance the server
+    // will honour.
+    const UNCONFIRMED = DEADMAN_FLOOR_MS + 150;
+
+    test('a hold nobody confirms is ended, and the client is told', async () => {
+      const { controller, writes } = setup();
+      const told = from(controller, 'pendant');
+
+      controller.command('jogStart', { x: -1 }, 600, DEADMAN_FLOOR_MS);
+      await delay(STALLED);
+      const held = jogLines(writes).length;
+      expect(held).toBeGreaterThan(0);
+
+      await delay(UNCONFIRMED);
+
+      expect(controller.jogging.dir).toBeNull();
+      expect(controller.jogTimer).toBeNull();
+      expect(jogLines(writes).length).toBe(held);
+      /*
+       * Said rather than only logged. The client worth telling is not the one
+       * that wedged — it is the one whose link hiccupped for longer than it
+       * declared, where the key is still down, the machine has stopped, and
+       * the panel would otherwise have nothing to say about why.
+       */
+      expect(told).toContainEqual({
+        event: 'command:refused',
+        payload: { cmd: 'jogStart', reason: 'not-confirmed' },
+      });
+    });
+
+    test('a hold that keeps saying so runs on', async () => {
+      const { controller } = setup();
+      from(controller, 'pendant');
+
+      controller.command('jogStart', { x: -1 }, 600, DEADMAN_FLOOR_MS);
+
+      // Three beats inside one tolerance, which is the rhythm a panel keeps.
+      for (let i = 0; i < 6; i += 1) {
+        await delay(DEADMAN_FLOOR_MS / 3);
+        controller.command('jogHold');
+      }
+
+      expect(controller.jogging.dir).toEqual({ x: -1 });
+    });
+
+    test('a client that did not ask for one is not held to it', async () => {
+      const { controller } = setup();
+      from(controller, 'pendant');
+
+      // The old application, a script, a third-party pendant. What it is left
+      // with is the travel limit, which is what everybody had before.
+      controller.command('jogStart', { x: -1 }, 600);
+      await delay(UNCONFIRMED);
+
+      expect(controller.jogging.dir).toEqual({ x: -1 });
+    });
+
+    test('and a bystander cannot confirm a hold that is not theirs', async () => {
+      const { controller } = setup();
+      from(controller, 'pendant');
+      controller.command('jogStart', { x: -1 }, 600, DEADMAN_FLOOR_MS);
+
+      /*
+       * The one thing this must not allow: a wedged client whose jog is kept
+       * alive by a bystander. A confirmation is only worth anything from the
+       * device that is driving.
+       */
+      from(controller, 'phone');
+      for (let i = 0; i < 6; i += 1) {
+        await delay(DEADMAN_FLOOR_MS / 3);
+        controller.command('jogHold');
+      }
+
+      expect(controller.jogging.dir).toBeNull();
     });
   });
 

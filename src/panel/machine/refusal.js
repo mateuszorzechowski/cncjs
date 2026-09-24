@@ -49,6 +49,10 @@ const KEYS = {
   // pendants share one machine; the keys are dark for as long as it is held,
   // so this only ever arrives for a press that beat the news of it.
   'held-elsewhere': 'refusal.heldElsewhere',
+  // The server ended a held jog because this panel stopped confirming it. The
+  // only entry here that is not about a command somebody just sent — see
+  // `sayJogWasCut` on the server.
+  'not-confirmed': 'refusal.notConfirmed',
   // A panel newer than the server it is talking to. The only refusal here
   // that is about the installation rather than about the machine.
   'unknown-command': 'refusal.unknownCommand',
