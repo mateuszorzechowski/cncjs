@@ -190,6 +190,7 @@ const toolOf = (type, state) => {
  */
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
+  envelope,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -337,6 +338,20 @@ export const readMachine = ({
      * operator is about to ask.
      */
     refusal: refusal || null,
+    /**
+     * The box the machine can reach, in machine coordinates, or null.
+     *
+     * Not derived here. It comes off `controller:envelope`, which the server
+     * works out from `$130`-`$132` and `$23` — the same four registers it
+     * bounds a jog with. The panel used to read them a second time, and a
+     * second reading of the numbers somebody else enforces is a drawing that
+     * can disagree with the machine.
+     *
+     * Gated on being connected for the same reason the readings are: an
+     * outline left on screen for a machine that is no longer there is the
+     * panel answering for a controller it cannot hear.
+     */
+    envelope: connected ? (envelope || null) : null,
     job: job && job.total > 0
 ? {
       name: job.name || '',

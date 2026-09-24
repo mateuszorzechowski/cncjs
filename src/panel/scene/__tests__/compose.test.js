@@ -24,8 +24,13 @@ const TOOLPATH = {
 // the two positions in every status report.
 const OFFSET = { x: -100, y: -80, z: -10 };
 
+// Where the machine can reach, as the server sends it: 200mm on each axis,
+// homing to the maximum, so the reachable volume is negative.
+const ENVELOPE = { min: { x: -200, y: -200, z: -200 }, max: { x: 0, y: 0, z: 0 } };
+
 const scene = (overrides = {}) => composeScene({
   settings: SETTINGS,
+  envelope: ENVELOPE,
   wcs: 'G54',
   offset: OFFSET,
   toolpath: TOOLPATH,

@@ -146,12 +146,13 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
   const scene = useMemo(
     () => composeScene({
       settings: machine.settings,
+      envelope: machine.envelope,
       wcs: machine.modal?.wcs,
       offset,
       toolpath,
       layers,
     }),
-    [machine.settings, machine.modal?.wcs, offset, toolpath, layers]
+    [machine.settings, machine.envelope, machine.modal?.wcs, offset, toolpath, layers]
   );
 
   // The one reading taken live. Moving a marker is cheap; rebuilding the
@@ -231,7 +232,7 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
    * for once it was measured. See `readings.canSendGcode`.
    */
   const canGo = Boolean(
-    machine.connected && machine.canSendGcode && point && canGoToPoint(machine.settings, point)
+    machine.connected && machine.canSendGcode && point && canGoToPoint(machine.envelope, point)
   );
   const goNote = (() => {
     if (!machine.connected) {
@@ -256,8 +257,8 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
    */
   const pick = (picked) => {
     setPoint(picked);
-    if (clickDrives && picked && machine.connected && canGoToPoint(machine.settings, picked)) {
-      goToPoint(machine.type, machine.settings, picked);
+    if (clickDrives && picked && machine.connected && canGoToPoint(machine.envelope, picked)) {
+      goToPoint(picked);
     }
   };
 
@@ -311,7 +312,7 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
         offset={live}
         clickDrives={clickDrives}
         onClickDrives={() => setClickDrives((on) => !on)}
-        onGoToPoint={() => goToPoint(machine.type, machine.settings, point)}
+        onGoToPoint={() => goToPoint(point)}
         canGoToPoint={canGo}
         goNote={goNote}
         /*

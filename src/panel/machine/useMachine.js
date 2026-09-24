@@ -70,6 +70,12 @@ export const useMachine = () => {
      * is almost always. See `machine/refusal`.
      */
     refusal: null,
+    /*
+     * Where the machine can reach, as the server works it out. Null until it
+     * says — which is also the answer for a controller whose firmware has no
+     * such thing to report.
+     */
+    envelope: null,
   }));
 
   /**
@@ -193,6 +199,17 @@ export const useMachine = () => {
        */
       'controller:timing': (timing) => {
         setSnapshot((previous) => ({ ...previous, timing }));
+      },
+      /**
+       * Where the machine can reach, from the side that enforces it.
+       *
+       * The panel decoded `$130`-`$132` and the mask in `$23` for itself, to
+       * bound a jog and to draw the outline — two readings of the same four
+       * registers, and only one of them was the reading the machine was
+       * actually held to. Now there is one, and it is the server's.
+       */
+      'controller:envelope': (envelope) => {
+        setSnapshot((previous) => ({ ...previous, envelope }));
       },
       'controller:settings': (type, settings) => {
         setSnapshot((previous) => ({ ...previous, type, settings }));

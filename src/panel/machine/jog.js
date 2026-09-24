@@ -1,5 +1,4 @@
 import controller from './controller';
-import { machineEnvelope } from './envelope';
 
 const GRBL = 'Grbl';
 const SMOOTHIE = 'Smoothie';
@@ -77,8 +76,7 @@ export const jogLines = ({ type, moves, feedrate }) => {
  * Null when the machine has not reported its travel, in which case there is
  * no boundary to measure against and the bounded fallback stands.
  */
-export const jogRoom = (axis, sign, settings, position) => {
-  const envelope = machineEnvelope(settings);
+export const jogRoom = (axis, sign, envelope, position) => {
   const at = Number.parseFloat(position?.[axis]);
 
   if (!envelope || !Number.isFinite(at)) {
@@ -104,7 +102,7 @@ export const jogRoom = (axis, sign, settings, position) => {
  * rather than refused, so the tool ends up exactly at the limit instead of a
  * millimetre short of it, and nothing is sent once there is nothing to give.
  */
-export const jog = ({ type, dir, distance, feedrate, settings, position }) => {
+export const jog = ({ type, dir, distance, feedrate, envelope, position }) => {
   if (type === GRBL) {
     controller.command('jogStep', { dir, distance, feedrate });
     return true;
@@ -114,7 +112,7 @@ export const jog = ({ type, dir, distance, feedrate, settings, position }) => {
 
   for (const axis of Object.keys(dir)) {
     const sign = Math.sign(dir[axis]);
-    const room = jogRoom(axis, sign, settings, position);
+    const room = jogRoom(axis, sign, envelope, position);
     const allowed = room === null ? distance : Math.min(distance, Math.max(0, room));
     if (allowed > 0) {
       bounded[axis] = sign * allowed;
@@ -132,39 +130,6 @@ export const jog = ({ type, dir, distance, feedrate, settings, position }) => {
 };
 
 /**
- * Stop a jog that is already running.
- *
- * Only Grbl has this. On anything else the move is in the planner and runs to
- * the end, which is the honest answer rather than a button that pretends.
- */
-export const jogCancel = (type) => {
-  if (type === GRBL) {
-    controller.command('jogCancel');
-  }
-};
-
-/**
- * How far a held key is allowed to travel before it must be pressed again.
- *
- * A continuous jog is one long `$J=` that is cancelled when the key comes up,
- * so the distance is a bound on what happens if the release is never seen —
- * a window losing focus, a browser tab going to sleep, a touch that turns into
- * a scroll. The machine's own `$130`/`$131`/`$132` say how far the axis can go
- * at all, so asking for more than that is asking for the limit switch.
- *
- * Without that reading, 100mm. It is far enough to cross a small bed and near
- * enough that a lost release is a mistake rather than an accident.
- */
-const TRAVEL = { x: '$130', y: '$131', z: '$132' };
-const TRAVEL_UNKNOWN = 100;
-
-export const jogTravel = (axis, settings) => {
-  const reported = settings?.settings?.[TRAVEL[axis]];
-  const distance = Number.parseFloat(reported);
-  return Number.isFinite(distance) && distance > 0 ? distance : TRAVEL_UNKNOWN;
-};
-
-/**
  * Whether a key can be held down to keep moving.
  *
  * Only Grbl. Continuous jogging is one long move plus the ability to abandon
@@ -174,7 +139,12 @@ export const jogTravel = (axis, settings) => {
  */
 export const canJogContinuously = (type) => type === GRBL;
 
-/** Stop a jog that is already running. */
+/**
+ * Stop a jog that is already running.
+ *
+ * Only Grbl has this. On anything else the move is in the planner and runs to
+ * the end, which is the honest answer rather than a button that pretends.
+ */
 export const jogStop = (type) => {
   if (type === GRBL) {
     controller.command('jogCancel');
