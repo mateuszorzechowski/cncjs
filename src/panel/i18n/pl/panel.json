@@ -243,6 +243,8 @@
     "noWcs": "Maszyna nie podała, w którym układzie współrzędnych pracuje.",
     "noTravel": "Maszyna nie podała zakresu ruchu osi, więc nie ma jak zaplanować tego przejazdu.",
     "outOfEnvelope": "Ten punkt leży poza zakresem ruchu maszyny.",
+    "noRoom": "Oś doszła do końca zakresu w tym kierunku.",
+    "programRunning": "Trwa program, więc maszyna nie przyjmie ruchu.",
     "unknownCommand": "Ten serwer nie zna komendy {{cmd}}. Jest starszy niż ten panel.",
     "other": "Serwer odmówił komendy {{cmd}}: {{reason}}."
   },

@@ -1667,6 +1667,83 @@ describe('intent commands', () => {
     });
   });
 
+  describe('jogStep', () => {
+    const asking = (controller) => {
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push(payload) };
+      return refusals;
+    };
+
+    const reports = (controller, mpos) => {
+      controller.runner.settings = {
+        ...controller.runner.settings,
+        settings: { $130: '1000', $131: '700', $132: '150', $23: '0' },
+      };
+      controller.runner.state.status.mpos = mpos;
+    };
+
+    test('moves one step in the direction it was given', () => {
+      const { controller, writes } = setup();
+      reports(controller, { x: '-500', y: '-350', z: '-75' });
+
+      controller.command('jogStep', { dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500 });
+
+      // The step on each axis, so a corner tap goes at 45 degrees — the
+      // direction its arrow is drawn in.
+      expect(writes.map(write => write.data)).toEqual(['$J=G91 G21 X10 Y-10 F1500' + '\n']);
+    });
+
+    test('shortens the step rather than letting the firmware refuse it', () => {
+      const { controller, writes } = setup();
+      reports(controller, { x: '-3', y: '-350', z: '-75' });
+
+      controller.command('jogStep', { dir: { x: 1 }, distance: 10, feedrate: 1500 });
+
+      // With `$20=1` Grbl refuses a relative move that would leave the travel
+      // outright rather than clipping it, so at the edge of the table the key
+      // did nothing at all, silently.
+      expect(writes.map(write => write.data)).toEqual(['$J=G91 G21 X3 F1500' + '\n']);
+    });
+
+    test('says so when there is nothing left to give', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      reports(controller, { x: '0', y: '-350', z: '-75' });
+
+      controller.command('jogStep', { dir: { x: 1 }, distance: 10, feedrate: 1500 });
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: 'jogStep', reason: 'no-room' }]);
+    });
+
+    test('refuses in alarm', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      reports(controller, { x: '-500', y: '-350', z: '-75' });
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+
+      controller.command('jogStep', { dir: { x: 1 }, distance: 10, feedrate: 1500 });
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: 'jogStep', reason: 'alarm' }]);
+    });
+
+    test.each(['jogStep', 'jogStart'])('%s refuses while a program is running', (command) => {
+      const { controller } = setup();
+      const refusals = asking(controller);
+      reports(controller, { x: '-500', y: '-350', z: '-75' });
+
+      controller.command('gcode:load', 'test.gcode', 'G0 X0');
+      controller.command('gcode:start');
+
+      controller.command(command, { dir: { x: 1 }, distance: 10, feedrate: 1500 }, 1500);
+
+      // The planner belongs to the job. `jogStart` has always refused this
+      // and only ever said so in the server's own log.
+      expect(refusals).toEqual([{ cmd: command, reason: 'program-running' }]);
+    });
+  });
+
   describe('a command this server has never heard of', () => {
     test('is refused rather than logged and dropped', () => {
       const { controller } = setup();

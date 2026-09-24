@@ -1,6 +1,6 @@
 import {
   LEAD_CEILING_SECONDS, LEAD_FLOOR_SECONDS, MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine,
-  leadSecondsFor, roomFor, segmentDistance, stopSeconds,
+  jogStepLine, leadSecondsFor, roomFor, segmentDistance, stopSeconds,
 } from '../jog';
 
 // A Grbl that homes to the maximum: travel is [-range, 0].
@@ -204,5 +204,70 @@ describe('the line for one segment', () => {
     const reach = segmentDistance(1500);
     expect(jogSegmentLine({ dir: { x: 1 }, feedrate: 1500, settings: {}, mpos: MIDDLE }))
       .toBe(`$J=G91 G21 X${reach} F1500`);
+  });
+});
+
+describe('one tap of a jog key', () => {
+  test('moves the step on every axis the direction names', () => {
+    /*
+     * A corner tap travels the step's diagonal rather than the step, which is
+     * what "one step that way" means on a keypad and what the old
+     * application's has always sent. A segment of a held jog divides by
+     * sqrt(axes) instead, because there the arithmetic has to make the
+     * segment last exactly one tick.
+     */
+    expect(jogStepLine({
+      dir: { x: 1 }, distance: 10, feedrate: 1500, settings: HOMES_TO_MAX, mpos: MIDDLE,
+    })).toBe('$J=G91 G21 X10 F1500');
+
+    expect(jogStepLine({
+      dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500, settings: HOMES_TO_MAX, mpos: MIDDLE,
+    })).toBe('$J=G91 G21 X10 Y-10 F1500');
+  });
+
+  test('is shortened to what is left rather than refused', () => {
+    /*
+     * With `$20=1` the firmware refuses a relative move that would leave the
+     * travel outright — it does not clip it — so at the edge of the table the
+     * key did nothing at all and said nothing about why. Shortened, the tool
+     * lands exactly on the limit.
+     */
+    const nearTheEnd = { x: '-3', y: '-350', z: '-75' };
+    expect(jogStepLine({
+      dir: { x: 1 }, distance: 10, feedrate: 1500, settings: HOMES_TO_MAX, mpos: nearTheEnd,
+    })).toBe('$J=G91 G21 X3 F1500');
+  });
+
+  test('clips each axis on its own, so a diagonal at the edge carries on', () => {
+    /*
+     * The deliberate difference from a segment, which keeps the angle. For a
+     * hold that is right: the key is still down and bending the move would
+     * take the tool somewhere it was not aimed. For a tap the alternative is
+     * a key that does nothing at the edge, which is the fault the bounding
+     * exists to fix.
+     */
+    const atTheXEnd = { x: '0', y: '-350', z: '-75' };
+    expect(jogStepLine({
+      dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500, settings: HOMES_TO_MAX, mpos: atTheXEnd,
+    })).toBe('$J=G91 G21 Y-10 F1500');
+  });
+
+  test('is nothing at all when there is nothing left to give', () => {
+    const atTheEnd = { x: '0', y: '-350', z: '-75' };
+    expect(jogStepLine({
+      dir: { x: 1 }, distance: 10, feedrate: 1500, settings: HOMES_TO_MAX, mpos: atTheEnd,
+    })).toBeNull();
+  });
+
+  test('sends the step as asked when there is no boundary to measure against', () => {
+    expect(jogStepLine({ dir: { x: 1 }, distance: 10, feedrate: 1500 }))
+      .toBe('$J=G91 G21 X10 F1500');
+  });
+
+  test('refuses a request that is not a move', () => {
+    expect(jogStepLine({ dir: {}, distance: 10, feedrate: 1500 })).toBeNull();
+    expect(jogStepLine({ dir: { x: 1 }, distance: 0, feedrate: 1500 })).toBeNull();
+    expect(jogStepLine({ dir: { x: 1 }, distance: 10, feedrate: 0 })).toBeNull();
+    expect(jogStepLine({ dir: { a: 1 }, distance: 10, feedrate: 1500 })).toBeNull();
   });
 });

@@ -34,6 +34,12 @@ const KEYS = {
   // outright rather than clipping it, so this used to be a button that simply
   // did nothing.
   'out-of-envelope': 'refusal.outOfEnvelope',
+  // Nothing left in that direction. Not the same as a step being shortened —
+  // a shortened step still moves and is nobody's business.
+  'no-room': 'refusal.noRoom',
+  // The planner belongs to the job while one is running, and two sources of
+  // motion in one planner is not something to sort out afterwards.
+  'program-running': 'refusal.programRunning',
   // A panel newer than the server it is talking to. The only refusal here
   // that is about the installation rather than about the machine.
   'unknown-command': 'refusal.unknownCommand',
