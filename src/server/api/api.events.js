@@ -8,12 +8,31 @@ import config from '../services/configstore';
 import { getPagingRange } from './paging';
 import {
   ERR_BAD_REQUEST,
+  ERR_FORBIDDEN,
   ERR_NOT_FOUND,
   ERR_INTERNAL_SERVER_ERROR
 } from '../constants';
 
 const log = logger('api:events');
 const CONFIG_KEY = 'events';
+
+/**
+ * Whether an event runs a shell command on the server rather than G-code.
+ *
+ * **Such an event is written on the server by hand, never through here.** A
+ * client that could store one could run anything it liked on the computer
+ * holding the port, the next time a program started. The use case is real —
+ * switching a dust extractor on with a script — and it belongs to whoever
+ * administers that computer, so `.cncrc` keeps it working and this API only
+ * reads it. Decided 2026-09-24.
+ */
+const runsShell = (trigger) => trigger === 'system';
+
+const refuseShell = (res) => {
+  res.status(ERR_FORBIDDEN).send({
+    msg: 'Shell events can only be configured on the server'
+  });
+};
 
 const getSanitizedRecords = () => {
   const records = castArray(config.get(CONFIG_KEY, []));
@@ -113,6 +132,11 @@ export const create = (req, res) => {
     return;
   }
 
+  if (runsShell(trigger)) {
+    refuseShell(res);
+    return;
+  }
+
   try {
     const records = getSanitizedRecords();
     const record = {
@@ -172,6 +196,11 @@ export const update = (req, res) => {
 
   // Skip validation for "enabled", "event", "trigger", and "commands"
 
+  if (runsShell(record.trigger) || runsShell(trigger)) {
+    refuseShell(res);
+    return;
+  }
+
   try {
     record.mtime = new Date().getTime();
     record.enabled = Boolean(enabled);
@@ -203,6 +232,11 @@ export const __delete = (req, res) => {
     res.status(ERR_NOT_FOUND).send({
       msg: 'Not found'
     });
+    return;
+  }
+
+  if (runsShell(record.trigger)) {
+    refuseShell(res);
     return;
   }
 
