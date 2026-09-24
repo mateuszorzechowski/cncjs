@@ -257,6 +257,28 @@ class CNCEngine {
       this.io.on('connection', (socket) => {
         const address = socket.handshake.address;
         const user = socket.user || {};
+
+        /*
+         * Which device this is, as distinct from which socket.
+         *
+         * socket.io issues a new id every time a client reconnects, and a
+         * phone carried around a workshop reconnects — so anything that has to
+         * outlive a dropped connection cannot be keyed on the socket. The
+         * movement lease is the first such thing: held against a socket id it
+         * would be lost by its own owner, mid-jog, to itself.
+         *
+         * The client says who it is and the server takes its word for it.
+         * There is nothing to secure here — a device that lied would be
+         * claiming the right to move a machine it can already move — and the
+         * alternative, an address, is one identity for every tab on a computer
+         * and a different one for the same phone on a different network.
+         *
+         * **The socket id is the fallback, not a shared null.** A client that
+         * sends nothing — the old application, a script — is still one client
+         * and still holds its own lease; it just cannot survive its own
+         * reconnection, which is exactly the behaviour there was before.
+         */
+        socket.device = socket.handshake.auth?.device || socket.handshake.query?.device || socket.id;
         log.debug(`New connection from ${address}: id=${socket.id}, user.id=${user.id}, user.name=${user.name}`);
 
         // Add to the socket pool
