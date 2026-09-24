@@ -433,106 +433,6 @@ describe('GrblController', () => {
     });
   });
 
-  describe('zero', () => {
-    // The socket that asked. `CNCEngine` sets this around the call; a refusal
-    // goes back to the client that made the request and to nobody else.
-    const asking = (controller) => {
-      const refusals = [];
-      controller.commandSocket = {
-        id: 'asking',
-        emit: (event, payload) => refusals.push({ event, payload }),
-      };
-      return refusals;
-    };
-
-    const working = (controller, wcs) => {
-      controller.runner.state.parserstate.modal.wcs = wcs;
-    };
-
-    test('writes the coordinate system the machine is working in', () => {
-      const { controller, writes } = setup();
-      working(controller, 'G55');
-
-      controller.command('zero', { axes: ['x', 'y'] });
-
-      // P2, because the machine said G55. The panel used to compose this from
-      // a reading it had to shadow; the reading lives here.
-      expect(writes.map(write => write.data)).toEqual(['G10 L20 P2 X0 Y0\n']);
-    });
-
-    test('refuses in alarm instead of being swallowed by the feeder', () => {
-      const { controller, writes } = setup();
-      const refusals = asking(controller);
-      working(controller, 'G54');
-      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
-
-      controller.command('zero', { axes: ['z'] });
-
-      /*
-       * Measured on the machine, 2026-09-23: pressing Zero Z on an alarmed
-       * Grbl put `G10 L20 P1 Z0` on the socket, left `Stopped sending G-code
-       * commands in Alarm mode` in a log nobody at the machine is reading, and
-       * changed no offset. Nothing on screen said a word.
-       */
-      expect(writes).toEqual([]);
-      expect(refusals).toEqual([
-        { event: 'command:refused', payload: { cmd: 'zero', reason: 'alarm' } },
-      ]);
-    });
-
-    test('refuses rather than guessing when no coordinate system is known', () => {
-      const { controller, writes } = setup();
-      const refusals = asking(controller);
-      working(controller, undefined);
-
-      controller.command('zero', { axes: ['z'] });
-
-      expect(writes).toEqual([]);
-      expect(refusals.map(({ payload }) => payload.reason)).toEqual(['no-wcs']);
-    });
-
-    test('says which of the two is missing', () => {
-      const { controller } = setup();
-      const refusals = asking(controller);
-      working(controller, 'G54');
-
-      // An empty request is not an unknown coordinate system, and a refusal
-      // that named one would be this side making something up in its turn.
-      controller.command('zero', { axes: [] });
-
-      expect(refusals.map(({ payload }) => payload.reason)).toEqual(['no-axes']);
-    });
-
-    test('a refusal reaches the client that asked and nobody else', () => {
-      const { controller, socketEvents } = setup();
-      asking(controller);
-      working(controller, undefined);
-
-      controller.command('zero', { axes: ['z'] });
-
-      // A second pendant that pressed nothing has no use for this. The port's
-      // room is for what the machine is doing, not for one request.
-      expect(socketEvents.filter(({ event }) => event === 'command:refused')).toEqual([]);
-    });
-  });
-
-  describe('a command this server has never heard of', () => {
-    test('is refused rather than logged and dropped', () => {
-      const { controller } = setup();
-      const refusals = [];
-      controller.commandSocket = { emit: (event, payload) => refusals.push({ event, payload }) };
-
-      controller.command('teleport');
-
-      // A panel newer than the server it is talking to would otherwise get a
-      // control that looks live and does nothing, with the only evidence in a
-      // log file on the machine in the garage.
-      expect(refusals).toEqual([
-        { event: 'command:refused', payload: { cmd: 'teleport', reason: 'unknown-command' } },
-      ]);
-    });
-  });
-
   describe('sender workflow', () => {
     test('gcode:load loads the program with an appended dwell and reports the sender state', () => {
       const { controller, writes, socketEvents } = setup();
@@ -1576,6 +1476,211 @@ describe('GrblController', () => {
 
       expect(controller.ready).toBe(true);
       expect(reads(socketEvents)).toEqual([]);
+    });
+  });
+});
+
+/**
+ * The commands that carry an intention rather than a line.
+ *
+ * A sibling of the block above rather than another nesting inside it: these
+ * are about what a client is allowed to *mean*, and the first describe had
+ * grown past the size the lint rule will hold anyway.
+ */
+describe('intent commands', () => {
+  afterEach(() => {
+    while (activeControllers.length > 0) {
+      const controller = activeControllers.pop();
+      controller.destroy();
+    }
+    jest.restoreAllMocks();
+  });
+
+  describe('zero', () => {
+    // The socket that asked. `CNCEngine` sets this around the call; a refusal
+    // goes back to the client that made the request and to nobody else.
+    const asking = (controller) => {
+      const refusals = [];
+      controller.commandSocket = {
+        id: 'asking',
+        emit: (event, payload) => refusals.push({ event, payload }),
+      };
+      return refusals;
+    };
+
+    const working = (controller, wcs) => {
+      controller.runner.state.parserstate.modal.wcs = wcs;
+    };
+
+    test('writes the coordinate system the machine is working in', () => {
+      const { controller, writes } = setup();
+      working(controller, 'G55');
+
+      controller.command('zero', { axes: ['x', 'y'] });
+
+      // P2, because the machine said G55. The panel used to compose this from
+      // a reading it had to shadow; the reading lives here.
+      expect(writes.map(write => write.data)).toEqual(['G10 L20 P2 X0 Y0\n']);
+    });
+
+    test('refuses in alarm instead of being swallowed by the feeder', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      working(controller, 'G54');
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+
+      controller.command('zero', { axes: ['z'] });
+
+      /*
+       * Measured on the machine, 2026-09-23: pressing Zero Z on an alarmed
+       * Grbl put `G10 L20 P1 Z0` on the socket, left `Stopped sending G-code
+       * commands in Alarm mode` in a log nobody at the machine is reading, and
+       * changed no offset. Nothing on screen said a word.
+       */
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([
+        { event: 'command:refused', payload: { cmd: 'zero', reason: 'alarm' } },
+      ]);
+    });
+
+    test('refuses rather than guessing when no coordinate system is known', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      working(controller, undefined);
+
+      controller.command('zero', { axes: ['z'] });
+
+      expect(writes).toEqual([]);
+      expect(refusals.map(({ payload }) => payload.reason)).toEqual(['no-wcs']);
+    });
+
+    test('says which of the two is missing', () => {
+      const { controller } = setup();
+      const refusals = asking(controller);
+      working(controller, 'G54');
+
+      // An empty request is not an unknown coordinate system, and a refusal
+      // that named one would be this side making something up in its turn.
+      controller.command('zero', { axes: [] });
+
+      expect(refusals.map(({ payload }) => payload.reason)).toEqual(['no-axes']);
+    });
+
+    test('a refusal reaches the client that asked and nobody else', () => {
+      const { controller, socketEvents } = setup();
+      asking(controller);
+      working(controller, undefined);
+
+      controller.command('zero', { axes: ['z'] });
+
+      // A second pendant that pressed nothing has no use for this. The port's
+      // room is for what the machine is doing, not for one request.
+      expect(socketEvents.filter(({ event }) => event === 'command:refused')).toEqual([]);
+    });
+  });
+
+  describe('travel', () => {
+    const asking = (controller) => {
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push(payload) };
+      return refusals;
+    };
+
+    // What a Grbl on this bench reports: homing to the maximum, so the
+    // reachable volume is negative and machine zero is the top of the travel.
+    const reports = (controller, settings) => {
+      controller.runner.settings = {
+        ...controller.runner.settings,
+        settings: {
+          $130: '1000', $131: '700', $132: '150', $23: '0', $110: '5000', $112: '4000',
+          ...settings,
+        },
+      };
+    };
+
+    test('goToWorkZero lifts Z out of the work before it crosses', () => {
+      const { controller, writes } = setup();
+      reports(controller);
+
+      controller.command('goToWorkZero');
+      controller.runner.parse('ok');
+
+      // The whole reason this is not the old application's `G0 X0 Y0`: that
+      // one crosses the work at whatever depth the tool is buried at.
+      expect(writes.map(write => write.data)).toEqual([
+        '$J=G53 G90 G21 Z0 F4000\n',
+        '$J=G90 G21 X0 Y0 F5000\n',
+      ]);
+    });
+
+    test('goToWorkZero is refused when the machine has not said how far it goes', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      reports(controller, { $132: undefined });
+
+      controller.command('goToWorkZero');
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: 'goToWorkZero', reason: 'no-travel' }]);
+    });
+
+    test('goToPoint goes where it was pointed, in machine coordinates', () => {
+      const { controller, writes } = setup();
+      reports(controller);
+
+      controller.command('goToPoint', { x: -412.38471629, y: -200 });
+      controller.runner.parse('ok');
+
+      expect(writes.map(write => write.data)).toEqual([
+        '$J=G53 G90 G21 Z0 F4000\n',
+        '$J=G53 G90 G21 X-412.385 Y-200 F5000\n',
+      ]);
+    });
+
+    test('goToPoint tells a point it cannot reach from a machine it cannot measure', () => {
+      const { controller } = setup();
+      const refusals = asking(controller);
+      reports(controller);
+
+      // Outside a known envelope. With `$20=1` the firmware refuses the line
+      // outright rather than clipping it, and said nothing about why.
+      controller.command('goToPoint', { x: 500, y: -200 });
+
+      reports(controller, { $130: undefined });
+      // No envelope at all is a different answer: there is no fence to be
+      // outside of, only no knowledge of one.
+      controller.command('goToPoint', { x: -100, y: -200 });
+
+      expect(refusals.map(({ reason }) => reason)).toEqual(['out-of-envelope', 'no-travel']);
+    });
+
+    test.each(['goToWorkZero', 'goToPoint'])('%s refuses in alarm', (command) => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      reports(controller);
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+
+      controller.command(command, { x: -100, y: -200 });
+
+      expect(writes).toEqual([]);
+      expect(refusals.map(({ reason }) => reason)).toEqual(['alarm']);
+    });
+  });
+
+  describe('a command this server has never heard of', () => {
+    test('is refused rather than logged and dropped', () => {
+      const { controller } = setup();
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push({ event, payload }) };
+
+      controller.command('teleport');
+
+      // A panel newer than the server it is talking to would otherwise get a
+      // control that looks live and does nothing, with the only evidence in a
+      // log file on the machine in the garage.
+      expect(refusals).toEqual([
+        { event: 'command:refused', payload: { cmd: 'teleport', reason: 'unknown-command' } },
+      ]);
     });
   });
 });

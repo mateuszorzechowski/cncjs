@@ -24,6 +24,8 @@
  * their mind, and everything downstream pays for it.
  */
 
+import { AXES, axisRange } from './envelope';
+
 /**
  * Seconds of travel per segment.
  *
@@ -151,18 +153,6 @@ export const MAX_IN_FLIGHT = 2;
  */
 export const segmentDistance = (feedrate, seconds = SEGMENT_SECONDS) => (feedrate / 60) * seconds;
 
-// `$130`/`$131`/`$132` — how far each axis can travel.
-const TRAVEL = { x: '$130', y: '$131', z: '$132' };
-// `$23` — the homing direction mask, which decides which side of zero the
-// machine lives on. One bit per axis, in X, Y, Z order.
-const INVERT_MASK = '$23';
-const INVERT_BIT = { x: 1, y: 2, z: 4 };
-
-const setting = (settings, name) => {
-  const value = Number.parseFloat(settings?.[name]);
-  return Number.isFinite(value) ? value : null;
-};
-
 /**
  * How far an axis can still go in one direction, in millimetres.
  *
@@ -170,23 +160,18 @@ const setting = (settings, name) => {
  * where it is — in which case there is no boundary to measure against and the
  * caller sends the segment as asked.
  *
- * Grbl homes to the maximum by default and puts zero there, so the reachable
- * volume is negative: `[-$130, 0]`. A set bit in `$23` flips that axis.
+ * Where the axis reaches to is `envelope.js`, which a travel asks the same
+ * question of from the other end.
  */
 export const roomFor = (axis, sign, settings, mpos) => {
-  const travel = setting(settings, TRAVEL[axis]);
+  const range = axisRange(axis, settings);
   const at = Number.parseFloat(mpos?.[axis]);
 
-  if (travel === null || travel <= 0 || !Number.isFinite(at)) {
+  if (!range || !Number.isFinite(at)) {
     return null;
   }
 
-  const mask = setting(settings, INVERT_MASK) || 0;
-  const homesToMinimum = (mask & INVERT_BIT[axis]) !== 0;
-  const min = homesToMinimum ? 0 : -travel;
-  const max = homesToMinimum ? travel : 0;
-
-  return sign > 0 ? max - at : at - min;
+  return sign > 0 ? range.max - at : at - range.min;
 };
 
 /**
@@ -209,7 +194,7 @@ export const roomFor = (axis, sign, settings, mpos) => {
  * the machine happens to be in.
  */
 export const jogSegmentLine = ({ dir, feedrate, settings, mpos, seconds = SEGMENT_SECONDS }) => {
-  const axes = Object.keys(dir).filter((axis) => TRAVEL[axis] && dir[axis]);
+  const axes = Object.keys(dir).filter((axis) => AXES.includes(axis) && dir[axis]);
   if (!axes.length || !(feedrate > 0)) {
     return null;
   }
@@ -227,7 +212,7 @@ export const jogSegmentLine = ({ dir, feedrate, settings, mpos, seconds = SEGMEN
     return null;
   }
 
-  const words = ['x', 'y', 'z']
+  const words = AXES
     .filter((axis) => axes.includes(axis))
     .map((axis) => `${axis.toUpperCase()}${Math.sign(dir[axis]) * distance}`)
     .join(' ');

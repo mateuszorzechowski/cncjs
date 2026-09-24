@@ -52,6 +52,8 @@ import GrblRunner from './GrblRunner';
 import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, stopSeconds } from './jog';
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { activeWcsNumber, zeroLine } from './zero';
+import { machineEnvelope } from './envelope';
+import { goToPointLines, goToWorkZeroLines } from './travel';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
 import {
@@ -1938,6 +1940,69 @@ class GrblController {
           }
 
           this.command('gcode', line);
+        },
+        /**
+         * Back to the work zero, Z first, without crossing the work at depth.
+         *
+         * `goToWorkZero()` carries nothing, because there is nothing in it that
+         * belongs to a client: where the top of the travel is comes from
+         * `$130`–`$132` and `$23`, and how fast to get there from `$110` and
+         * `$112`. The panel decoded all four to build two lines.
+         *
+         * Refused rather than degraded when the firmware has not reported its
+         * travel. What is left without a known top to retract to is exactly the
+         * move being avoided — the old application's bare `G0 X0 Y0`, which
+         * drags the tool home through whatever it is buried in.
+         */
+        'goToWorkZero': () => {
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+
+          const lines = goToWorkZeroLines(this.runner.settings?.settings);
+          if (!lines) {
+            this.refuse(cmd, 'no-travel');
+            return;
+          }
+
+          this.command('gcode', lines);
+        },
+        /**
+         * Travel to a point picked off the drawing, Z first.
+         *
+         * `goToPoint({ x, y })`, in **machine** coordinates — the frame the
+         * scene is drawn in. Sending work coordinates would land the tool
+         * somewhere plausible and wrong by exactly the work offset.
+         *
+         * Two refusals that were one silence. A point outside the travel is
+         * `out-of-envelope`: with `$20=1` the firmware refuses the line
+         * outright rather than clipping it, so pointing slightly wide of the
+         * bed did nothing at all and said nothing about why. A machine that has
+         * not reported its travel is `no-travel`, and it is a different answer
+         * — there is no fence to be outside of, only no knowledge of one.
+         */
+        'goToPoint': () => {
+          const [point] = args;
+
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+
+          const settings = this.runner.settings?.settings;
+          if (!machineEnvelope(settings)) {
+            this.refuse(cmd, 'no-travel');
+            return;
+          }
+
+          const lines = goToPointLines(settings, point);
+          if (!lines) {
+            this.refuse(cmd, 'out-of-envelope');
+            return;
+          }
+
+          this.command('gcode', lines);
         },
         'sleep': () => {
           this.event.trigger('sleep');

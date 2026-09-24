@@ -181,6 +181,7 @@
     },
     "go": {
       "disconnected": "Brak połączenia z maszyną",
+      "alarm": "Maszyna jest w alarmie i nie przyjmie ruchu",
       "noPoint": "Kliknij na rysunku, żeby wskazać punkt",
       "outside": "Punkt leży poza zakresem ruchu maszyny",
       "ready": "Podnosi Z na górę zakresu, potem jedzie nad wskazany punkt"
@@ -240,6 +241,8 @@
   "refusal": {
     "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",
     "noWcs": "Maszyna nie podała, w którym układzie współrzędnych pracuje.",
+    "noTravel": "Maszyna nie podała zakresu ruchu osi, więc nie ma jak zaplanować tego przejazdu.",
+    "outOfEnvelope": "Ten punkt leży poza zakresem ruchu maszyny.",
     "unknownCommand": "Ten serwer nie zna komendy {{cmd}}. Jest starszy niż ten panel.",
     "other": "Serwer odmówił komendy {{cmd}}: {{reason}}."
   },

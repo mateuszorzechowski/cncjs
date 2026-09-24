@@ -181,6 +181,7 @@
     },
     "go": {
       "disconnected": "No connection to the machine",
+      "alarm": "The machine is in alarm and will not take a move",
       "noPoint": "Click on the drawing to mark a point",
       "outside": "The point lies outside the machine's travel",
       "ready": "Lifts Z to the top of the range, then travels over the marked point"
@@ -240,6 +241,8 @@
   "refusal": {
     "alarm": "The machine is in alarm, so nothing was sent. Clear the alarm first.",
     "noWcs": "The machine has not reported which coordinate system it is working in.",
+    "noTravel": "The machine has not reported how far its axes travel, so this move cannot be planned.",
+    "outOfEnvelope": "That point is outside the machine travel.",
     "unknownCommand": "This server does not know the command {{cmd}}. It is older than this panel.",
     "other": "The server refused {{cmd}}: {{reason}}."
   },

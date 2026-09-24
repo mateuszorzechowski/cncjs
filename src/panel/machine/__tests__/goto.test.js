@@ -80,15 +80,32 @@ describe('going back to the work zero', () => {
     expect(canGoToWorkZero(HOMES_TO_MAX)).toBe(true);
   });
 
-  test('sends both lines, in order, and nothing when it cannot', () => {
-    goToWorkZero(HOMES_TO_MAX);
+  test('on Grbl it asks for the move and carries nothing', () => {
+    /*
+     * Nothing in this move belongs to the panel: where the top of the travel
+     * is comes from `$130`-`$132` and `$23`, and how fast to cross from
+     * `$110` and `$112`. All four are read by the side holding the port.
+     */
+    goToWorkZero('Grbl', HOMES_TO_MAX);
+    expect(controller.command.mock.calls).toEqual([['goToWorkZero']]);
+  });
+
+  test('on Grbl it asks even when this panel cannot see a travel', () => {
+    // The panel's own reading greys the button out; it is not the authority.
+    // A press that gets here anyway is a race, and the server answers it.
+    goToWorkZero('Grbl', {});
+    expect(controller.command.mock.calls).toEqual([['goToWorkZero']]);
+  });
+
+  test('sends both lines, in order, for a controller that needs them', () => {
+    goToWorkZero('Marlin', HOMES_TO_MAX);
     expect(controller.command.mock.calls).toEqual([
       ['gcode', '$J=G53 G90 G21 Z0 F3000'],
       ['gcode', '$J=G90 G21 X0 Y0 F5000'],
     ]);
 
     controller.command.mockClear();
-    expect(goToWorkZero({})).toBeNull();
+    goToWorkZero('Marlin', {});
     expect(controller.command).not.toHaveBeenCalled();
   });
 });
@@ -130,15 +147,35 @@ describe('travelling to a point picked off the drawing', () => {
     expect(canGoToPoint({}, { x: -412, y: -233 })).toBe(false);
   });
 
-  test('sends both lines, and nothing when it refuses', () => {
-    goToPoint(HOMES_TO_MAX, { x: -412.5, y: -233.25 });
+  test('on Grbl it sends the point and lets the server place it', () => {
+    goToPoint('Grbl', HOMES_TO_MAX, { x: -412.5, y: -233.25 });
+    expect(controller.command.mock.calls).toEqual([
+      ['goToPoint', { x: -412.5, y: -233.25 }],
+    ]);
+  });
+
+  test('on Grbl a point outside the travel is refused by the server, not by a silence', () => {
+    /*
+     * It used to be neither: the panel declined to compose the line and
+     * nothing anywhere said why. With `$20=1` the firmware refuses such a
+     * line outright rather than clipping it, so the button that was live
+     * simply did nothing.
+     */
+    goToPoint('Grbl', HOMES_TO_MAX, { x: -412, y: 50 });
+    expect(controller.command.mock.calls).toEqual([
+      ['goToPoint', { x: -412, y: 50 }],
+    ]);
+  });
+
+  test('sends both lines, and nothing when it refuses, for a controller that needs them', () => {
+    goToPoint('Marlin', HOMES_TO_MAX, { x: -412.5, y: -233.25 });
     expect(controller.command.mock.calls).toEqual([
       ['gcode', '$J=G53 G90 G21 Z0 F3000'],
       ['gcode', '$J=G53 G90 G21 X-412.5 Y-233.25 F5000'],
     ]);
 
     controller.command.mockClear();
-    expect(goToPoint(HOMES_TO_MAX, { x: -412, y: 50 })).toBeNull();
+    goToPoint('Marlin', HOMES_TO_MAX, { x: -412, y: 50 });
     expect(controller.command).not.toHaveBeenCalled();
   });
 });

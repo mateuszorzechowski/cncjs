@@ -405,14 +405,14 @@ jako brak pokrycia, nie zamiecione.
 
 ---
 
-## Kontrakt intencji — PIERWSZA POŁOWA ZROBIONA 2026-09-24
+## Kontrakt intencji — TRZY Z CZTERECH ZROBIONE 2026-09-24
 
 **Decyzja Mateusza (2026-09-24):** komenda niesie wartość, serwer rozgłasza
 ostatnio użytą jako odczyt, a **każda komenda odmawia z kodem powodu**. Konsola
 zostaje poza kontraktem — `gcode`, `write` i `writeln` zostają na powierzchni
 serwera na stałe, bo surowy G-code to sens konsoli.
 
-**Zrobione:** kanał odmowy i `zero`.
+**Zrobione:** kanał odmowy, `zero`, `goToWorkZero` i `goToPoint`.
 
 - **`command:refused { cmd, reason }`** — nowe zdarzenie, wysyłane **do gniazda,
   które pytało**, nie do pokoju portu. Odmowa dotyczy jednego żądania; drugi
@@ -441,17 +441,33 @@ wyszło, że **karta `Wysokość Z` na pulpicie nie bramkowała `canSendGcode`**
 ekran Zerowania tak, ta karta nie, więc w alarmie jej przyciski wyglądały na
 żywe. Naprawione razem z tym wpisem.
 
-**Zostaje do zrobienia** — te trzy dalej składa panel:
+- **`goToWorkZero()` i `goToPoint({x,y})`** — panel składał dwie linie `$J=`
+  z **czterech** ustawień firmware'u: `$130`–`$132` i `$23` na to, gdzie jest
+  góra zakresu, oraz `$110`/`$112` na to, jak szybko jechać. Wszystkie cztery
+  czyta strona trzymająca port. Odmowy: `alarm`, `no-travel` (maszyna nie
+  podała zakresu, więc nie ma dokąd podnieść Z — a to, co zostaje, to właśnie
+  gołe `G0 X0 Y0` starej apki przez materiał) i `out-of-envelope`.
+
+  Obwiednia jest teraz jedna, w `controllers/Grbl/envelope.js`: `roomFor` pytało
+  o to samo od drugiej strony i miało własną kopię arytmetyki `$23`.
+
+  **Przy okazji dwa przyciski, które w alarmie wyglądały na żywe:** „do zera" na
+  jogu i przejazd do punktu na Ścieżce. Ten drugi ma już miejsce, w którym mówi,
+  czemu jest martwy (`goNote`), więc dostał tam zdanie o alarmie.
+
+**Zostaje do zrobienia** — tę jedną dalej składa panel:
 
 | dziś w panelu | intencja | odmowy |
 | --- | --- | --- |
-| `goto.js` — `$J=G53 …` ×2 | `goToWorkZero()` | `alarm`, `no-travel` |
-| `goto.js` — `$J=G53 …` ×2 | `goToPoint({x,y})` | `alarm`, `out-of-envelope` |
 | `jog.js` — `$J=G91 …` | `jogStep({dir, distance, feedrate})` | `alarm`, `no-room` |
 
-Wszystkie trzy potrzebują obwiedni po stronie serwera — którą serwer już liczy
-(`roomFor` w `controllers/Grbl/jog.js`), tylko nie rozgłasza. To jest ten sam
-wpis co „Zakres ruchu liczony dwa razy" niżej.
+Obwiednia po stronie serwera jest, tylko nie jest rozgłaszana — panel dalej
+dekoduje `$23` u siebie, żeby wyszarzać i rysować. To jest ten sam wpis co
+„Zakres ruchu liczony dwa razy" niżej.
+
+**I jedna rzecz, która wyszła przy oglądaniu jogu w alarmie:** klawisze
+kierunków są tam **żywe**, a Grbl odmawia jogu w alarmie. To ta sama dziura co
+przy „do zera", tylko po drugiej stronie pada — zamknąć razem z `jogStep`.
 
 **Marlin, Smoothie i TinyG zostają na złożonej linii.** Ten sam wybór co przy
 `estop`: sterownik, którego nic na tym stole nie uruchomi, dostałby komendę,

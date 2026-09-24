@@ -13,6 +13,10 @@ describe('what a refusal is turned into', () => {
       .toEqual({ key: 'refusal.alarm', values: { cmd: 'zero' } });
     expect(refusalMessage({ cmd: 'zero', reason: 'no-wcs' }))
       .toEqual({ key: 'refusal.noWcs', values: { cmd: 'zero' } });
+    expect(refusalMessage({ cmd: 'goToWorkZero', reason: 'no-travel' }))
+      .toEqual({ key: 'refusal.noTravel', values: { cmd: 'goToWorkZero' } });
+    expect(refusalMessage({ cmd: 'goToPoint', reason: 'out-of-envelope' }))
+      .toEqual({ key: 'refusal.outOfEnvelope', values: { cmd: 'goToPoint' } });
     expect(refusalMessage({ cmd: 'teleport', reason: 'unknown-command' }))
       .toEqual({ key: 'refusal.unknownCommand', values: { cmd: 'teleport' } });
   });

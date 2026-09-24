@@ -27,6 +27,13 @@ const KEYS = {
   // No parser state, so there is no coordinate system to name. Zeroing the
   // wrong one is silent and is found by a tool moving under power.
   'no-wcs': 'refusal.noWcs',
+  // The machine has not reported `$130`-`$132`, so there is no box to plan a
+  // move inside and no known top of the travel to retract to.
+  'no-travel': 'refusal.noTravel',
+  // A point outside that box. With `$20=1` the firmware refuses such a line
+  // outright rather than clipping it, so this used to be a button that simply
+  // did nothing.
+  'out-of-envelope': 'refusal.outOfEnvelope',
   // A panel newer than the server it is talking to. The only refusal here
   // that is about the installation rather than about the machine.
   'unknown-command': 'refusal.unknownCommand',
