@@ -377,9 +377,39 @@ const Panel = ({ machine, screen, onScreen }) => {
   );
 };
 
+/*
+ * The screen last open, kept on this device.
+ *
+ * *"Zapamiętywanie ostatniego ekranu, żeby po odświeżeniu albo wejściu
+ * trafiać na ten sam"* (Mateusz, 2026-09-25): a reload — and the panel
+ * reloads itself on every update — dropped whoever was on the journal or the
+ * zeroing screen back on the dashboard. Per device rather than on the server,
+ * since a phone and the desk are usually looking at different things.
+ *
+ * Only a screen that exists: a name kept by an older panel, or typed into
+ * storage by hand, opens the dashboard instead.
+ */
+const KEEP_SCREEN = 'panel.screen';
+
+const rememberedScreen = () => {
+  try {
+    const kept = window.localStorage.getItem(KEEP_SCREEN);
+    return kept && SCREENS[kept] ? kept : 'dashboard';
+  } catch (err) {
+    return 'dashboard';
+  }
+};
+
 const App = () => {
   const machine = useMachine();
-  const [screen, setScreen] = useState('dashboard');
+  const [screen, setScreen] = useState(rememberedScreen);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(KEEP_SCREEN, screen);
+    } catch (err) {
+      // Private mode: the panel opens on the dashboard next time, as before.
+    }
+  }, [screen]);
   const shell = useMeasuredShell();
 
   /*

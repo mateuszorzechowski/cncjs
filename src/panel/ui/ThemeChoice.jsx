@@ -35,19 +35,17 @@ const ThemeChoice = () => {
 
   useEffect(() => watchTheme(setChoice), []);
 
+  // The control alone: its name is the settings row's (`SettingRow`).
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-cap font-semibold uppercase tracking-[0.08em] text-mut">
-        {t('theme.label')}
-      </span>
-      <SegmentedChoice
-        label={t('theme.label')}
-        options={THEMES}
-        value={choice}
-        onChange={setPreference}
-        format={(id) => t(LABELS[id])}
-      />
-    </div>
+    <SegmentedChoice
+      joined
+      fitWide
+      label={t('theme.label')}
+      options={THEMES}
+      value={choice}
+      onChange={setPreference}
+      format={(id) => t(LABELS[id])}
+    />
   );
 };
 

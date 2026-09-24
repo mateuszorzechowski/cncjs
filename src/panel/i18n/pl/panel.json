@@ -242,7 +242,9 @@
     "certDownload": "Pobierz certyfikat",
     "refresh": "Odśwież panel",
     "refreshWhy": "Pobiera z serwera najnowszą wersję panelu.",
-    "updateReady": "Na serwerze czeka nowsza wersja panelu. Odśwież, żeby ją wziąć."
+    "updateReady": "Na serwerze czeka nowsza wersja panelu. Odśwież, żeby ją wziąć.",
+    "installTitle": "Instalacja",
+    "refreshTitle": "Odśwież panel"
   },
   "refusal": {
     "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",

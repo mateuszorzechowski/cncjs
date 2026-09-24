@@ -23,15 +23,20 @@
  * - `counts`, what each option stands for, shown after its name;
  * - `columns`, tiles in a grid instead of a row, for a phone's sheet;
  * - `joined`, the same buttons as one group, touching, rounded only at the
- *   ends — *"te przyciski mogą być jako button group"* (2026-09-24).
+ *   ends — *"te przyciski mogą być jako button group"* (2026-09-24);
+ * - `fitWide`, equal columns across a phone and as wide as the labels from
+ *   `@3xl` up, for a settings row whose control sits in a column of its own.
  */
 const COLUMNS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 4: 'grid-cols-4' };
 
 const SegmentedChoice = ({
-  options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, counts, columns, joined = false,
+  options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, counts, columns, joined = false, fitWide = false,
 }) => (
   <div
-    className={columns ? `grid gap-2 ${COLUMNS[columns]}` : `flex h-chiph shrink-0 ${joined ? '' : 'gap-2'}`}
+    className={[
+      columns ? `grid gap-2 ${COLUMNS[columns]}` : `flex h-chiph shrink-0 ${joined ? '' : 'gap-2'}`,
+      fitWide ? '@3xl/shell:self-start' : '',
+    ].join(' ')}
     role="group"
     aria-label={label}
   >
@@ -65,6 +70,7 @@ const SegmentedChoice = ({
             columns ? 'h-chiph justify-between px-3' : 'h-full justify-center',
             !columns && compact ? 'shrink-0 px-3' : '',
             !columns && !compact ? 'min-w-0 flex-1 basis-0 px-1' : '',
+            fitWide ? '@3xl/shell:flex-none @3xl/shell:basis-auto @3xl/shell:px-5' : '',
             chosen
               ? 'border-acc bg-acc text-white hover:brightness-95'
               : 'border-line bg-surf text-ink hover:border-acc hover:text-acc',

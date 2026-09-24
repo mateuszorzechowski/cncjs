@@ -242,7 +242,9 @@
     "certDownload": "Download the certificate",
     "refresh": "Reload the panel",
     "refreshWhy": "Fetches the newest panel from the server.",
-    "updateReady": "A newer panel is waiting on the server. Reload to take it."
+    "updateReady": "A newer panel is waiting on the server. Reload to take it.",
+    "installTitle": "Install",
+    "refreshTitle": "Refresh the panel"
   },
   "refusal": {
     "alarm": "The machine is in alarm, so nothing was sent. Clear the alarm first.",

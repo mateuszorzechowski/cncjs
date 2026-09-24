@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Notice from '../ui/Notice';
+import SettingRow from '../ui/SettingRow';
 import { trustState } from '../machine/trust';
 import { AUTHORITY_URL, fetchAuthority } from '../machine/authority';
 import { canInstall, isInstalled, promptInstall, watchInstall } from '../machine/install';
@@ -71,36 +72,41 @@ const AppScreen = () => {
   const installed = isInstalled();
   const ready = canInstall();
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/*
-        * The button first, because it is what this screen is for. It is dead
-        * more often than it is live — everything below explains why.
-        */}
-      <Button
-        tone="primary"
-        disabled={!ready}
-        onClick={promptInstall}
-        className="h-ctl w-full"
-      >
-        {t(installed ? 'app.installed' : 'app.install')}
-      </Button>
-
-      {/*
+  /*
+   * Rows of `SettingRow`, handed back as a list rather than wrapped: the
+   * settings card lays every row of the tab out as siblings, so the rules
+   * between them and the first and last row's spacing come out the same
+   * whichever component a row came from.
+   */
+  return [
+    <SettingRow
+      key="install"
+      title={t('app.installTitle')}
+      /*
         * Why not, when not.
         *
         * Two different problems with two different answers, and only one of
         * them is fixed by a certificate — see `machine/trust`. A browser that
         * is simply being cautious about engagement gets the third message:
         * nothing is wrong, it has not offered yet.
-        */}
-      {installed ? null : (
-        <p className="m-0 shrink-0 text-note text-mut">
-          {trust ? t(trust.key) : t(ready ? 'app.ready' : 'app.notYet')}
-        </p>
-      )}
-
+        */
+      note={installed ? null : (trust ? t(trust.key) : t(ready ? 'app.ready' : 'app.notYet'))}
+    >
       {/*
+        * The button first, because it is what this row is for. It is dead
+        * more often than it is live — the note beside it says why.
+        */}
+      <Button
+        tone="primary"
+        disabled={!ready}
+        onClick={promptInstall}
+        className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start"
+      >
+        {t(installed ? 'app.installed' : 'app.install')}
+      </Button>
+    </SettingRow>,
+
+    /*
         * Reloading the panel, because the gesture that used to do it is gone.
         *
         * Pull-to-refresh is switched off across the whole panel — the same
@@ -118,21 +124,22 @@ const AppScreen = () => {
         *
         * Safe to press at any time. The port and the running job belong to
         * the server; this page re-attaches to both on the way back up.
-        */}
-      <div className="flex shrink-0 flex-col gap-2 border-t border-line pt-4">
-        <Button
-          tone={isUpdateReady() ? 'primary' : 'outline'}
-          onClick={applyUpdate}
-          className="h-ctl w-full"
-        >
-          {t('app.refresh')}
-        </Button>
-        <p className="m-0 text-note text-mut">
-          {t(isUpdateReady() ? 'app.updateReady' : 'app.refreshWhy')}
-        </p>
-      </div>
+        */
+    <SettingRow
+      key="refresh"
+      title={t('app.refreshTitle')}
+      note={t(isUpdateReady() ? 'app.updateReady' : 'app.refreshWhy')}
+    >
+      <Button
+        tone={isUpdateReady() ? 'primary' : 'outline'}
+        onClick={applyUpdate}
+        className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start"
+      >
+        {t('app.refresh')}
+      </Button>
+    </SettingRow>,
 
-      {/*
+    /*
         * The certificate, shown whether or not anything is wrong with it.
         *
         * It used to appear only while the device distrusted the server, which
@@ -142,14 +149,10 @@ const AppScreen = () => {
         * there was no way to check *which* authority a phone had ended up
         * with. An operator asking "what did I install, and is it still the
         * right one" is asking after it worked, not before.
-        */}
-      {authority ? (
-        <div className="flex shrink-0 flex-col gap-3 border-t border-line pt-4">
-          <div className="flex flex-col gap-1">
-            <h2 className="m-0 text-base font-semibold text-ink">{t('app.certTitle')}</h2>
-            <p className="m-0 text-note text-mut">{t('app.certWhat')}</p>
-          </div>
-
+        */
+    authority
+      ? (
+        <SettingRow key="cert" title={t('app.certTitle')} note={t('app.certWhat')}>
           {/*
             * The warning goes above the button, and it is not a formality.
             *
@@ -174,7 +177,7 @@ const AppScreen = () => {
             * button that claims to have done that leaves somebody waiting for
             * something that already finished.
             */}
-          <Button href={AUTHORITY_URL} className="h-ctl w-full">
+          <Button href={AUTHORITY_URL} className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start">
             {t('app.certDownload')}
           </Button>
 
@@ -202,10 +205,10 @@ const AppScreen = () => {
           <Fact label={t('app.certFingerprint')}>{authority.fingerprint}</Fact>
 
           <p className="m-0 text-note text-mut">{t('app.certLife')}</p>
-        </div>
-      ) : null}
-    </div>
-  );
+        </SettingRow>
+      )
+      : null,
+  ];
 };
 
 export default AppScreen;

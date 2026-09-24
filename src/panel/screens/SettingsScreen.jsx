@@ -3,6 +3,7 @@ import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
 import JournalLevelChoice from '../ui/JournalLevelChoice';
 import SegmentedChoice from '../ui/SegmentedChoice';
+import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
 import ConnectScreen from './ConnectScreen';
 import AppScreen from './AppScreen';
@@ -48,6 +49,8 @@ const SettingsScreen = ({ machine }) => {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2.5">
       <SegmentedChoice
+        joined
+        fitWide
         label={t('nav.settings')}
         options={TABS}
         value={tab}
@@ -83,14 +86,21 @@ const SettingsScreen = ({ machine }) => {
           {tab === 'connection' ? (
             <ConnectScreen machine={machine} />
           ) : (
-            <Card label={t('settings.app')} className="flex-1" bodyClassName="gap-4">
+            /*
+              * Rows, as drawn on 2026-09-25: a name and its note beside the
+              * control, a rule between. No caption — the tab above already
+              * says which card this is.
+              */
+            <Card className="flex-1">
               {/* How the panel looks comes before what it is installed as:
                 * it is the one thing on this tab that changes something the
                 * operator is looking at while they change it. */}
-              <ThemeChoice />
-              <span className="h-px bg-line" />
-              <JournalLevelChoice />
-              <span className="h-px bg-line" />
+              <SettingRow title={t('theme.label')}>
+                <ThemeChoice />
+              </SettingRow>
+              <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')}>
+                <JournalLevelChoice />
+              </SettingRow>
               <AppScreen />
             </Card>
           )}

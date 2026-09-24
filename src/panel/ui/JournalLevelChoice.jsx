@@ -24,21 +24,18 @@ const JournalLevelChoice = () => {
     };
   }, []);
 
+  // The control alone: its name and note are the settings row's.
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-cap font-semibold uppercase tracking-[0.08em] text-mut">
-        {t('journal.keep.label')}
-      </span>
-      <SegmentedChoice
-        label={t('journal.keep.label')}
-        options={LEVELS}
-        value={level}
-        disabled={level === null}
-        onChange={(chosen) => saveJournalLevel(chosen).then(setLevel).catch(() => {})}
-        format={(id) => t(LEVEL_KEYS[id])}
-      />
-      <span className="text-note text-mut">{t('journal.keep.note')}</span>
-    </div>
+    <SegmentedChoice
+      joined
+      fitWide
+      label={t('journal.keep.label')}
+      options={LEVELS}
+      value={level}
+      disabled={level === null}
+      onChange={(chosen) => saveJournalLevel(chosen).then(setLevel).catch(() => {})}
+      format={(id) => t(LEVEL_KEYS[id])}
+    />
   );
 };
 
