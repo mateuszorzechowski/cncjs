@@ -63,6 +63,7 @@ import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
 import {
   GRBL,
+  GRBL_ACTIVE_STATE_ALARM,
   GRBL_ACTIVE_STATE_IDLE,
   GRBL_ACTIVE_STATE_RUN,
   GRBL_ACTIVE_STATE_HOLD,
@@ -624,6 +625,17 @@ class GrblController {
       this.motionLeaseTimer = null;
 
       /*
+       * Which alarm the machine is in, by Grbl's number, or null.
+       *
+       * The status report says `Alarm` and nothing more; the number arrives
+       * once, as `ALARM:n`, and a panel that attaches afterwards would never
+       * hear it. So it is kept here and replayed. Null while in alarm is an
+       * answer too: the homing lock a reset leaves with `$22=1` has no number.
+       * Cleared the moment the machine reports anything but `Alarm`.
+       */
+      this.alarmCode = null;
+
+      /*
        * How long the firmware takes to answer, in seconds.
        *
        * Measured off the parser-state query that is being sent anyway, so it
@@ -697,6 +709,9 @@ class GrblController {
       this.runner.on('raw', noop);
 
       this.runner.on('status', (res) => {
+        if (this.alarmCode !== null && res.activeState && res.activeState !== GRBL_ACTIVE_STATE_ALARM) {
+          this.setAlarm(null);
+        }
         /**
          * Handle the scenario where a startup message is not received during UART communication.
          * A status query (?) will be issued in the `queryActivity` function.
@@ -969,6 +984,9 @@ class GrblController {
         const alarm = _.find(GRBL_ALARMS, { code: code });
 
         this.note({ level: 'error', source: 'controller', event: 'alarm', code: alarm ? `ALARM:${code}` : res.raw });
+        if (alarm) {
+          this.setAlarm(code);
+        }
 
         if (alarm) {
           // Grbl v1.1
@@ -1829,6 +1847,17 @@ class GrblController {
        * old to have one.
        */
       socket.emit('controller:motion', leaseHolder(this.motionLease, Date.now()));
+
+      // Which alarm, for a device that arrives after it was raised.
+      socket.emit('controller:alarm', this.alarmCode);
+    }
+
+    /** Remember the alarm number, and tell every attached client when it changes. */
+    setAlarm(code) {
+      if (this.alarmCode !== code) {
+        this.alarmCode = code;
+        this.emit('controller:alarm', code);
+      }
     }
 
     removeConnection(socket) {

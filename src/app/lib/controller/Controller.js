@@ -143,6 +143,18 @@ class Controller {
          * @param {object} entry - `{ id, time, level, source, event, code, port, device, program, data }`
          */
         'journal:entry': [],
+
+        /**
+         * Which alarm the machine is in, by Grbl's number.
+         *
+         * Null when there is none, and also while in the homing lock a reset
+         * leaves with `$22=1`, which Grbl reports without a number. Replayed
+         * to a client that attaches later.
+         *
+         * @event controller:alarm
+         * @param {number|null} code
+         */
+        'controller:alarm': [],
         'message': [],
         'watchdir:change': [],
 

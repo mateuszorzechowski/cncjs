@@ -40,6 +40,15 @@ describe('readMachine, while a program is under way', () => {
     expect(pendant({ workflow: 'idle' }).status.word).toBe('Idle');
   });
 
+  test('an alarm is read with its number, and only while the machine says Alarm', () => {
+    const alarm = { state: { status: { activeState: 'Alarm' } } };
+    expect(pendant({ ...alarm, alarm: 3 })).toMatchObject({ alarmed: true, alarm: 3 });
+    // The homing lock has no number, and is still an alarm.
+    expect(pendant({ ...alarm, alarm: null })).toMatchObject({ alarmed: true, alarm: null });
+    // A number the server has not cleared yet, over a machine that is Idle.
+    expect(pendant({ alarm: 3 })).toMatchObject({ alarmed: false, alarm: null });
+  });
+
   test('and the pad stays live while that jog is moving', () => {
     // Grbl reports `Jog` the instant the key goes down. A pad that went dark
     // then would let go of the key under the operator's finger.

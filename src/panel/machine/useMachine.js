@@ -85,6 +85,8 @@ export const useMachine = () => {
      * whose they are. See `machine/device`.
      */
     motion: null,
+    // Grbl's alarm number, or null. See `machine/alarm`.
+    alarm: null,
     /*
      * This panel's own identity, so the reading above can be compared with it.
      *
@@ -201,7 +203,7 @@ export const useMachine = () => {
         // no longer hear.
         setSnapshot((previous) => ({
           ...previous, port: '', type: '', baudrate: null, state: {}, attached: false,
-          motion: null, workflow: 'idle',
+          motion: null, workflow: 'idle', alarm: null,
         }));
       },
       'controller:state': (type, state) => {
@@ -252,6 +254,10 @@ export const useMachine = () => {
        */
       'controller:motion': (device) => {
         setSnapshot((previous) => ({ ...previous, motion: device || null }));
+      },
+      // Which alarm, by number: the status report only ever says `Alarm`.
+      'controller:alarm': (code) => {
+        setSnapshot((previous) => ({ ...previous, alarm: code ?? null }));
       },
       /**
        * Whether a program is running.
@@ -365,6 +371,7 @@ export const useMachine = () => {
           job: null,
           motion: null,
           workflow: 'idle',
+          alarm: null,
         }));
       },
     };
