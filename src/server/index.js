@@ -72,7 +72,9 @@ const createServer = (options, callback) => {
   {
     const dir = expandTilde(config.get('library.directory', path.join(path.dirname(rcfile), '.cncjs-files')));
 
-    library.open({ dir });
+    // The last machine's limits, so a time is there before the port opens.
+    library.open({ dir, machine: config.get('library.machine', null) });
+    library.on('machine', (machine) => config.set('library.machine', machine));
     log.info(`Keeping files in ${chalk.yellow(JSON.stringify(dir))}`);
   }
 
