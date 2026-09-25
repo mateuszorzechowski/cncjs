@@ -41,6 +41,13 @@ const TOKENS = {
   // The tool. The one mark on screen that has to be found without looking.
   tool: '--amb',
   /*
+   * The line of the program being cut. Not the tool's amber, which it sits
+   * right under — *"bieżąca linia innego koloru, żeby się nie zlewała ze
+   * wskaźnikiem"* (2026-09-25) — and not the path's blue; green, the panel's
+   * colour for moving.
+   */
+  current: '--grn',
+  /*
    * The toolpath.
    *
    * These *do* follow the theme, and it took a measurement to decide that
