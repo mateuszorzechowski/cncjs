@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MAX_POLAR, MIN_POLAR, orbitAbout, polarOf } from '../pivotOrbit';
+import { MAX_POLAR, MIN_POLAR, orbitAbout, pivotFor, polarOf } from '../pivotOrbit';
 
 const Z = new THREE.Vector3(0, 0, 1);
 
@@ -56,5 +56,36 @@ describe('turning the view about a point', () => {
   test('about the target itself, is the plain orbit: the target stays put', () => {
     const after = orbitAbout({ position, target, pivot: target.clone(), theta: 0.5, phi: 0.2 });
     expect(after.target.distanceTo(target)).toBeCloseTo(0, 6);
+  });
+});
+
+describe('where a turn is about', () => {
+  // Looking straight down at the table from above the part.
+  const down = () => new THREE.Ray(v(5, 5, 1000), v(0, 0, -1));
+  // A 10 mm part, 2 mm deep, standing on a floor 150 mm below its top.
+  const part = new THREE.Box3(v(0, 0, -2), v(10, 10, 0));
+  const target = v(0, 0, 0);
+
+  test('the path, when the pointer is on it', () => {
+    expect(pivotFor({ ray: down(), hit: v(5, 5, -1), box: part, floor: -150, target })).toEqual(v(5, 5, -1));
+  });
+
+  test('inside the part, when the pointer is over it but between its paths', () => {
+    // *"Czy trafiam w płaszczyznę, ale w ramach modelu — np. w otwór między
+    // ścieżkami?"* (2026-09-25): a hole in a pocket is still the part, not the
+    // floor 150 mm under it.
+    expect(pivotFor({ ray: down(), hit: null, box: part, floor: -150, target })).toEqual(v(5, 5, -1));
+  });
+
+  test('the floor, beside the part', () => {
+    const beside = new THREE.Ray(v(50, 50, 1000), v(0, 0, -1));
+    expect(pivotFor({ ray: beside, hit: null, box: part, floor: -150, target })).toEqual(v(50, 50, -150));
+  });
+
+  test('the target\'s depth, when the ray meets nothing', () => {
+    const level = new THREE.Ray(v(-500, 3, 0), v(1, 0, 0));
+    const got = pivotFor({ ray: level, hit: null, box: null, floor: -150, target: v(20, 0, 0) });
+    expect(got.x).toBeCloseTo(20, 6);
+    expect(got.y).toBeCloseTo(3, 6);
   });
 });
