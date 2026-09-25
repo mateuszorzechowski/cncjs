@@ -8,8 +8,9 @@ import { Planner, arcPoints } from './estimate';
  * when the screen asks — so this runs when a file arrives, not when it is
  * looked at. See `Library`.
  *
- * `lines` counts as the sender does (non-blank lines), so the number here is
- * the number the job's progress will count to. Bounds are of the moves, in
+ * `lines` counts the file's non-blank lines, as the sender does — but on
+ * load the Grbl controller appends a `%wait` of its own, so the job's total
+ * is one more than this. Bounds are of the moves, in
  * millimetres, from work zero; the starting point is not a move and is left
  * out. `seconds` is null when no machine has said its limits yet.
  */

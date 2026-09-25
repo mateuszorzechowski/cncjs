@@ -11,14 +11,13 @@ import { gridLabels, labelStep } from '../grid-numbers';
 
 describe('gridLabels', () => {
   const COM3 = { min: { x: -200, y: -200, z: -200 }, max: { x: 0, y: 0, z: 0 } };
-  const numbers = (labels) => labels.filter((l) => l.text !== 'mm');
 
   test('runs along the zero lines of the machine, not the far edges', () => {
     // COM3 homes to the maximum, so zero is the top-right corner of the
     // travel and both rows of figures start from it.
     const labels = gridLabels(COM3, 20);
-    const alongX = numbers(labels).filter((l) => l.key.startsWith('x'));
-    const alongY = numbers(labels).filter((l) => l.key.startsWith('y'));
+    const alongX = labels.filter((l) => l.key.startsWith('x'));
+    const alongY = labels.filter((l) => l.key.startsWith('y'));
 
     expect(alongX.length).toBeGreaterThan(0);
     expect(alongY.length).toBeGreaterThan(0);
@@ -39,7 +38,7 @@ describe('gridLabels', () => {
     // With the axis bit set in `$23` the travel is [0, range] and zero is the
     // bottom-left corner instead. The figures have to follow it.
     const flipped = { min: { x: 0, y: 0, z: 0 }, max: { x: 200, y: 200, z: 200 } };
-    const labels = numbers(gridLabels(flipped, 20));
+    const labels = gridLabels(flipped, 20);
 
     expect(labels.filter((l) => l.key.startsWith('x')).every((l) => l.y === 0)).toBe(true);
     expect(labels.filter((l) => l.key.startsWith('x')).every((l) => l.push.y === -1)).toBe(true);
@@ -48,7 +47,7 @@ describe('gridLabels', () => {
   test('stops at the machine and does not number the fade', () => {
     // Out there the grid is a hint that the floor continues. A number would
     // be a measurement of nothing.
-    const values = numbers(gridLabels(COM3, 20)).map((l) => Number(l.text));
+    const values = gridLabels(COM3, 20).map((l) => Number(l.text.replace(/ mm$/, '')));
 
     expect(Math.min(...values)).toBe(-200);
     expect(Math.max(...values)).toBe(0);
@@ -58,26 +57,26 @@ describe('gridLabels', () => {
     // 1mm squares over 200mm is two hundred lines. `labelStep` is what
     // normally keeps the figures apart; this cap is the backstop behind it,
     // because every label is a painted canvas and a texture.
-    const dense = numbers(gridLabels(COM3, 1));
+    const dense = gridLabels(COM3, 1);
 
     expect(dense.length).toBeLessThanOrEqual(2 * 40);
     // And what survives is still on round numbers.
-    expect(dense.every((l) => Number.isInteger(Number(l.text)))).toBe(true);
+    expect(dense.every((l) => Number.isInteger(Number(l.text.replace(/ mm$/, ''))))).toBe(true);
   });
 
-  test('says the unit once, where both rows of figures begin', () => {
-    // Twice was twice the ink for one fact, and each copy drifted along its
-    // own axis whenever the counting coarsened.
-    const units = gridLabels(COM3, 20).filter((l) => l.text === 'mm');
+  test('says the unit once, on the far end of the X ruler', () => {
+    // Beside the zero it moved with wherever the rulers met, which depends
+    // on the program; the end of the X ruler does not.
+    const units = gridLabels(COM3, 20).filter((l) => l.text.endsWith(' mm'));
 
     expect(units).toHaveLength(1);
-    // Anchored where the two zero lines cross, which for COM3 is the origin.
-    expect([units[0].x, units[0].y]).toEqual([0, 0]);
+    expect(units[0]).toMatchObject({ text: '-200 mm', x: -200, y: 0 });
+    expect(units[0].key.startsWith('x')).toBe(true);
   });
 
   test('the unit does not move when the counting coarsens', () => {
-    const coarse = gridLabels(COM3, 100).filter((l) => l.text === 'mm');
-    const fine = gridLabels(COM3, 20).filter((l) => l.text === 'mm');
+    const coarse = gridLabels(COM3, 100).filter((l) => l.text.endsWith(' mm'));
+    const fine = gridLabels(COM3, 20).filter((l) => l.text.endsWith(' mm'));
 
     expect(coarse.map((l) => [l.x, l.y])).toEqual(fine.map((l) => [l.x, l.y]));
   });
@@ -151,8 +150,8 @@ describe('naming the far end of the travel', () => {
   // operator most wants — how far the machine goes — unsaid.
   const AWKWARD = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 } };
   const numbersOn = (labels, axis) => labels
-    .filter((l) => l.text !== 'mm' && l.key.startsWith(axis))
-    .map((l) => Number(l.text));
+    .filter((l) => l.key.startsWith(axis))
+    .map((l) => Number(l.text.replace(/ mm$/, '')));
 
   test('says the reach even when the step does not divide it', () => {
     const labels = gridLabels(AWKWARD, 500);
@@ -210,16 +209,11 @@ describe('the shared origin', () => {
     expect(origin.push.y).not.toBe(0);
   });
 
-  test('the unit sits in the row of figures, not off the corner', () => {
-    // On the diagonal it read as a word floating free of the drawing.
-    const [origin] = gridLabels(COM3, 20).filter((l) => l.text === '0');
-    const [unit] = gridLabels(COM3, 20).filter((l) => l.text === 'mm');
-    const [alongX] = gridLabels(COM3, 20).filter((l) => l.key.startsWith('x'));
+  test('the unit is written into the far figure, never beside the zero', () => {
+    const labels = gridLabels(COM3, 20);
 
-    // Same distance off the axis as the numbers it belongs to...
-    expect(unit.push.y).toBe(alongX.push.y);
-    // ...and clear of the shared zero along it.
-    expect(Math.abs(unit.push.x)).toBeGreaterThan(Math.abs(origin.push.x));
+    expect(labels.some((l) => l.text === 'mm')).toBe(false);
+    expect(labels.find((l) => l.key === 'origin').text).toBe('0');
   });
 
   test('every other figure is still said exactly once', () => {
@@ -227,10 +221,74 @@ describe('the shared origin', () => {
     for (const label of gridLabels(COM3, 20)) {
       counts.set(label.text, (counts.get(label.text) || 0) + 1);
     }
-    // -200 is the far end of both axes, so it is legitimately said twice —
-    // once per row. Everything else appears once.
+    // -100 is on both rows; -200, the far end of both, is said once in each,
+    // the X one with the unit. Zero, shared, once.
     expect(counts.get('-100')).toBe(2);
+    expect(counts.get('-200')).toBe(1);
+    expect(counts.get('-200 mm')).toBe(1);
     expect(counts.get('0')).toBe(1);
-    expect(counts.get('mm')).toBe(1);
+  });
+});
+
+describe('gridLabels, when zero is inside what is drawn', () => {
+  // A program with its zero in the middle of the part, as the calibration
+  // file is: -25 to 25 on both axes.
+  const PART = { min: { x: -25, y: -25, z: -10 }, max: { x: 25, y: 25, z: 1 } };
+
+  test('moves the rulers to the front and right edges, off the part', () => {
+    const labels = gridLabels(PART, 10);
+    const alongX = labels.filter((l) => l.key.startsWith('x'));
+    const alongY = labels.filter((l) => l.key.startsWith('y'));
+
+    expect(alongX.every((l) => l.y === -25 && l.push.y === -1)).toBe(true);
+    expect(alongY.every((l) => l.x === 25 && l.push.x === 1)).toBe(true);
+  });
+
+  test('numbers zero in each ruler, and writes no shared zero at a corner that is not zero', () => {
+    const labels = gridLabels(PART, 10);
+
+    expect(labels.filter((l) => l.text === '0').map((l) => l.key).sort()).toEqual(['x0', 'y0']);
+    expect(labels.some((l) => l.key === 'origin')).toBe(false);
+    // At the far end of the X ruler here too, whatever the rulers did.
+    expect(labels.filter((l) => l.text.endsWith(' mm')).map((l) => l.text)).toEqual(['25 mm']);
+  });
+
+  test('names both ends of each ruler, not the round number short of one', () => {
+    // 50 × 50 about its middle, counted in twenties as the preview counted
+    // it: the ruler read -20 · 0 · 25, one end named and the other not.
+    const labels = gridLabels(PART, 20);
+    const on = (axis) => labels.filter((l) => l.key.startsWith(axis)).map((l) => Number(l.text.replace(/ mm$/, '')));
+
+    // ±20 are a quarter of a square from the ends: they give way to them.
+    expect(on('x')).toEqual([-25, 0, 25]);
+    expect(on('y')).toEqual([-25, 0, 25]);
+  });
+
+  test('moves only the ruler whose zero line would cross', () => {
+    // Zero inside along X only: the Y figures still run up the zero line.
+    const labels = gridLabels({ min: { x: -25, y: 0, z: 0 }, max: { x: 25, y: 40, z: 0 } }, 10);
+
+    expect(labels.filter((l) => l.key.startsWith('x')).every((l) => l.y === 0)).toBe(true);
+    expect(labels.filter((l) => l.key.startsWith('y')).every((l) => l.x === 25)).toBe(true);
+  });
+
+  test('a machine, with zero at a corner of its travel, is numbered as before', () => {
+    const COM3 = { min: { x: -200, y: -200, z: -200 }, max: { x: 0, y: 0, z: 0 } };
+    const labels = gridLabels(COM3, 20);
+
+    expect(labels.filter((l) => l.key === 'origin')).toHaveLength(1);
+    expect(labels.filter((l) => l.key.startsWith('x')).every((l) => l.y === 0)).toBe(true);
+  });
+});
+
+describe('a figure', () => {
+  test('is printed to a tenth at most, so the far end of a program is not the widest thing on the ruler', () => {
+    // jsdc's reach in Y, exactly as the file has it.
+    const area = { min: { x: 0, y: -58.1149, z: -1 }, max: { x: 102.3526, y: 0, z: 1 } };
+    const texts = gridLabels(area, 10).map((l) => l.text);
+
+    expect(texts).toContain('-58.1');
+    expect(texts).toContain('102.4 mm');
+    expect(texts.some((text) => /\.\d\d/.test(text))).toBe(false);
   });
 });

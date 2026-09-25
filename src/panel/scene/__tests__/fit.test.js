@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { boundsBox, currentDirection, fitToBounds } from '../fit';
+import { boundsBox, currentDirection, fitToBounds, fitWithRulers } from '../fit';
+import fitCameraToBounds from '../../../lib/toolpath/camera-fit';
 
 // The frustum is fixed and framing is done with `zoom`, which is how the
 // orthographic camera in this scene is driven.
@@ -112,5 +113,54 @@ describe('filling the frame with the object', () => {
 
     expect(c.zoom).toBeCloseTo(zoom, 6);
     expect(second.distanceTo(first)).toBeLessThan(1e-6);
+  });
+});
+
+describe('framing with room for the rulers', () => {
+  const ISO = new THREE.Vector3(1, -1, 1).normalize();
+  // The octocat: a hundred millimetres square and thirty-seven tall.
+  const TALL = boundsBox({ min: { x: 0, y: 0, z: 0.2 }, max: { x: 100, y: 100, z: 37.4 } });
+  const RULERS = 62;
+
+  // Where the octocat's figures stand: zero is its corner, so the X ruler
+  // runs along the front (min Y), the Y ruler up the left (min X), and the
+  // unit is at the far, right-hand end of the X ruler (max X). Not behind.
+  const rulerCorners = (box, room) => [
+    [box.min.x - room, box.min.y - room], [box.max.x + room, box.min.y - room],
+    [box.min.x - room, box.max.y], [box.max.x + room, box.max.y],
+  ].map(([x, y]) => new THREE.Vector3(x, y, box.min.z));
+
+  test('leaves room on the floor where the rulers stand, inside the frame', () => {
+    const c = camera(4 / 3, 244);
+    fitWithRulers(c, TALL, ISO, RULERS);
+    c.updateMatrixWorld(true);
+
+    // The figures stand this far out from the floor's edge, on screen.
+    const room = (RULERS * 0.95) / c.zoom;
+    rulerCorners(TALL, room).forEach((corner) => {
+      const p = corner.project(c);
+      expect(Math.abs(p.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(p.y)).toBeLessThanOrEqual(1);
+    });
+  });
+
+  test('frames a tall part larger than a margin all round would', () => {
+    const c = camera(4 / 3, 244);
+    fitWithRulers(c, TALL, ISO, RULERS);
+
+    // A margin of screen pixels on every side, as it was first done.
+    const margin = camera(4 / 3, 244 - (2 * RULERS));
+    fitCameraToBounds(margin, TALL, ISO);
+
+    expect(c.zoom).toBeGreaterThan(margin.zoom * 1.15);
+  });
+
+  test('with no rulers, is the plain fit', () => {
+    const plain = camera();
+    const ruled = camera();
+    fitCameraToBounds(plain, TALL, ISO);
+    fitWithRulers(ruled, TALL, ISO, 0);
+
+    expect(ruled.zoom).toBeCloseTo(plain.zoom, 9);
   });
 });

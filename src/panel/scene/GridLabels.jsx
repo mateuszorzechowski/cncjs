@@ -47,6 +47,13 @@ const TEXT_PIXELS = 20;
  */
 const GAP_PIXELS = 22;
 
+/**
+ * The room the figures take outside the grid's edge, in screen pixels: the
+ * gap and about two figure-heights of text. A view is framed with this much
+ * clear on every side (`Controls`), so the rulers are in the picture.
+ */
+export const RULER_PIXELS = GAP_PIXELS + (2 * TEXT_PIXELS);
+
 // Pixels per world unit in the texture. Three times the size a label is ever
 // drawn on screen, so it stays sharp when the view is zoomed into a corner.
 const RESOLUTION = 64;
@@ -116,16 +123,23 @@ const GridLabels = ({ area, step, z, color }) => {
 
     const scale = TEXT_PIXELS / camera.zoom;
     const gap = GAP_PIXELS / camera.zoom;
+    // Figures counted for another zoom are hidden until the recount arrives,
+    // one render later: shown, the first frame of a view printed every
+    // millimetre on top of each other.
+    const settled = next === spacing;
     for (let i = 0; i < groups.current.length; ++i) {
       const group = groups.current[i];
       const label = labels[i];
       if (group && label) {
+        group.visible = settled;
         group.scale.setScalar(scale);
         // Offset in pixels rather than in millimetres, so neither the numbers
-        // nor the unit drift when the counting coarsens.
+        // nor the unit drift when the counting coarsens — and measured from
+        // the figure's near edge rather than its middle, so a long one keeps
+        // the same gap to the axis as a short one instead of running into it.
         group.position.set(
-          label.x + (label.push.x * gap),
-          label.y + (label.push.y * gap),
+          label.x + (label.push.x * (gap + ((label.width * scale) / 2))),
+          label.y + (label.push.y * (gap + ((label.height * scale) / 2))),
           z
         );
       }

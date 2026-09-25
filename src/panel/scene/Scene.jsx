@@ -1,4 +1,5 @@
 import { Canvas } from '@react-three/fiber';
+import Drawn from './Drawn';
 import Axes from './Axes';
 import Controls from './Controls';
 import Grid from './Grid';
@@ -32,6 +33,7 @@ const TOOL_GUIDE_OPACITY = 0.2;
 
 const Scene = ({
   scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking, progress,
+  onGrab, glideMs, onReady,
 }) => {
   const colors = useSceneColors();
   const { envelope, origin, toolpath, program, offset, frame } = scene;
@@ -109,6 +111,8 @@ const Scene = ({
         object={program}
         fit={fit}
         onFree={onFree}
+        onGrab={onGrab}
+        glideMs={glideMs}
         floor={floor}
       />
 
@@ -192,6 +196,7 @@ const Scene = ({
       {tool ? (
         <ToolMarker position={tool} color={colors.tool} floor={floor} />
       ) : null}
+      {onReady ? <Drawn onReady={onReady} /> : null}
     </Canvas>
   );
 };

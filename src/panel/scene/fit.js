@@ -3,6 +3,7 @@ import * as THREE from 'three';
 // Jest has no module mapping for it, and arithmetic that cannot be imported
 // into a test is arithmetic nobody checks. Webpack resolves both.
 import fitCameraToBounds from '../../lib/toolpath/camera-fit';
+import { rulerSides } from './grid-numbers';
 
 /**
  * Framing one object without turning the camera.
@@ -45,5 +46,53 @@ export const fitToBounds = (camera, target, bounds) => fitCameraToBounds(
   boundsBox(bounds),
   currentDirection(camera, target)
 );
+
+/**
+ * Frame `box` from `direction` with room on the floor for the grid's
+ * figures, which stand `rulerPixels` outside the floor's edges at a fixed
+ * size on screen.
+ *
+ * The room is added to the floor rather than around the whole frame. A
+ * margin of screen pixels on every side took half of a small preview for
+ * figures that stand on two sides at most, and a tall part — whose top, not
+ * its floor, is what meets the frame above — came out small (the octocat,
+ * Mateusz, 2026-09-25). Widening the floor makes room exactly where the
+ * figures are and nowhere a taller part already reaches.
+ *
+ * Only on the sides that have figures — `rulerSides`, the rule the grid
+ * draws them by: the side of Y the X figures run along, and in X the side
+ * the Y figures run along and the far end of the X ruler, where the unit
+ * is. Widened all round, the back of the floor rose above a tall part's top
+ * and took the room back.
+ *
+ * Pixels on screen are millimetres over the zoom, and the zoom depends on
+ * the room, so the fit is taken a few times until it settles. Returns what
+ * the last fit returns: the point the camera looks at.
+ */
+export const RULER_FIT_PASSES = 3;
+
+export const fitWithRulers = (camera, box, direction, rulerPixels) => {
+  const { outX, outY } = rulerSides(box);
+  const farX = Math.abs(box.min.x) > Math.abs(box.max.x) ? -1 : 1;
+  let target = fitCameraToBounds(camera, box, direction);
+  for (let i = 1; i < RULER_FIT_PASSES; i++) {
+    const room = rulerPixels / camera.zoom;
+    const widen = (side, out) => (side === out ? room : 0);
+    const floor = new THREE.Box3(
+      new THREE.Vector3(
+        box.min.x - Math.max(widen(-1, outX), widen(-1, farX)),
+        box.min.y - widen(-1, outY),
+        box.min.z
+      ),
+      new THREE.Vector3(
+        box.max.x + Math.max(widen(1, outX), widen(1, farX)),
+        box.max.y + widen(1, outY),
+        box.min.z
+      )
+    );
+    target = fitCameraToBounds(camera, box.clone().union(floor), direction);
+  }
+  return target;
+};
 
 export default fitToBounds;

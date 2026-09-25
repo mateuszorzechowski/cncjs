@@ -1,12 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import fitCameraToBounds from 'lib/toolpath/camera-fit';
-import { fitToBounds } from './fit';
+import { fitToBounds, fitWithRulers } from './fit';
 import { recallCamera, rememberCamera } from './cameraMemory';
 import { UP, VIEWS } from './views';
 import { orbitAbout, pivotFor } from './pivotOrbit';
+import { glide, poseOf } from './glide';
+import { RULER_PIXELS } from './GridLabels';
 
 /**
  * The camera: four named views, and a mouse that can go anywhere.
@@ -32,10 +33,18 @@ import { orbitAbout, pivotFor } from './pivotOrbit';
  */
 const TWO_PI = Math.PI * 2;
 
+/*
+ * A full turn takes a drag of the canvas's height, but never less than this.
+ * On a phone the preview is under two hundred pixels tall, and a thumb's
+ * flick spun the part round several times (Mateusz, 2026-09-25); a desk's
+ * toolpath screen is about this tall, so it turns as it always has.
+ */
+const TURN_PIXELS = 600;
+
 // How close, in pixels, a drag has to start to the drawn path to turn about it.
 const PATH_PICK_PIXELS = 6;
 
-const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }) => {
+const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab, glideMs = 0, floor }) => {
   const camera = useThree((state) => state.camera);
   const scene = useThree((state) => state.scene);
   // Read through a ref, like the callback: a new floor must not rebuild the
@@ -52,6 +61,10 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
   // and rebuild the orbit controls — which would drop the camera pose with it.
   const free = useRef(onFree);
   free.current = onFree;
+  const grab = useRef(onGrab);
+  grab.current = onGrab;
+  // A glide under way, stopped by a hand that takes the camera again.
+  const stopGlide = useRef(null);
 
   // What the remembered pose was framed against, and whether this mount has
   // already had its first go.
@@ -64,7 +77,11 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
   // destination: it has no state to compare against, only a count of asks.
   const fitted = useRef(fit);
 
-  useEffect(() => {
+  // Layout effects, this one and the framing below: they run before the
+  // canvas draws its first frame, where a passive effect ran after it and the
+  // preview showed the default camera — a plan view — for a frame before the
+  // view it was asked for (Mateusz, 2026-09-25).
+  useLayoutEffect(() => {
     /*
      * **Z is up, and it has to be said before the controls are built.**
      *
@@ -163,6 +180,8 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
      */
     let poseAtStart = null;
     const begin = () => {
+      stopGlide.current?.();
+      grab.current?.();
       poseAtStart = {
         position: camera.position.toArray(),
         zoom: camera.zoom,
@@ -194,7 +213,8 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
      * the drag started on instead (`orbitAbout`), chosen by `pivotFor`: the
      * path under the pointer, else inside the part when the pointer is over
      * it, else the machine's floor there, else the target's depth.
-     * The rate is the controls' own, a full turn per canvas height.
+     * The rate is a full turn per canvas height, or per `TURN_PIXELS` on a
+     * canvas shorter than that.
      *
      * The left button, or one finger. Shift or Ctrl with the left button, the
      * right button and two fingers are still the controls' pan and zoom — a
@@ -258,7 +278,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
       if (!turning || event.pointerId !== turning.id) {
         return;
       }
-      const height = domElement.clientHeight || 1;
+      const height = Math.max(domElement.clientHeight || 1, TURN_PIXELS);
       const dx = event.clientX - turning.x;
       const dy = event.clientY - turning.y;
       turning.x = event.clientX;
@@ -315,7 +335,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
    * the button would look broken. The widget counts presses instead, and the
    * count is what this watches.
    */
-  useEffect(() => {
+  useLayoutEffect(() => {
     const orbit = controls.current;
     if (!orbit) {
       return;
@@ -379,10 +399,14 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
       new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.max.z)
     );
 
-    const target = fitCameraToBounds(
+    const from = poseOf(camera, orbit.target);
+    // With room on the floor for the figures along the grid's edges, so a
+    // view shows its rulers too — see `fitWithRulers`.
+    const target = fitWithRulers(
       camera,
       box,
-      new THREE.Vector3().fromArray(VIEWS[view].direction)
+      new THREE.Vector3().fromArray(VIEWS[view].direction),
+      RULER_PIXELS
     );
 
     // Orbit about what the camera was framed on, rather than about wherever
@@ -391,8 +415,26 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
     orbit.target.copy(target);
     orbit.update();
     rememberCamera(memory, signature.current, camera, orbit.target);
+
+    // Framed; now, where asked for, carried there rather than cut to it —
+    // from where the camera was, which the fit above has just overwritten.
+    if (glideMs > 0 && !first) {
+      const to = poseOf(camera, orbit.target);
+      // Put the camera back where it was before anything draws: the fit's
+      // own `update()` has already asked for a frame, and that frame showed
+      // the destination for an instant before the glide set off towards it
+      // — the jump Mateusz saw after zooming out (2026-09-25).
+      camera.position.fromArray(from.position);
+      camera.zoom = from.zoom;
+      camera.updateProjectionMatrix();
+      orbit.target.fromArray(from.target);
+      orbit.update();
+      stopGlide.current?.();
+      stopGlide.current = glide({ camera, orbit, from, to, ms: glideMs, invalidate });
+      return;
+    }
     invalidate();
-  }, [camera, view, bounds, revision, invalidate, memory]);
+  }, [camera, view, bounds, revision, invalidate, memory, glideMs]);
 
   /*
    * **Fill the frame with the object, and do not turn the camera.**
