@@ -72,9 +72,17 @@ const createServer = (options, callback) => {
   {
     const dir = expandTilde(config.get('library.directory', path.join(path.dirname(rcfile), '.cncjs-files')));
 
+    // What the start events send before every program: the check counts
+    // a modal group they set as set. `system` events run a shell, not G-code.
+    const start = () => ensureArray(config.get('events', []))
+      .filter(event => event?.enabled && event.event === 'gcode:start' && event.trigger !== 'system')
+      .map(event => ensureString(event.commands))
+      .join('\n');
+
     // The last machine's limits, so a time is there before the port opens.
-    library.open({ dir, machine: config.get('library.machine', null) });
+    library.open({ dir, machine: config.get('library.machine', null), start: start() });
     library.on('machine', (machine) => config.set('library.machine', machine));
+    config.on('change', () => library.setStart(start()));
     log.info(`Keeping files in ${chalk.yellow(JSON.stringify(dir))}`);
   }
 

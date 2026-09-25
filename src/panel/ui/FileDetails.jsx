@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import Button from './Button';
+import CheckSheet from './CheckSheet';
 import FilePreview from './FilePreview';
 import StatTile from './StatTile';
-import { areaText, durationText, toolsText } from './fileWords';
+import { areaText, durationText, toolsText, verdictText, verdictTone } from './fileWords';
 import { canLoad, isLoaded } from '../machine/files';
 import { NO_READING } from '../machine/readings';
 import { t } from '../i18n';
@@ -24,7 +26,9 @@ const loadNote = (machine) => {
 };
 
 const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDelete }) => {
+  const [checking, setChecking] = useState(false);
   const analysis = file.analysis;
+  const check = analysis?.check;
   const loaded = isLoaded(machine, file.name);
   const loadable = canLoad(machine);
   const zmin = analysis?.bounds ? t('files.mm', { mm: analysis.bounds.min.z }) : NO_READING;
@@ -50,15 +54,19 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
       </div>
 
       {/*
-        * Where the checks go — the server's, made when the file is kept, and
-        * the controller's, `$C` — laid out now so the card does not change
-        * shape when they arrive (Mateusz, 2026-09-25). Both are the next
-        * change; until then the state says so and the button is greyed out.
+        * The two checks: the server's, made when the file is kept and opened
+        * from its verdict, and the controller's, `$C` — which is the next
+        * change, so its button is greyed out until then.
         */}
       <section className="flex shrink-0 flex-col gap-2" aria-label={t('files.check.title')}>
         <span className="text-cap font-semibold uppercase tracking-[0.12em] text-mut">{t('files.check.title')}</span>
         <div className="grid grid-cols-2 gap-2">
-          <StatTile label={t('files.check.state')} value={t('files.check.none')} />
+          <StatTile
+            label={t('files.check.state')}
+            value={verdictText(check)}
+            tone={verdictTone(check)}
+            onPress={check ? () => setChecking(true) : undefined}
+          />
           <Button className="h-auto px-3" disabled>{t('files.check.controller')}</Button>
         </div>
       </section>
@@ -84,6 +92,8 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
           )}
         </div>
       </div>
+
+      {checking && check ? <CheckSheet name={file.name} check={check} onClose={() => setChecking(false)} /> : null}
     </div>
   );
 };

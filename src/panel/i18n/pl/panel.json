@@ -638,7 +638,31 @@
       "title": "Kontrola",
       "state": "stan",
       "none": "nie sprawdzono",
-      "controller": "Sprawdź na sterowniku"
+      "controller": "Sprawdź na sterowniku",
+      "sheet": "Kontrola pliku",
+      "verdict": {
+        "ok": "OK",
+        "warnings": "ostrzeżenia",
+        "incompatible": "niezgodny"
+      },
+      "note": {
+        "ok": "Grbl 1.1 przyjmie każdą linię tego programu.",
+        "warnings": "Grbl przyjmie ten program, ale sprawdź to, zanim go uruchomisz.",
+        "incompatible": "Grbl odrzuci część linii i program stanie na pierwszej z nich. Wczytać go nadal można."
+      },
+      "issue": {
+        "unsupported": "{{word}} — Grbl 1.1 nie zna tego kodu",
+        "badWord": "Litera {{word}} — Grbl 1.1 jej nie czyta",
+        "tooLong": "Linia dłuższa niż 79 znaków — nie zmieści się w buforze Grbla",
+        "arc": "Łuk {{word}}, którego koniec nie leży na jego okręgu — Grbl go odrzuci",
+        "undeclared": "{{word}} nieustawione przed pierwszym ruchem — program weźmie to, co zostawił poprzedni",
+        "toolChange": "M6 — program stanie na wymianę narzędzia",
+        "mist": "M7 — chłodziwo mgłą; domyślny Grbl 1.1 go nie ma"
+      },
+      "where": {
+        "one": "linia {{line}}",
+        "many": "linia {{line}} · {{count}} razy"
+      }
     }
   },
   "confirm": {

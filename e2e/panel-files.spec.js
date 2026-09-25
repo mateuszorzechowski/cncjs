@@ -19,6 +19,13 @@ const ANALYSED = {
     bounds: { min: { x: 0, y: 0, z: -6 }, max: { x: 420, y: 290, z: 5 } },
     tools: [3, 7],
     seconds: 1913.5,
+    check: {
+      verdict: 'incompatible',
+      issues: [
+        { code: 'undeclared', severity: 'warning', word: 'G20/G21', line: 1, count: 1 },
+        { code: 'unsupported', severity: 'incompatible', word: 'G41', line: 12, count: 340 },
+      ],
+    },
   },
 };
 const PENDING = { name: 'drawer.nc', size: 88000, mtime: '2026-09-24T09:00:00.000Z', analysis: null };
@@ -149,6 +156,30 @@ test.describe('the files screen', () => {
     cncjs.expectNoPageErrors();
   });
 
+  test("the check's verdict opens what it found, each problem once", async ({ cncjs }) => {
+    const { page } = cncjs;
+    await serve(page, [{ files: [ANALYSED], disk: DISK }]);
+    await open(page);
+    await page.getByRole('button', { name: /front-panel\.nc/ }).click();
+
+    const verdict = page.getByRole('button', { name: /stan/ });
+    await expect(verdict).toContainText('niezgodny');
+    await verdict.click();
+
+    const sheet = page.getByRole('dialog', { name: 'Kontrola pliku' });
+    await expect(sheet.getByText('Grbl odrzuci część linii', { exact: false })).toBeVisible();
+    await expect(sheet.getByText('G41 — Grbl 1.1 nie zna tego kodu')).toBeVisible();
+    await expect(sheet.getByText('linia 12 · 340 razy')).toBeVisible();
+    await expect(sheet.getByText('G20/G21 nieustawione przed pierwszym ruchem', { exact: false })).toBeVisible();
+    await expect(sheet.getByText('linia 1', { exact: true })).toBeVisible();
+
+    await sheet.getByRole('button', { name: 'Gotowe', exact: true }).click();
+    await expect(sheet).toHaveCount(0);
+    // Not a gate: an incompatible file is still loaded the usual way.
+    await expect(page.getByText('Połącz maszynę, żeby wczytać program.')).toBeVisible();
+    cncjs.expectNoPageErrors();
+  });
+
   test('a file still being analysed shows dashes, not zeros', async ({ cncjs }) => {
     const { page } = cncjs;
     await serve(page, [{ files: [ANALYSED, PENDING], disk: DISK }]);
@@ -159,6 +190,9 @@ test.describe('the files screen', () => {
     const tiles = page.getByText('linie', { exact: true }).locator('..');
     await expect(tiles).toContainText('–');
     await expect(page.getByText('0', { exact: true })).toHaveCount(0);
+    // Not checked yet, and nothing to open.
+    await expect(page.getByText('nie sprawdzono', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /stan/ })).toHaveCount(0);
   });
 
   test('delete asks first, names the file in its own case, and only then deletes', async ({ cncjs }) => {

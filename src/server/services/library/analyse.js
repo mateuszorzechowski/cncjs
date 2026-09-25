@@ -1,5 +1,6 @@
 import Toolpath from 'gcode-toolpath';
 import { Planner, arcPoints } from './estimate';
+import { createCheck } from './check';
 
 /**
  * What the Pliki screen shows about a program, worked out on the server.
@@ -13,6 +14,9 @@ import { Planner, arcPoints } from './estimate';
  * is one more than this. Bounds are of the moves, in
  * millimetres, from work zero; the starting point is not a move and is left
  * out. `seconds` is null when no machine has said its limits yet.
+ *
+ * `check` is whether Grbl will take it — see `check`; `start` is what the
+ * `gcode:start` events send before every program.
  */
 
 /**
@@ -45,7 +49,8 @@ const MACHINE_AXES = {
   G19: ({ x, y, z }) => ({ x: z, y: x, z: y }),
 };
 
-const analyse = async (text, machine) => {
+const analyse = async (text, machine, start = '') => {
+  const check = createCheck(start);
   const planner = machine ? new Planner(machine) : null;
   const min = { x: Infinity, y: Infinity, z: Infinity };
   const max = { x: -Infinity, y: -Infinity, z: -Infinity };
@@ -53,6 +58,7 @@ const analyse = async (text, machine) => {
   let feed = 0;
   let inches = false;
   let pending = [];
+  let number = 0;
 
   const reach = (point) => {
     for (const axis of ['x', 'y', 'z']) {
@@ -77,7 +83,9 @@ const analyse = async (text, machine) => {
 
   // A line's moves arrive before the line itself, so they wait here for the
   // F, the dwell and the stops that the line carries.
-  const onLine = ({ words }) => {
+  const onLine = (data) => {
+    const { words } = data;
+    number++;
     const codes = new Set(words.map(([letter, value]) => `${letter}${value}`));
     const word = (letter) => words.find(([l]) => l === letter)?.[1];
 
@@ -114,6 +122,7 @@ const analyse = async (text, machine) => {
         planner.stop();
       }
     }
+    check.line(number, data, pending);
     pending = [];
   };
 
@@ -130,6 +139,7 @@ const analyse = async (text, machine) => {
     bounds: moved ? { min, max } : null,
     tools: [...tools].sort((a, b) => a - b),
     seconds: planner ? planner.finish() : null,
+    check: check.result(),
   };
 };
 
