@@ -10,7 +10,7 @@ import Notice from '../ui/Notice';
 import Sheet from '../ui/Sheet';
 import { sizeText } from '../ui/fileWords';
 import { useIsPhone } from '../ui/shell';
-import { deleteFile, diskLow, diskUsed, isLoaded, loadFile, reasonOf, writeFile } from '../machine/files';
+import { deleteFile, diskLibrary, diskLow, diskUsed, isLoaded, loadFile, reasonOf, writeFile } from '../machine/files';
 import { unloadProgram } from '../machine/commands';
 import { useFiles } from '../machine/useFiles';
 import { t } from '../i18n';
@@ -53,10 +53,27 @@ const DiskRoom = ({ disk }) => {
   const low = diskLow(disk);
   return (
     <div className="flex shrink-0 flex-col gap-2 border-t border-line pt-3">
-      <Meter percent={diskUsed(disk)} tone={low ? 'bg-red' : 'bg-acc'} label={t('files.disk.label')} />
+      {/*
+        * What the rest of the computer uses in grey, cncjs's own files in the
+        * accent at the end of it — *"czy tutaj mozemy pokazac tez zajete
+        * miejsce przez cnc panel innym kolorem?"* (2026-09-25). Red for the
+        * rest when the disk is nearly full, which is the warning below.
+        */}
+      <Meter
+        percent={diskUsed(disk)}
+        tone={low ? 'bg-red' : 'bg-mut'}
+        part={{ percent: diskLibrary(disk), tone: 'bg-acc' }}
+        label={t('files.disk.label')}
+      />
       <span className="font-num text-note text-mut">
         {t('files.disk.free', { free: sizeText(disk.free), total: sizeText(disk.total) })}
-        {disk.library !== undefined ? <>{' · '}{t('files.disk.library', { size: sizeText(disk.library) })}</> : null}
+        {disk.library !== undefined ? (
+          <>
+            {' · '}
+            <span className="mr-1 inline-block size-2 bg-acc" aria-hidden="true" />
+            {t('files.disk.library', { size: sizeText(disk.library) })}
+          </>
+        ) : null}
       </span>
       {low ? <Notice>{t('files.disk.low')}</Notice> : null}
     </div>

@@ -9,7 +9,14 @@
  * Kept as its own component so the exception is here, written down, instead of
  * appearing wherever somebody next needs a bar.
  */
-const Meter = ({ percent, max = 100, label, tone = 'bg-acc' }) => {
+/*
+ * `part` is a share of the filled length drawn at its end in a colour of its
+ * own — `{ percent, tone }`, a percentage of what is filled. At least a few
+ * pixels, so a part that is real is never drawn as nothing: cncjs's files are
+ * megabytes on a disk of hundreds of gigabytes, and the point of drawing them
+ * is to say they are there (Mateusz, 2026-09-25).
+ */
+const Meter = ({ percent, max = 100, label, tone = 'bg-acc', part }) => {
   const clamped = Math.max(0, Math.min(max, Number(percent) || 0));
 
   return (
@@ -22,7 +29,12 @@ const Meter = ({ percent, max = 100, label, tone = 'bg-acc' }) => {
       aria-valuenow={clamped}
     >
       {/* eslint-disable-next-line react/forbid-dom-props */}
-      <div className={`h-full ${tone}`} style={{ width: `${(clamped / max) * 100}%` }} />
+      <div className={`flex h-full justify-end ${tone}`} style={{ width: `${(clamped / max) * 100}%` }}>
+        {part && part.percent > 0 ? (
+          // eslint-disable-next-line react/forbid-dom-props
+          <div className={`h-full min-w-[3px] ${part.tone}`} style={{ width: `${part.percent}%` }} />
+        ) : null}
+      </div>
     </div>
   );
 };

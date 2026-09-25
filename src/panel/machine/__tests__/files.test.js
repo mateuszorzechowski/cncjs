@@ -1,4 +1,4 @@
-import { canLoad, checkBlocker, diskLow, diskUsed, durationParts, isLoaded, reasonOf, sizeParts, LOW_BYTES } from '../files';
+import { canLoad, checkBlocker, diskLibrary, diskLow, diskUsed, durationParts, isLoaded, reasonOf, sizeParts, LOW_BYTES } from '../files';
 
 describe('a size', () => {
   test.each([
@@ -38,6 +38,13 @@ describe('the disk', () => {
 
   test('used is a percentage of the whole', () => {
     expect(diskUsed({ total: 200, free: 50 })).toBe(75);
+  });
+
+  test('cncjs files are a share of what is used, not of the whole disk', () => {
+    // 150 used, 30 of it ours: a fifth of the filled length.
+    expect(diskLibrary({ total: 200, free: 50, library: 30 })).toBe(20);
+    expect(diskLibrary({ total: 200, free: 50 })).toBe(0);
+    expect(diskLibrary(null)).toBe(0);
   });
 });
 
