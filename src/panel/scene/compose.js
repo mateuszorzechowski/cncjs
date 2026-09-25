@@ -112,12 +112,25 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
    */
   const origin = workOrigins(settings).find((system) => system.name === wcs) || null;
 
-  const frame = union([
+  const drawn = union([
     (layers.path || layers.programArea) && program,
     layers.machineArea && envelope,
     layers.machineAxes && { min: MACHINE_ZERO, max: MACHINE_ZERO },
     layers.wcsAxes && origin && pointBox(origin),
   ].filter(Boolean)) || UNIT;
+
+  /*
+   * **Down to the machine's floor, always.** The grid lies there, and it is
+   * the plane everything else is read against. Framed on what is switched on
+   * and nothing more, a side view with the envelope off showed the part
+   * hanging in nothing, the floor out of frame below it — *"jak mam
+   * odznaczone obwiednie maszyny, to w rzucie z boku nie widzę płaszczyzny
+   * maszyny"* (2026-09-25). Across, the frame is still only what is on; seen
+   * from above this changes nothing.
+   */
+  const frame = envelope
+    ? { min: { ...drawn.min, z: Math.min(drawn.min.z, envelope.min.z) }, max: drawn.max }
+    : drawn;
 
   return {
     envelope,

@@ -64,11 +64,20 @@ const SubGrid = ({ area, z, color, step, coarse }) => {
 
   return (
     <lineSegments geometry={geometry}>
-      <lineBasicMaterial ref={material} vertexColors transparent opacity={0} />
+      <lineBasicMaterial ref={material} vertexColors transparent opacity={0} depthWrite={false} />
     </lineSegments>
   );
 };
 
+/*
+ * No line here writes depth. They are faint and they lie under everything,
+ * so there is nothing for them to hide — and writing it hid the grid from
+ * itself: seen edge-on, from the front or the side, every line collapses onto
+ * one row of pixels, and the nearest one — out in the fade, all but
+ * transparent — won the depth test and blocked the rest. The floor came out
+ * at 216 against a ground of 247, where from the side it was 133. Measured
+ * 2026-09-25, when the plane could not be seen in a side view.
+ */
 const Grid = ({ area, z, color }) => {
   const { lines, axes, step } = useMemo(() => buildGrid(area, z, color), [area, z, color]);
   const fine = fineStep(step);
@@ -85,7 +94,7 @@ const Grid = ({ area, z, color }) => {
           * rather than compete with the toolpath drawn on top of it. The
           * opacity here is the weight of the whole set; the fade towards the
           * edges is multiplied into it from the vertices. */}
-        <lineBasicMaterial vertexColors transparent opacity={0.16} />
+        <lineBasicMaterial vertexColors transparent opacity={0.16} depthWrite={false} />
       </lineSegments>
 
       {fine ? (
@@ -93,7 +102,7 @@ const Grid = ({ area, z, color }) => {
       ) : null}
 
       <lineSegments geometry={axes}>
-        <lineBasicMaterial vertexColors transparent opacity={0.5} />
+        <lineBasicMaterial vertexColors transparent opacity={0.5} depthWrite={false} />
       </lineSegments>
 
       <GridLabels area={area} step={step} z={z} color={color} />
