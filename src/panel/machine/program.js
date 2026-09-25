@@ -11,12 +11,14 @@
  * those reasons too. **Pause and Resume are not**: they are how a program is
  * steered, and the server lets them through while it runs (`program-gate.js`).
  */
-export const programControls = ({ connected, canMove, workflow, job }) => {
+export const programControls = ({ connected, canMove, workflow, job, alarmed }) => {
   const paused = connected && workflow === 'paused';
 
   return {
     canStart: Boolean(connected && canMove && job && workflow === 'idle'),
-    canPause: Boolean(connected && (workflow === 'running' || paused)),
+    // Not a resume in alarm: Grbl there resumes nothing, and a lit Wznów was
+    // one more key that did nothing (2026-09-25). Przerwij is the way on.
+    canPause: Boolean(connected && (workflow === 'running' || (paused && !alarmed))),
     paused: Boolean(paused),
   };
 };

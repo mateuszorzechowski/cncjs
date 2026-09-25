@@ -301,7 +301,8 @@
     "noServer": "The panel cannot reach its server. Check that it is running, which host this panel is pointed at, and -- if it is served over HTTPS -- whether the certificate has expired: a browser will not say which of those it is.",
     "alarm": "Home the machine, or unlock it, before anything will move. Until then the server sends nothing at all.",
     "attaching": "A port is open and the panel is attaching to it. Nothing to do but wait a moment.",
-    "noPort": "No port is open. Choose one and connect."
+    "noPort": "No port is open. Choose one and connect.",
+    "alarmInProgram": "The alarm stopped a program. Stop it first — only then can the machine be unlocked or homed. Until then the server sends nothing."
   },
   "alerts": {
     "noDetail": "The panel has nothing more specific to say about it.",
@@ -542,7 +543,8 @@
     "home": "Home",
     "unlock": "Unlock",
     "unlockWarning": "Unlock only if you know where the machine is — the coordinates may not match reality.",
-    "code": "ALARM:{{code}}"
+    "code": "ALARM:{{code}}",
+    "abort": "Stop the program"
   },
   "picker": {
     "previous": "Previous month",

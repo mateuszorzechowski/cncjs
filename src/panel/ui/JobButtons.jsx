@@ -35,13 +35,16 @@ const JobButtons = ({ machine, className: size = '', grow = false }) => {
       tone={paused ? 'primary' : 'hold'}
       disabled={!canPause}
       onClick={() => pressPause(controller, paused)}
-      className={canPause ? first : size}
+      className={canPause || paused ? first : size}
     >
       {paused ? t('job.resume') : t('job.pause')}
     </Button>
   );
 
-  if (canPause) {
+  // A program is on while it can be paused or while it is paused — even when
+  // it cannot be resumed, as after an alarm: Przerwij is the way on then, and
+  // it has to stay (2026-09-25).
+  if (canPause || paused) {
     return (
       <div className="contents">
         {pause}
