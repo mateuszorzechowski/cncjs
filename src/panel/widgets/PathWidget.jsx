@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Card from '../ui/Card';
 import PathStage from '../ui/PathStage';
 import { cancelTravel, canGoToPoint, goToPoint } from '../machine/goto';
@@ -166,16 +166,27 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
    * taken. The path is in the program's coordinates, the tool in the
    * machine's, and the work offset is the difference. Nothing while no
    * program is running — the path is simply the path.
+   *
+   * The line found is kept, since the next can only be it or a later one;
+   * forgotten with the run, and when the count starts again from the top.
    */
   const running = machine.workflow === 'running' || machine.workflow === 'paused';
+  const reached = useRef({ toolpath: null, line: 0 });
+  if (!running || reached.current.toolpath !== toolpath || (machine.job?.received ?? 0) < reached.current.line) {
+    reached.current = { toolpath, line: 0 };
+  }
   const progress = running && toolpath && machine.job
     ? pathProgress({
       frames: toolpath.source.frames,
       positions: toolpath.source.positions,
       received: machine.job.received,
       tool: tool ? { x: tool.x - offset.x, y: tool.y - offset.y, z: tool.z - offset.z } : null,
+      from: reached.current.line,
     })
     : null;
+  if (progress?.sure) {
+    reached.current.line = progress.line;
+  }
 
   /*
    * Three subjects, and the same two words under each where they apply.
