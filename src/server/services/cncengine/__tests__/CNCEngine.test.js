@@ -1,5 +1,9 @@
+import { SerialPort } from 'serialport';
 import CNCEngine, { admits } from '../CNCEngine';
 import config from '../../configstore';
+import store from '../../../store';
+
+jest.mock('serialport', () => ({ SerialPort: { list: jest.fn() } }));
 
 jest.mock('../../configstore', () => {
   const store = {};
@@ -105,5 +109,89 @@ describe('a client request at the door', () => {
   test('goes through on a controller that has no such rule', () => {
     // Marlin, Smoothie and TinyG carry on as they always have.
     expect(admits({ refuse: jest.fn() }, 'gcode')).toBe(true);
+  });
+});
+
+describe('opening the port unasked', () => {
+  let engine;
+  let opened;
+
+  // A controller that opens at once, and remembers that it did.
+  const FakeController = function FakeController(engine_, options) {
+    this.type = 'Grbl';
+    this.options = options;
+    this.open = (done) => {
+      opened.push(options);
+      done(null);
+    };
+    this.destroy = jest.fn();
+  };
+
+  const listing = (...paths) => SerialPort.list.mockResolvedValue(paths.map((path) => ({ path })));
+
+  beforeEach(() => {
+    config.clear();
+    store.unset('controllers');
+    engine = new CNCEngine();
+    engine.controllerClass = { Grbl: FakeController };
+    engine.io = { emit: jest.fn() };
+    opened = [];
+    config.set(CONNECTION_KEY, COM3);
+  });
+
+  afterEach(() => store.unset('controllers'));
+
+  test('does nothing by default: opening a port is the operator\'s decision', async () => {
+    listing('COM3');
+    await engine.autoConnect();
+    expect(opened).toEqual([]);
+  });
+
+  test('with `server`, opens the remembered port as it was last opened', async () => {
+    config.set('connection.auto', 'server');
+    listing('COM3');
+
+    await engine.autoConnect();
+
+    expect(opened).toEqual([{ port: 'COM3', baudrate: 115200, rtscts: false }]);
+    expect(store.get('controllers["COM3"]')).toBeTruthy();
+  });
+
+  test('not a port that is not there', async () => {
+    config.set('connection.auto', 'server');
+    listing('COM1');
+    await engine.autoConnect();
+    expect(opened).toEqual([]);
+  });
+
+  test('not one closed by hand — until it is unplugged and plugged back in', async () => {
+    config.set('connection.auto', 'server');
+    engine.closedByHand.add('COM3');
+
+    listing('COM3');
+    await engine.autoConnect();
+    expect(opened).toEqual([]);
+
+    // Out of the list: the cable came out, and the hand's say is spent.
+    listing();
+    await engine.autoConnect();
+    listing('COM3');
+    await engine.autoConnect();
+    expect(opened).toHaveLength(1);
+  });
+
+  test('not one already open', async () => {
+    config.set('connection.auto', 'server');
+    store.set('controllers["COM3"]', { isOpen: () => true });
+    listing('COM3');
+    await engine.autoConnect();
+    expect(opened).toEqual([]);
+  });
+
+  test('with `panel`, leaves it to the panel', async () => {
+    config.set('connection.auto', 'panel');
+    listing('COM3');
+    await engine.autoConnect();
+    expect(opened).toEqual([]);
   });
 });

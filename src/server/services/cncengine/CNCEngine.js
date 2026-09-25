@@ -22,6 +22,7 @@ import {
   TinyGController
 } from '../../controllers';
 import { GRBL } from '../../controllers/Grbl/constants';
+import { autoMode } from './autoMode';
 import { MARLIN } from '../../controllers/Marlin/constants';
 import { SMOOTHIE } from '../../controllers/Smoothie/constants';
 import { G2CORE, TINYG } from '../../controllers/TinyG/constants';
@@ -40,6 +41,9 @@ const log = logger('service:cncengine');
  * served by `/api/state`.
  */
 const CONNECTION_KEY = 'state.connection';
+
+// How often the server looks for the remembered port, with `server` set.
+const AUTO_POLL_MS = 5000;
 
 /**
  * Whether a client's request may be carried out now, said out loud when not.
@@ -97,6 +101,14 @@ const isValidController = (controller) => (
 
 class CNCEngine {
     controllerClass = {};
+
+    // Ports closed by hand, which `autoConnect` leaves alone until they are
+    // unplugged or the server restarts.
+    closedByHand = new Set();
+
+    autoOpening = false;
+
+    autoTimer = null;
 
     listener = {
       // To everybody, not to a port's room: the journal is the server's, and
@@ -193,9 +205,68 @@ class CNCEngine {
      * written down, and one deliberate connection corrects the memory.
      *
      * **Remembering is not connecting.** Nothing here opens anything; the
-     * screen pre-selects and the operator still presses Connect. Opening a
-     * port unasked is the one thing a connection screen must never do.
+     * screen pre-selects and the operator still presses Connect — unless
+     * the operator has said otherwise in Settings (`autoMode`), which is
+     * the only way a port is ever opened unasked.
      */
+    /**
+     * With `server`, open the remembered connection whenever it can be:
+     * when the server starts, and when its port comes (back) into the list.
+     *
+     * Not a port somebody closed by hand: that one stays closed until its
+     * cable is taken out — it leaves the list — or the server restarts, so
+     * Disconnect is never undone behind the operator's back. And not a port
+     * already open, by anyone.
+     *
+     * Opening at start is also what keeps the port from a client that
+     * grabs it first with the wrong settings (the WSL client on the bench,
+     * which opens COM3 as Marlin): the server is first, and that client's
+     * request then clashes and is refused.
+     */
+    async autoConnect() {
+      if (autoMode() !== 'server' || this.autoOpening) {
+        return;
+      }
+      const last = config.get(CONNECTION_KEY, null);
+      if (!last?.port) {
+        return;
+      }
+      const listed = (await SerialPort.list().catch(() => [])).map(port => port.path);
+      if (!listed.includes(last.port)) {
+        this.closedByHand.delete(last.port);
+        return;
+      }
+      if (this.closedByHand.has(last.port) || store.get(`controllers["${last.port}"]`)) {
+        return;
+      }
+      const Controller = this.controllerClass[last.controllerType] || this.controllerClass[GRBL];
+      if (!Controller) {
+        return;
+      }
+
+      this.autoOpening = true;
+      const controller = new Controller(this, { port: last.port, baudrate: last.baudrate, rtscts: false });
+      controller.open((err = null) => {
+        this.autoOpening = false;
+        if (err) {
+          log.warn(`Could not open ${last.port} automatically: ${err}`);
+          controller.destroy();
+          return;
+        }
+        this.event.trigger('port:open');
+        journal.record({
+          level: 'info',
+          source: 'server',
+          event: 'port',
+          code: 'open',
+          port: last.port,
+          device: 'server',
+          data: { controllerType: controller.type, baudrate: controller.options.baudrate, auto: true },
+        });
+        store.set(`controllers[${JSON.stringify(last.port)}]`, controller);
+      });
+    }
+
     rememberConnection(connection) {
       if (isEqual(config.get(CONNECTION_KEY, null), connection)) {
         return;
@@ -311,6 +382,10 @@ class CNCEngine {
 
         next();
       });
+
+      // Now that there is somewhere to say a port opened.
+      this.autoTimer = setInterval(() => this.autoConnect(), AUTO_POLL_MS);
+      this.autoConnect();
 
       this.io.on('connection', (socket) => {
         const address = socket.handshake.address;
@@ -582,6 +657,7 @@ class CNCEngine {
           this.event.trigger('port:close');
 
           journal.record({ level: 'info', source: 'server', event: 'port', code: 'close', port, device: socket.device });
+          this.closedByHand.add(port);
 
           // Leave the room
           socket.leave(port);
@@ -675,6 +751,8 @@ class CNCEngine {
     }
 
     stop() {
+      clearInterval(this.autoTimer);
+      this.autoTimer = null;
       if (this.io) {
         this.io.close();
         this.io = null;

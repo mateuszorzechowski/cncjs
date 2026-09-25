@@ -5,6 +5,7 @@ import FadeScroller from '../ui/FadeScroller';
 import PortRow from '../ui/PortRow';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import Sheet from '../ui/Sheet';
+import AutoConnectChoice, { AUTO_NOTES, useAutoMode } from '../ui/AutoConnectChoice';
 import SettingRow from '../ui/SettingRow';
 import SettingSummary from '../ui/SettingSummary';
 import { NO_READING } from '../machine/readings';
@@ -42,6 +43,7 @@ import { t } from '../i18n';
  */
 
 const ConnectScreen = ({ machine }) => {
+  const [autoMode, chooseAuto] = useAutoMode();
   const { list, controllers, baudrates, asked, refresh, last } = usePorts(machine.linked);
   const [picked, setPicked] = useState('');
   /*
@@ -276,6 +278,20 @@ const ConnectScreen = ({ machine }) => {
             {t(failure.key, failure.vars)}
           </p>
         ) : null}
+      </SettingRow>
+
+      {/*
+        * Board note 2: *"tutaj checkbox/toggle łącz automatycznie"*. Three
+        * answers rather than a switch, because "automatically" has two
+        * meanings on a pendant: the server connecting on its own, with no
+        * panel open, or a panel connecting when it is opened.
+        */}
+      <SettingRow
+        title={t('connect.auto.label')}
+        note={autoMode ? t(AUTO_NOTES[autoMode]) : null}
+        scope="server"
+      >
+        <AutoConnectChoice mode={autoMode} onChoose={chooseAuto} />
       </SettingRow>
 
       {/*

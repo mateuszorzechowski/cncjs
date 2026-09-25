@@ -317,7 +317,16 @@
     "serverNote": "The address this panel talks to.",
     "link": "Controller link",
     "linked": "Connected to {{port}} at {{baudrate}} baud.",
-    "unlinked": "No port is open."
+    "unlinked": "No port is open.",
+    "auto": {
+      "label": "Connect automatically",
+      "server": "Server",
+      "panel": "Panel",
+      "manual": "Manually",
+      "serverNote": "The server opens the last connection by itself when it starts and when the cable is plugged in, with no panel open. A port disconnected by hand stays closed until its cable is taken out.",
+      "panelNote": "The first panel opened while no port is open connects to the last connection.",
+      "manualNote": "Only the Connect button opens a port."
+    }
   },
   "ports": {
     "state": {

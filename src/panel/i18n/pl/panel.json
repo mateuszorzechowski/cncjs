@@ -317,7 +317,16 @@
     "serverNote": "Adres, z którym rozmawia ten panel.",
     "link": "Połączenie ze sterownikiem",
     "linked": "Połączono z {{port}} przy {{baudrate}} bodów.",
-    "unlinked": "Żaden port nie jest otwarty."
+    "unlinked": "Żaden port nie jest otwarty.",
+    "auto": {
+      "label": "Łącz automatycznie",
+      "server": "Serwer",
+      "panel": "Panel",
+      "manual": "Ręcznie",
+      "serverNote": "Serwer sam otwiera ostatnie połączenie po starcie i po podłączeniu kabla, bez żadnego otwartego panelu. Port rozłączony ręcznie zostaje zamknięty, dopóki kabel nie zostanie wyjęty.",
+      "panelNote": "Pierwszy panel otwarty, gdy żaden port nie jest otwarty, łączy się z ostatnim połączeniem.",
+      "manualNote": "Port otwiera tylko przycisk Połącz."
+    }
   },
   "ports": {
     "state": {
