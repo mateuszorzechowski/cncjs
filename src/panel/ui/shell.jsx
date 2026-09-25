@@ -40,6 +40,16 @@ export const ShellNodeProvider = ShellNode.Provider;
 
 export const useIsPhone = () => useContext(ShellWidth) < PHONE_BELOW;
 
+/*
+ * Wide enough for a third card beside two — the Files screen's editor, on a
+ * Full HD screen (Mateusz, 2026-09-25). The shell's width rather than the
+ * `fullhd` target, which only the review frame sets: a real 1920px screen
+ * measures 1920 here too.
+ */
+const WIDE_FROM = 1800;
+
+export const useIsWide = () => useContext(ShellWidth) >= WIDE_FROM;
+
 export const useMeasuredShell = () => {
   const [node, setNode] = useState(null);
   const [width, setWidth] = useState(Infinity);

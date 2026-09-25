@@ -27,7 +27,7 @@ const loadNote = (machine) => {
   return t('files.note.programRunning');
 };
 
-const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnload, onDelete }) => {
+const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnload, onDelete, onEdit }) => {
   const [checking, setChecking] = useState(false);
   const analysis = file.analysis;
   const check = analysis?.check;
@@ -93,6 +93,13 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnl
           <Button className="h-ctl px-4" disabled={loaded || busy} onClick={() => onDelete(file)}>
             {t('files.delete')}
           </Button>
+          {/* Where there is no room for the editor beside this card, it opens
+            * from here; on a wide screen it is already open beside it. */}
+          {onEdit ? (
+            <Button className="h-ctl px-4" disabled={busy} onClick={() => onEdit(file)}>
+              {t('files.editor.open')}
+            </Button>
+          ) : null}
           {loaded ? (
             // The loaded file offers the way back out — the server's
             // `gcode:unload`, held back like loading while a program runs.

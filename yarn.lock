@@ -3403,6 +3403,64 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codemirror/commands@npm:^6.11.1":
+  version: 6.11.1
+  resolution: "@codemirror/commands@npm:6.11.1"
+  dependencies:
+    "@codemirror/language": ^6.0.0
+    "@codemirror/state": ^6.7.0
+    "@codemirror/view": ^6.27.0
+    "@lezer/common": ^1.1.0
+  checksum: 1e0350bf9b3d795014071365f8030fb8cf3aebfde692d6900c1fbb2af93414aa438a0a8208dc9c8f7b87fd165e92345e4f7e054319eb07218802ed43574efe3f
+  languageName: node
+  linkType: hard
+
+"@codemirror/language@npm:^6.0.0, @codemirror/language@npm:^6.12.4":
+  version: 6.12.4
+  resolution: "@codemirror/language@npm:6.12.4"
+  dependencies:
+    "@codemirror/state": ^6.0.0
+    "@codemirror/view": ^6.23.0
+    "@lezer/common": ^1.5.0
+    "@lezer/highlight": ^1.0.0
+    "@lezer/lr": ^1.0.0
+    style-mod: ^4.0.0
+  checksum: 04012a1577080bca69907562ecf36bcc40afb08183a82c5da0f7be6bac7d96a705ee2a8025fc3cc27f46833c2363f0cddf64ad703314c937aa8a1f6cb846e4c4
+  languageName: node
+  linkType: hard
+
+"@codemirror/search@npm:^6.7.2":
+  version: 6.7.2
+  resolution: "@codemirror/search@npm:6.7.2"
+  dependencies:
+    "@codemirror/state": ^6.0.0
+    "@codemirror/view": ^6.37.0
+    crelt: ^1.0.5
+  checksum: 5afd881b0f9ca65236102491800c82fe1bb4c20e7f0d66eb63b14a53d1115df061b481cafc92ea3576bde1de8363deb16f2259bfb6ccfff71da1d00dd311cdb3
+  languageName: node
+  linkType: hard
+
+"@codemirror/state@npm:^6.0.0, @codemirror/state@npm:^6.7.0, @codemirror/state@npm:^6.7.6":
+  version: 6.7.6
+  resolution: "@codemirror/state@npm:6.7.6"
+  dependencies:
+    "@marijn/find-cluster-break": ^1.0.0
+  checksum: 2753df9a5a80d08eda91b9bdae4c889acda13c070215e9b86872c2c7aa15cd12edfd0b55eba4f021a74b0ec811fd49cd8c062d5cd98cc3160e43af5a10716b32
+  languageName: node
+  linkType: hard
+
+"@codemirror/view@npm:^6.23.0, @codemirror/view@npm:^6.27.0, @codemirror/view@npm:^6.37.0, @codemirror/view@npm:^6.43.13":
+  version: 6.43.13
+  resolution: "@codemirror/view@npm:6.43.13"
+  dependencies:
+    "@codemirror/state": ^6.7.0
+    crelt: ^1.0.6
+    style-mod: ^4.1.0
+    w3c-keyname: ^2.2.4
+  checksum: 2de46aa86743fd6866bdb754b442475a93f72fd63bfed26b753fa96d187cd3b5c3e529d268e32a18c35fe95c30c638a8245e911aee896e39db68d1ef9bfdcead
+  languageName: node
+  linkType: hard
+
 "@colors/colors@npm:1.6.0, @colors/colors@npm:^1.6.0":
   version: 1.6.0
   resolution: "@colors/colors@npm:1.6.0"
@@ -4390,6 +4448,31 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lezer/common@npm:^1.0.0, @lezer/common@npm:^1.1.0, @lezer/common@npm:^1.3.0, @lezer/common@npm:^1.5.0":
+  version: 1.5.3
+  resolution: "@lezer/common@npm:1.5.3"
+  checksum: a3196779bdc88a5cdb8a58248c812a58148063b45efd3df051234740260241cff3f58c79c0e1542f4b0c24cb2604dc8c0c4bd9b8942be6cec8c772fce0d8de79
+  languageName: node
+  linkType: hard
+
+"@lezer/highlight@npm:^1.0.0, @lezer/highlight@npm:^1.2.4":
+  version: 1.2.4
+  resolution: "@lezer/highlight@npm:1.2.4"
+  dependencies:
+    "@lezer/common": ^1.3.0
+  checksum: f6800a57c0fbe4ba515c883ebb7e5ae9da111d308f1a6a01417719eed3824195b372cbd571a2b72c21dc3a4c839c9f6a67a0b87a96dcd0b8cd9a67a4ede99bf4
+  languageName: node
+  linkType: hard
+
+"@lezer/lr@npm:^1.0.0":
+  version: 1.4.10
+  resolution: "@lezer/lr@npm:1.4.10"
+  dependencies:
+    "@lezer/common": ^1.0.0
+  checksum: 8689f4d6f14c4fe930f7adf264b0a2a62b78df39195f6547a52059e8dc84f4246177c122a6010cfbb9b5d71e8158cef705493841c7cee03ac2609d9dcf614838
+  languageName: node
+  linkType: hard
+
 "@malept/cross-spawn-promise@npm:^2.0.0":
   version: 2.0.0
   resolution: "@malept/cross-spawn-promise@npm:2.0.0"
@@ -4434,6 +4517,13 @@ __metadata:
     globby: ^11.0.0
     read-yaml-file: ^1.1.0
   checksum: f5a756e5a659e0e1c33f48852d56826d170d5b10a3cdea89ce4fcaa77678d8799aa4004b30e1985c87b73dbc390b95bb6411b78336dd1e0db87c08c74b5c0e74
+  languageName: node
+  linkType: hard
+
+"@marijn/find-cluster-break@npm:^1.0.0":
+  version: 1.0.4
+  resolution: "@marijn/find-cluster-break@npm:1.0.4"
+  checksum: c8369702a4be2d3bfc6c69a3135a06a315b22ae72fcbf7af7658080510f13d8874ac4a9b9a688d0f6c25726402c62d0fc868519636324bb21825727caed8e1f8
   languageName: node
   linkType: hard
 
@@ -9026,9 +9116,15 @@ __metadata:
     "@babel/preset-react": ^7.25.9
     "@babel/register": ^7.25.9
     "@changesets/cli": ^2.31.0
+    "@codemirror/commands": ^6.11.1
+    "@codemirror/language": ^6.12.4
+    "@codemirror/search": ^6.7.2
+    "@codemirror/state": ^6.7.6
+    "@codemirror/view": ^6.43.13
     "@electron/rebuild": ^4.2.0
     "@emotion/react": ^11.14.0
     "@emotion/styled": ^11.14.1
+    "@lezer/highlight": ^1.2.4
     "@mui/material": ^9.4.0
     "@playwright/test": ^1.63.0
     "@pmmmwh/react-refresh-webpack-plugin": ^0.5.15
@@ -9847,6 +9943,13 @@ __metadata:
     prop-types: ^15.0.0
     react: ^0.14.0 || ^15.0.0 || ^16.0.0
   checksum: c48829815c90dc8fcd80a1542c70920fe9a1ba18c5f226de42f2494a82701fc5ca5197a64a412dcf1bf6e54b9ea603a8d14ad38df7870ed798490a505b38ac89
+  languageName: node
+  linkType: hard
+
+"crelt@npm:^1.0.5, crelt@npm:^1.0.6":
+  version: 1.0.7
+  resolution: "crelt@npm:1.0.7"
+  checksum: 29b8edc11ea78b3c42846f956e9dfbd863f52abdde085bef30c4204278b0b7f49b68e14785f0cc807c68936ccb8d23cb07144dd9489e0aea9257d2490738b48e
   languageName: node
   linkType: hard
 
@@ -22055,6 +22158,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"style-mod@npm:^4.0.0, style-mod@npm:^4.1.0":
+  version: 4.1.4
+  resolution: "style-mod@npm:4.1.4"
+  checksum: 9b758a6637fd14c95b5192ee3ab1f126dee8b8c6ebfdbc236c27a34add2fcc5b19fa5d3add31670858a9fc37c4de95fc494480742659313bc9e8157f738e25b6
+  languageName: node
+  linkType: hard
+
 "styled-components@npm:~3.4.9":
   version: 3.4.10
   resolution: "styled-components@npm:3.4.10"
@@ -23587,6 +23697,13 @@ __metadata:
   version: 2.0.1
   resolution: "void-elements@npm:2.0.1"
   checksum: 700c07ba9cfa2dff88bb23974b3173118f9ad8107143db9e5d753552be15cf93380954d4e7f7d7bc80e7306c35c3a7fb83ab0ce4d4dcc18abf90ca8b31452126
+  languageName: node
+  linkType: hard
+
+"w3c-keyname@npm:^2.2.4":
+  version: 2.2.8
+  resolution: "w3c-keyname@npm:2.2.8"
+  checksum: 95bafa4c04fa2f685a86ca1000069c1ec43ace1f8776c10f226a73296caeddd83f893db885c2c220ebeb6c52d424e3b54d7c0c1e963bbf204038ff1a944fbb07
   languageName: node
   linkType: hard
 

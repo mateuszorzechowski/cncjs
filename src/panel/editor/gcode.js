@@ -1,0 +1,106 @@
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language';
+import { EditorView } from '@codemirror/view';
+import { tags } from '@lezer/highlight';
+
+/**
+ * G-code, as the editor reads it: enough to tell a word from a comment.
+ *
+ * Not a parser — the server has one, and it is the one that checks a file
+ * (`services/library`). This only colours: a comment, a `G`/`M` code, an axis
+ * word, any other word, and the number that goes with it. Line numbers
+ * (`N`) and the program markers (`%`) read as the quiet things they are.
+ */
+const gcode = StreamLanguage.define({
+  name: 'gcode',
+  token: (stream) => {
+    if (stream.eatSpace()) {
+      return null;
+    }
+    // `; to the end of the line` and `(inline)`.
+    if (stream.peek() === ';') {
+      stream.skipToEnd();
+      return 'comment';
+    }
+    if (stream.peek() === '(') {
+      stream.skipTo(')') ? stream.next() : stream.skipToEnd();
+      return 'comment';
+    }
+    if (stream.eat('%')) {
+      return 'meta';
+    }
+
+    const letter = stream.next().toUpperCase();
+    // The number that belongs to the letter is part of the same word.
+    stream.match(/^\s*[-+]?(\d+\.?\d*|\.\d+)/);
+
+    if (letter === 'G' || letter === 'M') {
+      return 'keyword';
+    }
+    if ('XYZABCIJKR'.includes(letter)) {
+      return 'variableName';
+    }
+    if (letter === 'N') {
+      return 'meta';
+    }
+    if (/[A-Z]/.test(letter)) {
+      return 'number';
+    }
+    return null;
+  },
+});
+
+/*
+ * The panel's own colours, as its tokens — so the editor follows the theme
+ * the way every other surface does, without a second palette. The accent
+ * marks what a program *does* (G and M), the ink what it moves (axes), the
+ * muted tone what is only said (comments, line numbers).
+ */
+const colours = HighlightStyle.define([
+  { tag: tags.keyword, color: 'var(--acc)', fontWeight: '600' },
+  { tag: tags.variableName, color: 'var(--ink)' },
+  { tag: tags.number, color: 'var(--rapid)' },
+  { tag: tags.comment, color: 'var(--mut)', fontStyle: 'italic' },
+  { tag: tags.meta, color: 'var(--mut)' },
+]);
+
+// Not prose: a CSS colour — a token washed into transparency, the mix the
+// Tailwind config calls `accS`/`redS`, for surfaces CodeMirror draws itself.
+// eslint-disable-next-line panel/no-untranslated-text
+const wash = (token, percent) => `color-mix(in srgb, var(--${token}) ${percent}%, transparent)`;
+
+/*
+ * The frame, in the same tokens. `&` is the editor's root; `.cm-*` are the
+ * parts CodeMirror draws. The field colour and a hairline, like the panel's
+ * other inputs; the gutter in the panel's surface so line numbers read as
+ * the margin they are.
+ */
+const frame = EditorView.theme({
+  '&': {
+    height: '100%',
+    color: 'var(--ink)',
+    backgroundColor: 'var(--field)',
+    fontSize: '13px',
+  },
+  '&.cm-focused': { outline: '2px solid var(--acc)', outlineOffset: '-2px' },
+  '.cm-scroller': { fontFamily: 'var(--num)', lineHeight: '1.6' },
+  '.cm-content': { caretColor: 'var(--acc)' },
+  '.cm-cursor': { borderLeftColor: 'var(--acc)' },
+  '.cm-gutters': {
+    backgroundColor: 'var(--panel)',
+    color: 'var(--mut)',
+    borderRight: '1px solid var(--line)',
+  },
+  '.cm-activeLine': { backgroundColor: wash('acc', 6) },
+  '.cm-activeLineGutter': { backgroundColor: 'var(--accS)', color: 'var(--ink)' },
+  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
+    backgroundColor: wash('acc', 22),
+  },
+  // The lines a check has something to say about, in the check's own tones.
+  '.cm-issue-bad': { backgroundColor: wash('red', 12) },
+  '.cm-issue-warn': { backgroundColor: wash('amb', 12) },
+  '.cm-panels': { backgroundColor: 'var(--panel)', color: 'var(--ink)' },
+  '.cm-panels-top': { borderBottom: '1px solid var(--line)' },
+  '.cm-searchMatch': { backgroundColor: wash('amb', 25) },
+});
+
+export const gcodeEditing = [gcode, syntaxHighlighting(colours), frame];
