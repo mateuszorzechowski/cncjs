@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
 import JournalLevelChoice from '../ui/JournalLevelChoice';
+import LanguageChoice from '../ui/LanguageChoice';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
@@ -51,8 +52,18 @@ const LABELS = {
 
 const TABS = Object.keys(LABELS);
 
+/*
+ * The tab last open, for as long as the page lives: changing the language
+ * builds the screens again (`App`), and the row that changed it should still
+ * be on screen afterwards rather than the first tab.
+ */
+let lastTab = 'connection';
+
 const SettingsScreen = ({ machine }) => {
-  const [tab, setTab] = useState('connection');
+  const [tab, setTab] = useState(() => lastTab);
+  useEffect(() => {
+    lastTab = tab;
+  }, [tab]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2.5">
@@ -104,6 +115,9 @@ const SettingsScreen = ({ machine }) => {
           ) : null}
           {tab === 'preferences' ? (
             <Card className="flex-1">
+              <SettingRow title={t('language.label')} scope="device">
+                <LanguageChoice />
+              </SettingRow>
               <SettingRow title={t('units.choice.label')} note={t('units.choice.note')} scope="server">
                 <UnitsChoice units={machine.units} />
               </SettingRow>
