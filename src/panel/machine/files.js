@@ -105,3 +105,9 @@ export const diskLow = (disk) => Boolean(disk) && (disk.free < LOW_BYTES || disk
 
 /** How much of the disk is used, as a percentage for a meter. */
 export const diskUsed = (disk) => (disk && disk.total > 0 ? ((disk.total - disk.free) / disk.total) * 100 : 0);
+
+/** The share of what is used that is cncjs's own files, as a percentage of it. */
+export const diskLibrary = (disk) => {
+  const used = disk ? disk.total - disk.free : 0;
+  return used > 0 && disk.library > 0 ? Math.min(100, (disk.library / used) * 100) : 0;
+};

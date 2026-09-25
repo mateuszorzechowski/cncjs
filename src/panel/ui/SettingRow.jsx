@@ -37,12 +37,15 @@ const SettingRow = ({ title, note, scope, children }) => (
       * The name and the scope share a line on a phone and wrap as a pair when
       * they do not fit — `SERWER · WSZYSTKIE URZĄDZENIA` beside a long name
       * broke in two at 360px. Wide, the wrapper steps aside (`contents`) and
-      * both are placed in the grid like everything else.
+      * both are placed in the grid like everything else — the scope pulled
+      * left by its own padding, so its words start where the name's and the
+      * note's do and only the wash reaches past them (*"czy to ma marginses z
+      * lewej? wyglada jakby bylo nierowno"*, 2026-09-25).
       */}
     <div className="order-1 flex flex-wrap items-center gap-x-2 gap-y-1 @3xl/shell:contents">
       <h3 className="m-0 text-base font-semibold text-ink @3xl/shell:col-start-1 @3xl/shell:row-start-1">{title}</h3>
       {scope ? (
-        <span className={`whitespace-nowrap rounded-ctl px-1.5 py-0.5 font-num text-cap uppercase tracking-[0.08em] @3xl/shell:col-start-1 @3xl/shell:row-start-3 @3xl/shell:mt-1 @3xl/shell:justify-self-start ${SCOPES[scope].face}`}>
+        <span className={`whitespace-nowrap rounded-ctl px-1.5 py-0.5 font-num text-cap uppercase tracking-[0.08em] @3xl/shell:col-start-1 @3xl/shell:row-start-3 @3xl/shell:-ml-1.5 @3xl/shell:mt-1 @3xl/shell:justify-self-start ${SCOPES[scope].face}`}>
           {t(SCOPES[scope].key)}
         </span>
       ) : null}

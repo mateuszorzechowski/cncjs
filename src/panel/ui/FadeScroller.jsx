@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { edgesOf, thumbOf } from './scrollMetrics';
+import { edgesOf, thumbOf, MIN_THUMB, TRACK_INSET } from './scrollMetrics';
 
 /**
  * The panel's one way of scrolling something inside it.
@@ -89,7 +89,7 @@ const FadeScroller = ({ className = '', children }) => {
       remark();
     }
 
-    const bar = thumbOf(scroller);
+    const bar = thumbOf(scroller, MIN_THUMB, TRACK_INSET);
     setScrolls(Boolean(bar));
     const node = thumb.current;
     if (!node) {
@@ -185,11 +185,13 @@ const FadeScroller = ({ className = '', children }) => {
         */}
       {/* The track: the whole height the thumb can travel, so its length
         * reads as a share of the list. Only where there is something to
-        * scroll — a track beside content that fits would promise more. */}
+        * scroll — a track beside content that fits would promise more.
+        * `top-1.5`/`bottom-1.5` are `TRACK_INSET`, the 6px the thumb is
+        * measured against. */}
       <span
         aria-hidden="true"
         className={[
-          'pointer-events-none absolute bottom-0 right-[calc(2px-var(--thumbGutter,var(--pad)))] top-0 w-1 rounded-full bg-line',
+          'pointer-events-none absolute bottom-1.5 right-[calc(2px-var(--thumbGutter,var(--pad)))] top-1.5 w-1 rounded-full bg-line',
           scrolls ? '' : 'hidden',
         ].join(' ')}
       />

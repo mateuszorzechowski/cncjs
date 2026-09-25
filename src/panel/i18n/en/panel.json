@@ -334,7 +334,8 @@
   },
   "alerts": {
     "noDetail": "The panel has nothing more specific to say about it.",
-    "goConnect": "Go to the connection"
+    "goSettings": "Go to settings",
+    "connectTo": "Connect {{port}}"
   },
   "stateHelp": {
     "paused": "The program was paused by the server, not by the controller: the server stopped sending lines, and Grbl finished what was in its buffer and is standing still. A program stops like this on M6 (tool change), on an error in the file, or after the Pause button. You may jog and zero; Resume sends the rest, Abort ends the program.",

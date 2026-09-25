@@ -196,8 +196,8 @@ const ConnectScreen = ({ machine }) => {
    * time is the rule — see the button below.
    */
   return (
-    <Card>
-      <SettingRow title={t('connect.port')} note={open ? t('connect.locked') : null}>
+    <Card className="flex-1">
+      <SettingRow title={t('connect.port')}>
         <SettingSummary
           label={t('connect.choosePort')}
           values={[{ value: (held || selected) || NO_READING }]}
@@ -224,6 +224,15 @@ const ConnectScreen = ({ machine }) => {
           onOpen={() => setEditing('baudrate')}
         />
       </SettingRow>
+      {/*
+        * Once, under all three, because it is about all three: *"ta
+        * informacja nie tyczy sie tylko portu tylko kazdej opcji"*
+        * (2026-09-25). Written as the port row's note it read as the port's
+        * alone.
+        */}
+      {open ? (
+        <p className="m-0 border-b border-line py-4 text-note text-mut">{t('connect.locked')}</p>
+      ) : null}
 
       {/*
         * The server's address is the origin the panel was served from — the

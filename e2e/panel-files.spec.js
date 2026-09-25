@@ -122,7 +122,7 @@ test.describe('the files screen', () => {
     await expect(page.getByText('18204', { exact: true })).toBeVisible();
     await expect(page.getByText('31 min 54 s', { exact: true })).toBeVisible();
     await expect(page.getByText('T3, T7', { exact: true })).toBeVisible();
-    await expect(page.getByText('-6 mm', { exact: true })).toBeVisible();
+    await expect(page.getByText('-6,0 mm', { exact: true })).toBeVisible();
     await expect(page.getByText('XYZ · 420 × 290 × 11 mm')).toBeVisible();
     await expect(page.getByText('mm (G21) · G54')).toBeVisible();
     await expect(page.locator('canvas')).toHaveCount(1);

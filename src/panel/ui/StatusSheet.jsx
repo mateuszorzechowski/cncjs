@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import Sheet from './Sheet';
 import Button from './Button';
 import AlarmAdvice from './AlarmAdvice';
 import { NO_READING } from '../machine/readings';
+import { useLastConnection } from '../machine/usePorts';
 import { t } from '../i18n';
 
 /**
@@ -99,7 +101,25 @@ const Layer = ({ label, value, tone, ok }) => (
   </div>
 );
 
-const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) => (
+const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) => {
+  const last = useLastConnection(machine.linked);
+  const [failed, setFailed] = useState(false);
+  /*
+   * Connecting from here, to what was connected last — *"tutaj dwa przyciski,
+   * przekierowanie do ustawien i polacz (port powinien byc uzupelniony
+   * wartosciami)"* (2026-09-25). Only with no port open and a server that
+   * remembers one: with no server there is nothing to connect to, and with
+   * no memory there is no choice to repeat, which is what Settings is for.
+   */
+  const again = advice?.key === 'advice.noPort' && machine.linked && last?.port ? last : null;
+  const connect = () => {
+    setFailed(false);
+    machine.connect(again.port, { controllerType: again.controllerType, baudrate: again.baudrate })
+      .then(onClose)
+      .catch(() => setFailed(true));
+  };
+
+  return (
   <Sheet title={t('topbar.state')} onHelp={onHelp} onClose={onClose}>
     <div className="flex items-start gap-3 border-b border-line py-3">
       {/* The triangle only when there is something to act on. A mark that is
@@ -155,12 +175,26 @@ const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) 
       />
     </div>
 
+    {again ? (
+      <p className="m-0 font-num text-note text-mut">
+        {[again.port, again.controllerType, again.baudrate].filter(Boolean).join('  ')}
+      </p>
+    ) : null}
+    {failed ? <p className="m-0 text-note text-red">{t('connect.openFailed')}</p> : null}
     {advice && advice.go ? (
-      <Button tone="primary" onClick={onGo} className="h-ctl w-full">
-        {t('alerts.goConnect')}
-      </Button>
+      <div className="flex gap-2">
+        <Button tone={again ? 'outline' : 'primary'} onClick={onGo} className="h-ctl flex-1">
+          {t('alerts.goSettings')}
+        </Button>
+        {again ? (
+          <Button tone="primary" onClick={connect} className="h-ctl flex-1">
+            {t('alerts.connectTo', { port: again.port })}
+          </Button>
+        ) : null}
+      </div>
     ) : null}
   </Sheet>
-);
+  );
+};
 
 export default StatusSheet;

@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 
 // The tone a machine state is shown in. Four, and no more: the panel spends
@@ -35,11 +36,37 @@ const TONES = {
  * a panel an arm's length away; at 390px it is a frame around nothing, and
  * the room it costs is the filename's.
  */
+// The dot is 9px and sits 6px from the words (`gap-1.5`).
+const DOT_AND_GAP = 15;
+
 const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
   const t = TONES[tone] || TONES.inactive;
-  // Wide, the state is as wide as its longest word, so a state of more than
-  // one word is always two lines and one word always one. See the dot below.
-  const twoLines = String(children ?? '').trim().includes(' ');
+  /*
+   * Wide, one line whenever the state fits on one, and two only when it does
+   * not — *"po angielsku no port zmiesci sie w jednej linii?"* (2026-09-25).
+   * It was "two lines whenever there are two words", which broke `NO PORT`
+   * in a chip with room for it.
+   *
+   * Measured, not guessed from the letters: the width the words take on one
+   * line (`probe`, the same text in the same face, unwrapped and invisible)
+   * against the room the chip leaves them (`room`), with the dot and its gap.
+   * Whatever the language or the screen, the answer is the one the browser
+   * would give. See the dot below for what the two cases look like.
+   */
+  const room = useRef(null);
+  const probe = useRef(null);
+  const [twoLines, setTwoLines] = useState(false);
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (room.current && probe.current) {
+        setTwoLines(probe.current.offsetWidth + DOT_AND_GAP > room.current.clientWidth);
+      }
+    };
+    measure();
+    const watch = new ResizeObserver(measure);
+    watch.observe(room.current);
+    return () => watch.disconnect();
+  }, [children]);
 
   /*
    * A button, because it is the way to everything the panel knows about the
@@ -89,10 +116,17 @@ const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
         * wyśrodkowanie"*, then *"może jednolinijkowe wyśrodkuj"*
         * (2026-09-25). Measured: every state fits either way, in both
         * languages, at 1024 and Full HD. */}
-      <span className="flex min-w-0 items-center gap-1.5 @3xl/shell:flex-1 @3xl/shell:justify-center">
+      <span ref={room} className="flex min-w-0 items-center gap-1.5 @3xl/shell:flex-1 @3xl/shell:justify-center">
         <span className="relative flex min-w-0 items-center gap-1.5">
+          <span
+            ref={probe}
+            aria-hidden="true"
+            className="invisible absolute whitespace-nowrap text-cap font-semibold uppercase tracking-[0.06em] fullhd:text-lead"
+          >
+            {children}
+          </span>
           <span className={`size-[9px] shrink-0 rounded-full ${t.dot} ${twoLines ? '@3xl/shell:absolute @3xl/shell:right-full @3xl/shell:top-1/2 @3xl/shell:mr-1.5 @3xl/shell:-translate-y-1/2' : ''}`} aria-hidden="true" />
-          <span className={`min-w-0 truncate text-left text-cap @3xl/shell:w-min @3xl/shell:text-center @3xl/shell:line-clamp-2 @3xl/shell:whitespace-normal @3xl/shell:break-words font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
+          <span className={`min-w-0 truncate text-left text-cap @3xl/shell:text-center ${twoLines ? '@3xl/shell:w-min @3xl/shell:line-clamp-2 @3xl/shell:whitespace-normal @3xl/shell:break-words' : ''} font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
             {children}
           </span>
         </span>

@@ -33,6 +33,16 @@ export const edgesOf = (el) => (el ? {
 export const MIN_THUMB = 28;
 
 /**
+ * How far short of each end of its container the track stops, in pixels.
+ *
+ * Run from edge to edge it began and ended exactly where the card did, and
+ * read as part of the card's border rather than as a thing of its own —
+ * *"troche krotszy zeby byl maly margin"* (2026-09-25). The thumb travels the
+ * shortened track, so at either end of the list it sits at the track's end.
+ */
+export const TRACK_INSET = 6;
+
+/**
  * Where the indicator sits, in pixels down the scroller, or nothing.
  *
  * `null` when there is nothing to scroll: a thumb as long as its track says
@@ -45,21 +55,22 @@ export const MIN_THUMB = 28;
  * has to be measured from the lengthened one or the last screenful arrives
  * before `scrollTop` does.
  */
-export const thumbOf = (el, min = MIN_THUMB) => {
+export const thumbOf = (el, min = MIN_THUMB, inset = 0) => {
   if (!el) {
     return null;
   }
 
   const { scrollTop, clientHeight, scrollHeight } = el;
   const hidden = scrollHeight - clientHeight;
+  const track = clientHeight - (2 * inset);
 
-  if (hidden <= 1 || clientHeight <= 0) {
+  if (hidden <= 1 || track <= 0) {
     return null;
   }
 
-  const height = Math.min(clientHeight, Math.max(min, Math.round((clientHeight / scrollHeight) * clientHeight)));
-  const travel = clientHeight - height;
+  const height = Math.min(track, Math.max(min, Math.round((clientHeight / scrollHeight) * track)));
+  const travel = track - height;
   const at = Math.min(1, Math.max(0, scrollTop / hidden));
 
-  return { height, top: Math.round(at * travel) };
+  return { height, top: inset + Math.round(at * travel) };
 };

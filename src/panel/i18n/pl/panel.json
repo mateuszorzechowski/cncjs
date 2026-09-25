@@ -334,7 +334,8 @@
   },
   "alerts": {
     "noDetail": "Panel nie ma nic bardziej szczegółowego do powiedzenia.",
-    "goConnect": "Przejdź do połączenia"
+    "goSettings": "Przejdź do ustawień",
+    "connectTo": "Połącz {{port}}"
   },
   "stateHelp": {
     "paused": "Program zapauzowany przez serwer, nie przez sterownik: serwer przestał wysyłać linie, a Grbl dokończył to, co miał w buforze, i stoi. Tak zatrzymuje się program na M6 (wymiana narzędzia), na błędzie w pliku albo po przycisku Pauza. Wolno jogować i zerować; Wznów wysyła dalsze linie, Przerwij kończy program.",

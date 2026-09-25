@@ -55,6 +55,13 @@ describe('thumbOf', () => {
     expect(thumbOf(scroller(400, 400, 800)).top).toBe(200);
   });
 
+  it('travels a track that stops short of both ends, by the inset', () => {
+    // 400 tall with 6 each end is a 388 track: half of it is 194, and the
+    // thumb runs from 6 down to 6 + 194, never touching the container's edge.
+    expect(thumbOf(scroller(0, 400, 800), 28, 6)).toEqual({ height: 194, top: 6 });
+    expect(thumbOf(scroller(400, 400, 800), 28, 6)).toEqual({ height: 194, top: 200 });
+  });
+
   it('never gets shorter than a thumb worth seeing', () => {
     // 400 of 40000 is four pixels, which reads as dirt on the glass.
     const long = thumbOf(scroller(0, 400, 40000));
