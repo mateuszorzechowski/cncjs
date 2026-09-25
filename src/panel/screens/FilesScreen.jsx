@@ -233,11 +233,14 @@ const FilesScreen = ({ machine }) => {
         <Sheet title={t('files.selected')} onClose={() => setChosen(null)}>
           {/*
             * The details, and a swipe away the file's text to read — one
-            * sheet, two pages, a fixed height so each scrolls on its own.
+            * sheet, two pages, as tall as the sheet has room for so each
+            * scrolls on its own and the sheet itself never does. The sheet
+            * is 85% of the screen at most; its title row and padding are
+            * the 6rem taken off.
             */}
           <SwipePages
             label={t('files.selected')}
-            className="h-[34rem]"
+            className="h-[calc(85dvh-6rem)]"
             pages={[
               { key: 'details', label: t('files.pages.details'), content: details },
               { key: 'text', label: t('files.pages.text'), content: <FileText file={file} /> },
