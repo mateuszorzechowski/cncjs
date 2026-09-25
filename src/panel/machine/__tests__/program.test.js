@@ -35,6 +35,13 @@ describe('what the job buttons offer', () => {
       .toEqual({ canStart: false, canPause: true, paused: false });
   });
 
+  test('a program an alarm stopped cannot be resumed, only stopped', () => {
+    // Grbl in alarm resumes nothing; Wznów lit there was one more key that
+    // did nothing (2026-09-25). Przerwij is not this button and stays.
+    expect(programControls(machine({ workflow: 'paused', alarmed: true, canMove: false })))
+      .toEqual({ canStart: false, canPause: false, paused: true });
+  });
+
   test('a tool-change pause leaves the machine movable and still offers no Start', () => {
     // Paused with Grbl idle, the jog pad is live (`canMove`), but a second
     // program over the paused one is what the server refuses.

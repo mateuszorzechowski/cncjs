@@ -14,6 +14,14 @@ describe('which commands are live', () => {
     expect(live(machine('Alarm'))).toEqual(['unlock', 'reset']);
   });
 
+  test('in alarm with a program stopped on it: not unlock, which the server refuses', () => {
+    // Measured 2026-09-25: a program paused by an alarm, Unlock pressed three
+    // times, three `program-running` refusals — the key was lit. The
+    // program has to be stopped first; reset is the way, and it stays live.
+    expect(live(machine('Alarm', { workflow: 'paused' }))).toEqual(['reset']);
+    expect(live(machine('Alarm', { workflow: 'running' }))).toEqual(['reset']);
+  });
+
   test('moving: hold, and reset', () => {
     expect(live(machine('Run'))).toEqual(['hold', 'reset']);
     expect(live(machine('Jog'))).toEqual(['hold', 'reset']);

@@ -48,6 +48,16 @@ describe('adviceFor', () => {
     expect(adviceFor(alarmed)).toEqual({ key: 'advice.alarm', go: false });
   });
 
+  test('says to stop the program first when an alarm stopped one', () => {
+    // Homing and unlocking are what the server refuses while a program holds
+    // the machine; that advice sent the operator into three refusals.
+    const stopped = read({
+      connection: 'open', port: 'COM3', type: 'Grbl', attached: true, workflow: 'paused',
+      state: { status: { activeState: 'Alarm' } },
+    });
+    expect(adviceFor(stopped)).toEqual({ key: 'advice.alarmInProgram', go: false });
+  });
+
   test('a door hold is not an alarm, and needs no advice', () => {
     // The state that looks like alarm and is not: the server sends through
     // it, so there is nothing for anyone to do about it.

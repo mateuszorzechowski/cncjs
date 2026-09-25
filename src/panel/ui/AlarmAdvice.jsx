@@ -1,6 +1,8 @@
 import Button from './Button';
 import controller from '../machine/controller';
 import { alarmAdvice } from '../machine/alarm';
+import { controlledStop } from '../machine/commands';
+import { programHolds } from '../machine/readings';
 import { home } from '../machine/homing';
 import { t } from '../i18n';
 
@@ -17,7 +19,10 @@ const POSITION_TONE = { kept: 'text-grn', lost: 'text-red', unknown: 'text-amb' 
  * position is not known it says so beside it.
  */
 const AlarmAdvice = ({ machine }) => {
-  const advice = alarmAdvice(machine.alarm);
+  // A program the alarm stopped still holds the machine: the server takes no
+  // unlock and no homing until it is stopped, so neither is offered.
+  const program = programHolds(machine.workflow, 'Alarm');
+  const advice = alarmAdvice(machine.alarm, { program });
   const homeButton = (
     <Button
       key="home"
@@ -33,6 +38,7 @@ const AlarmAdvice = ({ machine }) => {
     <Button
       key="unlock"
       tone={advice.action === 'unlock' ? 'primary' : 'outline'}
+      disabled={program}
       onClick={() => controller.command('unlock')}
       className="h-ctl flex-1"
     >
@@ -47,10 +53,16 @@ const AlarmAdvice = ({ machine }) => {
       </span>
       <span className="text-note text-ink">{t(advice.meaning)}</span>
       <span className={`text-note font-semibold ${POSITION_TONE[advice.position]}`}>{t(advice.positionKey)}</span>
+      {/* The same stop as the footer's Przerwij: hold, wait, reset. */}
+      {program ? (
+        <Button tone="stop" onClick={() => controlledStop(machine.type)} className="h-ctl w-full">
+          {t('alarm.abort')}
+        </Button>
+      ) : null}
       <div className="flex gap-3">
         {advice.action === 'home' ? [homeButton, unlockButton] : [unlockButton, homeButton]}
       </div>
-      {advice.position === 'kept' ? null : (
+      {advice.position === 'kept' || program ? null : (
         <span className="text-note text-mut">{t('alarm.unlockWarning')}</span>
       )}
     </div>

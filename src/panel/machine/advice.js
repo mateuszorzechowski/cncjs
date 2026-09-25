@@ -17,7 +17,7 @@
  */
 
 /** Which advice, and whether the connection screen is where it is acted on. */
-export const adviceFor = ({ linked, connected, port, canSendGcode } = {}) => {
+export const adviceFor = ({ linked, connected, port, canSendGcode, workflow } = {}) => {
   // No server at all. The connection screen still helps — it is the one place
   // that shows which host the panel is pointed at, which is usually the
   // answer when a pendant cannot find its machine.
@@ -44,6 +44,11 @@ export const adviceFor = ({ linked, connected, port, canSendGcode } = {}) => {
    * not clear it either. Homing or unlocking is the operator's to do.
    */
   if (!canSendGcode) {
+    // An alarm that stopped a program: the server takes neither homing nor
+    // unlocking until the program is stopped, so that is the advice.
+    if (workflow === 'running' || workflow === 'paused') {
+      return { key: 'advice.alarmInProgram', go: false };
+    }
     return { key: 'advice.alarm', go: false };
   }
 

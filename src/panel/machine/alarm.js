@@ -41,8 +41,14 @@ const POSITION = {
  * `{ code, meaning, position, positionKey, action }` for a machine in alarm.
  *
  * @param {number|null} code Grbl's number, or null for the homing lock.
+ * @param {object} [context]
+ * @param {boolean} [context.program] Whether a program is stopped on it. Then
+ *   the way out is to stop the program first (`abort`): the server takes
+ *   neither unlock nor homing while a program holds the machine, and the
+ *   sheet under the chip suggesting either was a suggestion it refused
+ *   (2026-09-25).
  */
-export const alarmAdvice = (code) => {
+export const alarmAdvice = (code, { program = false } = {}) => {
   let position = 'unknown';
   if (KEPT.has(code)) {
     position = 'kept';
@@ -55,7 +61,7 @@ export const alarmAdvice = (code) => {
     meaning: MEANING[code] || 'alarm.lock',
     position,
     positionKey: POSITION[position],
-    action: position === 'kept' ? 'unlock' : 'home',
+    action: program ? 'abort' : (position === 'kept' ? 'unlock' : 'home'),
   };
 };
 

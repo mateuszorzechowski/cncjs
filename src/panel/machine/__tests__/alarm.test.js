@@ -18,6 +18,15 @@ describe('the way out of an alarm', () => {
     expect(alarmAdvice(null)).toMatchObject({ meaning: 'alarm.lock', position: 'unknown', action: 'home' });
   });
 
+  test('with a program stopped on it, the way out is to stop the program first', () => {
+    // Whatever the alarm: the server takes neither unlock nor homing while a
+    // program holds the machine, so either would be a suggestion it refuses —
+    // which is what the sheet under the chip offered on 2026-09-25.
+    expect(alarmAdvice(2, { program: true })).toMatchObject({ position: 'kept', action: 'abort' });
+    expect(alarmAdvice(3, { program: true })).toMatchObject({ position: 'lost', action: 'abort' });
+    expect(alarmAdvice(2, { program: false }).action).toBe('unlock');
+  });
+
   test('says what it means in Grbl\'s own words', () => {
     expect(alarmAdvice(3).meaning).toBe('grbl.alarm.3');
   });

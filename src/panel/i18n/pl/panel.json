@@ -301,7 +301,8 @@
     "noServer": "Panel nie dosięga swojego serwera. Sprawdź, czy działa, na jakiego hosta jest skierowany, a jeśli idzie po HTTPS — czy certyfikat nie wygasł: przeglądarka nie powie, która z tych rzeczy to jest.",
     "alarm": "Zbazuj maszynę albo ją odblokuj, zanim cokolwiek ruszy. Do tego czasu serwer nie wysyła niczego.",
     "attaching": "Port jest otwarty i panel się do niego dopina. Nie ma nic do zrobienia, wystarczy chwilę poczekać.",
-    "noPort": "Żaden port nie jest otwarty. Wybierz jeden i połącz."
+    "noPort": "Żaden port nie jest otwarty. Wybierz jeden i połącz.",
+    "alarmInProgram": "Alarm zatrzymał program. Najpierw go przerwij — dopiero potem odblokujesz albo zbazujesz maszynę. Do tego czasu serwer nie wysyła niczego."
   },
   "alerts": {
     "noDetail": "Panel nie ma nic bardziej szczegółowego do powiedzenia.",
@@ -542,7 +543,8 @@
     "home": "Bazuj",
     "unlock": "Odblokuj",
     "unlockWarning": "Odblokuj tylko, jeśli wiesz, gdzie jest maszyna — współrzędne mogą nie odpowiadać rzeczywistości.",
-    "code": "ALARM:{{code}}"
+    "code": "ALARM:{{code}}",
+    "abort": "Przerwij program"
   },
   "picker": {
     "previous": "Poprzedni miesiąc",
