@@ -420,6 +420,9 @@ class GrblController {
           return;
         }
 
+        // What an `error:` that comes back for it will be about.
+        this.fedLine = line;
+
         this.emit('serialport:write', line + '\n', {
           ...context,
           source: WRITE_SOURCE_FEEDER
@@ -912,17 +915,18 @@ class GrblController {
           const line = ensureString(lines[received - 1]).trim();
           const ln = received + 1;
 
-          this.note({
+          // The line Grbl refused: the oldest one not yet answered. Not
+          // `line` above, which is the one before it, and which the old
+          // console has always shown.
+          const sent = ensureString(lines[received]).trim();
+          this.noteError({
             level: 'error',
             source: 'controller',
             event: 'error',
             code: error ? `error:${code}` : res.raw,
             program: { name: this.sender.state.name, line: ln },
-            // The line Grbl refused: the oldest one not yet answered. Not
-            // `line` above, which is the one before it, and which the old
-            // console has always shown.
-            data: { sent: ensureString(lines[received]).trim() },
-          });
+            data: { sent },
+          }, { name: this.sender.state.name, line: ln, sent });
 
           this.emit('serialport:read', `> ${line} (ln=${ln})`);
           if (error) {
@@ -997,7 +1001,15 @@ class GrblController {
           // Grbl v0.9
           this.emit('serialport:read', res.raw);
         }
-        this.note({ level: 'error', source: 'controller', event: 'error', code: error ? `error:${code}` : res.raw });
+        // A line from the console or a macro: the one the feeder sent last.
+        const fed = this.fedLine;
+        this.noteError({
+          level: 'error',
+          source: 'controller',
+          event: 'error',
+          code: error ? `error:${code}` : res.raw,
+          ...(fed ? { data: { sent: fed } } : {}),
+        }, { sent: fed });
 
         // Feeder
         this.feeder.next();
@@ -2031,6 +2043,32 @@ class GrblController {
       // entry recorded inside a client's request is that client's doing.
       const device = this.commandSocket?.device;
       journal.record({ port: this.options.port, ...(device ? { device } : {}), ...fields });
+    }
+
+    /**
+     * A refusal from the controller, with what the server can say about it.
+     *
+     * Grbl gives a number; the journal gives that, the line it was about,
+     * and — when the server's own check sees something wrong in that line —
+     * what (*"czysty kod bledu z grbl i dodatkowo pelna informacja
+     * dostarczona przez serwer, o ile da sie taka ustalic"*, 2026-09-25).
+     * Working that out reads the file, so the entry is written when the
+     * answer is in, stamped with the moment of the error, and by whoever
+     * was asking then.
+     */
+    noteError(fields, question) {
+      const time = new Date().toISOString();
+      const device = this.commandSocket?.device;
+      const port = this.options.port;
+      library.explain(question)
+        .catch(() => [])
+        .then((found) => journal.record({
+          port,
+          ...(device ? { device } : {}),
+          time,
+          ...fields,
+          ...(found.length ? { data: { ...fields.data, found } } : {}),
+        }));
     }
 
     /** A program event, with the program's name and how far it had got. */

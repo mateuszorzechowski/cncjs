@@ -422,3 +422,37 @@ describe("a row's status, from both checks", () => {
     expect(statusOf(a, c)).toBe(expected);
   });
 });
+
+describe('what the server sees in a line the controller refused', () => {
+  // The calibration file's stop, 2026-09-25: an arc whose end is off its
+  // circle, which Grbl refuses as error:33.
+  const PROGRAM = ['G21 G90 G17', 'G0 X0 Y0', 'G1 X1 Y1 F500', 'G3 X21 Y-20 I20 J21', 'M30'].join('\n');
+
+  test('names the arc, with how far off its circle it ends', async () => {
+    await library.write('arc.nc', PROGRAM);
+    const found = await library.explain({ name: 'arc.nc', line: 4, sent: 'G3 X21 Y-20 I20 J21' });
+
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ code: 'arc', word: 'G3' });
+    expect(found[0].detail.radius).toBeCloseTo(Math.hypot(20, 21), 6);
+    // From (1, 1) the centre is (21, 22): the end (21, -20) is 42 from it.
+    expect(found[0].detail.reach).toBeCloseTo(42, 6);
+  });
+
+  test('finds the line by its text, whatever the sender counted', async () => {
+    // The sender counts lines the check does not; the text is the anchor.
+    await library.write('arc.nc', PROGRAM);
+    const found = await library.explain({ name: 'arc.nc', line: 9, sent: 'G3 X21  Y-20 I20 J21 (the arc)' });
+
+    expect(found.map((f) => f.code)).toEqual(['arc']);
+  });
+
+  test('says nothing about a line it sees nothing wrong in', async () => {
+    await library.write('arc.nc', PROGRAM);
+    expect(await library.explain({ name: 'arc.nc', line: 3, sent: 'G1 X1 Y1 F500' })).toEqual([]);
+  });
+
+  test('judges a console line on its own', async () => {
+    expect(await library.explain({ sent: 'G7' })).toEqual([{ code: 'unsupported', word: 'G7' }]);
+  });
+});

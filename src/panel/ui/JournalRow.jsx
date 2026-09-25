@@ -1,4 +1,6 @@
 import { EVENT_KEYS, LEVEL_KEYS, SOURCE_KEYS, describeEntry } from '../machine/journalWords';
+import { issueText } from './fileWords';
+import { useUnits } from './units';
 import { t } from '../i18n';
 
 /** Error red, warning amber, info ink, debug quiet — the panel's own tones. */
@@ -34,12 +36,36 @@ const said = (entry) => {
   return words.key ? t(words.key, words.params) : words.text;
 };
 
-const Detail = ({ label, value }) => (
+// `prose` for a sentence — a meaning, a finding — which reads in the text
+// face and breaks between words; everything else is a value.
+const Detail = ({ label, value, prose = false }) => (
   <div className="flex gap-3">
     <dt className="w-28 shrink-0 text-mut">{label}</dt>
-    <dd className="m-0 min-w-0 break-all font-num text-ink">{value}</dd>
+    <dd className={`m-0 min-w-0 text-ink ${prose ? '' : 'break-all font-num'}`}>{value}</dd>
   </div>
 );
+
+/*
+ * What the server's own check sees in the refused line, in the file card's
+ * words — and for an arc, by how much: the start's and the end's distance
+ * from the centre, which Grbl allows to differ by 0.005 mm.
+ */
+const foundText = (finding, units) => {
+  const said = issueText(finding);
+  const { radius, reach } = finding.detail || {};
+  if (finding.code !== 'arc' || !Number.isFinite(radius) || !Number.isFinite(reach)) {
+    return said;
+  }
+  return t('journal.detail.arcBy', {
+    said,
+    radius: units.figure(radius, 'size'),
+    reach: units.figure(reach, 'size'),
+    unit: units.length,
+  });
+};
+
+// A controller's refusal or alarm: the code on its own line, and its meaning.
+const REFUSALS = new Set(['error', 'alarm']);
 
 /**
  * One entry: a line of columns, and its fields underneath when opened.
@@ -49,7 +75,10 @@ const Detail = ({ label, value }) => (
  * whole of it is the target, and it says whether it is open.
  */
 const JournalRow = ({ entry, open, onToggle }) => {
+  const units = useUnits();
   const data = Object.entries(entry.data || {}).filter(([key]) => DETAILS[key]);
+  const found = entry.data?.found || [];
+  const refusal = REFUSALS.has(entry.event) && entry.code;
 
   return (
     <li className="border-b border-line last:border-b-0">
@@ -88,7 +117,17 @@ const JournalRow = ({ entry, open, onToggle }) => {
               value={entry.program.total ? t('journal.detail.lineOf', entry.program) : entry.program.line}
             />
           ) : null}
+          {refusal ? <Detail label={t('journal.detail.code')} value={entry.code} /> : null}
+          {refusal ? <Detail label={t('journal.detail.meaning')} value={said(entry)} prose /> : null}
           {data.map(([key, value]) => <Detail key={key} label={t(DETAILS[key])} value={String(value)} />)}
+          {found.map((finding, index) => (
+            <Detail
+              key={`${finding.code} ${finding.word}`}
+              label={index === 0 ? t('journal.detail.found') : ''}
+              value={foundText(finding, units)}
+              prose
+            />
+          ))}
           <Detail label={t('journal.detail.id')} value={entry.id} />
         </dl>
       ) : null}

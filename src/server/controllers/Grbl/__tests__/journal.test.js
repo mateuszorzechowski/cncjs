@@ -1,5 +1,6 @@
 import GrblController from '../GrblController';
 import journal from '../../../services/journal';
+import library from '../../../services/library';
 import { createController } from '../../__tests__/helpers/createController';
 
 jest.mock('../../../lib/logger', () => {
@@ -23,6 +24,9 @@ const recordedSince = (from) => journal.query({}, { limit: 500 }).records
   .reverse();
 const mark = () => journal.nextId - 1;
 
+// An error's entry waits for the server's reading of the line it was about.
+const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 beforeEach(() => journal.setLevel('info'));
 
 afterEach(() => {
@@ -43,7 +47,7 @@ describe('what the controller says', () => {
     ]);
   });
 
-  test('an error in a program names the line that caused it, and the line itself', () => {
+  test('an error in a program names the line that caused it, and the line itself', async () => {
     const controller = setup();
     controller.command('gcode:load', 'circle.nc', PROGRAM);
     controller.command('gcode:start');
@@ -53,6 +57,7 @@ describe('what the controller says', () => {
     const from = mark();
 
     controller.runner.parse('error:33');
+    await settled();
 
     const error = recordedSince(from).find((entry) => entry.event === 'error');
     // Line 3 of the file, and its own text — not the line before it, which
@@ -64,6 +69,44 @@ describe('what the controller says', () => {
       program: { name: 'circle.nc', line: 3 },
       data: { sent: 'G3 X22.5 Y-15.8 I-15.8 J22.5' },
     });
+  });
+
+  test('and says what the server sees wrong in that line, when it sees something', async () => {
+    const explain = jest.spyOn(library, 'explain').mockResolvedValue([
+      { code: 'arc', word: 'G3', detail: { radius: 29, reach: 42 } },
+    ]);
+    const controller = setup();
+    controller.command('gcode:load', 'circle.nc', PROGRAM);
+    controller.command('gcode:start');
+    controller.runner.parse('ok');
+    controller.runner.parse('ok');
+    const from = mark();
+    const before = Date.now();
+
+    controller.runner.parse('error:33');
+    await settled();
+
+    expect(explain).toHaveBeenCalledWith({ name: 'circle.nc', line: 3, sent: 'G3 X22.5 Y-15.8 I-15.8 J22.5' });
+    const error = recordedSince(from).find((entry) => entry.event === 'error');
+    expect(error.data).toEqual({
+      sent: 'G3 X22.5 Y-15.8 I-15.8 J22.5',
+      found: [{ code: 'arc', word: 'G3', detail: { radius: 29, reach: 42 } }],
+    });
+    // Stamped with the moment of the error, not of the answer.
+    expect(Date.parse(error.time)).toBeGreaterThanOrEqual(before - 1);
+    explain.mockRestore();
+  });
+
+  test('an error from the console names the line the console sent', async () => {
+    const controller = setup();
+    controller.command('gcode', 'G7');
+    const from = mark();
+
+    controller.runner.parse('error:20');
+    await settled();
+
+    const error = recordedSince(from).find((entry) => entry.event === 'error');
+    expect(error).toMatchObject({ code: 'error:20', data: { sent: 'G7', found: [{ code: 'unsupported', word: 'G7' }] } });
   });
 
   test('and the pause that follows says it was an error', () => {

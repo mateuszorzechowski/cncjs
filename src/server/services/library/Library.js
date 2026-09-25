@@ -330,6 +330,38 @@ class Library extends events.EventEmitter {
     }
 
     /**
+     * What the server sees wrong in a line the controller refused —
+     * `[{ code, word, detail }]`, the file check's own findings, or none.
+     *
+     * The file's lines are passed through the same check as on upload, in
+     * order, so a line is judged with the plane, the units and the position
+     * the program had reached. The refused line is found by its text, the
+     * occurrence nearest the sender's count: that count includes lines the
+     * check does not (blank ones, the `%wait` the controller adds), so a
+     * number alone would land on the wrong line.
+     *
+     * Without a file — a line typed in the console — the line is judged on
+     * its own: a code the firmware lacks or a line too long needs no
+     * context; an arc does, and is not judged.
+     */
+    async explain({ name, line, sent }) {
+      const words = (text) => String(text ?? '').replace(/\(.*?\)|;.*$/g, '').replace(/\s+/g, '').toUpperCase();
+      const wanted = words(sent);
+      if (!wanted) {
+        return [];
+      }
+      const text = name ? await this.read(name) : sent;
+      const found = new Map();
+      await analyse(text, null, name ? this.start : '', (number, said, finding) => {
+        if (words(said) === wanted) {
+          found.set(number, [...(found.get(number) || []), finding]);
+        }
+      });
+      const nearest = [...found.keys()].sort((a, b) => Math.abs(a - line) - Math.abs(b - line))[0];
+      return nearest === undefined ? [] : found.get(nearest);
+    }
+
+    /**
      * Write through a hidden temporary and a rename, so a disk that fills
      * halfway leaves the old file whole rather than a truncated program.
      */

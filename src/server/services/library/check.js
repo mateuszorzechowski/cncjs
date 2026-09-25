@@ -49,14 +49,20 @@ const ARC_MAX = 0.5;
 const ARC_SHARE = 0.001;
 const PLANE_AXES = { G17: ['x', 'y'], G18: ['z', 'x'], G19: ['y', 'z'] };
 
+/*
+ * How far off its circle an arc ends — `{ radius, reach }`, the start's and
+ * the end's distance from the centre, in mm — or null when it is on it. The
+ * numbers are what the journal says when Grbl refuses the line.
+ */
 const offCircle = ({ modal, from, to, center }) => {
   const [a, b] = PLANE_AXES[modal.plane] || PLANE_AXES.G17;
   if (!Number.isFinite(center[a]) || !Number.isFinite(center[b])) {
-    return true;
+    return { radius: null, reach: null };
   }
   const radius = Math.hypot(from[a] - center[a], from[b] - center[b]);
-  const miss = Math.abs(Math.hypot(to[a] - center[a], to[b] - center[b]) - radius);
-  return miss > ARC_SLACK && (miss > ARC_MAX || miss > ARC_SHARE * radius);
+  const reach = Math.hypot(to[a] - center[a], to[b] - center[b]);
+  const miss = Math.abs(reach - radius);
+  return miss > ARC_SLACK && (miss > ARC_MAX || miss > ARC_SHARE * radius) ? { radius, reach } : null;
 };
 
 /**
@@ -100,13 +106,22 @@ const groupsSetBy = (text) => {
  * `start` is the G-code the `gcode:start` events send before every program:
  * a group they set is set, whether the file says so or not.
  */
-export const createCheck = (start = '') => {
+/*
+ * `onFinding(number, text, finding)` hears every finding at the line it is
+ * on, before grouping — `{ code, word, detail }`. It is how the server says
+ * what it sees in a line Grbl refused (`Library.explain`); the file check
+ * itself only keeps the grouped `result()`.
+ */
+export const createCheck = (start = '', onFinding = null) => {
   const issues = new Map();
   const declared = groupsSetBy(start);
   let moved = false;
   let arced = false;
 
-  const say = (code, word, line) => {
+  let text = '';
+
+  const say = (code, word, line, detail = null) => {
+    onFinding?.(line, text, { code, word, ...(detail ? { detail } : {}) });
     const key = `${code} ${word}`;
     const known = issues.get(key);
     if (known) {
@@ -123,7 +138,8 @@ export const createCheck = (start = '') => {
   };
 
   /** One line of the program, with the moves it makes (`analyse`'s `pending`). */
-  const line = (number, { line: text, words, cmds }, moves) => {
+  const line = (number, { line: said, words, cmds }, moves) => {
+    text = said;
     if (cmds?.some(cmd => cmd.startsWith('%')) || text.includes('[')) {
       return;
     }
@@ -150,7 +166,12 @@ export const createCheck = (start = '') => {
       say('too-long', null, number);
     }
 
-    moves.filter(move => move.kind === 'arc' && offCircle(move)).forEach(move => say('arc', move.modal.motion, number));
+    moves.filter(move => move.kind === 'arc').forEach((move) => {
+      const off = offCircle(move);
+      if (off) {
+        say('arc', move.modal.motion, number, off);
+      }
+    });
 
     if (!moved && moves.length > 0) {
       moved = true;

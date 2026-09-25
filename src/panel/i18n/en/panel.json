@@ -499,7 +499,11 @@
       "baudrate": "Baud rate",
       "message": "Message",
       "name": "File",
-      "id": "Entry"
+      "id": "Entry",
+      "code": "Code",
+      "meaning": "Meaning",
+      "found": "The server sees",
+      "arcBy": "{{said}}: starts {{radius}} {{unit}} from its centre and ends {{reach}} {{unit}} from it"
     },
     "range": {
       "m15": "15 min",

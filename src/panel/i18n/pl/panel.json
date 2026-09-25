@@ -499,7 +499,11 @@
       "baudrate": "Prędkość",
       "message": "Komunikat",
       "name": "Plik",
-      "id": "Wpis"
+      "id": "Wpis",
+      "code": "Kod",
+      "meaning": "Znaczenie",
+      "found": "Serwer widzi",
+      "arcBy": "{{said}}: zaczyna się {{radius}} {{unit}} od środka, a kończy {{reach}} {{unit}} od niego"
     },
     "range": {
       "m15": "15 min",
