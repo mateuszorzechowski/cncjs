@@ -255,12 +255,14 @@ class Library extends events.EventEmitter {
 
     /**
      * The files, newest first, each with its analysis once it is ready, and
-     * how much room the disk has left.
+     * how much room the disk has left — with `disk.library`, what the files
+     * here take of it.
      */
     async list() {
       const { files, disk } = await this.listFiles(this.dir);
 
       return {
+        disk: { ...disk, library: files.reduce((sum, file) => sum + file.size, 0) },
         files: files.map(file => {
           const known = this.analyses.get(file.name);
           const current = known && known.mtime === file.mtime && known.size === file.size;
@@ -270,7 +272,6 @@ class Library extends events.EventEmitter {
           const controllerCheck = same ? checked.result : null;
           return { ...file, analysis, controllerCheck, status: statusOf(analysis, controllerCheck) };
         }),
-        disk,
       };
     }
 

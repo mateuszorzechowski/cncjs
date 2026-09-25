@@ -625,6 +625,7 @@
     "disk": {
       "label": "Disk space used",
       "free": "{{free}} free of {{total}}",
+      "library": "cncjs files {{size}}",
       "low": "The server's disk is nearly full. Delete files you no longer need."
     },
     "confirm": {

@@ -56,6 +56,7 @@ const DiskRoom = ({ disk }) => {
       <Meter percent={diskUsed(disk)} tone={low ? 'bg-red' : 'bg-acc'} label={t('files.disk.label')} />
       <span className="font-num text-note text-mut">
         {t('files.disk.free', { free: sizeText(disk.free), total: sizeText(disk.total) })}
+        {disk.library !== undefined ? <>{' · '}{t('files.disk.library', { size: sizeText(disk.library) })}</> : null}
       </span>
       {low ? <Notice>{t('files.disk.low')}</Notice> : null}
     </div>

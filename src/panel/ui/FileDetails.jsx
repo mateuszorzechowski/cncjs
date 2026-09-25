@@ -45,11 +45,11 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnl
       <p className="m-0 break-all font-num text-lead font-semibold text-ink">{file.name}</p>
 
       <FilePreview name={file.name} mtime={file.mtime} className={phone ? 'aspect-video shrink-0' : 'min-h-0 flex-1'} />
-      {/* What the part is and what it runs in: its size, then the units and
-        * the coordinate system it sets — or that it takes the machine's. */}
-      <div className="flex shrink-0 flex-col gap-0.5 font-num text-note text-mut">
-        <p className="m-0">{t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}</p>
-        <p className="m-0">{analysis ? setupText(analysis) : NO_READING}</p>
+      {/* What the part is and what it runs in: its size, and on the right
+        * the units and the coordinate system it sets (Mateusz, 2026-09-25). */}
+      <div className="flex shrink-0 items-baseline justify-between gap-3 font-num text-note text-mut">
+        <p className="m-0 truncate">{t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}</p>
+        <p className="m-0 shrink-0">{analysis ? setupText(analysis) : NO_READING}</p>
       </div>
 
       <div className="grid shrink-0 grid-cols-2 gap-2">

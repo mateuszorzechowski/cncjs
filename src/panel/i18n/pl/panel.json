@@ -625,6 +625,7 @@
     "disk": {
       "label": "Zajęte miejsce na dysku",
       "free": "wolne {{free}} z {{total}}",
+      "library": "pliki cncjs {{size}}",
       "low": "Dysk serwera jest prawie pełny. Usuń niepotrzebne pliki."
     },
     "confirm": {

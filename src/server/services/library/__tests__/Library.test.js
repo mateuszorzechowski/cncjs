@@ -19,6 +19,15 @@ afterEach(() => {
   library.close();
 });
 
+describe('what the library takes', () => {
+  test('is the files in it, beside the disk', async () => {
+    await library.write('a.nc', 'G0 X1');
+    await library.write('b.nc', 'G0 X12');
+
+    expect((await library.list()).disk.library).toBe(11);
+  });
+});
+
 describe('the directory', () => {
   test('is made on first use, so an unconfigured machine has a library', () => {
     expect(fs.statSync(dir).isDirectory()).toBe(true);
