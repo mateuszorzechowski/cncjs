@@ -25,12 +25,23 @@
  * - `joined`, the same buttons as one group, touching, rounded only at the
  *   ends — *"te przyciski mogą być jako button group"* (2026-09-24);
  * - `fitWide`, equal columns across a phone and as wide as the labels from
- *   `@3xl` up, for a settings row whose control sits in a column of its own.
+ *   `@3xl` up, for a settings row whose control sits in a column of its own;
+ * - `covers(option)`, beside `value`, for a floor: the chosen one filled and
+ *   the ones it takes in with it in a wash — the journal's threshold, where
+ *   `Info` keeps warnings and errors too. Filled all alike they read as a
+ *   set picked one by one, which is the journal's *filter* and a different
+ *   question (settings drawing, 2026-09-25, point 8).
+ *
+ * Figures in the number face, words in the text face. A step of `10` next to
+ * `1` has to line up digit for digit; `System` and `Dark` are names, and in
+ * the monospace they were the one place on a settings page where a word
+ * looked like a reading (point 9). `unit` is what says an option is a
+ * quantity.
  */
 const COLUMNS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 4: 'grid-cols-4' };
 
 const SegmentedChoice = ({
-  options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, counts, columns, joined = false, fitWide = false,
+  options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, covers, counts, columns, joined = false, fitWide = false,
 }) => (
   <div
     className={[
@@ -43,6 +54,7 @@ const SegmentedChoice = ({
     {options.map((option, index) => {
       const on = (which) => (isOn ? isOn(which) : which === value);
       const chosen = on(option);
+      const covered = !chosen && Boolean(covers && covers(option));
       const count = counts ? counts[option] : undefined;
       return (
         <button
@@ -57,7 +69,8 @@ const SegmentedChoice = ({
           disabled={disabled}
           onClick={() => onChange(option)}
           className={[
-            'flex items-center gap-2 border font-num text-base font-semibold transition-colors',
+            'flex items-center gap-2 border text-base font-semibold transition-colors',
+            unit ? 'font-num' : '',
             // Joined: one border between two buttons rather than two, and the
             // chosen one drawn over its neighbours so its edge is whole.
             // Hovered drawn over its neighbours too, or the neighbour's edge
@@ -71,9 +84,9 @@ const SegmentedChoice = ({
             !columns && compact ? 'shrink-0 px-3' : '',
             !columns && !compact ? 'min-w-0 flex-1 basis-0 px-1' : '',
             fitWide ? '@3xl/shell:flex-none @3xl/shell:basis-auto @3xl/shell:px-5' : '',
-            chosen
-              ? 'border-acc bg-acc text-white hover:brightness-95'
-              : 'border-line bg-surf text-ink hover:border-acc hover:text-acc',
+            chosen ? 'border-acc bg-acc text-white hover:brightness-95' : '',
+            covered ? 'border-line bg-accS text-acc hover:border-acc' : '',
+            !chosen && !covered ? 'border-line bg-surf text-ink hover:border-acc hover:text-acc' : '',
             // Dimmed, not repainted: which step is selected is still the
             // answer to "what happens when I reconnect and press a key", and
             // a disabled control that drops its selection hides that.

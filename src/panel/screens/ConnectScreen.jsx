@@ -5,6 +5,7 @@ import FadeScroller from '../ui/FadeScroller';
 import PortRow from '../ui/PortRow';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import Sheet from '../ui/Sheet';
+import SettingRow from '../ui/SettingRow';
 import SettingSummary from '../ui/SettingSummary';
 import { NO_READING } from '../machine/readings';
 import { usePorts } from '../machine/usePorts';
@@ -61,27 +62,6 @@ const ConnectScreen = ({ machine }) => {
   // and its `Error` does not survive socket.io's encoding either way. See
   // `ports.js`.
   const [failure, setFailure] = useState(null);
-
-  /*
-   * What the panel is talking to, said whether or not it is talking to
-   * anything.
-   *
-   * Asked for on 2026-09-23 — *"domyslnie wyswietlaj steronik i port oraz
-   * adres serwera, tylko puste jak nie ma"*. The top bar carries two of these
-   * while connected and drops them on a phone; this is the screen where they
-   * are the subject, and a row that disappears when the answer is "none" is a
-   * row nobody can use to tell "not connected" from "not shown".
-   *
-   * The server's address is the origin the panel was served from — the panel
-   * has no other. It is the one of the three known even when everything else
-   * is dark, which is exactly when somebody is looking for it: a pendant that
-   * cannot reach its machine is usually pointed at the wrong host.
-   */
-  const identity = [
-    { key: 'topbar.controller', value: machine.type },
-    { key: 'topbar.port', value: machine.port },
-    { key: 'connect.server', value: window.location.host },
-  ];
 
   const held = machine.connected ? machine.port : '';
   const rows = useMemo(() => readPorts(list, held), [list, held]);
@@ -195,89 +175,99 @@ const ConnectScreen = ({ machine }) => {
   };
   const sheet = SHEETS[editing];
 
+  /*
+   * Rows, the same as every other settings tab — settings drawing,
+   * 2026-09-25, *"Connection przebudowane na wiersze z Application"*.
+   *
+   * No caption on the card: the tab above already says which one this is.
+   * And no separate list of what is connected: the controller and the port
+   * were said three times — the top bar, a list here, and the choices below
+   * it — so the choices are now the only place, and the server gets a row of
+   * its own.
+   *
+   * The three choices stay, always all three. They used to disappear once
+   * the port was open, on the reasoning that attaching to a running port
+   * ignores the controller and the rate. True, and beside the point: *"po
+   * polaczeniu chce miec widoczne wszystkie opcje"* (2026-09-23). What a
+   * connected panel is talking to, and at what rate, is exactly what
+   * somebody wants to read after connecting — so they lock instead, showing
+   * what the open port is actually running at rather than the last thing
+   * picked from a list. The port locks with them, because one port at a
+   * time is the rule — see the button below.
+   */
   return (
-    <Card
-      label={t('connect.title')}
-      className="flex-1"
-      bodyClassName="gap-4"
-    >
-      <dl className="m-0 flex shrink-0 flex-col gap-1">
-        {identity.map(({ key, value }) => (
-          <div key={key} className="flex items-baseline justify-between gap-3">
-            <dt className="shrink-0 text-cap uppercase tracking-[0.08em] text-mut">{t(key)}</dt>
-            <dd className="m-0 min-w-0 truncate font-num text-base text-ink">
-              {value || NO_READING}
-            </dd>
-          </div>
-        ))}
-      </dl>
-
-      {/*
-        * The three choices, always all three.
-        *
-        * The controller and the rate used to disappear once the port was
-        * open, on the reasoning that attaching to a running port ignores
-        * both. True, and beside the point: *"po polaczeniu chce miec widoczne
-        * wszystkie opcje"* (2026-09-23). What a connected panel is talking
-        * to, and at what rate, is exactly what somebody wants to read after
-        * connecting -- and a row that vanishes takes the answer with it.
-        *
-        * So they stay and go quiet instead, showing what the open port is
-        * actually running at rather than the last thing picked from a list.
-        *
-        * The port locks with them, because one port at a time is the rule --
-        * see the button below.
-        */}
-      <div className="flex shrink-0 flex-col gap-2.5">
+    <Card>
+      <SettingRow title={t('connect.port')} note={open ? t('connect.locked') : null}>
         <SettingSummary
-          title={t('connect.choosePort')}
+          label={t('connect.choosePort')}
           values={[{ value: (held || selected) || NO_READING }]}
-          disabled={open}
+          locked={open}
           onOpen={() => setEditing('port')}
         />
+      </SettingRow>
+      <SettingRow title={t('connect.controller')}>
         <SettingSummary
-          title={t('connect.controller')}
+          label={t('connect.controller')}
           values={[{ value: (open ? machine.type : controllerType) || NO_READING }]}
-          disabled={open}
+          locked={open}
           onOpen={() => setEditing('controller')}
         />
+      </SettingRow>
+      <SettingRow title={t('connect.baudrate')}>
         <SettingSummary
-          title={t('connect.baudrate')}
+          label={t('connect.baudrate')}
           values={[{
             value: (open ? machine.baudrate : baudrate) || NO_READING,
             unit: t('units.baud'),
           }]}
-          disabled={open}
+          locked={open}
           onOpen={() => setEditing('baudrate')}
         />
-      </div>
+      </SettingRow>
 
-      {/* Nothing between the choices and the buttons, so the card is as tall
-        * as it needs to be and the actions sit under the thumb rather than
-        * wherever a list of ports happens to end. */}
-      <span className="min-h-0 flex-1" />
+      {/*
+        * The server's address is the origin the panel was served from — the
+        * panel has no other. It is the one thing here known even when
+        * everything else is dark, which is exactly when somebody is looking
+        * for it: a pendant that cannot reach its machine is usually pointed
+        * at the wrong host (*"domyslnie wyswietlaj steronik i port oraz adres
+        * serwera"*, 2026-09-23).
+        */}
+      <SettingRow title={t('connect.server')} note={t('connect.serverNote')}>
+        <span className="font-num text-base text-ink">{window.location.host}</span>
+      </SettingRow>
 
-      {failure ? (
-        <p className="m-0 shrink-0 rounded-ctl border border-red bg-redS px-4 py-3 text-base text-red">
-          {t(failure.key, failure.vars)}
-        </p>
-      ) : null}
-
-      <div className="flex shrink-0 gap-2">
-        <Button onClick={refresh} disabled={!machine.linked || busy} className="h-ctl">
-          {t('connect.refresh')}
-        </Button>
-        <Button
-          tone={open ? 'stop' : 'primary'}
-          disabled={(open ? !held : !selected) || busy}
-          onClick={() => act(() => (open
-            ? machine.disconnect(held)
-            : machine.connect(selected, { controllerType, baudrate })))}
-          className="h-ctl flex-1"
-        >
-          {t(open ? 'connect.disconnect' : 'connect.connect')}
-        </Button>
-      </div>
+      <SettingRow
+        title={t('connect.link')}
+        note={open
+          ? t('connect.linked', { port: held, baudrate: machine.baudrate })
+          : t('connect.unlinked')}
+      >
+        <div className="flex gap-2 @3xl/shell:self-start">
+          <Button
+            onClick={refresh}
+            disabled={!machine.linked || busy}
+            className="h-ctl flex-1 @3xl/shell:flex-none"
+          >
+            {t('connect.refresh')}
+          </Button>
+          <Button
+            tone={open ? 'end' : 'primary'}
+            disabled={(open ? !held : !selected) || busy}
+            onClick={() => act(() => (open
+              ? machine.disconnect(held)
+              : machine.connect(selected, { controllerType, baudrate })))}
+            className="h-ctl flex-1 @3xl/shell:flex-none"
+          >
+            {t(open ? 'connect.disconnect' : 'connect.connect')}
+          </Button>
+        </div>
+        {failure ? (
+          <p className="m-0 rounded-ctl border border-red bg-redS px-4 py-3 text-base text-red">
+            {t(failure.key, failure.vars)}
+          </p>
+        ) : null}
+      </SettingRow>
 
       {/*
         * What opening a port does to the machine, behind the `?` rather than

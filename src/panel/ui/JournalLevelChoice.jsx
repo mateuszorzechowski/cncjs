@@ -29,7 +29,8 @@ const JournalLevelChoice = () => {
   // Every level kept is lit, not only the one pressed: this is a floor —
   // `Uwaga` keeps warnings and errors — unlike the journal's own filter,
   // where levels are picked one by one (*"poziom logowania może zaznaczać
-  // wszystkie poziomy, które się zawierają"*, 2026-09-25).
+  // wszystkie poziomy, które się zawierają"*, 2026-09-25). The one pressed
+  // filled, the ones above it in a wash, so it still reads as one choice.
   return (
     <SegmentedChoice
       joined
@@ -37,7 +38,7 @@ const JournalLevelChoice = () => {
       label={t('journal.keep.label')}
       options={LEVELS}
       value={level}
-      isOn={(id) => level !== null && LEVELS.indexOf(id) >= LEVELS.indexOf(level)}
+      covers={(id) => level !== null && LEVELS.indexOf(id) > LEVELS.indexOf(level)}
       disabled={level === null}
       onChange={(chosen) => saveJournalLevel(chosen).then(setLevel).catch(() => {})}
       format={(id) => t(LEVEL_KEYS[id])}

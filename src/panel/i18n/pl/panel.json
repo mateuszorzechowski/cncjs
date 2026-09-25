@@ -218,10 +218,17 @@
   },
   "settings": {
     "connection": "Połączenie",
-    "app": "Aplikacja"
+    "appearance": "Wygląd",
+    "preferences": "Preferencje",
+    "install": "Instalacja",
+    "locked": "Zablokowane",
+    "scope": {
+      "device": "To urządzenie",
+      "server": "Serwer · wszystkie urządzenia"
+    }
   },
   "theme": {
-    "label": "Wygląd",
+    "label": "Motyw",
     "system": "Systemowy",
     "light": "Jasny",
     "dark": "Ciemny"
@@ -274,16 +281,15 @@
     "warning": "Ostrzeżenie"
   },
   "connect": {
-    "title": "Połączenie",
     "choosePort": "Wybierz port",
     "trust": {
       "insecure": "Ten panel jest serwowany bez szyfrowania, więc telefon nie zainstaluje go jako aplikacji. Uruchom serwer z certyfikatem — patrz scripts/serve-panel.sh.",
       "untrusted": "To urządzenie nie ufa certyfikatowi panelu, więc nie zainstaluje go jako aplikacji. Kliknięcie „mimo to przejdź” nie wystarczy: strona się wczyta, a połączenie zostaje niezaufane."
     },
-    "server": "serwer",
+    "server": "Serwer",
     "controller": "Typ sterownika",
     "baudrate": "Prędkość transmisji",
-    "refresh": "Odśwież",
+    "refresh": "Odśwież porty",
     "connect": "Połącz",
     "disconnect": "Rozłącz",
     "noServer": "Brak połączenia z serwerem, więc nie ma czego wypisać.",
@@ -292,7 +298,13 @@
     "openFailed": "Port się nie otworzył. Może go trzymać inny program albo został odłączony od czasu sporządzenia listy.",
     "closeFailed": "Port się nie zamknął.",
     "clashController": "Port {{port}} jest już otwarty jako {{actual}} przez innego klienta. Rozłącz go tam, zanim otworzysz jako {{asked}}.",
-    "clashBaudrate": "Port {{port}} jest już otwarty przy {{actual}} bodów przez innego klienta. Rozłącz go tam, zanim otworzysz przy {{asked}}."
+    "clashBaudrate": "Port {{port}} jest już otwarty przy {{actual}} bodów przez innego klienta. Rozłącz go tam, zanim otworzysz przy {{asked}}.",
+    "port": "Port",
+    "locked": "Zablokowane, dopóki port jest otwarty. Rozłącz, żeby zmienić port, sterownik lub prędkość.",
+    "serverNote": "Adres, z którym rozmawia ten panel.",
+    "link": "Połączenie ze sterownikiem",
+    "linked": "Połączono z {{port}} przy {{baudrate}} bodów.",
+    "unlinked": "Żaden port nie jest otwarty."
   },
   "ports": {
     "state": {

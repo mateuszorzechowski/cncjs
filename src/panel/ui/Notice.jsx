@@ -46,7 +46,7 @@ const Notice = ({ children, className = '' }) => (
     <span className="pt-0.5 text-amb">
       <Triangle className="size-5" />
     </span>
-    <div className="flex min-w-0 flex-col gap-2 text-base text-amb">{children}</div>
+    <div className="flex min-w-0 flex-col gap-2 text-base text-ambT">{children}</div>
   </div>
 );
 

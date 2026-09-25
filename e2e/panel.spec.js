@@ -83,7 +83,7 @@ test.describe('panel, disconnected', () => {
     const go = cncjs.page.getByRole('button', { name: 'Przejdź do połączenia' });
     await expect(go).toBeVisible();
     await go.click();
-    await expect(cncjs.page.getByRole('button', { name: 'Odśwież' })).toBeVisible();
+    await expect(cncjs.page.getByRole('button', { name: 'Odśwież porty' })).toBeVisible();
 
     cncjs.expectNoPageErrors();
   });
@@ -221,7 +221,7 @@ test.describe('panel, disconnected', () => {
     // trafia do zakladki ustawienia, ustawienia na samym dole"*.
     await rail(cncjs.page).getByRole('button', { name: 'Ustawienia' }).click();
 
-    const refresh = cncjs.page.getByRole('button', { name: 'Odśwież' });
+    const refresh = cncjs.page.getByRole('button', { name: 'Odśwież porty' });
     await expect(refresh).toBeVisible();
 
     // The list is behind a line that says which port is chosen, at every
@@ -257,7 +257,7 @@ test.describe('panel, disconnected', () => {
       .getByRole('navigation', { name: 'Navigation' })
       .getByRole('button', { name: 'Settings' })
       .click();
-    await expect(cncjs.page.getByRole('button', { name: 'Refresh' })).toBeVisible();
+    await expect(cncjs.page.getByRole('button', { name: 'Rescan ports' })).toBeVisible();
     await cncjs.page.getByRole('button', { name: /^Choose a port/ }).click();
 
     /*
@@ -290,7 +290,7 @@ test.describe('panel, disconnected', () => {
     const english = await ports.first().innerText();
     await openPanel(cncjs.page, 'pl');
     await rail(cncjs.page).getByRole('button', { name: 'Ustawienia' }).click();
-    await expect(cncjs.page.getByRole('button', { name: 'Odśwież' })).toBeVisible();
+    await expect(cncjs.page.getByRole('button', { name: 'Odśwież porty' })).toBeVisible();
 
     await cncjs.page.getByRole('button', { name: /^Wybierz port/ }).click();
     const polish = await cncjs.page
@@ -299,7 +299,7 @@ test.describe('panel, disconnected', () => {
     // The port's own name is the same word twice.
     expect(polish.split('\n')[0]).toBe(english.split('\n')[0]);
     // And the button beside it is not.
-    await expect(cncjs.page.getByRole('button', { name: 'Refresh' })).toHaveCount(0);
+    await expect(cncjs.page.getByRole('button', { name: 'Rescan ports' })).toHaveCount(0);
   });
 
   test('the zeroing screen offers every axis, and not one of them with no machine', async ({ cncjs }) => {

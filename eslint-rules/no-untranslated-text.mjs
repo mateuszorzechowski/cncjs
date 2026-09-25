@@ -37,6 +37,8 @@ const NOT_DISPLAYED = new Set([
   'aria-current', 'aria-pressed', 'aria-expanded', 'aria-selected', 'aria-checked',
   // Enumerations the component switches on.
   'type', 'tone', 'variant', 'align', 'name', 'frameloop', 'attach', 'memory',
+  // A settings row's `device` or `server`; the words shown for it are keys.
+  'scope',
   // SVG geometry and paint, which are drawing instructions.
   'd', 'viewBox', 'fill', 'stroke', 'strokeWidth', 'strokeLinecap',
   'strokeLinejoin', 'opacity', 'focusable', 'cx', 'cy', 'r', 'x', 'y',
