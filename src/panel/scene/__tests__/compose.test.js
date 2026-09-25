@@ -83,8 +83,21 @@ describe('what the camera is framed on', () => {
     });
   });
 
-  test('is the program alone once the machine is switched off', () => {
+  test('is the program alone once the machine is switched off — and down to the floor', () => {
     const drawn = scene({ layers: { ...ALL, machineArea: false, machineAxes: false, wcsAxes: false } });
+
+    // Across, the program and no more. Down, as far as the machine's floor,
+    // where the grid is: framed on the program alone, a side view showed the
+    // part hanging in nothing — *"jak mam odznaczone obwiednie maszyny, to w
+    // rzucie z boku nie widzę płaszczyzny maszyny"* (2026-09-25).
+    expect(drawn.frame).toEqual({
+      min: { x: -100, y: -80, z: -200 },
+      max: { x: -90, y: -70, z: -10 },
+    });
+  });
+
+  test('does not reach for a floor the machine has not described', () => {
+    const drawn = scene({ envelope: null, layers: { ...ALL, machineArea: false, machineAxes: false, wcsAxes: false } });
 
     expect(drawn.frame).toEqual({
       min: { x: -100, y: -80, z: -12 },
@@ -99,10 +112,10 @@ describe('what the camera is framed on', () => {
       layers: { ...NONE, wcsAxes: true },
     });
 
-    // A point, framed. Otherwise the layer is a button that appears to do
-    // nothing because what it drew is off screen.
+    // A point, framed — and the floor under it. Otherwise the layer is a
+    // button that appears to do nothing because what it drew is off screen.
     expect(drawn.frame).toEqual({
-      min: { x: -40, y: -60, z: -5 },
+      min: { x: -40, y: -60, z: -200 },
       max: { x: -40, y: -60, z: -5 },
     });
   });
@@ -111,7 +124,7 @@ describe('what the camera is framed on', () => {
     const drawn = scene({ layers: NONE });
 
     expect(drawn.frame).toEqual({
-      min: { x: -1, y: -1, z: -1 },
+      min: { x: -1, y: -1, z: -200 },
       max: { x: 1, y: 1, z: 1 },
     });
   });
