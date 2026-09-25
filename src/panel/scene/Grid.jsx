@@ -78,8 +78,13 @@ const SubGrid = ({ area, z, color, step, coarse }) => {
  * at 216 against a ground of 247, where from the side it was 133. Measured
  * 2026-09-25, when the plane could not be seen in a side view.
  */
-const Grid = ({ area, z, color }) => {
-  const { lines, axes, step } = useMemo(() => buildGrid(area, z, color), [area, z, color]);
+const Grid = ({ area, z, color, ends }) => {
+  const endX = ends?.x;
+  const endY = ends?.y;
+  const { lines, axes, step } = useMemo(
+    () => buildGrid(area, z, color, { x: endX, y: endY }),
+    [area, z, color, endX, endY]
+  );
   const fine = fineStep(step);
 
   useEffect(() => () => {

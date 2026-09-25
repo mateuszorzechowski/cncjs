@@ -90,6 +90,24 @@ export const toolPoint = (machinePosition) => {
  * @param {object|null} toolpath The loaded program, from `readToolpath`.
  * @param {object} layers Which of the four are switched on.
  */
+// The end of an axis's travel farther from machine zero.
+const farEnd = (envelope, axis) => (
+  Math.abs(envelope.min[axis]) >= Math.abs(envelope.max[axis]) ? envelope.min[axis] : envelope.max[axis]
+);
+
+/**
+ * The corner of the travel opposite machine zero, or null without a travel.
+ *
+ * Where the floor's second pair of guide lines runs, always — *"przez osie
+ * miałem na myśli prowadnice/linie"*, *"mają być zawsze"* (Mateusz,
+ * 2026-09-25): the lines through zero say where the travel starts, these say
+ * where it ends. Per axis, so an axis that homes to its other end
+ * ($23) is followed.
+ */
+export const farCorner = (envelope) => (envelope
+  ? { x: farEnd(envelope, 'x'), y: farEnd(envelope, 'y'), z: farEnd(envelope, 'z') }
+  : null);
+
 export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers }) => {
   const program = toolpath ? shift(toolpath.bounds, offset) : null;
 
@@ -112,6 +130,8 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
    */
   const origin = workOrigins(settings).find((system) => system.name === wcs) || null;
 
+  const corner = farCorner(envelope);
+
   const drawn = union([
     (layers.path || layers.programArea) && program,
     layers.machineArea && envelope,
@@ -120,20 +140,20 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
   ].filter(Boolean)) || UNIT;
 
   /*
-   * **Down to the machine's floor, always.** The grid lies there, and it is
-   * the plane everything else is read against. Framed on what is switched on
-   * and nothing more, a side view with the envelope off showed the part
-   * hanging in nothing, the floor out of frame below it — *"jak mam
-   * odznaczone obwiednie maszyny, to w rzucie z boku nie widzę płaszczyzny
-   * maszyny"* (2026-09-25). Across, the frame is still only what is on; seen
-   * from above this changes nothing.
+   * **The whole travel, always, on every view button.** *"Kadr na wszystkich
+   * przyciskach ma działać podobnie — teraz nie wiem, gdzie kadr wyląduje"*
+   * (Mateusz, 2026-09-25). Framed on whatever happened to be switched on,
+   * each layer moved where the view landed; now it lands on the machine,
+   * with anything switched on outside it taken in too. It also keeps the
+   * floor in a side view with the envelope off, and the guide lines at the
+   * ends of the travel in sight. Closer in on the program is the fit
+   * button's job. Without a reported travel, what is switched on, as before.
    */
-  const frame = envelope
-    ? { min: { ...drawn.min, z: Math.min(drawn.min.z, envelope.min.z) }, max: drawn.max }
-    : drawn;
+  const frame = envelope ? union([drawn, envelope]) : drawn;
 
   return {
     envelope,
+    farCorner: corner,
     program,
     offset,
     toolpath,

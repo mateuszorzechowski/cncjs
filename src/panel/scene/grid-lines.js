@@ -109,7 +109,12 @@ export const fineStep = (step) => {
  * @returns {object} `{ lines, axes, step, margin }` — two geometries, because
  *   the lines through zero are drawn at a different weight from the rest.
  */
-export const buildGrid = (area, z, color) => {
+/**
+ * @param {object} [ends] Where the travel ends, `{ x, y }` — the far corner.
+ *   Drawn like the lines through zero, exactly there even off the spacing:
+ *   *"przez osie miałem na myśli prowadnice/linie"* (Mateusz, 2026-09-25).
+ */
+export const buildGrid = (area, z, color, ends) => {
   const step = gridStep(Math.max(
     area.max.x - area.min.x,
     area.max.y - area.min.y,
@@ -138,6 +143,10 @@ export const buildGrid = (area, z, color) => {
   // says everything is measured from, and on an unhomed machine it is the
   // only thing on screen that claims to be a position at all.
   const isZero = (value) => Math.abs(value) < step / 1000;
+  const guideX = Number.isFinite(ends?.x) ? ends.x : null;
+  const guideY = Number.isFinite(ends?.y) ? ends.y : null;
+  // An ordinary line that the guide lies on gives way to it.
+  const isGuide = (value, guide) => guide !== null && Math.abs(value - guide) < step / 1000;
 
   /*
    * Each line is laid as one segment per square rather than as one long one.
@@ -150,14 +159,24 @@ export const buildGrid = (area, z, color) => {
     into.alphas.push(gridAlpha(ax, ay, area, margin), gridAlpha(bx, by, area, margin));
   };
 
-  for (const x of xs) {
+  for (const x of xs.filter((value) => !isGuide(value, guideX))) {
     for (let i = 1; i < ys.length; ++i) {
       add(x, ys[i - 1], x, ys[i], isZero(x));
     }
   }
-  for (const y of ys) {
+  for (const y of ys.filter((value) => !isGuide(value, guideY))) {
     for (let i = 1; i < xs.length; ++i) {
       add(xs[i - 1], y, xs[i], y, isZero(y));
+    }
+  }
+  if (guideX !== null) {
+    for (let i = 1; i < ys.length; ++i) {
+      add(guideX, ys[i - 1], guideX, ys[i], true);
+    }
+  }
+  if (guideY !== null) {
+    for (let i = 1; i < xs.length; ++i) {
+      add(xs[i - 1], guideY, xs[i], guideY, true);
     }
   }
 
