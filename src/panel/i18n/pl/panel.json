@@ -416,7 +416,8 @@
       "command": "Komenda",
       "port": "Port",
       "motion": "Ruch",
-      "fileCheck": "kontrola"
+      "fileCheck": "Kontrola",
+      "file": "Plik"
     },
     "program": {
       "start": "Start {{name}}",
@@ -485,11 +486,20 @@
     "count": "{{matched}} z {{kept}} wpisów",
     "show": "Pokaż wpisy: {{count}}",
     "fileCheck": {
-      "clean": "{{name}}: Grbl przyjął każdą linię",
-      "errors": "{{name}}: Grbl odrzucił linie — rodzajów błędów: {{errors}}",
-      "firstError": "{{name}}: sprawdzanie stanęło na pierwszym błędzie",
-      "interrupted": "{{name}}: sprawdzanie przerwane resetem",
-      "stopped": "{{name}}: sprawdzanie przerwane — {{code}}"
+      "clean": "{{name}}: sprawdzono na sterowniku — Grbl przyjął każdą linię",
+      "errors": "{{name}}: sprawdzono na sterowniku — Grbl odrzucił linie, rodzajów błędów: {{errors}}",
+      "firstError": "{{name}}: sprawdzono na sterowniku — stanęło na pierwszym błędzie",
+      "interrupted": "{{name}}: sprawdzanie na sterowniku przerwane resetem",
+      "stopped": "{{name}}: sprawdzanie na sterowniku przerwane — {{code}}"
+    },
+    "file": {
+      "write": "{{name}}: wgrano",
+      "delete": "{{name}}: usunięto",
+      "analysed": {
+        "ok": "{{name}}: zweryfikowano na serwerze — OK",
+        "warnings": "{{name}}: zweryfikowano na serwerze — ostrzeżenia: {{issues}}",
+        "incompatible": "{{name}}: zweryfikowano na serwerze — niezgodny, problemów: {{issues}}"
+      }
     }
   },
   "grbl": {

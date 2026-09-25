@@ -82,6 +82,11 @@ const createServer = (options, callback) => {
     // The last machine's limits, so a time is there before the port opens.
     library.open({ dir, machine: config.get('library.machine', null), start: start() });
     library.on('machine', (machine) => config.set('library.machine', machine));
+    // The server's check of a file, in the journal beside everything else:
+    // "verified on the server", with its verdict.
+    library.on('analysed', ({ name, verdict, issues }) => journal.record({
+      level: verdict === 'incompatible' ? 'warn' : 'info', source: 'server', event: 'file', code: 'analysed', data: { name, verdict, issues },
+    }));
     config.on('change', () => library.setStart(start()));
     log.info(`Keeping files in ${chalk.yellow(JSON.stringify(dir))}`);
   }

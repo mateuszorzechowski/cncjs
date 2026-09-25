@@ -88,6 +88,17 @@ describe('which codes a sentence belongs to', () => {
   });
 });
 
+describe('the library', () => {
+  test.each([
+    [{ code: 'write', data: { name: 'a.nc' } }, 'journal.file.write'],
+    [{ code: 'delete', data: { name: 'a.nc' } }, 'journal.file.delete'],
+    [{ code: 'analysed', data: { name: 'a.nc', verdict: 'warnings', issues: 3 } }, 'journal.file.analysed.warnings'],
+    [{ code: 'analysed', data: { name: 'a.nc', verdict: 'incompatible', issues: 1 } }, 'journal.file.analysed.incompatible'],
+  ])('%o says %s', (fields, key) => {
+    expect(describeEntry(entry({ event: 'file', ...fields })).key).toBe(key);
+  });
+});
+
 describe('a check on the controller', () => {
   test.each([
     ['clean', 'journal.fileCheck.clean'],

@@ -416,7 +416,8 @@
       "command": "Command",
       "port": "Port",
       "motion": "Motion",
-      "fileCheck": "check"
+      "fileCheck": "Check",
+      "file": "File"
     },
     "program": {
       "start": "Started {{name}}",
@@ -485,11 +486,20 @@
     "count": "{{matched}} of {{kept}} entries",
     "show": "Show {{count}} entries",
     "fileCheck": {
-      "clean": "{{name}}: Grbl took every line",
-      "errors": "{{name}}: Grbl refused lines — kinds of error: {{errors}}",
-      "firstError": "{{name}}: the check stopped at the first error",
-      "interrupted": "{{name}}: the check was stopped by a reset",
-      "stopped": "{{name}}: the check was stopped — {{code}}"
+      "clean": "{{name}}: verified on the controller — Grbl took every line",
+      "errors": "{{name}}: verified on the controller — Grbl refused lines, kinds of error: {{errors}}",
+      "firstError": "{{name}}: verified on the controller — stopped at the first error",
+      "interrupted": "{{name}}: the check on the controller was stopped by a reset",
+      "stopped": "{{name}}: the check on the controller was stopped — {{code}}"
+    },
+    "file": {
+      "write": "{{name}}: uploaded",
+      "delete": "{{name}}: deleted",
+      "analysed": {
+        "ok": "{{name}}: verified on the server — OK",
+        "warnings": "{{name}}: verified on the server — warnings: {{issues}}",
+        "incompatible": "{{name}}: verified on the server — incompatible, problems: {{issues}}"
+      }
     }
   },
   "grbl": {
