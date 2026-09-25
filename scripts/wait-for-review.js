@@ -84,6 +84,7 @@ const tick = () => {
     fresh.forEach((note) => {
       console.log(`  #${note.id} [${note.screen}] <${note.tag}> ${note.label}`);
       console.log(`     ${note.text}`);
+      (note.images || []).forEach((file) => console.log(`     zdjęcie: ${file}`));
       console.log(`     ${note.className.slice(0, 120)}\n`);
     });
     process.exit(0);
