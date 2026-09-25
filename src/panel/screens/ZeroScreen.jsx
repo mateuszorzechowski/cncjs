@@ -145,7 +145,7 @@ const ZeroScreen = ({ machine }) => {
         * COM3 was held by another client.
         */}
       {connected && canSendGcode && status.known && !knowsWcs ? (
-        <p className="m-0 shrink-0 rounded-ctl border border-amb bg-ambS px-4 py-3 text-base text-amb">
+        <p className="m-0 shrink-0 rounded-ctl border border-amb bg-ambS px-4 py-3 text-base text-ambT">
           {t('zero.noWcs')}
         </p>
       ) : null}

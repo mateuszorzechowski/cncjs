@@ -24,6 +24,16 @@ const TONES = {
   go: `border border-grn bg-grn text-white hover:brightness-95 ${OFF}`,
   hold: `border border-amb bg-amb text-white hover:brightness-95 ${OFF}`,
   stop: `border border-red bg-red text-white hover:brightness-90 ${OFF}`,
+  /*
+   * Red, outlined: ends something that is not the machine's motion.
+   *
+   * Disconnect was a full red fill as wide as the card, the same face as
+   * STOP — and it is the opposite of a stop in the one way that matters: it
+   * does nothing to what the spindle is doing. A solid red is kept for the
+   * two things that halt the machine (settings drawing, 2026-09-25, point 7).
+   */
+  end: 'border-2 border-red bg-panel text-red hover:bg-redS ' +
+    'disabled:opacity-45 disabled:hover:bg-panel',
 };
 
 /**

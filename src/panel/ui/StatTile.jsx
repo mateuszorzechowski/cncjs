@@ -17,7 +17,7 @@ import Icon from './Icon';
  * will not run (Mateusz, 2026-09-25: *"całość powinna być czerwona"*).
  */
 const TONES = {
-  warn: { edge: 'border-amb bg-ambS', text: 'text-amb' },
+  warn: { edge: 'border-amb bg-ambS', text: 'text-ambT' },
   bad: { edge: 'border-red bg-redS', text: 'text-red' },
 };
 const PLAIN = { edge: 'border-line bg-field', text: 'text-ink' };

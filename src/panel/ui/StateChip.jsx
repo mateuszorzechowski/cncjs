@@ -8,7 +8,7 @@ import Icon from './Icon';
 // never sees and never generates.
 const TONES = {
   running: { text: 'text-grn', dot: 'bg-grn', rule: 'bg-grn', edge: 'border-grn bg-grnS' },
-  ready: { text: 'text-amb', dot: 'bg-amb', rule: 'bg-amb', edge: 'border-amb bg-ambS' },
+  ready: { text: 'text-ambT', dot: 'bg-amb', rule: 'bg-amb', edge: 'border-amb bg-ambS' },
   stopped: { text: 'text-red', dot: 'bg-red', rule: 'bg-red', edge: 'border-red bg-redS' },
   inactive: { text: 'text-mut', dot: 'bg-mut', rule: 'bg-line', edge: 'border-line bg-mutS' },
 };

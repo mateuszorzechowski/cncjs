@@ -22,10 +22,15 @@ import { t } from '../i18n';
  * scrolls to. `SegmentedChoice` is the panel's own control for a choice among
  * a few fixed things, and a pair of sections is exactly that.
  *
- * From the variant decision of 2026-09-21, `theme` now lives on the
- * application tab. `density` and `numFont` are the two still to come, and
- * they belong in the same place — beside the application rather than beside
- * the port.
+ * **Four tabs, one level** — variant 2b of the settings drawing of
+ * 2026-09-25. The application tab had become regular settings, one-off chores
+ * and maintenance in one list; split by how often a thing is touched and by
+ * what has to come before what:
+ * - connection: which machine;
+ * - appearance: what this device's screen looks like;
+ * - preferences: how the panel works — the rows marked for the server are
+ *   the same on every device;
+ * - install: the certificate, the installation, and reloading the panel.
  */
 
 /*
@@ -38,7 +43,9 @@ import { t } from '../i18n';
  */
 const LABELS = {
   connection: 'settings.connection',
-  app: 'settings.app',
+  appearance: 'settings.appearance',
+  preferences: 'settings.preferences',
+  install: 'settings.install',
 };
 
 const TABS = Object.keys(LABELS);
@@ -71,9 +78,9 @@ const SettingsScreen = ({ machine }) => {
         * The fade that says how much is left is `FadeScroller`, which began
         * here and now belongs to every scroller in the panel.
         *
-        * `min-h-full` on the inner column keeps the short case honest: the
-        * connection tab pushes its buttons down with a spacer, which needs a
-        * height to push against.
+        * The card is as tall as what is in it, on every tab. The connection
+        * tab used to stretch to the bottom of the screen to push its buttons
+        * there, and left ~180px of empty card above them (drawing, point 10).
         *
         * No padding of its own below that. There was a `pb-5` here for a few
         * minutes, on a misreading -- *"tutaj nie musi byc dodatkowgo
@@ -82,29 +89,26 @@ const SettingsScreen = ({ machine }) => {
         * one under it only made the bottom different from the rest.
         */}
       <FadeScroller>
-        <div className="flex min-h-full flex-col">
-          {tab === 'connection' ? (
-            <ConnectScreen machine={machine} />
-          ) : (
-            /*
-              * Rows, as drawn on 2026-09-25: a name and its note beside the
-              * control, a rule between. No caption — the tab above already
-              * says which card this is.
-              */
-            <Card className="flex-1">
-              {/* How the panel looks comes before what it is installed as:
-                * it is the one thing on this tab that changes something the
-                * operator is looking at while they change it. */}
-              <SettingRow title={t('theme.label')}>
-                <ThemeChoice />
-              </SettingRow>
-              <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')}>
-                <JournalLevelChoice />
-              </SettingRow>
-              <AppScreen />
-            </Card>
-          )}
-        </div>
+        {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
+        {tab === 'appearance' ? (
+          <Card>
+            <SettingRow title={t('theme.label')} scope="device">
+              <ThemeChoice />
+            </SettingRow>
+          </Card>
+        ) : null}
+        {tab === 'preferences' ? (
+          <Card>
+            <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')} scope="server">
+              <JournalLevelChoice />
+            </SettingRow>
+          </Card>
+        ) : null}
+        {tab === 'install' ? (
+          <Card>
+            <AppScreen />
+          </Card>
+        ) : null}
       </FadeScroller>
     </div>
   );

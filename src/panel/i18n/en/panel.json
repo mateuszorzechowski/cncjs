@@ -218,10 +218,17 @@
   },
   "settings": {
     "connection": "Connection",
-    "app": "Application"
+    "appearance": "Appearance",
+    "preferences": "Preferences",
+    "install": "Install",
+    "locked": "Locked",
+    "scope": {
+      "device": "This device",
+      "server": "Server · all devices"
+    }
   },
   "theme": {
-    "label": "Appearance",
+    "label": "Theme",
     "system": "System",
     "light": "Light",
     "dark": "Dark"
@@ -238,12 +245,12 @@
     "certName": "Name on the phone",
     "certValidTo": "Valid until",
     "certFingerprint": "SHA-256 fingerprint",
-    "certDownload": "Download the certificate",
-    "refresh": "Reload the panel",
+    "certDownload": "Download certificate",
+    "refresh": "Reload panel",
     "refreshWhy": "Fetches the newest panel from the server.",
     "updateReady": "A newer panel is waiting on the server. Reload to take it.",
     "installTitle": "Install",
-    "refreshTitle": "Refresh the panel",
+    "refreshTitle": "Reload panel",
     "certPlatform": "Your device",
     "certHow": {
       "android": "Android: choose “CA certificate” rather than “VPN and app certificate”, and set a screen lock first if you have none.",
@@ -274,16 +281,15 @@
     "warning": "Warning"
   },
   "connect": {
-    "title": "Connection",
     "choosePort": "Choose a port",
     "trust": {
       "insecure": "This panel is served without encryption, so a phone will not install it as an application. Start the server with a certificate — see scripts/serve-panel.sh.",
       "untrusted": "This device does not trust the panel’s certificate, so it will not install it as an application. Clicking past the warning does not count: the page loads and the connection stays untrusted."
     },
-    "server": "server",
+    "server": "Server",
     "controller": "Controller type",
     "baudrate": "Baud rate",
-    "refresh": "Refresh",
+    "refresh": "Rescan ports",
     "connect": "Connect",
     "disconnect": "Disconnect",
     "noServer": "No connection to the server, so there is nothing to list.",
@@ -292,7 +298,13 @@
     "openFailed": "The port would not open. Another program may be holding it, or it may have been unplugged since the list was made.",
     "closeFailed": "The port would not close.",
     "clashController": "Port {{port}} is already open as {{actual}} by another client. Disconnect it there before opening it as {{asked}}.",
-    "clashBaudrate": "Port {{port}} is already open at {{actual}} baud by another client. Disconnect it there before opening it at {{asked}}."
+    "clashBaudrate": "Port {{port}} is already open at {{actual}} baud by another client. Disconnect it there before opening it at {{asked}}.",
+    "port": "Port",
+    "locked": "Locked while connected. Disconnect to change the port, controller or rate.",
+    "serverNote": "The address this panel talks to.",
+    "link": "Controller link",
+    "linked": "Connected to {{port}} at {{baudrate}} baud.",
+    "unlinked": "No port is open."
   },
   "ports": {
     "state": {

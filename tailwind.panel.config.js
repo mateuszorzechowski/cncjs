@@ -48,6 +48,14 @@ module.exports = {
       ambS: 'color-mix(in srgb, var(--amb) 12%, var(--surf))',
       mutS: 'color-mix(in srgb, var(--mut) 10%, var(--surf))',
       /*
+       * Amber for words on amber's own wash. The amber itself is ~4:1 there
+       * at 13px — enough for a mark, short of text (settings drawing,
+       * 2026-09-25, point 12). Mixed toward the ink rather than written as a
+       * hex, so it darkens on the light theme and lightens on the dark one,
+       * which is the direction contrast needs on each.
+       */
+      ambT: 'color-mix(in srgb, var(--amb) 78%, var(--ink))',
+      /*
        * The dim behind a sheet. Mixed rather than written as `bg-ink/45`,
        * because an opacity modifier needs colour channels and every colour
        * here is a whole `var()` — the modifier silently produces nothing,
