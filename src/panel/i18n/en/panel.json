@@ -781,6 +781,10 @@
         "note": "{{name}} is loaded to be sent. Saving changes the file in the library, and loading it again replaces the loaded program with the new version.",
         "action": "Save and load"
       }
+    },
+    "pages": {
+      "details": "Details",
+      "text": "File contents"
     }
   },
   "confirm": {
