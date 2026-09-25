@@ -16,6 +16,15 @@ export const upload = (req, res) => {
     });
     return;
   }
+
+  loadProgram(res, { port, name, gcode, context });
+};
+
+/**
+ * Hand a program to a port's controller — the one road in, whether the
+ * program came in the request or from the library (`api.files`).
+ */
+export const loadProgram = (res, { port, name, gcode, context = {} }) => {
   if (!gcode) {
     res.status(ERR_BAD_REQUEST).send({
       msg: 'Empty G-code'
