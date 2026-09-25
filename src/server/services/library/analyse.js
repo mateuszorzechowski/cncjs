@@ -55,8 +55,8 @@ const MACHINE_AXES = {
   G19: ({ x, y, z }) => ({ x: z, y: x, z: y }),
 };
 
-const analyse = async (text, machine, start = '') => {
-  const check = createCheck(start);
+const analyse = async (text, machine, start = '', onFinding = null) => {
+  const check = createCheck(start, onFinding);
   const planner = machine ? new Planner(machine) : null;
   const min = { x: Infinity, y: Infinity, z: Infinity };
   const max = { x: -Infinity, y: -Infinity, z: -Infinity };
