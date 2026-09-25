@@ -57,6 +57,7 @@ import { changesWorkOffsets } from './offsets';
 import { machineEnvelope, programOverrun } from './envelope';
 import { checkLines, createCheckRun } from './check-run';
 import library from '../../services/library';
+import units, { toMm } from '../../services/units';
 import { machineTiming } from '../../services/library/estimate';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
@@ -666,6 +667,13 @@ class GrblController {
       });
       this.workflow.on('stop', (...args) => {
         this.emit('workflow:state', this.workflow.state);
+        // M2 and M30 leave G20 in force, and so does an abort. Owed rather
+        // than written here: the machine may still be braking, or in alarm
+        // after a reset, and a line written then is refused or dropped. See
+        // `restoreUnits` in the status loop. Asked of the sender, before its
+        // rewind, not of `programRunning`: a pause clears that, and a program
+        // aborted from a pause has run lines all the same.
+        this.unitsOwed = this.sender.state.sent > 0;
         // Before the rewind, while the sender still knows how far it got.
         // Finished means it was *running* when it stopped and its last line
         // had come back. A program paused on an error has often streamed
@@ -1388,6 +1396,8 @@ class GrblController {
 
         // $# - Work offsets, but only once something has moved one
         queryParameters();
+
+        this.restoreUnits();
 
         // Check if the machine has stopped movement after completion
         if (this.actionTime.senderFinishTime > 0) {
@@ -2268,6 +2278,9 @@ class GrblController {
             return;
           }
 
+          // A program of its own now; whatever the last one owed is moot.
+          this.unitsOwed = false;
+
           this.event.trigger('gcode:start');
 
           this.workflow.start();
@@ -2703,7 +2716,11 @@ class GrblController {
          * moves, and is not worth interrupting anybody about.
          */
         'jogStep': () => {
-          const [{ dir, distance, feedrate } = {}] = args;
+          // `units` is what the panel showed the operator; the line is always
+          // written in millimetres. Absent means millimetres.
+          const [{ dir, distance: given, feedrate: givenRate, units: shown } = {}] = args;
+          const distance = toMm(given, shown);
+          const feedrate = toMm(givenRate, shown);
 
           if (this.runner.isAlarm()) {
             this.refuse(cmd, 'alarm');
@@ -2729,7 +2746,9 @@ class GrblController {
           this.command('gcode', line);
         },
         'jogStart': () => {
-          const [dir, feedrate, holdMs] = args;
+          // The fourth is the units the rate was shown in; see `jogStep`.
+          const [dir, givenRate, holdMs, shown] = args;
+          const feedrate = toMm(givenRate, shown);
 
           /*
            * How long this client says it can go without confirming the hold.
@@ -3870,6 +3889,27 @@ class GrblController {
       this.noteOffsetChange(cmd);
       this.connection.write(data);
       log.silly(`> ${data}`);
+    }
+
+    /**
+     * Put the machine back into the server's units after a program, once it
+     * can take the line.
+     *
+     * Only with the setting on, only once per program, and only when nothing
+     * is running and Grbl stands in Idle: after a STOP that means after `$X`
+     * or homing, which is exactly when the console is next usable. Through
+     * the feeder, like any other line a client could have typed — never
+     * while the sender owns the acknowledgements.
+     */
+    restoreUnits() {
+      if (!this.unitsOwed || !units.restore) {
+        return;
+      }
+      if (this.workflow.state !== WORKFLOW_STATE_IDLE || !this.runner.isIdle()) {
+        return;
+      }
+      this.unitsOwed = false;
+      this.command('gcode', units.modal());
     }
 
     writeln(data, context) {

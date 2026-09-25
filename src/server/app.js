@@ -455,6 +455,10 @@ const appMain = () => {
     app.get(urljoin(settings.route, 'api/journal/settings'), api.journal.readSettings);
     app.put(urljoin(settings.route, 'api/journal/settings'), api.journal.updateSettings);
 
+    // Units, for every panel
+    app.get(urljoin(settings.route, 'api/units'), api.units.read);
+    app.put(urljoin(settings.route, 'api/units'), api.units.update);
+
     // Machines
     app.get(urljoin(settings.route, 'api/machines'), api.machines.fetch);
     app.post(urljoin(settings.route, 'api/machines'), api.machines.create);

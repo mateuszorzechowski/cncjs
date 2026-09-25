@@ -5,6 +5,7 @@ import JournalLevelChoice from '../ui/JournalLevelChoice';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
+import { RestoreUnitsChoice, UnitsChoice } from '../ui/UnitsChoice';
 import ConnectScreen from './ConnectScreen';
 import AppScreen from './AppScreen';
 import { t } from '../i18n';
@@ -99,6 +100,20 @@ const SettingsScreen = ({ machine }) => {
         ) : null}
         {tab === 'preferences' ? (
           <Card>
+            <SettingRow title={t('units.choice.label')} note={t('units.choice.note')} scope="server">
+              <UnitsChoice units={machine.units} />
+            </SettingRow>
+            {/*
+              * Right under the units, because it is about them: which units
+              * the machine is put back into is the choice above.
+              */}
+            <SettingRow
+              title={t('units.restore.label')}
+              note={t('units.restore.note', { modal: machine.units?.modal ?? 'G21' })}
+              scope="server"
+            >
+              <RestoreUnitsChoice units={machine.units} />
+            </SettingRow>
             <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')} scope="server">
               <JournalLevelChoice />
             </SettingRow>

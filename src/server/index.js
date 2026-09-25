@@ -22,6 +22,7 @@ import app from './app';
 import cncengine from './services/cncengine';
 import journal from './services/journal';
 import library from './services/library';
+import units from './services/units';
 import monitor from './services/monitor';
 import config from './services/configstore';
 import createWebApp from './lib/create-web-app';
@@ -66,6 +67,10 @@ const createServer = (options, callback) => {
     file: path.join(path.dirname(rcfile), '.cncjs-journal.jsonl'),
     level: config.get('journal.level', 'info'),
   });
+
+  // The units every panel shows, and whether the machine is put back into
+  // them after a program. See `services/units`.
+  units.open(config.get('units', {}));
 
   // The panel's files, beside the configuration unless `.cncrc` says
   // `library.directory`. Made on first use. See `services/library`.
