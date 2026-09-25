@@ -15,7 +15,9 @@ import { createCheck } from './check';
  * millimetres, from work zero; the starting point is not a move and is left
  * out. `seconds` is null when no machine has said its limits yet. `wcs` is
  * the coordinate systems the file itself sets, in the order it sets them —
- * empty when it takes whichever is active.
+ * empty when it takes whichever is active — and `units` the same for G20/G21.
+ * Neither is undone by the program's end: M2 leaves G20 set (measured on the
+ * bench, 2026-09-25).
  *
  * `check` is whether Grbl will take it — see `check`; `start` is what the
  * `gcode:start` events send before every program.
@@ -60,6 +62,7 @@ const analyse = async (text, machine, start = '') => {
   const max = { x: -Infinity, y: -Infinity, z: -Infinity };
   const tools = new Set();
   const wcs = new Set();
+  const units = new Set();
   let feed = 0;
   let inches = false;
   let pending = [];
@@ -106,6 +109,7 @@ const analyse = async (text, machine, start = '') => {
       tools.add(word('T'));
     }
     WCS.filter(code => codes.has(code)).forEach(code => wcs.add(code));
+    ['G20', 'G21'].filter(code => codes.has(code)).forEach(code => units.add(code));
 
     if (planner) {
       if (codes.has('G4')) {
@@ -145,6 +149,7 @@ const analyse = async (text, machine, start = '') => {
     bounds: moved ? { min, max } : null,
     tools: [...tools].sort((a, b) => a - b),
     wcs: [...wcs],
+    units: [...units],
     seconds: planner ? planner.finish() : null,
     check: check.result(),
   };

@@ -167,6 +167,7 @@ describe('analysis', () => {
       bounds: { min: { x: 10, y: 5, z: -2 }, max: { x: 10, y: 5, z: 0 } },
       tools: [3],
       wcs: [],
+      units: ['G21'],
       seconds: null,
       check: {
         verdict: 'warnings',

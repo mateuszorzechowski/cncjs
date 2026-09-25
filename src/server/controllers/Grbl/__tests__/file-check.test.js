@@ -163,7 +163,11 @@ describe('file:check', () => {
     library.stamp.mockRejectedValue(Object.assign(new Error('gone'), { code: 'ENOENT' }));
 
     controller.command('file:check', { name: 'gone.nc' });
+    // As CNCEngine does: the asking socket is only known during the call.
+    const asker = controller.commandSocket;
+    controller.commandSocket = null;
     await settle();
+    controller.commandSocket = asker;
 
     expect(refusals).toEqual([{ cmd: 'file:check', reason: 'not-found' }]);
     expect(controller.clientRefusal('jogStart')).toBeNull();

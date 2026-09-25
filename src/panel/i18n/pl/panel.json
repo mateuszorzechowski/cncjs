@@ -590,6 +590,13 @@
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
     "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
     "wcs": "układ {{wcs}}",
+    "wcsInherited": "układ aktywny na maszynie",
+    "units": {
+      "mm": "milimetry (G21)",
+      "inch": "cale (G20)",
+      "inherited": "jednostki aktywne na maszynie"
+    },
+    "setup": "{{units}} · {{wcs}}",
     "duration": {
       "hours": "{{hours}} h {{minutes}} min",
       "minutes": "{{minutes}} min {{seconds}} s",

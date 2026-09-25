@@ -42,8 +42,19 @@ export const areaText = (bounds) => (bounds
   ? t('files.area', { x: bounds.max.x - bounds.min.x, y: bounds.max.y - bounds.min.y, z: bounds.max.z - bounds.min.z })
   : NO_READING);
 
-/** The coordinate systems the file sets itself, or nothing when it takes the active one. */
-export const wcsText = (wcs) => (wcs && wcs.length > 0 ? t('files.wcs', { wcs: wcs.join(', ') }) : '');
+const UNIT_WORDS = { G20: 'files.units.inch', G21: 'files.units.mm' };
+
+/**
+ * The units and the coordinate system the program runs in, as the file sets
+ * them — or, when it sets none, that it takes what the machine has active.
+ */
+export const setupText = (analysis) => {
+  const units = analysis.units?.length > 0
+    ? analysis.units.map((code) => t(UNIT_WORDS[code])).join(', ')
+    : t('files.units.inherited');
+  const wcs = analysis.wcs?.length > 0 ? t('files.wcs', { wcs: analysis.wcs.join(', ') }) : t('files.wcsInherited');
+  return t('files.setup', { units, wcs });
+};
 
 export const toolsText = (tools) => (tools && tools.length > 0 ? tools.map((tool) => `T${tool}`).join(', ') : NO_READING);
 
