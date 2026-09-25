@@ -36,6 +36,21 @@ const legacyComponents = [
  * hand-written into 60 JSX files, which is what made the frontend
  * un-upgradable for years.
  */
+/*
+ * The panel's lengths go through one formatter, `machine/units.js`, which
+ * knows the server's units. A label named or a figure fixed anywhere else is
+ * a figure that stays in millimetres when the server says inches — the worst
+ * thing a units setting can do is be right on one tile and wrong on the next.
+ */
+const UNIT_LABELS = {
+  selector: 'Literal[value=/^units\\.(mm|mmPerMin|inch|inPerMin)$/]',
+  message: 'A length\'s unit comes from useUnits() / machine/units.js, which knows the server\'s units.',
+};
+const FIXED_FIGURES = {
+  selector: 'CallExpression[callee.property.name=\'toFixed\']',
+  message: 'A length is formatted by figure() in machine/units.js, in the server\'s units.',
+};
+
 const newUiRules = {
   // One component, one file, one directory. The repo being replaced has eight
   // files over 800 lines.
@@ -259,6 +274,7 @@ export default [
       'react/react-in-jsx-scope': 0,
       'react/jsx-uses-react': 0,
       'panel/no-untranslated-text': 'error',
+      'no-restricted-syntax': ['error', UNIT_LABELS, FIXED_FIGURES],
       'max-lines': ['error', { max: 250, skipBlankLines: true, skipComments: true }],
       'react/forbid-component-props': ['error', { forbid: ['style'] }],
       'react/forbid-dom-props': ['error', { forbid: ['style'] }],
@@ -320,6 +336,23 @@ export default [
     },
   },
 
+  // The one place a length becomes text, and so the one place allowed to
+  // name a unit's label or fix a figure's digits. See `machine/units.js`.
+  {
+    files: ['src/panel/machine/units.js'],
+    rules: {
+      'no-restricted-syntax': 0,
+    },
+  },
+  {
+    // The navigation's drawn edge rounds SVG path coordinates, which are
+    // geometry and never a length an operator reads.
+    files: ['src/panel/ui/navEdge.js'],
+    rules: {
+      'no-restricted-syntax': ['error', UNIT_LABELS],
+    },
+  },
+
   {
     // A test has no operator. `it('stops the machine when the key comes up')`
     // is a sentence in the source and reads as one to the rule, which is why
@@ -329,6 +362,7 @@ export default [
     files: ['src/panel/**/__tests__/**/*.js'],
     rules: {
       'panel/no-untranslated-text': 0,
+      'no-restricted-syntax': 0,
     },
   },
 ];

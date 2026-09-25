@@ -2,8 +2,12 @@ import controller from '../controller';
 import { BEAT_MS } from '../deadman';
 import {
   jogLines, jog, jogRoom, jogStart, jogStop,
-  canJogContinuously, XY_STEPS, Z_STEPS, FEEDRATES,
+  canJogContinuously,
 } from '../jog';
+
+// The server's rules, the parts a jog reads: its name and its factor.
+const MM = { name: 'mm', factor: 1 };
+const INCH = { name: 'inch', factor: 1 / 25.4 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -91,7 +95,7 @@ describe('sending', () => {
      * position, and can answer `no-room` besides.
      */
     jog({
-      type: 'Grbl',
+      units: MM, type: 'Grbl',
       dir: { x: 1 },
       distance: 10,
       feedrate: 1500,
@@ -99,20 +103,38 @@ describe('sending', () => {
       position: { x: '-3', y: '-100', z: '-40' },
     });
     expect(controller.command.mock.calls).toEqual([
-      ['jogStep', { dir: { x: 1 }, distance: 10, feedrate: 1500 }],
+      ['jogStep', { dir: { x: 1 }, distance: 10, feedrate: 1500, units: 'mm' }],
     ]);
   });
 
-  test('on Grbl a corner is the same call, with two axes in it', () => {
-    jog({ type: 'Grbl', dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500 });
+  test('on Grbl the figures go as shown, with the units they were shown in', () => {
+    // The server writes the millimetres; the panel does not do the sum.
+    jog({ units: INCH, type: 'Grbl', dir: { x: 1 }, distance: 0.1, feedrate: 60 });
     expect(controller.command).toHaveBeenCalledWith(
-      'jogStep', { dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500 }
+      'jogStep', { dir: { x: 1 }, distance: 0.1, feedrate: 60, units: 'inch' }
+    );
+  });
+
+  test('where the line is composed here, inches become millimetres here', () => {
+    jog({ units: INCH, type: 'Smoothie', dir: { x: 1 }, distance: 1, feedrate: 20 });
+    expect(controller.command).toHaveBeenCalledWith('gcode', '$J=G91 G21 X25.4 F508');
+  });
+
+  test('sends nothing before the server has said its units', () => {
+    expect(jog({ units: null, type: 'Grbl', dir: { x: 1 }, distance: 1, feedrate: 1500 })).toBe(false);
+    expect(controller.command).not.toHaveBeenCalled();
+  });
+
+  test('on Grbl a corner is the same call, with two axes in it', () => {
+    jog({ units: MM, type: 'Grbl', dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500 });
+    expect(controller.command).toHaveBeenCalledWith(
+      'jogStep', { dir: { x: 1, y: -1 }, distance: 10, feedrate: 1500, units: 'mm' }
     );
   });
 
   test('a tap is shortened to what is left of the travel, where it is composed', () => {
     jog({
-      type: 'Marlin',
+      units: MM, type: 'Marlin',
       dir: { x: 1 },
       distance: 10,
       feedrate: 1500,
@@ -124,7 +146,7 @@ describe('sending', () => {
 
   test('a tap at the very end sends nothing at all', () => {
     const sent = jog({
-      type: 'Marlin',
+      units: MM, type: 'Marlin',
       dir: { x: 1 },
       distance: 10,
       feedrate: 1500,
@@ -137,12 +159,12 @@ describe('sending', () => {
 
   test('without a position the step is sent as asked', () => {
     // No boundary to measure against, so nothing to shorten it to.
-    jog({ type: 'Smoothie', dir: { x: 1 }, distance: 10, feedrate: 1500 });
+    jog({ units: MM, type: 'Smoothie', dir: { x: 1 }, distance: 10, feedrate: 1500 });
     expect(controller.command).toHaveBeenCalledWith('gcode', '$J=G91 G21 X10 F1500');
   });
 
   test('every line goes through the controller, in order', () => {
-    jog({ type: 'Marlin', dir: { x: 1 }, distance: 1, feedrate: 500 });
+    jog({ units: MM, type: 'Marlin', dir: { x: 1 }, distance: 1, feedrate: 500 });
     expect(controller.command.mock.calls).toEqual([
       ['gcode', 'G91'],
       ['gcode', 'G1 X1 F500'],
@@ -150,16 +172,6 @@ describe('sending', () => {
     ]);
   });
 
-});
-
-describe('what the panel offers', () => {
-  test('the steps and speeds the mockup draws, in its order', () => {
-    // Written down because they are a design decision, not a default: the
-    // drawing shows these six figures and no others.
-    expect(XY_STEPS).toEqual([0.1, 1, 10, 50]);
-    expect(Z_STEPS).toEqual([0.1, 1, 5]);
-    expect(FEEDRATES).toEqual([500, 1500, 3000]);
-  });
 });
 
 describe('holding a jog key', () => {
@@ -195,7 +207,7 @@ describe('holding a jog key', () => {
     // Travel is [-200, 0]; at -10 there is 10mm left towards zero.
     const nearTheEnd = { x: '-10', y: '-100', z: '-40' };
     jog({
-      type: 'Marlin', dir: { x: 1 }, distance: 50, feedrate: 1500, envelope: ENVELOPE, position: nearTheEnd,
+      units: MM, type: 'Marlin', dir: { x: 1 }, distance: 50, feedrate: 1500, envelope: ENVELOPE, position: nearTheEnd,
     });
 
     const sent = controller.command.mock.calls.map((c) => c[1]).join(' ');
@@ -211,8 +223,8 @@ describe('holding a jog key', () => {
      * than the machine consumed built a backlog that swallowed every change
      * of direction.
      */
-    expect(jogStart('Grbl', { x: 1 }, 1500)).toBe(true);
-    expect(controller.command).toHaveBeenCalledWith('jogStart', { x: 1 }, 1500, expect.any(Number));
+    expect(jogStart('Grbl', { x: 1 }, 1500, null, MM)).toBe(true);
+    expect(controller.command).toHaveBeenCalledWith('jogStart', { x: 1 }, 1500, expect.any(Number), 'mm');
     jogStop('Grbl');
   });
 
@@ -224,7 +236,7 @@ describe('holding a jog key', () => {
      * out of travel. The figure is this side's because the timers and the
      * link are — see `machine/deadman`.
      */
-    jogStart('Grbl', { x: 1 }, 1500, 63);
+    jogStart('Grbl', { x: 1 }, 1500, 63, MM);
 
     const [, , , tolerance] = controller.command.mock.calls[0];
     expect(tolerance).toBeGreaterThan(0);
@@ -232,7 +244,7 @@ describe('holding a jog key', () => {
   });
 
   test('and then says so, over and over, until the key comes up', async () => {
-    jogStart('Grbl', { x: 1 }, 1500);
+    jogStart('Grbl', { x: 1 }, 1500, null, MM);
     controller.command.mockClear();
 
     await sleep(BEAT_MS * 2.5);
@@ -250,10 +262,10 @@ describe('holding a jog key', () => {
 
   test('aiming somewhere else is the same call again, with no cancel', () => {
     // Cancelling to turn was a race the machine kept losing.
-    jogStart('Grbl', { x: 1 }, 1500);
-    jogStart('Grbl', { x: 1, y: -1 }, 1500);
+    jogStart('Grbl', { x: 1 }, 1500, null, MM);
+    jogStart('Grbl', { x: 1, y: -1 }, 1500, null, MM);
     expect(controller.command)
-      .toHaveBeenLastCalledWith('jogStart', { x: 1, y: -1 }, 1500, expect.any(Number));
+      .toHaveBeenLastCalledWith('jogStart', { x: 1, y: -1 }, 1500, expect.any(Number), 'mm');
     expect(controller.command).not.toHaveBeenCalledWith('jogCancel');
     jogStop('Grbl');
   });

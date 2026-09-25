@@ -1,4 +1,4 @@
-import { readMachine, statesOf, formatPosition, NO_READING } from '../readings';
+import { readMachine, statesOf } from '../readings';
 
 const grbl = (activeState, wpos) => ({
   connection: 'open',
@@ -190,21 +190,6 @@ describe('readMachine, with a controller answering', () => {
   test('reads the work position, and nothing where there is none', () => {
     const read = readMachine(grbl('Idle', { x: '12.5', y: '0.000' }));
     expect(read.position).toEqual({ x: 12.5, y: 0, z: null });
-  });
-});
-
-describe('formatPosition', () => {
-  test('keeps three decimals so the digits do not move', () => {
-    expect(formatPosition(12.5)).toBe('12.500');
-    expect(formatPosition(0)).toBe('0.000');
-    expect(formatPosition(-3)).toBe('-3.000');
-  });
-
-  test('a dash where there is no reading, and never a zero', () => {
-    // On an unhomed machine "0.000" and "we have not been told" are very
-    // different statements, and only one of them is safe to act on.
-    expect(formatPosition(null)).toBe(NO_READING);
-    expect(formatPosition(NaN)).toBe(NO_READING);
   });
 });
 

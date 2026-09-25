@@ -3,6 +3,7 @@ import { t } from './i18n';
 import { FooterSlotProvider } from './ui/footerSlot';
 import { HeaderHelpProvider } from './ui/headerSlot';
 import { ShellNodeProvider, ShellWidthProvider, useIsPhone, useMeasuredShell } from './ui/shell';
+import { UnitsProvider } from './ui/units';
 import NavRail from './ui/NavRail';
 import NavTabs from './ui/NavTabs';
 import { BITE_FILL, BITE_LINE, BITE_VIEWBOX } from './ui/navEdge';
@@ -445,7 +446,9 @@ const App = () => {
     <div ref={shell.ref} className="@container/shell flex h-full flex-col overflow-hidden bg-bg text-ink">
       <ShellWidthProvider value={shell.width}>
         <ShellNodeProvider value={shell.node}>
-          <Panel machine={machine} screen={screen} onScreen={setScreen} />
+          <UnitsProvider value={machine.units}>
+            <Panel machine={machine} screen={screen} onScreen={setScreen} />
+          </UnitsProvider>
         </ShellNodeProvider>
       </ShellWidthProvider>
     </div>

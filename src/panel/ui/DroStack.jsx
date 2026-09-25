@@ -1,5 +1,4 @@
-import { formatPosition } from '../machine/readings';
-import { t } from '../i18n';
+import { useUnits } from './units';
 
 /**
  * The readout when the position is what the screen is for.
@@ -12,7 +11,7 @@ import { t } from '../i18n';
  * own sake: a number that reshuffles its own digits as it changes cannot be
  * read while it changes, and that is the only time anyone looks.
  */
-const Row = ({ axis, value, machineValue, last }) => (
+const Row = ({ axis, value, machineValue, last, units }) => (
   <div
     role="group"
     aria-label={axis}
@@ -49,9 +48,9 @@ const Row = ({ axis, value, machineValue, last }) => (
       */}
     <span className="grid min-w-0 flex-1 grid-cols-[auto_auto] items-baseline justify-end gap-x-1">
       <span className="justify-self-end truncate font-num text-val font-medium tabular-nums text-ink">
-        {formatPosition(value)}
+        {units.figure(value)}
       </span>
-      <span className="font-num text-note text-mut">{t('units.mm')}</span>
+      <span className="font-num text-note text-mut">{units.length}</span>
       {/*
         * No unit of its own — the same millimetres measured from somewhere
         * else. `leading-none` because the default line box puts six pixels of
@@ -59,24 +58,28 @@ const Row = ({ axis, value, machineValue, last }) => (
         * the rows need to stand off their own dividers.
         */}
       <span className="col-start-1 justify-self-end truncate font-num text-note leading-none tabular-nums text-mut">
-        {formatPosition(machineValue)}
+        {units.figure(machineValue)}
       </span>
     </span>
   </div>
 );
 
-const DroStack = ({ position, machinePosition, className = '' }) => (
-  <div className={`flex min-h-0 flex-1 flex-col ${className}`}>
-    {['x', 'y', 'z'].map((axis, index) => (
-      <Row
-        key={axis}
-        axis={axis.toUpperCase()}
-        value={position[axis]}
-        machineValue={machinePosition[axis]}
-        last={index === 2}
-      />
-    ))}
-  </div>
-);
+const DroStack = ({ position, machinePosition, className = '' }) => {
+  const units = useUnits();
+  return (
+    <div className={`flex min-h-0 flex-1 flex-col ${className}`}>
+      {['x', 'y', 'z'].map((axis, index) => (
+        <Row
+          key={axis}
+          axis={axis.toUpperCase()}
+          value={position[axis]}
+          machineValue={machinePosition[axis]}
+          last={index === 2}
+          units={units}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default DroStack;

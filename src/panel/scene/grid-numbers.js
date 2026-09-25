@@ -46,17 +46,18 @@ const LABEL_SPACING_PIXELS = 64;
  * @param {number} zoom Pixels per millimetre — for an orthographic camera
  *   that is exactly what `camera.zoom` is.
  */
-export const labelStep = (step, zoom) => {
+export const labelStep = (step, zoom, factor = 1) => {
   if (!(zoom > 0)) {
     return step;
   }
-
-  const floor = fineStep(step) || step;
+  const floor = fineStep(step, factor) || step;
+  // Round numbers in the server's units, compared and handed back in the
+  // world's millimetres — see `gridStep`. A hair of slack, because a step
+  // worked back from inches is a float that equals itself only mostly.
   const wide = STEPS.find(
-    (candidate) => candidate >= floor && candidate * zoom >= LABEL_SPACING_PIXELS
+    (candidate) => candidate / factor >= floor - 1e-9 && (candidate / factor) * zoom >= LABEL_SPACING_PIXELS
   );
-
-  return wide || Math.max(floor, STEPS[STEPS.length - 1]);
+  return wide ? wide / factor : Math.max(floor, STEPS[STEPS.length - 1] / factor);
 };
 
 /**
@@ -107,7 +108,8 @@ export const rulerSides = (area) => {
  * thing on the ruler and ran into the axis (Mateusz, 2026-09-25). The exact
  * size is in the caption beside the drawing.
  */
-const figure = (value) => String(Math.round(value * 10) / 10);
+// The world is millimetres; a figure is in the server's units.
+const figure = (value, factor) => String(Math.round(value * factor * 10) / 10);
 
 /**
  * The numbers to write on the ground, and where.
@@ -135,7 +137,8 @@ const figure = (value) => String(Math.round(value * 10) / 10);
  *   where `push` is in multiples of the caller's gap, out of the machine.
  *   The unit is part of the far X figure.
  */
-export const gridLabels = (area, step) => {
+export const gridLabels = (area, step, units = { factor: 1, length: 'mm' }) => {
+  const { factor } = units;
   const first = (min) => snapUp(min, step);
   const last = (max) => snapDown(max, step);
 
@@ -201,19 +204,19 @@ export const gridLabels = (area, step) => {
 
   for (const x of ticks(area.min.x, area.max.x)) {
     if (!shared(x, axisX)) {
-      labels.push({ key: `x${x}`, text: figure(x), x, y: axisY, push: { x: 0, y: outY } });
+      labels.push({ key: `x${x}`, text: figure(x, factor), x, y: axisY, push: { x: 0, y: outY } });
     }
   }
   for (const y of ticks(area.min.y, area.max.y)) {
     if (!shared(y, axisY)) {
-      labels.push({ key: `y${y}`, text: figure(y), x: axisX, y, push: { x: outX, y: 0 } });
+      labels.push({ key: `y${y}`, text: figure(y, factor), x: axisX, y, push: { x: outX, y: 0 } });
     }
   }
 
   if (meet) {
     labels.push({
       key: 'origin',
-      text: figure(axisX),
+      text: figure(axisX, factor),
       x: axisX,
       y: axisY,
       push: { x: outX * 0.85, y: outY * 0.85 },
@@ -231,7 +234,7 @@ export const gridLabels = (area, step) => {
    */
   const far = labels.find((label) => label.key === `x${farX}`);
   if (far) {
-    far.text = `${far.text} mm`;
+    far.text = `${far.text} ${units.length}`;
   }
 
   return labels;

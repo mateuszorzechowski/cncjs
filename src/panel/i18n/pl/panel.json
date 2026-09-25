@@ -51,7 +51,10 @@
       "note": "M2 i M30 nie cofają G20: po programie w calach konsola i makra dalej czytają cale. Włączone — serwer wysyła {{modal}}, gdy program się skończy albo zostanie przerwany, a maszyna stoi.",
       "off": "Wyłączone",
       "on": "Włączone"
-    }
+    },
+    "inch": "in",
+    "inPerMin": "in/min",
+    "quantity": "{{value}} {{unit}}"
   },
   "axis": {
     "x": "X",
@@ -101,9 +104,7 @@
     "stop": "Zatrzymanie przy obecnej prędkości — XY, potem Z",
     "close": "Zamyka to okno",
     "help": "Otwiera tę pomoc",
-    "step": "{{value, number}} mm",
-    "coarseSteps": "XY {{xy, number}} mm · Z {{z, number}} mm",
-    "stopDistance": "{{distance, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
+    "coarseSteps": "XY {{xy}} {{unit}} · Z {{z}} {{unit}}",
     "note": "Krok i prędkość zmienisz na karcie jogu. Klawisze nie działają, gdy piszesz w polu tekstowym, i gdy nie ma połączenia ze sterownikiem."
   },
   "dro": {
@@ -136,7 +137,7 @@
   },
   "zheight": {
     "title": "Wysokość Z",
-    "machine": "masz. {{value}} mm",
+    "machine": "masz. {{value}} {{unit}}",
     "zeroZ": "Zeruj Z",
     "zeroXY": "Zeruj XY",
     "probeZ": "Sonduj Z"
@@ -395,8 +396,7 @@
     "brakingNote": "własne maszyny, z jej przyspieszenia — tego nie skróci żaden szybszy komputer",
     "panel": "Pulpit",
     "panelNote": "najgorsza przerwa między potwierdzeniami tego panelu; decyduje, jak daleko pojedzie maszyna, gdy ta strona przestanie odpowiadać z wciśniętym klawiszem",
-    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
-    "atFeed": "drogi przy {{feedrate}} mm/min"
+    "atFeed": "drogi przy {{feedrate}} {{unit}}"
   },
   "journal": {
     "title": "Dziennik",
@@ -621,8 +621,7 @@
     "unload": "Wyładuj",
     "delete": "Usuń",
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
-    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
-    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
+    "area": "{{x}} × {{y}} × {{z}} {{unit}}",
     "units": {
       "mm": "mm (G21)",
       "inch": "cale (G20)",
@@ -724,7 +723,7 @@
       "checkedAt": "sprawdzono {{when}}",
       "progress": "{{answered}} / {{total}} linii",
       "overrun": {
-        "axis": "w {{axis}} o {{by, number(maximumFractionDigits: 1)}} mm",
+        "axis": "w {{axis}} o {{by}} {{unit}}",
         "note": "Przy obecnym zerze program wyjedzie poza stół: {{where}}. Grbl przerwie sprawdzanie alarmem na pierwszym takim ruchu, reszta pliku zostanie niesprawdzona, a maszynę trzeba będzie zresetować i odblokować."
       },
       "controllerResult": {

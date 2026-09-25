@@ -21,6 +21,10 @@ import events from 'events';
  * the resolution the machine reports; the same in inches is a ten-thousandth,
  * and `1.000 in` would claim less than it knows. A program's size is read,
  * not set, so a tenth of a millimetre — the ruler's own figure.
+ *
+ * `step` is the one a jog starts on: 1 mm, and for inches the nearest step to
+ * it on each axis — 0.1 in (2.54 mm) across the table, 0.01 in (0.25 mm) for
+ * Z, where a step too coarse is the one that reaches the work.
  */
 export const UNITS = {
   mm: {
@@ -30,8 +34,8 @@ export const UNITS = {
     jog: {
       xySteps: [0.1, 1, 10, 50],
       zSteps: [0.1, 1, 5],
-      xy: { rate: 1500, min: 100, max: 5000, fine: 100, coarse: 500 },
-      z: { rate: 600, min: 50, max: 2000, fine: 50, coarse: 200 },
+      xy: { step: 1, rate: 1500, min: 100, max: 5000, fine: 100, coarse: 500 },
+      z: { step: 1, rate: 600, min: 50, max: 2000, fine: 50, coarse: 200 },
     },
   },
   inch: {
@@ -41,8 +45,8 @@ export const UNITS = {
     jog: {
       xySteps: [0.001, 0.01, 0.1, 1],
       zSteps: [0.001, 0.01, 0.1],
-      xy: { rate: 60, min: 4, max: 195, fine: 4, coarse: 20 },
-      z: { rate: 24, min: 2, max: 80, fine: 2, coarse: 8 },
+      xy: { step: 0.1, rate: 60, min: 4, max: 195, fine: 4, coarse: 20 },
+      z: { step: 0.01, rate: 24, min: 2, max: 80, fine: 2, coarse: 8 },
     },
   },
 };

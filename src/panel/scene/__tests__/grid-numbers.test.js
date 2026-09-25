@@ -292,3 +292,28 @@ describe('a figure', () => {
     expect(texts.some((text) => /\.\d\d/.test(text))).toBe(false);
   });
 });
+
+describe('in inches', () => {
+  // The server's inch rule, the part the rulers read.
+  const INCH = { factor: 1 / 25.4, length: 'in' };
+  // Ten inches square, from the origin into the machine's negative quarter.
+  const TEN = { min: { x: -254, y: -254 }, max: { x: 0, y: 0 } };
+
+  test('counts round inches, on lines drawn every 25.4 mm', () => {
+    const labels = gridLabels(TEN, 25.4, INCH).filter((label) => label.key.startsWith('x'));
+    expect(labels.map((label) => label.text.replace(/ in$/, ''))).toEqual(
+      ['-10', '-9', '-8', '-7', '-6', '-5', '-4', '-3', '-2', '-1'],
+    );
+  });
+
+  test('names its unit on the far figure, as the millimetre ruler does', () => {
+    const far = gridLabels(TEN, 25.4, INCH).find((label) => label.text.endsWith(' in'));
+    expect(far && far.text).toBe('-10 in');
+  });
+
+  test('widens its count in round inches, handed back in millimetres', () => {
+    // At a zoom where an inch is 10 pixels, 64 pixels between figures wants
+    // 10 inches — 254 mm in the world.
+    expect(labelStep(25.4, 10 / 25.4, INCH.factor)).toBeCloseTo(254, 6);
+  });
+});

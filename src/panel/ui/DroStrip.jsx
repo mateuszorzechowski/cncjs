@@ -1,4 +1,4 @@
-import { formatPosition } from '../machine/readings';
+import { useUnits } from './units';
 
 /**
  * The readout when the position is a check rather than the subject.
@@ -29,7 +29,7 @@ import { formatPosition } from '../machine/readings';
  * strip is asking how much room it has, and a `fullhd:` variant would have
  * been asking a different question that happens to agree most of the time.
  */
-const Column = ({ axis, value, machineValue, last }) => (
+const Column = ({ axis, value, machineValue, last, units }) => (
   <div
     role="group"
     aria-label={axis}
@@ -40,12 +40,12 @@ const Column = ({ axis, value, machineValue, last }) => (
   >
     <span className="text-cap font-semibold text-mut">{axis}</span>
     <span className="truncate font-num text-read font-medium tabular-nums text-ink @sm:text-readWide @3xl:text-val">
-      {formatPosition(value)}
+      {units.figure(value)}
     </span>
     {/* Centred under the work reading, where the column is a column and the
       * two read as one stacked pair. */}
     <span className="truncate font-num text-note leading-none tabular-nums text-mut">
-      {formatPosition(machineValue)}
+      {units.figure(machineValue)}
     </span>
   </div>
 );
@@ -56,18 +56,22 @@ const Column = ({ axis, value, machineValue, last }) => (
  * position card with no position in it. If something has to give on an 800px
  * phone it is not going to be the reading.
  */
-const DroStrip = ({ position, machinePosition, className = '' }) => (
-  <div className={`@container flex min-h-btnh flex-1 flex-row ${className}`}>
-    {['x', 'y', 'z'].map((axis, index) => (
-      <Column
-        key={axis}
-        axis={axis.toUpperCase()}
-        value={position[axis]}
-        machineValue={machinePosition[axis]}
-        last={index === 2}
-      />
-    ))}
-  </div>
-);
+const DroStrip = ({ position, machinePosition, className = '' }) => {
+  const units = useUnits();
+  return (
+    <div className={`@container flex min-h-btnh flex-1 flex-row ${className}`}>
+      {['x', 'y', 'z'].map((axis, index) => (
+        <Column
+          key={axis}
+          axis={axis.toUpperCase()}
+          value={position[axis]}
+          machineValue={machinePosition[axis]}
+          last={index === 2}
+          units={units}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default DroStrip;

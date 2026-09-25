@@ -47,6 +47,7 @@ describe('the rule a panel formats with', () => {
     expect(jog.zSteps.length).toBeGreaterThan(0);
     for (const axis of [jog.xy, jog.z]) {
       expect(axis.min).toBeLessThanOrEqual(axis.rate);
+      expect([...jog.xySteps, ...jog.zSteps]).toContain(axis.step);
       expect(axis.rate).toBeLessThanOrEqual(axis.max);
     }
     expect(Object.keys(digits).sort()).toEqual(['feed', 'position', 'size']);

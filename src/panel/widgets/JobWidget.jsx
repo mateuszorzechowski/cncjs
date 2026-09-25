@@ -3,6 +3,7 @@ import JobButtons from '../ui/JobButtons';
 import { useIsPhone } from '../ui/shell';
 import Meter from '../ui/Meter';
 import { NO_READING } from '../machine/readings';
+import { useUnits } from '../ui/units';
 import { t } from '../i18n';
 
 const reading = (value) => (value === null || value === undefined ? NO_READING : value);
@@ -44,6 +45,7 @@ const jobTime = (job) => {
  */
 const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
   const phone = useIsPhone();
+  const units = useUnits();
   const { job, tool } = machine;
 
   return (
@@ -70,7 +72,7 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
         * four lines, and the 34px that costs comes straight out of the
         * readout above — which is the reading the screen is for. */}
       <div className="grid shrink-0 grid-cols-1 gap-x-gap gap-y-1 font-num text-note text-mut @xs:grid-cols-2">
-        <span className="truncate">{t('job.feed')} {reading(tool.feedrate)} {t('units.mmPerMin')}</span>
+        <span className="truncate">{t('job.feed')} {units.figure(tool.feedrate, 'feed')} {units.feed}</span>
         <span className="truncate">{t('job.spindle')} {reading(tool.spindle)} {t('units.rpm')}</span>
         <span className="truncate">{t('job.file')} {job ? job.name : NO_READING}</span>
         {/* What is left, until there is nothing left — at which point the

@@ -1,13 +1,9 @@
 import controller from './controller';
 import { BEAT_MS, jogToleranceMs, observeBeatGap } from './deadman';
+import { inMm } from './units';
 
 const GRBL = 'Grbl';
 const SMOOTHIE = 'Smoothie';
-
-/** What the mockup offers, in the order it offers it. */
-export const XY_STEPS = [0.1, 1, 10, 50];
-export const Z_STEPS = [0.1, 1, 5];
-export const FEEDRATES = [500, 1500, 3000];
 
 /**
  * A jog is a direction, not an axis.
@@ -103,12 +99,26 @@ export const jogRoom = (axis, sign, envelope, position) => {
  * rather than refused, so the tool ends up exactly at the limit instead of a
  * millimetre short of it, and nothing is sent once there is nothing to give.
  */
-export const jog = ({ type, dir, distance, feedrate, envelope, position }) => {
+export const jog = ({ type, dir, distance: shown, feedrate: shownRate, units, envelope, position }) => {
+  if (!units) {
+    return false;
+  }
+  /*
+   * In the units the operator was shown, and said so: the server turns them
+   * into millimetres (see `services/units`).
+   */
   if (type === GRBL) {
-    controller.command('jogStep', { dir, distance, feedrate });
+    controller.command('jogStep', { dir, distance: shown, feedrate: shownRate, units: units.name });
     return true;
   }
 
+  /*
+   * The other firmwares get a line composed here, so the millimetres are
+   * worked out here too — with the server's factor, the one sum this path
+   * cannot hand over while the server has no jog for them.
+   */
+  const distance = inMm(shown, units);
+  const feedrate = inMm(shownRate, units);
   const bounded = {};
 
   for (const axis of Object.keys(dir)) {
@@ -220,7 +230,7 @@ export const jogStop = (type) => {
  * key there would commit to the whole distance before the finger came up —
  * that is not a control, it is a trap.
  */
-export const jogStart = (type, dir, feedrate, linkMs = null) => {
+export const jogStart = (type, dir, feedrate, linkMs = null, units = null) => {
   if (!canJogContinuously(type)) {
     return false;
   }
@@ -233,7 +243,8 @@ export const jogStart = (type, dir, feedrate, linkMs = null) => {
    * and a machine that travels until the axis runs out. See
    * `machine/deadman`.
    */
-  controller.command('jogStart', dir, feedrate, jogToleranceMs(linkMs));
+  // The rate as shown, with its units; the server writes millimetres.
+  controller.command('jogStart', dir, feedrate, jogToleranceMs(linkMs), units?.name);
   startBeating();
   return true;
 };

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { gridLabels, labelStep } from './grid-numbers';
+import { useUnits } from '../ui/units';
 
 /**
  * The numbers on the ground.
@@ -91,6 +92,9 @@ const paint = (text, color) => {
 };
 
 const GridLabels = ({ area, step, z, color }) => {
+  const units = useUnits();
+  const factor = units.rule?.factor ?? 1;
+  const length = units.length;
   const groups = useRef([]);
 
   /*
@@ -100,12 +104,12 @@ const GridLabels = ({ area, step, z, color }) => {
    */
   const [spacing, setSpacing] = useState(step);
 
-  const labels = useMemo(() => gridLabels(area, spacing).map((label) => {
+  const labels = useMemo(() => gridLabels(area, spacing, { factor, length }).map((label) => {
     const { texture, aspect } = paint(label.text, color);
     // Built one unit tall; the group is scaled to whatever that has to be on
     // screen, so the geometry never has to be rebuilt for a zoom.
     return { ...label, texture, width: aspect, height: 1 };
-  }), [area, spacing, color]);
+  }), [area, spacing, color, factor, length]);
 
   useEffect(() => () => labels.forEach(({ texture }) => texture.dispose()), [labels]);
 
@@ -116,7 +120,7 @@ const GridLabels = ({ area, step, z, color }) => {
    * asked for, and a zoom asks for one.
    */
   useFrame(({ camera }) => {
-    const next = labelStep(step, camera.zoom);
+    const next = labelStep(step, camera.zoom, factor);
     if (next !== spacing) {
       setSpacing(next);
     }

@@ -33,7 +33,7 @@ const CheckButton = ({ file, machine, busy = false }) => {
   const [scope, setScope] = useState('all');
   const blocker = checkBlocker(machine);
   const running = machine.fileCheck?.name === file.name ? machine.fileCheck : null;
-  const overrun = overrunText(machine.fits, file.name);
+  const overrun = overrunText(machine.fits, file.name, machine.units);
 
   const status = running ? progressText(running) : '';
 

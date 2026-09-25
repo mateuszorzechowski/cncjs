@@ -1,6 +1,7 @@
 import Button from '../ui/Button';
 import Card from '../ui/Card';
-import { formatPosition, NO_READING } from '../machine/readings';
+import { NO_READING } from '../machine/readings';
+import { useUnits } from '../ui/units';
 import { zero, activeWcsNumber } from '../machine/zero';
 import { t } from '../i18n';
 
@@ -41,20 +42,21 @@ const ZHeightWidget = ({ machine, label = t('zheight.title'), className = '' }) 
    * under way is the other reason now — see `readings.canZero`.
    */
   const canZero = mayZero && activeWcsNumber(modal) > 0;
-  const machineZ = formatPosition(machinePosition.z);
+  const units = useUnits();
+  const machineZ = units.figure(machinePosition.z);
 
   return (
     <Card
       label={label}
-      aside={machineZ === NO_READING ? null : t('zheight.machine', { value: machineZ })}
+      aside={machineZ === NO_READING ? null : t('zheight.machine', { value: machineZ, unit: units.length })}
       className={`@container shrink-0 ${className}`}
     >
       <div className="flex flex-col gap-4 @xl:flex-row @xl:items-end @xl:gap-6">
         <span className="flex min-w-0 flex-1 items-baseline gap-2">
           <span className="font-num text-val font-medium tabular-nums text-ink">
-            {formatPosition(position.z)}
+            {units.figure(position.z)}
           </span>
-          <span className="font-num text-lead text-mut">{t('units.mm')}</span>
+          <span className="font-num text-lead text-mut">{units.length}</span>
         </span>
 
         <div className="flex shrink-0 gap-3">

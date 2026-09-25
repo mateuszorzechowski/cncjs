@@ -7,6 +7,7 @@ import StatTile from './StatTile';
 import { areaText, durationText, setupText, toolsText, verdictText, verdictTone } from './fileWords';
 import { canLoad, isLoaded } from '../machine/files';
 import { NO_READING } from '../machine/readings';
+import { useUnits } from './units';
 import { t } from '../i18n';
 
 /**
@@ -32,7 +33,10 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnl
   const check = analysis?.check;
   const loaded = isLoaded(machine, file.name);
   const loadable = canLoad(machine);
-  const zmin = analysis?.bounds ? t('files.mm', { mm: analysis.bounds.min.z }) : NO_READING;
+  const units = useUnits();
+  const zmin = analysis?.bounds
+    ? t('units.quantity', { value: units.figure(analysis.bounds.min.z, 'size'), unit: units.length })
+    : NO_READING;
   let note = '';
   if (loaded) {
     note = t('files.note.loadedStays');
@@ -48,7 +52,7 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnl
       {/* What the part is and what it runs in: its size, and on the right
         * the units and the coordinate system it sets (Mateusz, 2026-09-25). */}
       <div className="flex shrink-0 items-baseline justify-between gap-3 font-num text-note text-mut">
-        <p className="m-0 truncate">{t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}</p>
+        <p className="m-0 truncate">{t('files.stat.area')}{' · '}{areaText(analysis?.bounds, units.rule)}</p>
         <p className="m-0 shrink-0">{analysis ? setupText(analysis) : NO_READING}</p>
       </div>
 

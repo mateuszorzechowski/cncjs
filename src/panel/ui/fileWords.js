@@ -1,5 +1,6 @@
 import { durationParts, sizeParts } from '../machine/files';
 import { NO_READING } from '../machine/readings';
+import { figure, lengthLabel } from '../machine/units';
 import { t } from '../i18n';
 
 /**
@@ -37,9 +38,14 @@ export const durationText = (seconds) => {
 
 export const modifiedText = (mtime) => modified.format(new Date(mtime));
 
-/** The part's size, X by Y by Z, from the server's bounds. */
-export const areaText = (bounds) => (bounds
-  ? t('files.area', { x: bounds.max.x - bounds.min.x, y: bounds.max.y - bounds.min.y, z: bounds.max.z - bounds.min.z })
+/** The part's size, X by Y by Z, from the server's bounds, in its units. */
+export const areaText = (bounds, units) => (bounds && units
+  ? t('files.area', {
+    x: figure(bounds.max.x - bounds.min.x, units, 'size'),
+    y: figure(bounds.max.y - bounds.min.y, units, 'size'),
+    z: figure(bounds.max.z - bounds.min.z, units, 'size'),
+    unit: lengthLabel(units),
+  })
   : NO_READING);
 
 const UNIT_WORDS = { G20: 'files.units.inch', G21: 'files.units.mm' };
@@ -106,12 +112,14 @@ const AXES = { x: 'axis.x', y: 'axis.y', z: 'axis.z' };
  * to `$C` — or null when it fits, or when the firmware has no soft limits and
  * so will not stop at the edge. The server's `files:fit`; the words are here.
  */
-export const overrunText = (fits, name) => {
+export const overrunText = (fits, name, units) => {
   const over = fits?.softLimits ? fits.files?.[name] : null;
   if (!over || over.length === 0) {
     return null;
   }
-  const where = over.map(({ axis, by }) => t('files.check.overrun.axis', { axis: t(AXES[axis]), by })).join(', ');
+  const where = over.map(({ axis, by }) => t('files.check.overrun.axis', {
+    axis: t(AXES[axis]), by: figure(by, units, 'size'), unit: lengthLabel(units),
+  })).join(', ');
   return t('files.check.overrun.note', { where });
 };
 

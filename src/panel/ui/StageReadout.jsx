@@ -1,5 +1,6 @@
 import Icon from './Icon';
 import { t } from '../i18n';
+import { useUnits } from './units';
 
 /**
  * Where the pointer is, where the picked point is, and the buttons that act
@@ -53,8 +54,6 @@ import { t } from '../i18n';
  * mixed with `color-mix`, because an opacity modifier on a whole-`var()`
  * colour silently produces nothing at all.
  */
-const figure = (value) => value.toFixed(3);
-
 /** Machine coordinates as the operator's own, when the offset is known. */
 const inWork = (point, offset) => {
   if (!point) {
@@ -67,12 +66,17 @@ const inWork = (point, offset) => {
   return { x: point.x - offset.x, y: point.y - offset.y };
 };
 
-const Row = ({ point, className }) => (
-  <span className={`flex items-baseline gap-2 font-num text-note leading-none ${className}`}>
-    <span className="w-coord shrink-0 whitespace-nowrap">{t('axis.x')} {point ? figure(point.x) : '–'}</span>
-    <span className="w-coord shrink-0 whitespace-nowrap">{t('axis.y')} {point ? figure(point.y) : '–'}</span>
-  </span>
-);
+// In the server's units, like every other figure — the point is picked in
+// the scene's millimetres and only shown in them.
+const Row = ({ point, className }) => {
+  const { figure } = useUnits();
+  return (
+    <span className={`flex items-baseline gap-2 font-num text-note leading-none ${className}`}>
+      <span className="w-coord shrink-0 whitespace-nowrap">{t('axis.x')} {figure(point?.x)}</span>
+      <span className="w-coord shrink-0 whitespace-nowrap">{t('axis.y')} {figure(point?.y)}</span>
+    </span>
+  );
+};
 
 const StageReadout = ({
   hover, point, onGo, canGo, note, clickDrives, onClickDrives, offset,
