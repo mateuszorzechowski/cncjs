@@ -31,12 +31,18 @@
   const controller = window.__panelController;
   const KEEP = 'rv-sim';
 
-  // The events that describe the machine. Everything else — the socket's own
-  // comings and goings, the journal — carries on as normal.
+  // The events that describe what the machine is doing. Everything else —
+  // the socket's own comings and goings, the journal — carries on as normal.
+  //
+  // Not the machine's settings and its travel (`controller:settings`,
+  // `controller:envelope`): they are what the machine *is*, which nothing
+  // here simulates, and holding them back left a panel reloaded mid-simulation
+  // without its travel — the grid shrank to a strip and the guide lines at the
+  // ends of the travel went (2026-09-25).
   const MACHINE_EVENTS = [
     'serialport:open', 'serialport:close', 'serialport:change',
-    'controller:state', 'controller:settings', 'controller:alarm', 'controller:motion',
-    'controller:envelope', 'workflow:state', 'sender:status', 'feeder:status',
+    'controller:state', 'controller:alarm', 'controller:motion',
+    'workflow:state', 'sender:status', 'feeder:status',
     'gcode:load', 'gcode:unload', 'command:refused',
   ];
 
@@ -156,14 +162,39 @@
   gate(controller.socket);
 
   // What the panel says on the way out goes to the list, not to the machine.
+  /*
+   * Attaching to a port the server already has open goes through, even while
+   * simulating. It joins the port's room and nothing reaches the machine —
+   * and without it, a panel loaded mid-simulation was never sent the
+   * machine's settings or its travel, so the scene lost its grid and guide
+   * lines (2026-09-25). Opening a port that is closed stays here: that would
+   * reset the controller.
+   */
+  const alreadyOpen = async (port) => {
+    try {
+      const open = await (await window.fetch('/api/controllers')).json();
+      return open.some((c) => c.port === port);
+    } catch (err) {
+      return false;
+    }
+  };
+
   const outgoing = (name, original) => (...args) => {
     if (!sim.on) { return original(...args); }
+    if (name === 'openPort') {
+      const callback = args.find((a) => typeof a === 'function');
+      alreadyOpen(args[0]).then((open) => {
+        if (open) {
+          original(...args);
+        } else if (callback) {
+          callback(null);
+        }
+      });
+      return undefined;
+    }
     sent.unshift(`${new Date().toLocaleTimeString()}  ${name} ${args.filter((a) => typeof a !== 'function').map((a) => JSON.stringify(a)).join(' ')}`);
     sent.length = Math.min(sent.length, 12);
     drawSent();
-    // A port asked for is a port had: the connection screen waits on this.
-    const callback = args.find((a) => typeof a === 'function');
-    if (name === 'openPort' && callback) { callback(null); }
     return undefined;
   };
   ['command', 'write', 'writeln', 'openPort', 'closePort'].forEach((name) => {
