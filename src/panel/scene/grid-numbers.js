@@ -70,6 +70,45 @@ export const labelStep = (step, zoom) => {
  */
 const MAX_LABELS = 40;
 
+/*
+ * **Where the rulers run: along zero, unless zero is inside the drawing.**
+ *
+ * On a machine, zero is a corner of the travel, so the zero lines are edges
+ * of the area and the figures sit outside everything drawn. A program's
+ * zero is usually in the middle of the part, and there the zero lines
+ * cross it and the figures ended up under it (Mateusz, 2026-09-25, on the
+ * Pliki preview). So a ruler whose zero line would cross the area runs
+ * along an edge instead — the front one for X and the right one for Y,
+ * the two the default isometric view looks at, so the part stands behind
+ * its figures rather than on them.
+ */
+export const rulerSides = (area) => {
+  const crosses = (min, max) => min < 0 && max > 0;
+  const rowOnEdge = crosses(area.min.y, area.max.y);
+  const columnOnEdge = crosses(area.min.x, area.max.x);
+  const axisY = rowOnEdge ? area.min.y : Math.min(Math.max(0, area.min.y), area.max.y);
+  const axisX = columnOnEdge ? area.max.x : Math.min(Math.max(0, area.min.x), area.max.x);
+
+  return {
+    rowOnEdge,
+    columnOnEdge,
+    // Where the X figures run, and which way is away from the work.
+    axisY,
+    outY: axisY > (area.min.y + area.max.y) / 2 ? 1 : -1,
+    // Where the Y figures run, and which way is away from the work.
+    axisX,
+    outX: axisX > (area.min.x + area.max.x) / 2 ? 1 : -1,
+  };
+};
+
+/**
+ * A figure as printed: to a tenth at most. The far end of a program's reach
+ * is its exact extent — `-58.1149` — and printed in full it was the widest
+ * thing on the ruler and ran into the axis (Mateusz, 2026-09-25). The exact
+ * size is in the caption beside the drawing.
+ */
+const figure = (value) => String(Math.round(value * 10) / 10);
+
 /**
  * The numbers to write on the ground, and where.
  *
@@ -93,79 +132,58 @@ const MAX_LABELS = 40;
  * coarsening.
  *
  * @returns {object[]} `{ key, text, x, y, push }` in machine coordinates,
- *   where `push` is in multiples of the caller's gap — out of the machine,
- *   and for the unit, along the axis past the last figure.
+ *   where `push` is in multiples of the caller's gap, out of the machine.
+ *   The unit is part of the far X figure.
  */
-/**
- * A figure as printed: to a tenth at most. The far end of a program's reach
- * is its exact extent — `-58.1149` — and printed in full it was the widest
- * thing on the ruler and ran into the axis (Mateusz, 2026-09-25). The exact
- * size is in the caption beside the drawing.
- */
-const figure = (value) => String(Math.round(value * 10) / 10);
-
 export const gridLabels = (area, step) => {
   const first = (min) => snapUp(min, step);
   const last = (max) => snapDown(max, step);
 
   /*
-   * **The far end of the travel is always named.**
+   * **Both ends of a ruler are always named.**
    *
    * Counting in round numbers from zero leaves the end of the axis unlabelled
    * whenever the range is not a multiple of the step: 700mm counted in
    * five-hundreds stops at -500, and the one figure an operator most wants —
-   * how far the machine actually goes — is the one missing. So the extreme is
+   * how far the machine actually goes — is the one missing. So the ends are
    * added whatever the step is.
    *
-   * Its neighbour is dropped only if the two would collide: closer than about
-   * a third of a square is two figures sharing a space, and the extreme is
+   * Both, not only the far one. On a machine the near end is zero and was
+   * always there; a program with its zero in the middle ends at -25 as well
+   * as 25, and its ruler read -20 at that end (Mateusz, 2026-09-25).
+   *
+   * A neighbour is dropped only if it would collide with an end: closer than
+   * about a third of a square is two figures sharing a space, and the end is
    * the one worth keeping.
    */
   const CROWDED = 0.4;
 
-  const ticks = (min, max, far) => {
+  const ticks = (min, max) => {
     const values = [];
     for (let v = first(min); v <= last(max); v += step) {
       values.push(v);
     }
 
     const every = Math.ceil(values.length / MAX_LABELS);
-    const kept = values.filter((_, i) => (i % every) === 0);
+    const span = step * every * CROWDED;
+    let kept = values.filter((_, i) => (i % every) === 0);
 
-    if (Number.isFinite(far) && !kept.includes(far)) {
-      const span = step * every * CROWDED;
-      const clear = kept.filter((v) => Math.abs(v - far) >= span);
-      return far < kept[0] ? [far, ...clear] : [...clear, far];
+    for (const end of [min, max]) {
+      if (!kept.includes(end)) {
+        kept = [...kept.filter((v) => Math.abs(v - end) >= span), end].sort((a, b) => a - b);
+      }
     }
 
     return kept;
   };
 
-  // Which end of each axis is the far one — the reach, rather than the datum.
+  // Which end of the X ruler is the far one — the reach, rather than the
+  // datum — where the unit goes.
   const farX = Math.abs(area.min.x) > Math.abs(area.max.x) ? area.min.x : area.max.x;
-  const farY = Math.abs(area.min.y) > Math.abs(area.max.y) ? area.min.y : area.max.y;
 
   const labels = [];
 
-  /*
-   * **Where the rulers run: along zero, unless zero is inside the drawing.**
-   *
-   * On a machine, zero is a corner of the travel, so the zero lines are edges
-   * of the area and the figures sit outside everything drawn. A program's
-   * zero is usually in the middle of the part, and there the zero lines
-   * cross it and the figures ended up under it (Mateusz, 2026-09-25, on the
-   * Pliki preview). So a ruler whose zero line would cross the area runs
-   * along an edge instead — the front one for X and the right one for Y,
-   * the two the default isometric view looks at, so the part stands behind
-   * its figures rather than on them.
-   */
-  const crosses = (min, max) => min < 0 && max > 0;
-  const rowOnEdge = crosses(area.min.y, area.max.y);
-  const columnOnEdge = crosses(area.min.x, area.max.x);
-  const axisY = rowOnEdge ? area.min.y : Math.min(Math.max(0, area.min.y), area.max.y);
-  const axisX = columnOnEdge ? area.max.x : Math.min(Math.max(0, area.min.x), area.max.x);
-  const outY = axisY > (area.min.y + area.max.y) / 2 ? 1 : -1;
-  const outX = axisX > (area.min.x + area.max.x) / 2 ? 1 : -1;
+  const { rowOnEdge, columnOnEdge, axisY, axisX, outY, outX } = rulerSides(area);
 
   /*
    * **The origin is written once, for both rulers.**
@@ -181,12 +199,12 @@ export const gridLabels = (area, step) => {
   const meet = !rowOnEdge && !columnOnEdge;
   const shared = (value, axis) => meet && value === axis;
 
-  for (const x of ticks(area.min.x, area.max.x, farX)) {
+  for (const x of ticks(area.min.x, area.max.x)) {
     if (!shared(x, axisX)) {
       labels.push({ key: `x${x}`, text: figure(x), x, y: axisY, push: { x: 0, y: outY } });
     }
   }
-  for (const y of ticks(area.min.y, area.max.y, farY)) {
+  for (const y of ticks(area.min.y, area.max.y)) {
     if (!shared(y, axisY)) {
       labels.push({ key: `y${y}`, text: figure(y), x: axisX, y, push: { x: outX, y: 0 } });
     }

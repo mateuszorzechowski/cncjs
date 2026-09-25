@@ -253,6 +253,17 @@ describe('gridLabels, when zero is inside what is drawn', () => {
     expect(labels.filter((l) => l.text.endsWith(' mm')).map((l) => l.text)).toEqual(['25 mm']);
   });
 
+  test('names both ends of each ruler, not the round number short of one', () => {
+    // 50 × 50 about its middle, counted in twenties as the preview counted
+    // it: the ruler read -20 · 0 · 25, one end named and the other not.
+    const labels = gridLabels(PART, 20);
+    const on = (axis) => labels.filter((l) => l.key.startsWith(axis)).map((l) => Number(l.text.replace(/ mm$/, '')));
+
+    // ±20 are a quarter of a square from the ends: they give way to them.
+    expect(on('x')).toEqual([-25, 0, 25]);
+    expect(on('y')).toEqual([-25, 0, 25]);
+  });
+
   test('moves only the ruler whose zero line would cross', () => {
     // Zero inside along X only: the Y figures still run up the zero line.
     const labels = gridLabels({ min: { x: -25, y: 0, z: 0 }, max: { x: 25, y: 40, z: 0 } }, 10);

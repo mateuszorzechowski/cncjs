@@ -197,28 +197,3 @@ describe('fitCameraToBounds', () => {
     expect(camera.projectionMatrix.elements.every(Number.isFinite)).toBe(true);
   });
 });
-
-describe('fitCameraToBounds with room kept in pixels', () => {
-  // 300 px tall, so the frustum is in pixels as the panel's canvas is.
-  const PART = boxOf([-25, -25, -10], [25, 25, 1]);
-
-  test('keeps that many pixels clear on the tighter side', () => {
-    const padded = orthographic();
-    fitCameraToBounds(padded, PART, TOP, { padding: 60 });
-    const box = projected(padded, PART);
-
-    // The tighter side is the height: 150 px half-height, 60 of them kept
-    // clear, and the usual margin inside what is left.
-    expect(widest(box, 'y')).toBeCloseTo((150 - 60) / 150 / FIT_MARGIN, 3);
-  });
-
-  test('without it, frames as the old visualiser always has', () => {
-    const plain = orthographic();
-    const unpadded = orthographic();
-    fitCameraToBounds(plain, PART, ISO);
-    fitCameraToBounds(unpadded, PART, ISO, { padding: 0 });
-
-    expect(unpadded.zoom).toBe(plain.zoom);
-    expect(widest(projected(plain, PART), 'y')).toBeCloseTo(1 / FIT_MARGIN, 3);
-  });
-});

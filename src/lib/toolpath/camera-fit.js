@@ -37,13 +37,7 @@ const _reference = new THREE.Vector3();
  * @returns {THREE.Vector3} The point the camera now looks at — hand it to the
  *   orbit controls so the view rotates about what it is framed on.
  */
-/*
- * `padding`, orthographic only: screen pixels kept clear on every side of the
- * box, for what is drawn beside it at a fixed size on screen — the panel's
- * grid figures — and so cannot be framed with a margin in millimetres.
- * Nothing passes it but the panel; the old visualiser frames as it did.
- */
-const fitCameraToBounds = (camera, bounds, direction, { padding = 0 } = {}) => {
+const fitCameraToBounds = (camera, bounds, direction) => {
   const center = bounds.getCenter(new THREE.Vector3());
 
   _direction.copy(direction).normalize();
@@ -94,8 +88,8 @@ const fitCameraToBounds = (camera, bounds, direction, { padding = 0 } = {}) => {
     // An orthographic view does not get larger or smaller as the camera moves,
     // so framing it means zoom. The frustum is whatever the caller sized it
     // to for the canvas; zoom is the ratio that makes the box fill it.
-    const frustumHalfWidth = Math.max(1, (camera.right - camera.left) / 2 - padding);
-    const frustumHalfHeight = Math.max(1, (camera.top - camera.bottom) / 2 - padding);
+    const frustumHalfWidth = (camera.right - camera.left) / 2;
+    const frustumHalfHeight = (camera.top - camera.bottom) / 2;
 
     camera.zoom = Math.min(
       frustumHalfWidth / halfWidth,
