@@ -1,5 +1,5 @@
 import {
-  LEAD_CEILING_SECONDS, LEAD_FLOOR_SECONDS, MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine,
+  EDGE_MM, LEAD_CEILING_SECONDS, LEAD_FLOOR_SECONDS, MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine,
   jogStepLine, leadSecondsFor, roomFor, segmentDistance, stopSeconds,
 } from '../jog';
 
@@ -177,9 +177,10 @@ describe('the line for one segment', () => {
 
   test('is cut to the axis with the least room, on every axis', () => {
     // A tenth of a millimetre from the Y end — tighter than a whole segment,
-    // which at 1500mm/min is 0.25mm. Both axes get the tenth, so the move
-    // still goes where it was aimed instead of bending when Y ran out.
-    expect(line({ x: 1, y: 1 }, { ...MIDDLE, y: '-0.1' })).toBe('$J=G91 G21 X0.1 Y0.1 F1500');
+    // which at 1500mm/min is 0.25mm. Both axes get the tenth less the edge
+    // margin, so the move still goes where it was aimed instead of bending
+    // when Y ran out.
+    expect(line({ x: 1, y: 1 }, { ...MIDDLE, y: '-0.1' })).toBe('$J=G91 G21 X0.099 Y0.099 F1500');
   });
 
   test('is a whole segment when the room is wider than one', () => {
@@ -230,12 +231,36 @@ describe('one tap of a jog key', () => {
      * With `$20=1` the firmware refuses a relative move that would leave the
      * travel outright — it does not clip it — so at the edge of the table the
      * key did nothing at all and said nothing about why. Shortened, the tool
-     * lands exactly on the limit.
+     * stops a micron short of the limit — see the case below for why not on it.
      */
     const nearTheEnd = { x: '-3', y: '-350', z: '-75' };
     expect(jogStepLine({
       dir: { x: 1 }, distance: 10, feedrate: 1500, settings: HOMES_TO_MAX, mpos: nearTheEnd,
-    })).toBe('$J=G91 G21 X3 F1500');
+    })).toBe('$J=G91 G21 X2.999 F1500');
+  });
+
+  test('never lands exactly on the limit, which the firmware refuses', () => {
+    /*
+     * Measured on the bench: from X-3.1, a step of X3.1 — to machine zero,
+     * the end of the travel — came back `error:15` (travel exceeded). Grbl
+     * adds the step to a position it holds in steps and floats, and
+     * -3.1 + 3.1 can come out a hair above zero. The position it reports is
+     * rounded to a micron as well. So a step never uses the last `EDGE_MM`,
+     * and what it does use is rounded down to a micron, never up.
+     */
+    expect(EDGE_MM).toBe(0.001);
+    expect(jogStepLine({
+      dir: { x: 1 }, distance: 3.1, feedrate: 600, settings: HOMES_TO_MAX, mpos: { ...MIDDLE, x: '-3.1' },
+    })).toBe('$J=G91 G21 X3.099 F600');
+    // And a segment of a held jog, which goes through the same room.
+    expect(jogSegmentLine({ dir: { x: 1 }, feedrate: 1500, settings: HOMES_TO_MAX, mpos: { ...MIDDLE, x: '-0.1' } }))
+      .toBe('$J=G91 G21 X0.099 F1500');
+  });
+
+  test('closer to the limit than the margin is no room at all', () => {
+    expect(jogStepLine({
+      dir: { x: 1 }, distance: 10, feedrate: 1500, settings: HOMES_TO_MAX, mpos: { ...MIDDLE, x: '-0.001' },
+    })).toBeNull();
   });
 
   test('clips each axis on its own, so a diagonal at the edge carries on', () => {

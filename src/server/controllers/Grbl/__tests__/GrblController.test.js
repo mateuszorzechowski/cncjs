@@ -1719,8 +1719,9 @@ describe('intent commands', () => {
 
       // With `$20=1` Grbl refuses a relative move that would leave the travel
       // outright rather than clipping it, so at the edge of the table the key
-      // did nothing at all, silently.
-      expect(writes.map(write => write.data)).toEqual(['$J=G91 G21 X3 F1500' + '\n']);
+      // did nothing at all, silently. A micron short of the end rather than
+      // onto it, which the firmware can refuse too — see `EDGE_MM` in jog.js.
+      expect(writes.map(write => write.data)).toEqual(['$J=G91 G21 X2.999 F1500' + '\n']);
     });
 
     test('says so when there is nothing left to give', () => {

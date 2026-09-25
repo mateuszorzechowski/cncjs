@@ -175,6 +175,30 @@ export const roomFor = (axis, sign, settings, mpos) => {
 };
 
 /**
+ * How close to the end of an axis a relative jog may go, in millimetres.
+ *
+ * **Not onto it.** Measured on the bench, 2026-09-25: from X-3.1, a step of
+ * X3.1 — which ends exactly at machine zero, the end of the travel with
+ * `$20=1` — came back `error:15` (travel exceeded), once in about a dozen
+ * tries. Grbl adds the step to a position it keeps in steps and floats, and
+ * -3.1 + 3.1 can land a hair above zero; the position it reports is rounded to
+ * a micron besides. The refusal arrived as an ordinary controller error, so
+ * the key simply did nothing — the fault the bounding below exists to fix —
+ * and the hardware tier's return move failed the same way.
+ *
+ * A micron is invisible on any machine this drives. Absolute moves are not
+ * affected: a travel's `G53 G90 Z0` is the number itself, not a sum.
+ */
+export const EDGE_MM = 0.001;
+
+/*
+ * What a relative jog may use of `room`: all but the edge, rounded down to a
+ * micron so the arithmetic can never round it back up — and so the line says
+ * `X3.099`, not `X3.0989999999999998`.
+ */
+const usable = (room) => Math.max(0, Math.floor((room - EDGE_MM) * 1000 + 1e-9) / 1000);
+
+/**
  * The `$J=` line for one segment, or null when there is nowhere left to go.
  *
  * Every axis gets the same distance, so a diagonal stays at 45° — the shorter
@@ -204,7 +228,7 @@ export const jogSegmentLine = ({ dir, feedrate, settings, mpos, seconds = SEGMEN
   for (const axis of axes) {
     const room = roomFor(axis, Math.sign(dir[axis]), settings, mpos);
     if (room !== null) {
-      distance = Math.min(distance, Math.max(0, room));
+      distance = Math.min(distance, usable(room));
     }
   }
 
@@ -255,7 +279,7 @@ export const jogStepLine = ({ dir, distance, feedrate, settings, mpos }) => {
   for (const axis of axes) {
     const sign = Math.sign(dir[axis]);
     const room = roomFor(axis, sign, settings, mpos);
-    const allowed = room === null ? distance : Math.min(distance, Math.max(0, room));
+    const allowed = room === null ? distance : Math.min(distance, usable(room));
     if (allowed > 0) {
       moves[axis] = sign * allowed;
     }
