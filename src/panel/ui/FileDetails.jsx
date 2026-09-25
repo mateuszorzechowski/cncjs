@@ -63,21 +63,26 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
         </div>
       </section>
 
-      {/* Why a button below is greyed out, beside the buttons it is about —
-        * and always two lines tall, so a note coming or going moves nothing. */}
-      <p className="m-0 line-clamp-2 min-h-note2 shrink-0 text-note text-mut">{note}</p>
-
-      <div className="flex shrink-0 gap-2">
-        <Button className="h-ctl px-4" disabled={loaded || busy} onClick={() => onDelete(file)}>
-          {t('files.delete')}
-        </Button>
-        {loaded ? (
-          <Button tone="soft" className="h-ctl flex-1" aria-disabled>{t('files.loaded')}</Button>
-        ) : (
-          <Button tone="primary" className="h-ctl flex-1" disabled={!loadable || busy} onClick={() => onLoad(file)}>
-            {t('files.load')}
+      {/* Why a button below is greyed out, with the buttons it is about:
+        * one group, the note sitting on them rather than on its own. Two
+        * lines are always kept for it, filled from the bottom, so a note
+        * coming or going moves nothing. */}
+      <div className="flex shrink-0 flex-col gap-1">
+        <div className="flex min-h-note2 items-end">
+          <p className="m-0 line-clamp-2 text-note text-mut">{note}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button className="h-ctl px-4" disabled={loaded || busy} onClick={() => onDelete(file)}>
+            {t('files.delete')}
           </Button>
-        )}
+          {loaded ? (
+            <Button tone="soft" className="h-ctl flex-1" aria-disabled>{t('files.loaded')}</Button>
+          ) : (
+            <Button tone="primary" className="h-ctl flex-1" disabled={!loadable || busy} onClick={() => onLoad(file)}>
+              {t('files.load')}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
