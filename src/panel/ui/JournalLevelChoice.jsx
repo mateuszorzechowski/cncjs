@@ -24,21 +24,24 @@ const JournalLevelChoice = () => {
     };
   }, []);
 
+  // The control alone: its name and note are the settings row's.
+  //
+  // Every level kept is lit, not only the one pressed: this is a floor —
+  // `Uwaga` keeps warnings and errors — unlike the journal's own filter,
+  // where levels are picked one by one (*"poziom logowania może zaznaczać
+  // wszystkie poziomy, które się zawierają"*, 2026-09-25).
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-cap font-semibold uppercase tracking-[0.08em] text-mut">
-        {t('journal.keep.label')}
-      </span>
-      <SegmentedChoice
-        label={t('journal.keep.label')}
-        options={LEVELS}
-        value={level}
-        disabled={level === null}
-        onChange={(chosen) => saveJournalLevel(chosen).then(setLevel).catch(() => {})}
-        format={(id) => t(LEVEL_KEYS[id])}
-      />
-      <span className="text-note text-mut">{t('journal.keep.note')}</span>
-    </div>
+    <SegmentedChoice
+      joined
+      fitWide
+      label={t('journal.keep.label')}
+      options={LEVELS}
+      value={level}
+      isOn={(id) => level !== null && LEVELS.indexOf(id) >= LEVELS.indexOf(level)}
+      disabled={level === null}
+      onChange={(chosen) => saveJournalLevel(chosen).then(setLevel).catch(() => {})}
+      format={(id) => t(LEVEL_KEYS[id])}
+    />
   );
 };
 

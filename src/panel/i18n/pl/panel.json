@@ -232,7 +232,6 @@
     "ready": "Ta przeglądarka jest gotowa go zainstalować.",
     "notYet": "Ta przeglądarka jeszcze nie zaproponowała instalacji. Zwykle pyta, gdy strona zostanie użyta raz czy dwa.",
     "certWarning": "Ten urząd certyfikacji jest ograniczony do nazw w Twojej własnej sieci — nie może poświadczyć żadnej strony w internecie. Mimo to instaluj go tylko dla maszyny, która jest Twoja, w sieci, która jest Twoja.",
-    "certWhere": "Android: wybierz „Certyfikat CA”, a nie „certyfikat VPN i aplikacji”, i ustaw najpierw blokadę ekranu, jeśli jej nie masz.",
     "certLife": "Urząd ważny rok, certyfikat serwera 30 dni. Serwer wymienia swój sam; urząd po roku przestaje działać i wtedy trzeba zainstalować nowy, a stary usunąć w ustawieniach telefonu — wygasły nie znika sam.",
     "certTitle": "Certyfikat urzędu",
     "certWhat": "Ten plik instaluje się na telefonie raz. Bez niego telefon nie uzna połączenia z panelem za bezpieczne i nie pozwoli zainstalować aplikacji.",
@@ -242,7 +241,17 @@
     "certDownload": "Pobierz certyfikat",
     "refresh": "Odśwież panel",
     "refreshWhy": "Pobiera z serwera najnowszą wersję panelu.",
-    "updateReady": "Na serwerze czeka nowsza wersja panelu. Odśwież, żeby ją wziąć."
+    "updateReady": "Na serwerze czeka nowsza wersja panelu. Odśwież, żeby ją wziąć.",
+    "installTitle": "Instalacja",
+    "refreshTitle": "Odśwież panel",
+    "certPlatform": "Twoje urządzenie",
+    "certHow": {
+      "android": "Android: wybierz „Certyfikat CA”, a nie „certyfikat VPN i aplikacji”, i ustaw najpierw blokadę ekranu, jeśli jej nie masz.",
+      "ios": "iPhone / iPad: zainstaluj pobrany profil w Ustawieniach, a potem w Ogólne → To urządzenie → Ustawienia zaufania certyfikatów włącz pełne zaufanie dla tego urzędu.",
+      "windows": "Windows: otwórz pobrany plik, „Zainstaluj certyfikat”, wybierz „Bieżący użytkownik” i magazyn „Zaufane główne urzędy certyfikacji”.",
+      "macos": "macOS: otwórz pobrany plik w Pęku kluczy, dodaj go do pęku „Logowanie”, a w jego ustawieniach zaufania wybierz „Zawsze ufaj”.",
+      "linux": "Linux: w ustawieniach przeglądarki, w Prywatności i bezpieczeństwie → Certyfikaty → Urzędy, zaimportuj pobrany plik i zaznacz zaufanie dla witryn."
+    }
   },
   "refusal": {
     "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",
@@ -545,5 +554,12 @@
     "now": "Teraz",
     "clear": "Wyczyść",
     "none": "dowolnie"
+  },
+  "platform": {
+    "android": "Android",
+    "ios": "iOS",
+    "windows": "Windows",
+    "macos": "macOS",
+    "linux": "Linux"
   }
 }

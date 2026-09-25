@@ -37,6 +37,9 @@ const TONES = {
  */
 const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
   const t = TONES[tone] || TONES.inactive;
+  // Wide, the state is as wide as its longest word, so a state of more than
+  // one word is always two lines and one word always one. See the dot below.
+  const twoLines = String(children ?? '').trim().includes(' ');
 
   /*
    * A button, because it is the way to everything the panel knows about the
@@ -64,22 +67,44 @@ const StateChip = ({ tone = 'inactive', label, onPress, children }) => {
         // number from `--rail` and two nearly-equal widths stacked read as a
         // mistake; the full `--rail` glued it to both edges of the column.
         // One column, and the chip sits inside it.
-        '@3xl/shell:h-btnh @3xl/shell:w-railInset @3xl/shell:justify-center',
-        '@3xl/shell:rounded-ctl @3xl/shell:border @3xl/shell:px-1.5',
+        //
+        // Wide, a column: the dot and the state, centred between the top edge
+        // and the chevron, and the chevron at the bottom — no rule. Picked
+        // from six drawn variants on 2026-09-25 (*"kropka z boku, status z
+        // kropką dobrze wyśrodkowany między górnym borderem a chevronem"*).
+        // The state is as wide as its longest word (`w-min`), so the dot sits
+        // against two lines as close as against one — a wrapped line box is
+        // as wide as the room, not as the words. Stacked, the word has the
+        // chip's whole width and the chip stays in the rail's column; beside the word, a rule and chevron left too
+        // little of 120px and the longer states were cut to "BRAK SERW…".
+        '@3xl/shell:h-btnh @3xl/shell:w-railInset @3xl/shell:flex-col @3xl/shell:items-stretch @3xl/shell:gap-0 @3xl/shell:px-2 @3xl/shell:pb-1.5',
+        '@3xl/shell:rounded-ctl @3xl/shell:border',
         t.edge,
         'transition-colors hover:brightness-95',
       ].join(' ')}
     >
-      <span className={`size-[9px] shrink-0 rounded-full ${t.dot}`} aria-hidden="true" />
-      <span className={`truncate text-cap font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
-        {children}
+      {/* Wide, one line: the dot and the word centred together. Two lines:
+        * the words are what is centred and the dot hangs off their left
+        * edge, taking no room — *"wyśrodkuj tekst, kropka nie wpływa na
+        * wyśrodkowanie"*, then *"może jednolinijkowe wyśrodkuj"*
+        * (2026-09-25). Measured: every state fits either way, in both
+        * languages, at 1024 and Full HD. */}
+      <span className="flex min-w-0 items-center gap-1.5 @3xl/shell:flex-1 @3xl/shell:justify-center">
+        <span className="relative flex min-w-0 items-center gap-1.5">
+          <span className={`size-[9px] shrink-0 rounded-full ${t.dot} ${twoLines ? '@3xl/shell:absolute @3xl/shell:right-full @3xl/shell:top-1/2 @3xl/shell:mr-1.5 @3xl/shell:-translate-y-1/2' : ''}`} aria-hidden="true" />
+          <span className={`min-w-0 truncate text-left text-cap @3xl/shell:w-min @3xl/shell:text-center @3xl/shell:line-clamp-2 @3xl/shell:whitespace-normal @3xl/shell:break-words font-semibold uppercase tracking-[0.06em] fullhd:text-lead ${t.text}`}>
+            {children}
+          </span>
+        </span>
       </span>
-      {/* What pressing it does, on a phone: it opens the state sheet. A
-        * short rule in the chip's tone — not its full height, which cut the
-        * chip in two — and a chevron with room round it, as drawn on
-        * 2026-09-25. */}
-      <span className={`ml-1 h-5 w-px ${t.rule} @3xl/shell:hidden`} aria-hidden="true" />
-      <Icon name="chevron" className={`ml-1 size-4 shrink-0 ${t.text} @3xl/shell:hidden`} weight={2} />
+      {/* What pressing it does: it opens the state sheet. On a phone a short
+        * rule in the chip's tone and a chevron beside the word; wide, the
+        * chevron alone, under it. As drawn on 2026-09-25. */}
+      <span className={`ml-1 h-5 w-px shrink-0 ${t.rule} @3xl/shell:hidden`} aria-hidden="true" />
+      {/* Wide, the chevron's box is cropped to the stroke (-my-1.5): the glyph
+        * fills only the middle of its 16px, and centring the state against
+        * the box put it visibly high. */}
+      <Icon name="chevron" className={`ml-1 size-4 shrink-0 ${t.text} @3xl/shell:-my-1.5 @3xl/shell:ml-0 @3xl/shell:self-center`} weight={2} />
     </button>
   );
 };
