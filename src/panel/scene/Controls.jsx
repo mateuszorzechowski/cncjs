@@ -34,6 +34,14 @@ import { RULER_PIXELS } from './GridLabels';
  */
 const TWO_PI = Math.PI * 2;
 
+/*
+ * A full turn takes a drag of the canvas's height, but never less than this.
+ * On a phone the preview is under two hundred pixels tall, and a thumb's
+ * flick spun the part round several times (Mateusz, 2026-09-25); a desk's
+ * toolpath screen is about this tall, so it turns as it always has.
+ */
+const TURN_PIXELS = 600;
+
 // How close, in pixels, a drag has to start to the drawn path to turn about it.
 const PATH_PICK_PIXELS = 6;
 
@@ -206,7 +214,8 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
      * the drag started on instead (`orbitAbout`), chosen by `pivotFor`: the
      * path under the pointer, else inside the part when the pointer is over
      * it, else the machine's floor there, else the target's depth.
-     * The rate is the controls' own, a full turn per canvas height.
+     * The rate is a full turn per canvas height, or per `TURN_PIXELS` on a
+     * canvas shorter than that.
      *
      * The left button, or one finger. Shift or Ctrl with the left button, the
      * right button and two fingers are still the controls' pan and zoom — a
@@ -270,7 +279,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
       if (!turning || event.pointerId !== turning.id) {
         return;
       }
-      const height = domElement.clientHeight || 1;
+      const height = Math.max(domElement.clientHeight || 1, TURN_PIXELS);
       const dx = event.clientX - turning.x;
       const dy = event.clientY - turning.y;
       turning.x = event.clientX;

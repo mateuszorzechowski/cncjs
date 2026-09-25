@@ -202,25 +202,19 @@ export const gridLabels = (area, step) => {
     });
   }
 
-  // The unit, once per axis, past the end of the run of numbers. Every other
-  // reading on this panel says `mm` beside it and this one should not be the
-  // exception — but repeating it twenty times would be twenty times the ink
-  // for one fact.
   /*
-   * The unit, once, in the X row just past the shared zero.
+   * **The unit, once, at the far end of the X ruler: `99.7 mm`.**
    *
-   * Out on the diagonal it read as detached — a word floating off the corner
-   * of the drawing with nothing to belong to. In line with the figures it is
-   * plainly the unit for them: same offset off the axis, one place further
-   * along it, exactly where the next number would have gone.
+   * It stood beside the zero where the two rulers meet, and where that is
+   * depends on the program — a corner, an edge, the middle of the part — so
+   * it turned up in a different place every time (Mateusz, 2026-09-25). The
+   * end of the X ruler is always the end of the X ruler. Written into that
+   * figure rather than beside it, so the two can never overlap or drift.
    */
-  labels.push({
-    key: 'unit',
-    text: 'mm',
-    x: axisX,
-    y: axisY,
-    push: { x: outX * 1.7, y: outY },
-  });
+  const far = labels.find((label) => label.key === `x${farX}`);
+  if (far) {
+    far.text = `${far.text} mm`;
+  }
 
   return labels;
 };

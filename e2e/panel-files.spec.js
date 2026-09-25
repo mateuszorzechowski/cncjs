@@ -26,12 +26,16 @@ const DISK = { total: 250e9, free: 58e9 };
 
 const PROGRAM = 'G21 G90\nG0 X0 Y0 Z5\nG1 Z-1 F300\nG1 X40\nG1 Y30\nG1 X0\nG1 Y0\n';
 
+/*
+ * `stage` picks which listing is served, and only the case moves it — not
+ * the number of requests, since the real server this tier runs against can
+ * say `files:change` of its own and the screen then asks again.
+ */
 const serve = async (page, listings) => {
-  const calls = { list: 0, deleted: [] };
+  const calls = { list: 0, stage: 0, deleted: [] };
   await page.route('**/api/files', (route) => {
-    const listing = listings[Math.min(calls.list, listings.length - 1)];
     calls.list++;
-    return route.fulfill({ json: listing });
+    return route.fulfill({ json: listings[Math.min(calls.stage, listings.length - 1)] });
   });
   await page.route('**/api/files/*', (route) => {
     const name = decodeURIComponent(new URL(route.request().url()).pathname.split('/').pop());
@@ -184,6 +188,7 @@ test.describe('the files screen', () => {
     await expect(page.getByRole('button', { name: /front-panel\.nc/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /drawer\.nc/ })).toHaveCount(0);
 
+    calls.stage = 1;
     await page.evaluate(() => window.__fire('files:change'));
 
     await expect(page.getByRole('button', { name: /drawer\.nc/ })).toBeVisible();
