@@ -416,7 +416,8 @@
       "command": "Command",
       "port": "Port",
       "motion": "Motion",
-      "fileCheck": "check"
+      "fileCheck": "Check",
+      "file": "File"
     },
     "program": {
       "start": "Started {{name}}",
@@ -485,11 +486,20 @@
     "count": "{{matched}} of {{kept}} entries",
     "show": "Show {{count}} entries",
     "fileCheck": {
-      "clean": "{{name}}: Grbl took every line",
-      "errors": "{{name}}: Grbl refused lines — kinds of error: {{errors}}",
-      "firstError": "{{name}}: the check stopped at the first error",
-      "interrupted": "{{name}}: the check was stopped by a reset",
-      "stopped": "{{name}}: the check was stopped — {{code}}"
+      "clean": "{{name}}: verified on the controller — Grbl took every line",
+      "errors": "{{name}}: verified on the controller — Grbl refused lines, kinds of error: {{errors}}",
+      "firstError": "{{name}}: verified on the controller — stopped at the first error",
+      "interrupted": "{{name}}: the check on the controller was stopped by a reset",
+      "stopped": "{{name}}: the check on the controller was stopped — {{code}}"
+    },
+    "file": {
+      "write": "{{name}}: uploaded",
+      "delete": "{{name}}: deleted",
+      "analysed": {
+        "ok": "{{name}}: verified on the server — OK",
+        "warnings": "{{name}}: verified on the server — warnings: {{issues}}",
+        "incompatible": "{{name}}: verified on the server — incompatible, problems: {{issues}}"
+      }
     }
   },
   "grbl": {
@@ -589,7 +599,12 @@
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
     "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
-    "wcs": "system {{wcs}}",
+    "units": {
+      "mm": "mm (G21)",
+      "inch": "inches (G20)",
+      "none": "no G20/G21"
+    },
+    "setup": "{{units}} · {{wcs}}",
     "duration": {
       "hours": "{{hours}} h {{minutes}} min",
       "minutes": "{{minutes}} min {{seconds}} s",
@@ -620,6 +635,7 @@
     "disk": {
       "label": "Disk space used",
       "free": "{{free}} free of {{total}}",
+      "library": "cncjs files {{size}}",
       "low": "The server's disk is nearly full. Delete files you no longer need."
     },
     "confirm": {
@@ -683,12 +699,6 @@
       "controllerError": "{{code}} — {{text}}",
       "checkedAt": "checked {{when}}",
       "progress": "{{answered}} / {{total}} lines",
-      "blocked": {
-        "notConnected": "connect the machine",
-        "checking": "another check is running",
-        "programRunning": "a program is running",
-        "notIdle": "the machine is not Idle"
-      },
       "overrun": {
         "axis": "in {{axis}} by {{by, number(maximumFractionDigits: 1)}} mm",
         "note": "At the current zero the program leaves the table: {{where}}. Grbl will stop the check with an alarm at the first such move, the rest of the file will go unchecked, and the machine will need a reset and an unlock."

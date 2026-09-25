@@ -25,6 +25,12 @@ import analyse from './analyse';
  * the machine's limits change, since the time is the machine's — and when
  * the start events do, since the check reads what they set. A listing
  * carries what is ready; `change` is said again when more is.
+ *
+ * **`analysed` is said for the journal** — the server's check of a file, as
+ * "verified on the server" (Mateusz, 2026-09-25) — when a file is new or
+ * changed, or its verdict moved. Not for the files already there when the
+ * library opened, and not when only the machine's limits changed: those
+ * re-analyse every file, and a journal line for each would be noise.
  */
 
 /**
@@ -61,6 +67,26 @@ const opened = (dir) => {
   return dir;
 };
 
+/**
+ * One word for a file's row, from both checks: `incompatible` when either
+ * found what Grbl will not take, `warnings` when the server's has something
+ * to say, `verified` once Grbl read it through and took every line, `ok` when
+ * only the server's has passed, and null while it is still being analysed.
+ */
+export const statusOf = (analysis, controllerCheck) => {
+  if (!analysis) {
+    return null;
+  }
+  const c = controllerCheck;
+  if (analysis.check.verdict === 'incompatible' || (c && (c.errors.length > 0 || c.alarm || c.refused))) {
+    return 'incompatible';
+  }
+  if (analysis.check.verdict === 'warnings') {
+    return 'warnings';
+  }
+  return c?.complete ? 'verified' : 'ok';
+};
+
 /** The kept checks, or none: a file that is missing or unreadable is no checks, not a failure. */
 const readChecks = (dir) => {
   try {
@@ -93,6 +119,9 @@ class Library extends events.EventEmitter {
 
     analysing = false;
 
+    /** The files the library opened with — analysed without a journal line. */
+    opening = null;
+
     /** Make the directory if it is not there, and start noticing changes. */
     open({ dir, machine = null, start = '' }) {
       this.close();
@@ -101,6 +130,9 @@ class Library extends events.EventEmitter {
       this.machine = machine;
       this.start = start;
       this.checks = readChecks(dir);
+      // Read here rather than on the first refresh: a refresh still under
+      // way from before a reopen would hand over the wrong list.
+      this.opening = new Set(fs.readdirSync(dir));
 
       try {
         this.watcher = fs.watch(dir, () => this.changed());
@@ -215,7 +247,16 @@ class Library extends events.EventEmitter {
           // Kept only if nothing moved while it was read; otherwise the
           // change that moved it has queued it again.
           if (dir === this.dir && after.mtimeMs === before.mtimeMs && after.size === before.size) {
-            this.analyses.set(name, { mtime: after.mtime.toISOString(), size: after.size, machine, start, analysis });
+            const mtime = after.mtime.toISOString();
+            const known = this.analyses.get(name);
+            const news = known
+              ? known.mtime !== mtime || known.size !== after.size || known.analysis.check.verdict !== analysis.check.verdict
+              : !this.opening?.has(name);
+            this.analyses.set(name, { mtime, size: after.size, machine, start, analysis });
+            this.opening?.delete(name);
+            if (news) {
+              this.emit('analysed', { name, verdict: analysis.check.verdict, issues: analysis.check.issues.length });
+            }
             this.changed();
           }
         } catch (err) {
@@ -235,20 +276,23 @@ class Library extends events.EventEmitter {
 
     /**
      * The files, newest first, each with its analysis once it is ready, and
-     * how much room the disk has left.
+     * how much room the disk has left — with `disk.library`, what the files
+     * here take of it.
      */
     async list() {
       const { files, disk } = await this.listFiles(this.dir);
 
       return {
+        disk: { ...disk, library: files.reduce((sum, file) => sum + file.size, 0) },
         files: files.map(file => {
           const known = this.analyses.get(file.name);
           const current = known && known.mtime === file.mtime && known.size === file.size;
           const checked = this.checks.get(file.name);
           const same = checked && checked.mtime === file.mtime && checked.size === file.size;
-          return { ...file, analysis: current ? known.analysis : null, controllerCheck: same ? checked.result : null };
+          const analysis = current ? known.analysis : null;
+          const controllerCheck = same ? checked.result : null;
+          return { ...file, analysis, controllerCheck, status: statusOf(analysis, controllerCheck) };
         }),
-        disk,
       };
     }
 

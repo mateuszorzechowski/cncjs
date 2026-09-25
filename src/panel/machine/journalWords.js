@@ -114,6 +114,18 @@ const FILE_CHECK = {
   interrupted: 'journal.fileCheck.interrupted',
 };
 
+// The library: a file kept, a file removed, and the server's check of one,
+// said by its verdict.
+const FILE = {
+  write: 'journal.file.write',
+  delete: 'journal.file.delete',
+};
+const ANALYSED = {
+  ok: 'journal.file.analysed.ok',
+  warnings: 'journal.file.analysed.warnings',
+  incompatible: 'journal.file.analysed.incompatible',
+};
+
 const PORT = {
   open: 'journal.port.open',
   close: 'journal.port.close',
@@ -134,6 +146,7 @@ export const EVENT_KEYS = {
   port: 'journal.event.port',
   motion: 'journal.event.motion',
   'file-check': 'journal.event.fileCheck',
+  file: 'journal.event.file',
 };
 
 export const LEVEL_KEYS = {
@@ -167,6 +180,10 @@ const BY_EVENT = {
     ? keyed(PORT[code], { type: data?.controllerType ?? '', baudrate: data?.baudrate ?? '', message: data?.message ?? '' })
     : null),
   motion: ({ device }) => keyed(device ? 'journal.motion.held' : 'journal.motion.free', { device: device ?? '' }),
+  file: ({ code, data }) => {
+    const key = code === 'analysed' ? ANALYSED[data?.verdict] : FILE[code];
+    return key ? keyed(key, { name: data?.name ?? '', issues: data?.issues ?? 0 }) : null;
+  },
   'file-check': ({ code, data }) => {
     const params = { name: data?.name ?? '', errors: data?.errors ?? 0, code: code ?? '' };
     return keyed(FILE_CHECK[code] || 'journal.fileCheck.stopped', params);
@@ -188,7 +205,8 @@ export const describeEntry = (entry) => {
 // Every code with a sentence of its own, as [code, key]. A pause is one code
 // with a sentence per reason, so it appears once for each.
 const SENTENCES = [
-  ...Object.entries({ ...GRBL_ALARM_KEYS, ...GRBL_ERROR_KEYS, ...PROGRAM, ...COMMANDS, ...PORT, ...REFUSAL_KEYS, ...FILE_CHECK }),
+  ...Object.entries({ ...GRBL_ALARM_KEYS, ...GRBL_ERROR_KEYS, ...PROGRAM, ...COMMANDS, ...PORT, ...REFUSAL_KEYS, ...FILE_CHECK, ...FILE }),
+  ...Object.values(ANALYSED).map((key) => ['analysed', key]),
   ...Object.values(PAUSE).map((key) => ['pause', key]),
 ];
 

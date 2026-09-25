@@ -2081,6 +2081,7 @@ class GrblController {
      */
     async startFileCheck(name, { firstError = false } = {}) {
       this.fileCheck = { name, run: null, progress: { answered: 0, total: 0 } };
+      const asker = this.commandSocket;
 
       let stamp;
       let text;
@@ -2089,7 +2090,7 @@ class GrblController {
         text = await library.read(name);
       } catch (err) {
         this.fileCheck = null;
-        this.refuse('file:check', 'not-found');
+        this.refuse('file:check', 'not-found', asker);
         return;
       }
       if (!this.fileCheck || this.fileCheck.name !== name || this.isClose()) {
@@ -2145,13 +2146,18 @@ class GrblController {
       this.emit('file:check', { name, state: 'done', result: kept });
     }
 
-    refuse(cmd, reason) {
+    /**
+     * `socket` is who asked: `commandSocket` while a command is being
+     * handled, and passed in by one that refuses after an `await`, when
+     * `CNCEngine` has already put `commandSocket` back to null.
+     */
+    refuse(cmd, reason, socket = this.commandSocket) {
       log.warn(`Refused "${cmd}": ${reason}`);
       this.note({
-        level: 'warn', source: 'server', event: 'refused', code: reason, device: this.commandSocket?.device, data: { cmd },
+        level: 'warn', source: 'server', event: 'refused', code: reason, device: socket?.device, data: { cmd },
       });
-      if (this.commandSocket) {
-        this.commandSocket.emit('command:refused', { cmd, reason });
+      if (socket) {
+        socket.emit('command:refused', { cmd, reason });
       }
     }
 

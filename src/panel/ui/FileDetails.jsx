@@ -4,7 +4,7 @@ import CheckButton from './CheckButton';
 import CheckSheet from './CheckSheet';
 import FilePreview from './FilePreview';
 import StatTile from './StatTile';
-import { areaText, durationText, toolsText, verdictText, verdictTone, wcsText } from './fileWords';
+import { areaText, durationText, setupText, toolsText, verdictText, verdictTone } from './fileWords';
 import { canLoad, isLoaded } from '../machine/files';
 import { NO_READING } from '../machine/readings';
 import { t } from '../i18n';
@@ -45,10 +45,12 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnl
       <p className="m-0 break-all font-num text-lead font-semibold text-ink">{file.name}</p>
 
       <FilePreview name={file.name} mtime={file.mtime} className={phone ? 'aspect-video shrink-0' : 'min-h-0 flex-1'} />
-      <p className="m-0 font-num text-note text-mut">
-        {t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}
-        {wcsText(analysis?.wcs) ? <>{' · '}{wcsText(analysis.wcs)}</> : null}
-      </p>
+      {/* What the part is and what it runs in: its size, and on the right
+        * the units and the coordinate system it sets (Mateusz, 2026-09-25). */}
+      <div className="flex shrink-0 items-baseline justify-between gap-3 font-num text-note text-mut">
+        <p className="m-0 truncate">{t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}</p>
+        <p className="m-0 shrink-0">{analysis ? setupText(analysis) : NO_READING}</p>
+      </div>
 
       <div className="grid shrink-0 grid-cols-2 gap-2">
         <StatTile compact label={t('files.stat.lines')} value={analysis ? analysis.lines : NO_READING} />

@@ -64,6 +64,11 @@ describe('what a program is', () => {
     expect((await analyse(program('G55 G0 X1', 'G54', 'G0 X2', 'G55 G0 X3'), null)).wcs).toEqual(['G55', 'G54']);
   });
 
+  test('the units are the ones the file sets, in its order', async () => {
+    expect((await analyse(program('G90', 'G0 X1'), null)).units).toEqual([]);
+    expect((await analyse(program('G20 G0 X1', 'G21', 'G0 X2'), null)).units).toEqual(['G20', 'G21']);
+  });
+
   test('a program that never moves has no bounds', async () => {
     expect((await analyse(program('G21', 'M30'), null)).bounds).toBeNull();
   });

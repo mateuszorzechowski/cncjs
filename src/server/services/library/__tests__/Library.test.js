@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import Library, { isSafeName } from '../Library';
+import Library, { isSafeName, statusOf } from '../Library';
 import { machineTiming } from '../estimate';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'library-'));
@@ -17,6 +17,75 @@ beforeEach(() => {
 
 afterEach(() => {
   library.close();
+});
+
+describe('the journal line for a check', () => {
+  const said = () => {
+    const lines = [];
+    library.on('analysed', (line) => lines.push(line));
+    return lines;
+  };
+
+  test('is said for a file that arrives, and again when it changes', async () => {
+    const lines = said();
+    await library.write('a.nc', 'G21 G90\nG0 X1');
+    await analysed();
+    await library.write('a.nc', 'G21 G90\nG41 G0 X1');
+    for (;;) {
+      if ((await analysed()).files[0].analysis.check.verdict === 'incompatible') {
+        break;
+      }
+      await nextChange();
+    }
+
+    expect(lines).toEqual([
+      { name: 'a.nc', verdict: 'ok', issues: 0 },
+      { name: 'a.nc', verdict: 'incompatible', issues: 1 },
+    ]);
+  });
+
+  test('is said when the verdict moves with the file unchanged — new start events', async () => {
+    await library.write('a.nc', 'G0 X1');
+    await analysed();
+    const lines = said();
+
+    library.setStart('G21 G90');
+    for (;;) {
+      if ((await analysed()).files[0].analysis.check.verdict === 'ok') {
+        break;
+      }
+      await nextChange();
+    }
+
+    expect(lines).toEqual([{ name: 'a.nc', verdict: 'ok', issues: 0 }]);
+  });
+
+  test('is not said for what was there when the library opened, nor for new limits', async () => {
+    library.close();
+    fs.writeFileSync(path.join(dir, 'before.nc'), 'G21 G90\nG1 X10 F600');
+    library.open({ dir });
+    const lines = said();
+    await analysed();
+
+    library.setMachine(MACHINE);
+    for (;;) {
+      if ((await analysed()).files[0].analysis.seconds !== null) {
+        break;
+      }
+      await nextChange();
+    }
+
+    expect(lines).toEqual([]);
+  });
+});
+
+describe('what the library takes', () => {
+  test('is the files in it, beside the disk', async () => {
+    await library.write('a.nc', 'G0 X1');
+    await library.write('b.nc', 'G0 X12');
+
+    expect((await library.list()).disk.library).toBe(11);
+  });
 });
 
 describe('the directory', () => {
@@ -167,6 +236,7 @@ describe('analysis', () => {
       bounds: { min: { x: 10, y: 5, z: -2 }, max: { x: 10, y: 5, z: 0 } },
       tools: [3],
       wcs: [],
+      units: ['G21'],
       seconds: null,
       check: {
         verdict: 'warnings',
@@ -332,5 +402,23 @@ describe('change', () => {
     fs.writeFileSync(path.join(dir, 'by-hand.nc'), 'G0');
 
     await changed;
+  });
+});
+
+describe("a row's status, from both checks", () => {
+  const analysis = (verdict) => ({ check: { verdict, issues: [] } });
+  const run = (fields) => ({ complete: true, errors: [], alarm: null, ...fields });
+
+  test.each([
+    ['still analysed', null, null, null],
+    ['server ok, never on the controller', analysis('ok'), null, 'ok'],
+    ['server ok, Grbl took every line', analysis('ok'), run({}), 'verified'],
+    ['server ok, stopped by an alarm', analysis('ok'), run({ complete: false, alarm: 'ALARM:2' }), 'incompatible'],
+    ['server ok, Grbl refused a line', analysis('ok'), run({ errors: [{ code: 'error:33' }] }), 'incompatible'],
+    ['server warns, Grbl took every line', analysis('warnings'), run({}), 'warnings'],
+    ['server says incompatible', analysis('incompatible'), null, 'incompatible'],
+    ['server ok, stopped by a reset', analysis('ok'), run({ complete: false }), 'ok'],
+  ])('%s', (_, a, c, expected) => {
+    expect(statusOf(a, c)).toBe(expected);
   });
 });

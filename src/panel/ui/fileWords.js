@@ -42,8 +42,19 @@ export const areaText = (bounds) => (bounds
   ? t('files.area', { x: bounds.max.x - bounds.min.x, y: bounds.max.y - bounds.min.y, z: bounds.max.z - bounds.min.z })
   : NO_READING);
 
-/** The coordinate systems the file sets itself, or nothing when it takes the active one. */
-export const wcsText = (wcs) => (wcs && wcs.length > 0 ? t('files.wcs', { wcs: wcs.join(', ') }) : '');
+const UNIT_WORDS = { G20: 'files.units.inch', G21: 'files.units.mm' };
+
+/**
+ * The units the program sets — "mm (G21)" — and the coordinate system, only
+ * when the file sets one itself (Mateusz, 2026-09-25: *"samo mm (G21)
+ * wystarczy"*). A file that sets no units says so.
+ */
+export const setupText = (analysis) => {
+  const units = analysis.units?.length > 0
+    ? analysis.units.map((code) => t(UNIT_WORDS[code])).join(', ')
+    : t('files.units.none');
+  return analysis.wcs?.length > 0 ? t('files.setup', { units, wcs: analysis.wcs.join(', ') }) : units;
+};
 
 export const toolsText = (tools) => (tools && tools.length > 0 ? tools.map((tool) => `T${tool}`).join(', ') : NO_READING);
 
@@ -85,16 +96,6 @@ export const issueText = (issue) => t(ISSUES[issue.code], { word: issue.word });
 export const issueWhere = (issue) => (issue.count > 1
   ? t('files.check.where.many', { line: issue.line, count: issue.count })
   : t('files.check.where.one', { line: issue.line }));
-
-/** Why the controller's check cannot be asked for — `checkBlocker`'s codes. */
-const BLOCKERS = {
-  notConnected: 'files.check.blocked.notConnected',
-  checking: 'files.check.blocked.checking',
-  programRunning: 'files.check.blocked.programRunning',
-  notIdle: 'files.check.blocked.notIdle',
-};
-
-export const blockerText = (blocker) => t(BLOCKERS[blocker]);
 
 export const progressText = ({ answered, total }) => t('files.check.progress', { answered, total });
 

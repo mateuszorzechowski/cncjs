@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from './Button';
 import ConfirmSheet from './ConfirmSheet';
 import SegmentedChoice from './SegmentedChoice';
-import { blockerText, overrunText, progressText } from './fileWords';
+import { overrunText, progressText } from './fileWords';
 import { checkFile } from '../machine/commands';
 import { checkBlocker } from '../machine/files';
 import { t } from '../i18n';
@@ -19,9 +19,11 @@ import { t } from '../i18n';
  * an alarm — and the button becomes "anyway". And it asks how far: the whole
  * file, or to the first error.
  *
- * The line under the name is only what is said nowhere else: why it is
- * greyed out, or how far a check has got. How the last one ended is in the
- * sheet under the state tile (Mateusz, 2026-09-25: *"to już jest w state"*).
+ * The line under the name is only how far a check has got. Why it is
+ * greyed out is said by the chip and the note over LOAD, and how the last
+ * one ended is in the sheet under the state tile (Mateusz, 2026-09-25). The
+ * line is kept empty the rest of the time, so the button does not change
+ * height when a check starts.
  */
 const SCOPES = { all: 'files.check.scope.all', first: 'files.check.scope.first' };
 const SCOPE_OPTIONS = Object.keys(SCOPES);
@@ -33,12 +35,7 @@ const CheckButton = ({ file, machine, busy = false }) => {
   const running = machine.fileCheck?.name === file.name ? machine.fileCheck : null;
   const overrun = overrunText(machine.fits, file.name);
 
-  let status = '';
-  if (running) {
-    status = progressText(running);
-  } else if (blocker) {
-    status = blockerText(blocker);
-  }
+  const status = running ? progressText(running) : '';
 
   const confirm = () => {
     checkFile(file.name, { firstError: scope === 'first' });

@@ -159,6 +159,9 @@ const GLYPHS = {
    * triangle, which read as a glyph from a font rather than one of these.
    */
   chevron: <path d="M6 9.5 12 15.5 18 9.5" />,
+  // A file's checks, on its row: passed, and will not run.
+  check: <path d="M5 12.5 10 17.5 19 7" />,
+  cross: <path d="M7 7 17 17M17 7 7 17" />,
 
   /*
    * The machine's zero: the same arms, **in the corner**.

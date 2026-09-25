@@ -19,6 +19,7 @@ const ANALYSED = {
     bounds: { min: { x: 0, y: 0, z: -6 }, max: { x: 420, y: 290, z: 5 } },
     tools: [3, 7],
     wcs: ['G54'],
+    units: ['G21'],
     seconds: 1913.5,
     check: {
       verdict: 'incompatible',
@@ -122,7 +123,8 @@ test.describe('the files screen', () => {
     await expect(page.getByText('31 min 54 s', { exact: true })).toBeVisible();
     await expect(page.getByText('T3, T7', { exact: true })).toBeVisible();
     await expect(page.getByText('-6,0 mm', { exact: true })).toBeVisible();
-    await expect(page.getByText('XYZ · 420 × 290 × 11 mm · układ G54')).toBeVisible();
+    await expect(page.getByText('XYZ · 420 × 290 × 11 mm')).toBeVisible();
+    await expect(page.getByText('mm (G21) · G54')).toBeVisible();
     await expect(page.locator('canvas')).toHaveCount(1);
     // Held over the canvas until the scene has drawn, then gone.
     await expect(page.getByText('Czytam plik…')).toHaveCount(0);
@@ -200,7 +202,8 @@ test.describe('the files screen', () => {
 
     const verify = page.getByRole('button', { name: /Sprawdź na sterowniku/ });
     await expect(verify).toBeDisabled();
-    await expect(verify).toContainText('połącz maszynę');
+    // Why is said by the chip and the note over LOAD, not under the button.
+    await expect(page.getByText('Połącz maszynę, żeby wczytać program.')).toBeVisible();
 
     await page.getByRole('button', { name: /stan/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Kontrola pliku' });
