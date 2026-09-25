@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useScreenScale } from './screenScale';
+import { ABOVE_PATH } from './Toolpath';
 
 /**
  * Where the tool is now.
@@ -66,7 +67,7 @@ const Drop = ({ position, floor, color, opacity }) => {
 
   return (
     <group position={[position.x, position.y, position.z]} scale={[1, 1, drop]}>
-      <lineSegments geometry={geometry}>
+      <lineSegments geometry={geometry} renderOrder={ABOVE_PATH}>
         <lineBasicMaterial color={color} transparent opacity={DROP_OPACITY * opacity} />
       </lineSegments>
     </group>
@@ -92,6 +93,7 @@ const ToolMarker = ({ position, color, floor, opacity = 0.9, depthTest = false }
       {/* Half a unit up inside the group, so the tip lands on the position
         * the group is at rather than half a marker above it. */}
       <mesh
+        renderOrder={ABOVE_PATH}
         position={[0, 0, 0.5]}
         /* A cone's axis is Y and its apex is at +Y. A quarter turn *backwards*
          * about X sends +Y to -Z, which stands it on its tip in a Z-up world;

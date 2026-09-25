@@ -5,6 +5,7 @@ import ToolMarker from './ToolMarker';
 import Guides from './Guides';
 import { clampToArea, ndcFor, planePoint } from './pointer-plane';
 import { useScreenScale } from './screenScale';
+import { ABOVE_PATH } from './Toolpath';
 
 /**
  * The point on the table under the mouse, and the one that was picked.
@@ -87,7 +88,7 @@ const Sight = ({ at, z, color, opacity, geometry, depthTest = true }) => {
     <group ref={scale} position={[at.x, at.y, z]}>
       {/* Depth-tested by default: these marks say where a point is *in* the
         * model, so they have to go behind whatever is in front of them. */}
-      <lineSegments geometry={geometry}>
+      <lineSegments geometry={geometry} renderOrder={ABOVE_PATH}>
         <lineBasicMaterial color={color} depthTest={depthTest} transparent opacity={opacity} />
       </lineSegments>
     </group>
