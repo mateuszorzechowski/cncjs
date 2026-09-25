@@ -589,12 +589,10 @@
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
     "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
-    "wcs": "układ {{wcs}}",
-    "wcsInherited": "układ aktywny na maszynie",
     "units": {
-      "mm": "milimetry (G21)",
+      "mm": "mm (G21)",
       "inch": "cale (G20)",
-      "inherited": "jednostki aktywne na maszynie"
+      "none": "bez G20/G21"
     },
     "setup": "{{units}} · {{wcs}}",
     "duration": {
@@ -690,12 +688,6 @@
       "controllerError": "{{code}} — {{text}}",
       "checkedAt": "sprawdzono {{when}}",
       "progress": "{{answered}} / {{total}} linii",
-      "blocked": {
-        "notConnected": "połącz maszynę",
-        "checking": "trwa inne sprawdzanie",
-        "programRunning": "trwa program",
-        "notIdle": "maszyna nie stoi w Idle"
-      },
       "overrun": {
         "axis": "w {{axis}} o {{by, number(maximumFractionDigits: 1)}} mm",
         "note": "Przy obecnym zerze program wyjedzie poza stół: {{where}}. Grbl przerwie sprawdzanie alarmem na pierwszym takim ruchu, reszta pliku zostanie niesprawdzona, a maszynę trzeba będzie zresetować i odblokować."

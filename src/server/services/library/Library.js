@@ -61,6 +61,26 @@ const opened = (dir) => {
   return dir;
 };
 
+/**
+ * One word for a file's row, from both checks: `incompatible` when either
+ * found what Grbl will not take, `warnings` when the server's has something
+ * to say, `verified` once Grbl read it through and took every line, `ok` when
+ * only the server's has passed, and null while it is still being analysed.
+ */
+export const statusOf = (analysis, controllerCheck) => {
+  if (!analysis) {
+    return null;
+  }
+  const c = controllerCheck;
+  if (analysis.check.verdict === 'incompatible' || (c && (c.errors.length > 0 || c.alarm || c.refused))) {
+    return 'incompatible';
+  }
+  if (analysis.check.verdict === 'warnings') {
+    return 'warnings';
+  }
+  return c?.complete ? 'verified' : 'ok';
+};
+
 /** The kept checks, or none: a file that is missing or unreadable is no checks, not a failure. */
 const readChecks = (dir) => {
   try {
@@ -246,7 +266,9 @@ class Library extends events.EventEmitter {
           const current = known && known.mtime === file.mtime && known.size === file.size;
           const checked = this.checks.get(file.name);
           const same = checked && checked.mtime === file.mtime && checked.size === file.size;
-          return { ...file, analysis: current ? known.analysis : null, controllerCheck: same ? checked.result : null };
+          const analysis = current ? known.analysis : null;
+          const controllerCheck = same ? checked.result : null;
+          return { ...file, analysis, controllerCheck, status: statusOf(analysis, controllerCheck) };
         }),
         disk,
       };

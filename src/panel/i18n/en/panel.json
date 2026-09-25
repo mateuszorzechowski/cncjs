@@ -589,12 +589,10 @@
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
     "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
-    "wcs": "system {{wcs}}",
-    "wcsInherited": "the machine's active system",
     "units": {
-      "mm": "millimetres (G21)",
+      "mm": "mm (G21)",
       "inch": "inches (G20)",
-      "inherited": "the machine's active units"
+      "none": "no G20/G21"
     },
     "setup": "{{units}} · {{wcs}}",
     "duration": {
@@ -690,12 +688,6 @@
       "controllerError": "{{code}} — {{text}}",
       "checkedAt": "checked {{when}}",
       "progress": "{{answered}} / {{total}} lines",
-      "blocked": {
-        "notConnected": "connect the machine",
-        "checking": "another check is running",
-        "programRunning": "a program is running",
-        "notIdle": "the machine is not Idle"
-      },
       "overrun": {
         "axis": "in {{axis}} by {{by, number(maximumFractionDigits: 1)}} mm",
         "note": "At the current zero the program leaves the table: {{where}}. Grbl will stop the check with an alarm at the first such move, the rest of the file will go unchecked, and the machine will need a reset and an unlock."

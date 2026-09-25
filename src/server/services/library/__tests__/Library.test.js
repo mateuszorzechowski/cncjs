@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import Library, { isSafeName } from '../Library';
+import Library, { isSafeName, statusOf } from '../Library';
 import { machineTiming } from '../estimate';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'library-'));
@@ -333,5 +333,23 @@ describe('change', () => {
     fs.writeFileSync(path.join(dir, 'by-hand.nc'), 'G0');
 
     await changed;
+  });
+});
+
+describe("a row's status, from both checks", () => {
+  const analysis = (verdict) => ({ check: { verdict, issues: [] } });
+  const run = (fields) => ({ complete: true, errors: [], alarm: null, ...fields });
+
+  test.each([
+    ['still analysed', null, null, null],
+    ['server ok, never on the controller', analysis('ok'), null, 'ok'],
+    ['server ok, Grbl took every line', analysis('ok'), run({}), 'verified'],
+    ['server ok, stopped by an alarm', analysis('ok'), run({ complete: false, alarm: 'ALARM:2' }), 'incompatible'],
+    ['server ok, Grbl refused a line', analysis('ok'), run({ errors: [{ code: 'error:33' }] }), 'incompatible'],
+    ['server warns, Grbl took every line', analysis('warnings'), run({}), 'warnings'],
+    ['server says incompatible', analysis('incompatible'), null, 'incompatible'],
+    ['server ok, stopped by a reset', analysis('ok'), run({ complete: false }), 'ok'],
+  ])('%s', (_, a, c, expected) => {
+    expect(statusOf(a, c)).toBe(expected);
   });
 });

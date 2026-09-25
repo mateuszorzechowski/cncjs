@@ -1,3 +1,5 @@
+import Icon from './Icon';
+import { Triangle } from './Notice';
 import { modifiedText, sizeText } from './fileWords';
 import { t } from '../i18n';
 
@@ -21,6 +23,23 @@ export const FileColumns = () => (
   </div>
 );
 
+/**
+ * The file's checks at a glance, before its name — the server's `status`:
+ * grey once the server's check has passed, green once Grbl has read it
+ * through too (Mateusz, 2026-09-25: *"jeśli plik przeszedł weryfikację to
+ * ikona w kolorze"*), amber and red as everywhere else. Nothing while it is
+ * still being analysed; the place is kept, so names do not shift.
+ */
+const StatusMark = ({ status }) => {
+  if (status === 'warnings') {
+    return <span className="text-amb"><Triangle className="size-4" /></span>;
+  }
+  const look = { verified: ['check', 'text-grn'], ok: ['check', 'text-mut'], incompatible: ['cross', 'text-red'] }[status];
+  return look
+    ? <Icon name={look[0]} className={`size-4 shrink-0 ${look[1]}`} weight={2} />
+    : <span className="size-4 shrink-0" aria-hidden="true" />;
+};
+
 const FileRow = ({ file, chosen, loaded, phone, onChoose }) => (
   <button
     type="button"
@@ -33,6 +52,7 @@ const FileRow = ({ file, chosen, loaded, phone, onChoose }) => (
     ].join(' ')}
   >
     <span className={`flex min-w-0 items-center gap-2 text-base ${chosen ? 'font-semibold' : ''}`}>
+      <StatusMark status={file.status} />
       <span className="truncate">{file.name}</span>
       {loaded ? (
         <span className="shrink-0 rounded-ctl border border-acc px-1.5 text-cap font-semibold uppercase tracking-[0.08em] text-acc">
