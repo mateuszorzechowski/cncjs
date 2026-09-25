@@ -90,6 +90,23 @@ export const toolPoint = (machinePosition) => {
  * @param {object|null} toolpath The loaded program, from `readToolpath`.
  * @param {object} layers Which of the four are switched on.
  */
+// The end of an axis's travel farther from machine zero.
+const farEnd = (envelope, axis) => (
+  Math.abs(envelope.min[axis]) >= Math.abs(envelope.max[axis]) ? envelope.min[axis] : envelope.max[axis]
+);
+
+/**
+ * The corner of the travel opposite machine zero, or null without a travel.
+ *
+ * Where the machine's second set of axes is drawn — *"drugi znacznik osi w
+ * rogu"* (Mateusz, 2026-09-25): machine zero says where the travel starts,
+ * this says where it ends. Per axis, so an axis that homes to its other end
+ * ($23) is followed.
+ */
+export const farCorner = (envelope) => (envelope
+  ? { x: farEnd(envelope, 'x'), y: farEnd(envelope, 'y'), z: farEnd(envelope, 'z') }
+  : null);
+
 export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers }) => {
   const program = toolpath ? shift(toolpath.bounds, offset) : null;
 
@@ -112,10 +129,13 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
    */
   const origin = workOrigins(settings).find((system) => system.name === wcs) || null;
 
+  const corner = farCorner(envelope);
+
   const drawn = union([
     (layers.path || layers.programArea) && program,
     layers.machineArea && envelope,
     layers.machineAxes && { min: MACHINE_ZERO, max: MACHINE_ZERO },
+    layers.machineAxes && corner && { min: corner, max: corner },
     layers.wcsAxes && origin && pointBox(origin),
   ].filter(Boolean)) || UNIT;
 
@@ -134,6 +154,7 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
 
   return {
     envelope,
+    farCorner: corner,
     program,
     offset,
     toolpath,

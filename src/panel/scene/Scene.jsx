@@ -130,6 +130,10 @@ const Scene = ({
       {layers.machineAxes ? (
         <Axes origin={MACHINE_ZERO} opacity={0.85} />
       ) : null}
+      {/* And where the travel ends, when the machine has said. */}
+      {layers.machineAxes && scene.farCorner ? (
+        <Axes origin={scene.farCorner} opacity={0.85} />
+      ) : null}
 
       {layers.programArea && program ? (
         <Outline bounds={program} color={colors.line} opacity={0.9} />

@@ -130,6 +130,31 @@ describe('what the camera is framed on', () => {
   });
 });
 
+describe('the far corner of the travel', () => {
+  test('is the end of each axis farthest from machine zero', () => {
+    // A second set of machine axes goes there — *"drugi znacznik osi w
+    // rogu"* (2026-09-25): where the travel ends, not only where it starts.
+    expect(scene().farCorner).toEqual({ x: -200, y: -200, z: -200 });
+  });
+
+  test('follows an axis that homes to its other end', () => {
+    const envelope = { min: { x: -200, y: -200, z: 0 }, max: { x: 0, y: 0, z: 200 } };
+    expect(scene({ envelope }).farCorner).toEqual({ x: -200, y: -200, z: 200 });
+  });
+
+  test('is nothing when the machine has not said how far it goes', () => {
+    expect(scene({ envelope: null }).farCorner).toBeNull();
+  });
+
+  test('is framed with machine zero when the machine axes are all that is on', () => {
+    const drawn = scene({ toolpath: null, layers: { ...NONE, machineAxes: true } });
+    expect(drawn.frame).toEqual({
+      min: { x: -200, y: -200, z: -200 },
+      max: { x: 0, y: 0, z: 0 },
+    });
+  });
+});
+
 describe('the work coordinate system', () => {
   test('is the one the machine is working in, and only that one', () => {
     /*
