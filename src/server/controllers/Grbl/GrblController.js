@@ -1179,6 +1179,11 @@ class GrblController {
         this.emit('serialport:read', res.raw);
         this.note({ level: 'info', source: 'controller', event: 'startup', data: { text: res.raw } });
 
+        // A reset puts the parser back in G21 whatever it was in: on opening
+        // the port, after a STOP, after an alarm. The server's units are owed
+        // again, and paid once the machine stands Idle — see `restoreUnits`.
+        this.unitsOwed = true;
+
         if (!this.ready) {
           // The startup message always prints upon startup, after a reset, or at program end.
           // Setting the initial state when Grbl has completed re-initializing all systems.
@@ -3892,20 +3897,23 @@ class GrblController {
     }
 
     /**
-     * Put the machine back into the server's units after a program, once it
-     * can take the line.
+     * Keep the machine in the server's units: after a reset — which is also
+     * what opening the port does — and after a program, once it can take the
+     * line. One rule for both (Mateusz, 2026-09-25: *"czy to ustawia tez
+     * g20/g21 po polaczeniu ze sterownikiem?"* — it does now).
      *
-     * Only with the setting on, only once per program, and only when nothing
-     * is running and Grbl stands in Idle: after a STOP that means after `$X`
-     * or homing, which is exactly when the console is next usable. Through
-     * the feeder, like any other line a client could have typed — never
-     * while the sender owns the acknowledgements.
+     * Only with the setting on, only once per debt, and only when nothing is
+     * running and Grbl stands in Idle: after a STOP that means after `$X` or
+     * homing, which is exactly when the console is next usable. Not during a
+     * file check, whose run owns every answer. Through the feeder, like any
+     * other line a client could have typed — never while the sender owns the
+     * acknowledgements.
      */
     restoreUnits() {
       if (!this.unitsOwed || !units.restore) {
         return;
       }
-      if (this.workflow.state !== WORKFLOW_STATE_IDLE || !this.runner.isIdle()) {
+      if (this.workflow.state !== WORKFLOW_STATE_IDLE || !this.runner.isIdle() || this.fileCheck?.run) {
         return;
       }
       this.unitsOwed = false;

@@ -47,8 +47,8 @@
       "inch": "cale"
     },
     "restore": {
-      "label": "Przywracaj jednostki po programie",
-      "note": "M2 i M30 nie cofają G20: po programie w calach konsola i makra dalej czytają cale. Włączone — serwer wysyła {{modal}}, gdy program się skończy albo zostanie przerwany, a maszyna stoi.",
+      "label": "Pilnuj jednostek maszyny",
+      "note": "Po resecie Grbl wraca do G21, a M2 i M30 nie cofają G20. Włączone — serwer wysyła {{modal}} po połączeniu, po resecie i po programie, gdy maszyna stoi.",
       "off": "Wyłączone",
       "on": "Włączone"
     },
