@@ -6,6 +6,7 @@ import fitCameraToBounds from 'lib/toolpath/camera-fit';
 import { fitToBounds } from './fit';
 import { recallCamera, rememberCamera } from './cameraMemory';
 import { UP, VIEWS } from './views';
+import { orbitAbout } from './pivotOrbit';
 
 /**
  * The camera: four named views, and a mouse that can go anywhere.
@@ -29,8 +30,19 @@ import { UP, VIEWS } from './views';
  * alternative is a second dependency to get the same object with JSX round
  * it.
  */
-const Controls = ({ view, bounds, revision, memory, object, fit, onFree }) => {
+const TWO_PI = Math.PI * 2;
+const Z = new THREE.Vector3(0, 0, 1);
+
+// How close, in pixels, a drag has to start to the drawn path to turn about it.
+const PATH_PICK_PIXELS = 6;
+
+const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }) => {
   const camera = useThree((state) => state.camera);
+  const scene = useThree((state) => state.scene);
+  // Read through a ref, like the callback: a new floor must not rebuild the
+  // controls and drop the pose.
+  const floorAt = useRef(floor);
+  floorAt.current = floor;
   const domElement = useThree((state) => state.gl.domElement);
   const invalidate = useThree((state) => state.invalidate);
   const controls = useRef(null);
@@ -113,6 +125,14 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree }) => {
      */
     orbit.zoomToCursor = true;
 
+    /*
+     * About 14% a notch of the wheel rather than the default 5%. At 5% it
+     * took some 45 notches to get ten times closer — *"muszę się mocno
+     * nascrollować myszą, żeby zrobić zoom"* (Mateusz, 2026-09-25); at 14%,
+     * about 15. Pinching on a phone is its own gesture and not affected.
+     */
+    orbit.zoomSpeed = 3;
+
     // The scene renders on demand rather than sixty times a second — a panel
     // beside a machine sits untouched for hours. Dragging happens outside
     // React, so it is the one thing that has to ask for frames itself.
@@ -163,7 +183,110 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree }) => {
     orbit.addEventListener('start', begin);
     orbit.addEventListener('end', finish);
 
+    /*
+     * **Turning is ours; panning and zooming stay the controls'.**
+     *
+     * The controls turn about their target — the middle of the machine, as a
+     * view button left it — and zoomed into a corner that swung the work off
+     * screen at a fifth of the view per degree. So a turn is about the point
+     * the drag started on instead (`orbitAbout`): the path under the pointer,
+     * else the machine's floor there, else the target's depth along the ray.
+     * The rate is the controls' own, a full turn per canvas height.
+     *
+     * The left button, or one finger. Shift or Ctrl with the left button, the
+     * right button and two fingers are still the controls' pan and zoom — a
+     * second finger landing ends a turn rather than fighting it.
+     */
+    orbit.enableRotate = false;
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Line2 = { threshold: PATH_PICK_PIXELS };
+    const pointers = new Set();
+    let turning = null;
+
+    const pivotAt = (event) => {
+      const rect = domElement.getBoundingClientRect();
+      raycaster.setFromCamera(new THREE.Vector2(
+        (((event.clientX - rect.left) / rect.width) * 2) - 1,
+        -(((event.clientY - rect.top) / rect.height) * 2) + 1
+      ), camera);
+      const pickable = [];
+      scene.traverse((node) => {
+        if (node.userData.pivot) {
+          pickable.push(node);
+        }
+      });
+      const [hit] = raycaster.intersectObjects(pickable, false);
+      if (hit) {
+        return hit.point.clone();
+      }
+      const onFloor = Number.isFinite(floorAt.current)
+        ? raycaster.ray.intersectPlane(new THREE.Plane(Z, -floorAt.current), new THREE.Vector3())
+        : null;
+      return onFloor || raycaster.ray.closestPointToPoint(orbit.target, new THREE.Vector3());
+    };
+
+    const press = (event) => {
+      pointers.add(event.pointerId);
+      if (pointers.size > 1) {
+        if (turning) {
+          turning = null;
+          finish();
+        }
+        return;
+      }
+      const left = event.pointerType !== 'mouse' || event.button === 0;
+      if (!left || event.shiftKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+      turning = { id: event.pointerId, x: event.clientX, y: event.clientY, pivot: pivotAt(event) };
+      domElement.setPointerCapture?.(event.pointerId);
+      begin();
+    };
+
+    const drag = (event) => {
+      if (!turning || event.pointerId !== turning.id) {
+        return;
+      }
+      const height = domElement.clientHeight || 1;
+      const dx = event.clientX - turning.x;
+      const dy = event.clientY - turning.y;
+      turning.x = event.clientX;
+      turning.y = event.clientY;
+      if (!dx && !dy) {
+        return;
+      }
+      const next = orbitAbout({
+        position: camera.position,
+        target: orbit.target,
+        pivot: turning.pivot,
+        theta: -(TWO_PI * dx) / height,
+        phi: -(TWO_PI * dy) / height,
+      });
+      camera.position.copy(next.position);
+      orbit.target.copy(next.target);
+      // Looks at the target again and says `change`: a frame, and the pose
+      // written down.
+      orbit.update();
+    };
+
+    const release = (event) => {
+      pointers.delete(event.pointerId);
+      if (turning && event.pointerId === turning.id) {
+        turning = null;
+        finish();
+      }
+    };
+
+    domElement.addEventListener('pointerdown', press);
+    domElement.addEventListener('pointermove', drag);
+    domElement.addEventListener('pointerup', release);
+    domElement.addEventListener('pointercancel', release);
+
     return () => {
+      domElement.removeEventListener('pointerdown', press);
+      domElement.removeEventListener('pointermove', drag);
+      domElement.removeEventListener('pointerup', release);
+      domElement.removeEventListener('pointercancel', release);
       orbit.removeEventListener('change', invalidate);
       orbit.removeEventListener('change', remember);
       orbit.removeEventListener('start', begin);
@@ -171,7 +294,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree }) => {
       orbit.dispose();
       controls.current = null;
     };
-  }, [camera, domElement, invalidate, memory]);
+  }, [camera, domElement, invalidate, memory, scene]);
 
   /*
    * `revision` is what makes the buttons work twice.

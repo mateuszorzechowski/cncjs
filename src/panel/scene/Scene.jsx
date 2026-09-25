@@ -109,6 +109,7 @@ const Scene = ({
         object={program}
         fit={fit}
         onFree={onFree}
+        floor={floor}
       />
 
       {/* Under everything, and not switchable. The other layers are things
