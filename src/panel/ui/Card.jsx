@@ -27,13 +27,15 @@ const Card = ({ label, aside, onHelp, helpLabel, row = false, className = '', bo
     {(label || aside || onHelp) && (
       // `items-center` only when there is a button to centre against. A
       // baseline is right for two pieces of text and wrong for a square.
-      <header className={`mb-3 flex justify-between gap-3 ${onHelp ? 'items-center' : 'items-baseline'}`}>
+      <header className={`mb-3 flex justify-between gap-3 ${onHelp ? 'items-baseline @3xl/shell:items-center' : 'items-baseline'}`}>
         <h2 className="m-0 truncate text-cap font-semibold uppercase tracking-[0.1em] text-mut">
           {label}
         </h2>
         <div className="flex shrink-0 items-center gap-3">
           {aside ? <span className="font-num text-note text-mut">{aside}</span> : null}
-          {onHelp ? <HelpButton label={helpLabel} onPress={onHelp} className="size-chiph text-base" /> : null}
+          {/* Not on a phone: there the screen lifts it into the top bar with
+            * `useHeaderHelp`, beside the state chip. */}
+          {onHelp ? <HelpButton label={helpLabel} onPress={onHelp} className="hidden size-chiph text-base @3xl/shell:block" /> : null}
         </div>
       </header>
     )}
