@@ -37,10 +37,13 @@ export const durationText = (seconds) => {
 
 export const modifiedText = (mtime) => modified.format(new Date(mtime));
 
-/** The part's footprint, X by Y, from the server's bounds. */
+/** The part's size, X by Y by Z, from the server's bounds. */
 export const areaText = (bounds) => (bounds
-  ? t('files.area', { x: bounds.max.x - bounds.min.x, y: bounds.max.y - bounds.min.y })
+  ? t('files.area', { x: bounds.max.x - bounds.min.x, y: bounds.max.y - bounds.min.y, z: bounds.max.z - bounds.min.z })
   : NO_READING);
+
+/** The coordinate systems the file sets itself, or nothing when it takes the active one. */
+export const wcsText = (wcs) => (wcs && wcs.length > 0 ? t('files.wcs', { wcs: wcs.join(', ') }) : '');
 
 export const toolsText = (tools) => (tools && tools.length > 0 ? tools.map((tool) => `T${tool}`).join(', ') : NO_READING);
 
@@ -82,3 +85,50 @@ export const issueText = (issue) => t(ISSUES[issue.code], { word: issue.word });
 export const issueWhere = (issue) => (issue.count > 1
   ? t('files.check.where.many', { line: issue.line, count: issue.count })
   : t('files.check.where.one', { line: issue.line }));
+
+/** Why the controller's check cannot be asked for — `checkBlocker`'s codes. */
+const BLOCKERS = {
+  notConnected: 'files.check.blocked.notConnected',
+  checking: 'files.check.blocked.checking',
+  programRunning: 'files.check.blocked.programRunning',
+  notIdle: 'files.check.blocked.notIdle',
+};
+
+export const blockerText = (blocker) => t(BLOCKERS[blocker]);
+
+export const progressText = ({ answered, total }) => t('files.check.progress', { answered, total });
+
+const AXES = { x: 'axis.x', y: 'axis.y', z: 'axis.z' };
+
+/**
+ * Where the program leaves the table at the current zero, and what that does
+ * to `$C` — or null when it fits, or when the firmware has no soft limits and
+ * so will not stop at the edge. The server's `files:fit`; the words are here.
+ */
+export const overrunText = (fits, name) => {
+  const over = fits?.softLimits ? fits.files?.[name] : null;
+  if (!over || over.length === 0) {
+    return null;
+  }
+  const where = over.map(({ axis, by }) => t('files.check.overrun.axis', { axis: t(AXES[axis]), by })).join(', ');
+  return t('files.check.overrun.note', { where });
+};
+
+/** How the controller's check ended, as a sentence. */
+export const controllerSummary = (result) => {
+  if (result.refused) {
+    return t('files.check.controllerResult.refused', { code: result.refused });
+  }
+  if (result.alarm) {
+    return t('files.check.controllerResult.alarm', { alarm: result.alarm, line: result.stoppedAt });
+  }
+  if (result.firstError) {
+    return t('files.check.controllerResult.firstError', { line: result.stoppedAt });
+  }
+  if (!result.complete) {
+    return t('files.check.controllerResult.reset', { line: result.stoppedAt });
+  }
+  return t(result.errors.length > 0 ? 'files.check.controllerResult.errors' : 'files.check.controllerResult.clean');
+};
+
+export const checkedAtText = (at) => t('files.check.checkedAt', { when: modified.format(new Date(at)) });

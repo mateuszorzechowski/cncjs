@@ -1,4 +1,5 @@
 import Button from './Button';
+import Notice from './Notice';
 import Sheet from './Sheet';
 import { t } from '../i18n';
 
@@ -8,10 +9,17 @@ import { t } from '../i18n';
  * The consequence is said in `note` in plain words — what goes, and that it
  * does not come back — and the confirming button names the action rather
  * than saying "OK", so the answer can be read without the question.
+ *
+ * `warning` is a consequence that holds only this time (the `$C` of a program
+ * that leaves the table), marked as the panel marks what wants reading first;
+ * `children` is a choice about how the action is taken, made in the same
+ * breath as taking it.
  */
-const ConfirmSheet = ({ title, note, confirmLabel, tone = 'stop', onConfirm, onClose, busy = false }) => (
+const ConfirmSheet = ({ title, note, warning, confirmLabel, tone = 'stop', onConfirm, onClose, busy = false, children }) => (
   <Sheet title={title} onClose={onClose}>
     <p className="m-0 text-base text-ink">{note}</p>
+    {warning ? <Notice>{warning}</Notice> : null}
+    {children}
     <div className="flex gap-2">
       <Button className="h-ctl flex-1" onClick={onClose}>{t('confirm.cancel')}</Button>
       <Button tone={tone} className="h-ctl flex-1" disabled={busy} onClick={onConfirm}>{confirmLabel}</Button>

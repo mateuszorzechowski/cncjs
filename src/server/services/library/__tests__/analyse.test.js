@@ -59,6 +59,11 @@ describe('what a program is', () => {
     expect(tools).toEqual([3, 7]);
   });
 
+  test('the coordinate systems are the ones the file sets, in its order', async () => {
+    expect((await analyse(program('G21 G90', 'G0 X1'), null)).wcs).toEqual([]);
+    expect((await analyse(program('G55 G0 X1', 'G54', 'G0 X2', 'G55 G0 X3'), null)).wcs).toEqual(['G55', 'G54']);
+  });
+
   test('a program that never moves has no bounds', async () => {
     expect((await analyse(program('G21', 'M30'), null)).bounds).toBeNull();
   });

@@ -20,6 +20,7 @@ const LEVEL = {
   zero: 'info',
   goToWorkZero: 'info',
   goToPoint: 'info',
+  'file:check': 'info',
   'macro:run': 'info',
   // A line typed into a console: somebody's `G10` is exactly what the journal
   // is for.

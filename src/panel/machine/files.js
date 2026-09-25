@@ -41,6 +41,23 @@ export const deleteFile = (name) => request(path(name), { method: 'DELETE' });
 
 export const loadFile = (name, port) => request(`${path(name)}/load`, { method: 'POST', body: JSON.stringify({ port }) });
 
+/**
+ * Why `$C` cannot be asked for now, as a code the screen words, or null.
+ * The same order the server refuses in.
+ */
+export const checkBlocker = (machine) => {
+  if (!machine.connected) {
+    return 'notConnected';
+  }
+  if (machine.fileCheck) {
+    return 'checking';
+  }
+  if (machine.workflow !== 'idle') {
+    return 'programRunning';
+  }
+  return machine.canCheckFile ? null : 'notIdle';
+};
+
 /** The reasons the server gives, and which of them the screen has words for. */
 export const REASONS = ['bad-name', 'not-found', 'no-space', 'program-running'];
 

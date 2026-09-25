@@ -154,6 +154,28 @@ class Controller {
         'files:change': [],
 
         /**
+         * A library file going through Grbl's check mode, `$C`: its progress
+         * while it runs, and the result when it is done — which is kept with
+         * the file and comes with `GET /api/files` too. To everybody attached
+         * to the port. See `controllers/Grbl/check-run`.
+         *
+         * @event file:check
+         * @param {object} check - `{ name, state: 'running', answered, total }` or `{ name, state: 'done', result }`
+         */
+        'file:check': [],
+
+        /**
+         * Where each library file leaves the table at the current zero, as
+         * `{ softLimits, files: { name: [{ axis, side, by }] } }` — an empty
+         * list for a file that fits. Sent when the zero, the limits or the
+         * library change, and once to a client that has just attached.
+         *
+         * @event files:fit
+         * @param {object} fits - or null, before the machine has said its limits
+         */
+        'files:fit': [],
+
+        /**
          * Which alarm the machine is in, by Grbl's number.
          *
          * Null when there is none, and also while in the homing lock a reset

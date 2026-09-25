@@ -27,6 +27,13 @@ import analyse from './analyse';
  * carries what is ready; `change` is said again when more is.
  */
 
+/**
+ * Where the controller's checks (`$C`) are kept, in the directory itself:
+ * hidden, so neither the listing nor a file name can reach it, and read back
+ * on open, so a check outlives a restart (Mateusz, 2026-09-25).
+ */
+const CHECKS_FILE = '.checks.json';
+
 /** How long a burst of changes is gathered before one `change` is said. */
 const SETTLE_MS = 100;
 
@@ -54,6 +61,15 @@ const opened = (dir) => {
   return dir;
 };
 
+/** The kept checks, or none: a file that is missing or unreadable is no checks, not a failure. */
+const readChecks = (dir) => {
+  try {
+    return new Map(Object.entries(JSON.parse(fs.readFileSync(path.join(dir, CHECKS_FILE), 'utf8'))));
+  } catch (err) {
+    return new Map();
+  }
+};
+
 class Library extends events.EventEmitter {
     dir = null;
 
@@ -70,6 +86,9 @@ class Library extends events.EventEmitter {
     /** Name to `{ mtime, size, machine, start, analysis }`, for as long as all four still hold. */
     analyses = new Map();
 
+    /** Name to `{ mtime, size, result }`: the last `$C` of the file as it then was. */
+    checks = new Map();
+
     queue = [];
 
     analysing = false;
@@ -81,6 +100,7 @@ class Library extends events.EventEmitter {
       this.dir = dir;
       this.machine = machine;
       this.start = start;
+      this.checks = readChecks(dir);
 
       try {
         this.watcher = fs.watch(dir, () => this.changed());
@@ -100,6 +120,7 @@ class Library extends events.EventEmitter {
       this.timer = null;
       this.dir = null;
       this.analyses.clear();
+      this.checks = new Map();
       this.queue = [];
     }
 
@@ -223,7 +244,9 @@ class Library extends events.EventEmitter {
         files: files.map(file => {
           const known = this.analyses.get(file.name);
           const current = known && known.mtime === file.mtime && known.size === file.size;
-          return { ...file, analysis: current ? known.analysis : null };
+          const checked = this.checks.get(file.name);
+          const same = checked && checked.mtime === file.mtime && checked.size === file.size;
+          return { ...file, analysis: current ? known.analysis : null, controllerCheck: same ? checked.result : null };
         }),
         disk,
       };
@@ -288,7 +311,44 @@ class Library extends events.EventEmitter {
 
     async remove(name) {
       await fs.promises.unlink(this.resolve(name));
+      if (this.checks.delete(name)) {
+        await this.saveChecks();
+      }
       this.changed();
+    }
+
+    /** The file as it is now — what a check made of it is kept against. */
+    async stamp(name) {
+      const stat = await fs.promises.stat(this.resolve(name));
+      return { mtime: stat.mtime.toISOString(), size: stat.size };
+    }
+
+    /** Keep what `$C` said of a file, for as long as the file is the one it read. */
+    async setControllerCheck(name, { mtime, size }, result) {
+      this.resolve(name);
+      this.checks.set(name, { mtime, size, result });
+      await this.saveChecks();
+      this.changed();
+    }
+
+    /** Written the way a program is: a temporary, then a rename. */
+    async saveChecks() {
+      const dir = opened(this.dir);
+      const target = path.join(dir, CHECKS_FILE);
+      const temporary = `${target}.${process.pid}.part`;
+      await fs.promises.writeFile(temporary, JSON.stringify(Object.fromEntries(this.checks)), 'utf8');
+      await fs.promises.rename(temporary, target);
+    }
+
+    /** Each analysed file's bounds, from work zero — what `files:fit` is worked out from. */
+    bounds() {
+      const bounds = {};
+      for (const [name, { analysis }] of this.analyses) {
+        if (analysis.bounds) {
+          bounds[name] = analysis.bounds;
+        }
+      }
+      return bounds;
     }
 }
 

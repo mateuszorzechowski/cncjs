@@ -13,7 +13,9 @@ import { createCheck } from './check';
  * load the Grbl controller appends a `%wait` of its own, so the job's total
  * is one more than this. Bounds are of the moves, in
  * millimetres, from work zero; the starting point is not a move and is left
- * out. `seconds` is null when no machine has said its limits yet.
+ * out. `seconds` is null when no machine has said its limits yet. `wcs` is
+ * the coordinate systems the file itself sets, in the order it sets them —
+ * empty when it takes whichever is active.
  *
  * `check` is whether Grbl will take it — see `check`; `start` is what the
  * `gcode:start` events send before every program.
@@ -37,6 +39,8 @@ const STOPS_BEFORE = new Set(['M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9']);
 /** And after them: the program pauses or ends. */
 const STOPS_AFTER = new Set(['M0', 'M1', 'M2', 'M30']);
 
+const WCS = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59'];
+
 const turn = () => new Promise((resolve) => setImmediate(resolve));
 
 /**
@@ -55,6 +59,7 @@ const analyse = async (text, machine, start = '') => {
   const min = { x: Infinity, y: Infinity, z: Infinity };
   const max = { x: -Infinity, y: -Infinity, z: -Infinity };
   const tools = new Set();
+  const wcs = new Set();
   let feed = 0;
   let inches = false;
   let pending = [];
@@ -100,6 +105,7 @@ const analyse = async (text, machine, start = '') => {
     if (word('T') !== undefined) {
       tools.add(word('T'));
     }
+    WCS.filter(code => codes.has(code)).forEach(code => wcs.add(code));
 
     if (planner) {
       if (codes.has('G4')) {
@@ -138,6 +144,7 @@ const analyse = async (text, machine, start = '') => {
     lines: lines.filter(line => line.trim().length > 0).length,
     bounds: moved ? { min, max } : null,
     tools: [...tools].sort((a, b) => a - b),
+    wcs: [...wcs],
     seconds: planner ? planner.finish() : null,
     check: check.result(),
   };

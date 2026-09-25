@@ -11,6 +11,7 @@ import Sheet from '../ui/Sheet';
 import { sizeText } from '../ui/fileWords';
 import { useIsPhone } from '../ui/shell';
 import { deleteFile, diskLow, diskUsed, isLoaded, loadFile, reasonOf, writeFile } from '../machine/files';
+import { unloadProgram } from '../machine/commands';
 import { useFiles } from '../machine/useFiles';
 import { t } from '../i18n';
 
@@ -113,7 +114,7 @@ const FilesScreen = ({ machine }) => {
   const load = (target) => act(() => loadFile(target.name, machine.port));
 
   const details = file
-    ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onDelete={remove} />
+    ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onUnload={unloadProgram} onDelete={remove} />
     : null;
 
   return (
@@ -169,7 +170,13 @@ const FilesScreen = ({ machine }) => {
 
       {phone ? null : (
         <Card label={t('files.selected')} className="min-h-0 w-side shrink-0" bodyClassName="gap-3">
-          {details || <p className="m-0 text-note text-mut">{t('files.none')}</p>}
+          {/* With nothing chosen the card holds its place with the hint in its
+            * middle, rather than one line at the top of an empty card. */}
+          {details || (
+            <div className="flex flex-1 items-center justify-center px-pad">
+              <p className="m-0 text-center text-base text-mut">{t('files.none')}</p>
+            </div>
+          )}
         </Card>
       )}
 

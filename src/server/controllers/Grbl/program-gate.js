@@ -47,6 +47,8 @@ const STANDING = new Set(['Idle', 'Jog']);
 /** What would replace the program that is paused. */
 const PROGRAM = new Set([
   'gcode:load', 'gcode:unload', 'gcode:start', 'start', 'watchdir:load', 'macro:load',
+  // `$C` resets Grbl as it leaves — not over a program that is paused.
+  'file:check',
 ]);
 
 /**

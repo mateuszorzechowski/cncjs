@@ -17,7 +17,7 @@ import { REFUSAL_KEYS } from './refusal';
  * state words everywhere else on the panel.
  */
 
-const ALARMS = {
+export const GRBL_ALARM_KEYS = {
   'ALARM:1': 'grbl.alarm.1',
   'ALARM:2': 'grbl.alarm.2',
   'ALARM:3': 'grbl.alarm.3',
@@ -30,7 +30,7 @@ const ALARMS = {
   'ALARM:10': 'grbl.alarm.10',
 };
 
-const ERRORS = {
+export const GRBL_ERROR_KEYS = {
   'error:1': 'grbl.error.1',
   'error:2': 'grbl.error.2',
   'error:3': 'grbl.error.3',
@@ -96,6 +96,7 @@ const COMMANDS = {
   zero: 'journal.command.zero',
   goToWorkZero: 'journal.command.goToWorkZero',
   goToPoint: 'journal.command.goToPoint',
+  'file:check': 'journal.command.fileCheck',
   'macro:run': 'journal.command.macro',
   gcode: 'journal.command.line',
   write: 'journal.command.line',
@@ -103,6 +104,14 @@ const COMMANDS = {
   jogStep: 'journal.command.jogStep',
   jogStop: 'journal.command.jogStop',
   jogCancel: 'journal.command.jogStop',
+};
+
+// How a `$C` of a library file ended; an alarm or a refusal keeps its own code.
+const FILE_CHECK = {
+  clean: 'journal.fileCheck.clean',
+  errors: 'journal.fileCheck.errors',
+  'first-error': 'journal.fileCheck.firstError',
+  interrupted: 'journal.fileCheck.interrupted',
 };
 
 const PORT = {
@@ -124,6 +133,7 @@ export const EVENT_KEYS = {
   command: 'journal.event.command',
   port: 'journal.event.port',
   motion: 'journal.event.motion',
+  'file-check': 'journal.event.fileCheck',
 };
 
 export const LEVEL_KEYS = {
@@ -141,8 +151,8 @@ export const SOURCE_KEYS = {
 const keyed = (key, params = {}) => ({ key, params });
 
 const BY_EVENT = {
-  alarm: ({ code }) => (ALARMS[code] ? keyed(ALARMS[code]) : null),
-  error: ({ code }) => (ERRORS[code] ? keyed(ERRORS[code]) : null),
+  alarm: ({ code }) => (GRBL_ALARM_KEYS[code] ? keyed(GRBL_ALARM_KEYS[code]) : null),
+  error: ({ code }) => (GRBL_ERROR_KEYS[code] ? keyed(GRBL_ERROR_KEYS[code]) : null),
   message: ({ data }) => ({ text: data?.text }),
   startup: ({ data }) => ({ text: data?.text }),
   sent: ({ data }) => ({ text: data?.line }),
@@ -157,6 +167,10 @@ const BY_EVENT = {
     ? keyed(PORT[code], { type: data?.controllerType ?? '', baudrate: data?.baudrate ?? '', message: data?.message ?? '' })
     : null),
   motion: ({ device }) => keyed(device ? 'journal.motion.held' : 'journal.motion.free', { device: device ?? '' }),
+  'file-check': ({ code, data }) => {
+    const params = { name: data?.name ?? '', errors: data?.errors ?? 0, code: code ?? '' };
+    return keyed(FILE_CHECK[code] || 'journal.fileCheck.stopped', params);
+  },
 };
 
 /**
@@ -174,7 +188,7 @@ export const describeEntry = (entry) => {
 // Every code with a sentence of its own, as [code, key]. A pause is one code
 // with a sentence per reason, so it appears once for each.
 const SENTENCES = [
-  ...Object.entries({ ...ALARMS, ...ERRORS, ...PROGRAM, ...COMMANDS, ...PORT, ...REFUSAL_KEYS }),
+  ...Object.entries({ ...GRBL_ALARM_KEYS, ...GRBL_ERROR_KEYS, ...PROGRAM, ...COMMANDS, ...PORT, ...REFUSAL_KEYS, ...FILE_CHECK }),
   ...Object.values(PAUSE).map((key) => ['pause', key]),
 ];
 

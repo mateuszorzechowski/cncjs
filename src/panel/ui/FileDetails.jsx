@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Button from './Button';
+import CheckButton from './CheckButton';
 import CheckSheet from './CheckSheet';
 import FilePreview from './FilePreview';
 import StatTile from './StatTile';
-import { areaText, durationText, toolsText, verdictText, verdictTone } from './fileWords';
+import { areaText, durationText, toolsText, verdictText, verdictTone, wcsText } from './fileWords';
 import { canLoad, isLoaded } from '../machine/files';
 import { NO_READING } from '../machine/readings';
 import { t } from '../i18n';
@@ -25,7 +26,7 @@ const loadNote = (machine) => {
   return t('files.note.programRunning');
 };
 
-const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDelete }) => {
+const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnload, onDelete }) => {
   const [checking, setChecking] = useState(false);
   const analysis = file.analysis;
   const check = analysis?.check;
@@ -44,7 +45,10 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
       <p className="m-0 break-all font-num text-lead font-semibold text-ink">{file.name}</p>
 
       <FilePreview name={file.name} mtime={file.mtime} className={phone ? 'aspect-video shrink-0' : 'min-h-0 flex-1'} />
-      <p className="m-0 font-num text-note text-mut">{t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}</p>
+      <p className="m-0 font-num text-note text-mut">
+        {t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}
+        {wcsText(analysis?.wcs) ? <>{' · '}{wcsText(analysis.wcs)}</> : null}
+      </p>
 
       <div className="grid shrink-0 grid-cols-2 gap-2">
         <StatTile compact label={t('files.stat.lines')} value={analysis ? analysis.lines : NO_READING} />
@@ -54,9 +58,9 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
       </div>
 
       {/*
-        * The two checks: the server's, made when the file is kept and opened
-        * from its verdict, and the controller's, `$C` — which is the next
-        * change, so its button is greyed out until then.
+        * The two checks: the server's, made when the file is kept, whose
+        * verdict opens both results; and the controller's, `$C`, asked for
+        * here and kept with the file.
         */}
       <section className="flex shrink-0 flex-col gap-2" aria-label={t('files.check.title')}>
         <span className="text-cap font-semibold uppercase tracking-[0.12em] text-mut">{t('files.check.title')}</span>
@@ -67,7 +71,7 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
             tone={verdictTone(check)}
             onPress={check ? () => setChecking(true) : undefined}
           />
-          <Button className="h-auto px-3" disabled>{t('files.check.controller')}</Button>
+          <CheckButton file={file} machine={machine} busy={busy} />
         </div>
       </section>
 
@@ -84,7 +88,11 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
             {t('files.delete')}
           </Button>
           {loaded ? (
-            <Button tone="soft" className="h-ctl flex-1" aria-disabled>{t('files.loaded')}</Button>
+            // The loaded file offers the way back out — the server's
+            // `gcode:unload`, held back like loading while a program runs.
+            <Button className="h-ctl flex-1" disabled={!loadable || busy} onClick={() => onUnload(file)}>
+              {t('files.unload')}
+            </Button>
           ) : (
             <Button tone="primary" className="h-ctl flex-1" disabled={!loadable || busy} onClick={() => onLoad(file)}>
               {t('files.load')}
@@ -93,7 +101,7 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
         </div>
       </div>
 
-      {checking && check ? <CheckSheet name={file.name} check={check} onClose={() => setChecking(false)} /> : null}
+      {checking && check ? <CheckSheet name={file.name} check={check} controllerCheck={file.controllerCheck} onClose={() => setChecking(false)} /> : null}
     </div>
   );
 };

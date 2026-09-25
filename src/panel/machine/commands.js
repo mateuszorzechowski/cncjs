@@ -83,3 +83,17 @@ export const controlledStop = (type) => {
 };
 
 export default emergencyStop;
+
+/**
+ * Put a library file through the controller's check mode, `$C` — to the end,
+ * or to the first error. The server reads the file and keeps the result with
+ * it; see `ui/CheckButton` for the question asked first.
+ */
+export const checkFile = (name, { firstError = false } = {}) => {
+  controller.command('file:check', { name, firstError });
+};
+
+/** Take the loaded program off the controller — the Pliki screen's way back out of LOAD. */
+export const unloadProgram = () => {
+  controller.command('gcode:unload');
+};

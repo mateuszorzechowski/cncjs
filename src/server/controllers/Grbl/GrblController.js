@@ -54,7 +54,8 @@ import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, jogStepLine, stopSecond
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { activeWcsNumber, zeroLine } from './zero';
 import { changesWorkOffsets } from './offsets';
-import { machineEnvelope } from './envelope';
+import { machineEnvelope, programOverrun } from './envelope';
+import { checkLines, createCheckRun } from './check-run';
 import library from '../../services/library';
 import { machineTiming } from '../../services/library/estimate';
 import { goToPointLines, goToWorkZeroLines } from './travel';
@@ -820,6 +821,12 @@ class GrblController {
           return;
         }
 
+        // A file going through `$C` owns every other answer until it is done.
+        if (this.fileCheck?.run) {
+          this.fileCheck.run.ok();
+          return;
+        }
+
         const { hold, sent, received } = this.sender.state;
 
         if (this.workflow.state === WORKFLOW_STATE_RUNNING) {
@@ -884,6 +891,11 @@ class GrblController {
       this.runner.on('error', (res) => {
         const code = Number(res.message) || undefined;
         const error = _.find(GRBL_ERRORS, { code: code });
+
+        if (this.fileCheck?.run) {
+          this.fileCheck.run.error(error ? `error:${code}` : res.raw);
+          return;
+        }
 
         if (this.workflow.state === WORKFLOW_STATE_RUNNING) {
           const ignoreErrors = config.get('state.controller.exception.ignoreErrors');
@@ -999,6 +1011,8 @@ class GrblController {
           // Grbl v0.9
           this.emit('serialport:read', res.raw);
         }
+
+        this.fileCheck?.run?.alarm(alarm ? `ALARM:${code}` : res.raw);
       });
 
       this.runner.on('parserstate', (res) => {
@@ -1153,6 +1167,7 @@ class GrblController {
       });
 
       this.runner.on('startup', (res) => {
+        this.fileCheck?.run?.startup();
         this.emit('serialport:read', res.raw);
         this.note({ level: 'info', source: 'controller', event: 'startup', data: { text: res.raw } });
 
@@ -1354,6 +1369,8 @@ class GrblController {
           this.emit('controller:state', GRBL, this.state);
           this.emit('Grbl:state', this.state); // Backward compatibility
         }
+
+        this.updateFits();
 
         this.checkConnectionLiveness(new Date().getTime());
 
@@ -1567,6 +1584,8 @@ class GrblController {
     }
 
     destroy() {
+      this.fileCheck = null;
+
       if (this.queryTimer) {
         clearInterval(this.queryTimer);
         this.queryTimer = null;
@@ -1815,6 +1834,12 @@ class GrblController {
       if (this.envelope) {
         socket.emit('controller:envelope', this.envelope);
       }
+      if (this.fits) {
+        socket.emit('files:fit', this.fits);
+      }
+      if (this.fileCheck) {
+        socket.emit('file:check', { name: this.fileCheck.name, state: 'running', ...this.fileCheck.progress });
+      }
 
       if (!_.isEmpty(this.settings)) {
         // controller settings
@@ -2021,9 +2046,103 @@ class GrblController {
       const asked = (cmd === 'write' && isRealtimeCommand(data)) ? 'realtime' : cmd;
 
       return programRefusal(asked, {
-        workflow: this.workflow.state,
+        // A file going through `$C` holds the machine as a program does.
+        workflow: this.fileCheck ? 'running' : this.workflow.state,
         firmware: this.runner?.state?.status?.activeState,
       });
+    }
+
+    /**
+     * Where each file in the library leaves the table at the current zero —
+     * `programOverrun`, precomputed for the Pliki screen and said when it
+     * changes: a new zero, new limits, a new file. `softLimits` says whether
+     * the firmware stops at the edge (`$20`), which is what makes `$C` alarm.
+     */
+    updateFits() {
+      const wco = this.runner.state?.status?.wco;
+      let fits = null;
+      if (this.envelope && wco) {
+        fits = {
+          softLimits: this.runner.settings?.settings?.$20 === '1',
+          files: _.mapValues(library.bounds(), (bounds) => programOverrun(this.envelope, wco, bounds)),
+        };
+      }
+
+      if (!_.isEqual(fits, this.fits)) {
+        this.fits = fits;
+        this.emit('files:fit', fits);
+      }
+    }
+
+    /**
+     * Put a library file through `$C` — see `check-run`. The file is read
+     * first, so the check is kept against the file as it was read. `firstError`
+     * stops at the first error rather than reading the whole file.
+     */
+    async startFileCheck(name, { firstError = false } = {}) {
+      this.fileCheck = { name, run: null, progress: { answered: 0, total: 0 } };
+
+      let stamp;
+      let text;
+      try {
+        stamp = await library.stamp(name);
+        text = await library.read(name);
+      } catch (err) {
+        this.fileCheck = null;
+        this.refuse('file:check', 'not-found');
+        return;
+      }
+      if (!this.fileCheck || this.fileCheck.name !== name || this.isClose()) {
+        return;
+      }
+
+      const { lines, total } = checkLines(text, {
+        toolChangePolicy: config.get('tool.toolChangePolicy', TOOL_CHANGE_POLICY_IGNORE_M6_COMMANDS),
+        translate: (line) => translateExpression(line, this.populateContext({})),
+      });
+      const say = (progress) => {
+        this.fileCheck.progress = progress;
+        this.emit('file:check', { name, state: 'running', ...progress });
+      };
+
+      this.fileCheck.run = createCheckRun({
+        lines,
+        total,
+        // Straight to the port: a file of forty thousand lines is not
+        // something to echo to every console.
+        write: (line) => this.connection.write(`${line}\n`),
+        progress: say,
+        firstError,
+        done: (result) => this.endFileCheck(name, stamp, result),
+      });
+      say({ answered: 0, total: lines.length });
+      this.fileCheck.run.start();
+    }
+
+    endFileCheck(name, stamp, result) {
+      this.fileCheck = null;
+
+      let code = 'clean';
+      if (result.alarm) {
+        code = result.alarm;
+      } else if (result.refused) {
+        code = result.refused;
+      } else if (result.firstError) {
+        code = 'first-error';
+      } else if (!result.complete) {
+        code = 'interrupted';
+      } else if (result.errors.length > 0) {
+        code = 'errors';
+      }
+      this.note({
+        level: code === 'clean' ? 'info' : 'warn', source: 'server', event: 'file-check', code, data: { name, errors: result.errors.length },
+      });
+
+      const kept = { ...result, at: new Date().toISOString() };
+      library.setControllerCheck(name, stamp, kept).catch((err) => {
+        log.error(`Could not keep the check of "${name}": ${err}`);
+      });
+      this.emit('file:check', { name, state: 'done', result: kept });
     }
 
     refuse(cmd, reason) {
@@ -2438,6 +2557,38 @@ class GrblController {
          * not reported its travel is `no-travel`, and it is a different answer
          * — there is no fence to be outside of, only no knowledge of one.
          */
+        /**
+         * Put a library file through Grbl's check mode, `$C`: every line read,
+         * nothing moved, every error kept with its line. Only with no program
+         * and the machine standing Idle — Grbl itself will not enter `$C` from
+         * anything else. See `check-run`.
+         */
+        'file:check': () => {
+          const [{ name, firstError = false } = {}] = args;
+
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+          if (this.fileCheck) {
+            this.refuse(cmd, 'checking');
+            return;
+          }
+          if (this.workflow.state !== WORKFLOW_STATE_IDLE) {
+            this.refuse(cmd, 'program-running');
+            return;
+          }
+          if (this.jogging.dir) {
+            this.refuse(cmd, 'jogging');
+            return;
+          }
+          if (this.runner.state?.status?.activeState !== GRBL_ACTIVE_STATE_IDLE) {
+            this.refuse(cmd, 'not-idle');
+            return;
+          }
+
+          this.startFileCheck(name, { firstError: Boolean(firstError) });
+        },
         'goToPoint': () => {
           const [point] = args;
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useReducer, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useShellNode } from './shell';
 import { dimPanel } from './themeColor';
@@ -29,16 +29,61 @@ import { t } from '../i18n';
  * and scrolling away with it. A portal puts it back above all of that while
  * keeping it inside the element the review frame scales.
  */
+/*
+ * The open sheets, in the order they opened. A sheet can open another — the
+ * file's check over the chosen file on a phone, the state help over the
+ * state — and they are not always parent and child in React (the help is
+ * the state sheet's sibling in `App`), so the order is kept here.
+ *
+ * The newest is the active one, and the dimming belongs to it: its scrim
+ * lies over everything, the sheets under it included, and theirs go clear so
+ * the page is dimmed once (Mateusz, 2026-09-25: *"przyciemnienie należy do
+ * aktywnego sheeta, reszta ląduje pod"*). Escape closes it and only it.
+ */
+const stack = [];
+const listeners = new Set();
+const told = () => listeners.forEach((listener) => listener());
+
+// Written out, because Tailwind reads the source: two layers per sheet.
+const LAYERS = [
+  { scrim: 'z-40', panel: 'z-50' },
+  { scrim: 'z-[60]', panel: 'z-[70]' },
+  { scrim: 'z-[80]', panel: 'z-[90]' },
+];
+
+const useLayer = () => {
+  const id = useRef(Symbol('sheet'));
+  const [, redraw] = useReducer((n) => n + 1, 0);
+
+  useLayoutEffect(() => {
+    const me = id.current;
+    const listener = () => redraw();
+    listeners.add(listener);
+    stack.push(me);
+    told();
+    return () => {
+      listeners.delete(listener);
+      stack.splice(stack.indexOf(me), 1);
+      told();
+    };
+  }, []);
+
+  const index = Math.max(0, stack.indexOf(id.current));
+  return { layer: LAYERS[Math.min(index, LAYERS.length - 1)], active: index === stack.length - 1 };
+};
+
 const Sheet = ({ title, onHelp, onClose, children }) => {
+  const { layer, active } = useLayer();
+
   useEffect(() => {
     const onKey = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && active) {
         onClose();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, active]);
 
   /*
    * The scrim reaches the status bar too.
@@ -60,7 +105,7 @@ const Sheet = ({ title, onHelp, onClose, children }) => {
         type="button"
         aria-label={t('sheet.close')}
         onClick={onClose}
-        className="fixed inset-0 z-40 cursor-default bg-scrim"
+        className={`fixed inset-0 ${layer.scrim} cursor-default ${active ? 'bg-scrim' : 'bg-transparent'}`}
       />
       <div
         role="dialog"
@@ -94,7 +139,7 @@ const Sheet = ({ title, onHelp, onClose, children }) => {
          * the review frame is, and against the viewport when there is none.
          * Both are the right answer.
          */
-        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85%] flex-col gap-gap rounded-t-card border-t border-line bg-panel p-pad @3xl/shell:inset-x-auto @3xl/shell:bottom-auto @3xl/shell:left-1/2 @3xl/shell:top-1/2 @3xl/shell:w-dialog @3xl/shell:-translate-x-1/2 @3xl/shell:-translate-y-1/2 @3xl/shell:rounded-card @3xl/shell:border"
+        className={`fixed inset-x-0 bottom-0 ${layer.panel} flex max-h-[85%] flex-col gap-gap rounded-t-card border-t border-line bg-panel p-pad @3xl/shell:inset-x-auto @3xl/shell:bottom-auto @3xl/shell:left-1/2 @3xl/shell:top-1/2 @3xl/shell:w-dialog @3xl/shell:-translate-x-1/2 @3xl/shell:-translate-y-1/2 @3xl/shell:rounded-card @3xl/shell:border`}
       >
         <div className="flex items-center gap-3">
           <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{title}</span>

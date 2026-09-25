@@ -1,3 +1,5 @@
+import Icon from './Icon';
+
 /**
  * What something is set to, as a line that can be tapped to change it.
  *
@@ -36,8 +38,9 @@ const SettingSummary = ({ title, values, onOpen, disabled }) => (
       </span>
     ))}
     {/* A mark rather than a word: it says "there is more behind this" and is
-      * the same character whatever language the panel is in. */}
-    <span aria-hidden="true" className="shrink-0 text-note text-mut">&#9656;</span>
+      * the same whatever language the panel is in. The state chip's chevron,
+      * which every control that opens a sheet carries (2026-09-25). */}
+    <Icon name="chevron" className="size-4 shrink-0 text-mut" weight={2} />
   </button>
 );
 

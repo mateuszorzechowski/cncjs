@@ -1,4 +1,4 @@
-import { canLoad, diskLow, diskUsed, durationParts, isLoaded, reasonOf, sizeParts, LOW_BYTES } from '../files';
+import { canLoad, checkBlocker, diskLow, diskUsed, durationParts, isLoaded, reasonOf, sizeParts, LOW_BYTES } from '../files';
 
 describe('a size', () => {
   test.each([
@@ -65,5 +65,19 @@ describe('a refusal', () => {
     expect(reasonOf({ reason: 'program-running' })).toBe('program-running');
     expect(reasonOf({ reason: 'something-new' })).toBe('failed');
     expect(reasonOf(new Error('Failed to fetch'))).toBe('failed');
+  });
+});
+
+describe('why the controller check is greyed out', () => {
+  const machine = (fields) => ({ connected: true, workflow: 'idle', fileCheck: null, canCheckFile: true, ...fields });
+
+  test.each([
+    [{}, null],
+    [{ connected: false, canCheckFile: false }, 'notConnected'],
+    [{ fileCheck: { name: 'a.nc' }, canCheckFile: false }, 'checking'],
+    [{ workflow: 'paused', canCheckFile: false }, 'programRunning'],
+    [{ canCheckFile: false }, 'notIdle'],
+  ])('%o is %s', (fields, reason) => {
+    expect(checkBlocker(machine(fields))).toBe(reason);
   });
 });

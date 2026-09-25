@@ -125,6 +125,13 @@
    * above it (Pliki, 2026-09-25).
    */
   --note2: 36px;
+  /*
+   * The Pliki table's two right-hand columns, fixed so the header and the
+   * rows line up: each is its own grid, and `auto` sized them apart. Wide
+   * enough for "999,9 kB" and "25.09.2026, 12:22" in the numeric font.
+   */
+  --fsize: 72px;
+  --fdate: 128px;
   --jbtn: 74px;
   --jbtnh: 58px;
   --jgap: 10px;

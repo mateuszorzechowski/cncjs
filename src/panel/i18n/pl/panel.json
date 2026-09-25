@@ -265,7 +265,10 @@
     "unknownCommand": "Ten serwer nie zna komendy {{cmd}}. Jest starszy niż ten panel.",
     "heldElsewhere": "Maszyną steruje teraz inne urządzenie. Poczekaj, aż skończy.",
     "notConfirmed": "Jog został zatrzymany, bo panel nie potwierdził, że klawisz jest wciąż wciśnięty. Naciśnij ponownie.",
-    "other": "Serwer odmówił komendy {{cmd}}: {{reason}}."
+    "other": "Serwer odmówił komendy {{cmd}}: {{reason}}.",
+    "checking": "Sterownik sprawdza już plik. Poczekaj, aż skończy.",
+    "notIdle": "Maszyna nie stoi w Idle, więc Grbl nie wejdzie w tryb sprawdzania.",
+    "notFound": "Tego pliku nie ma już na serwerze."
   },
   "notice": {
     "warning": "Ostrzeżenie"
@@ -412,7 +415,8 @@
       "refused": "Odmowa",
       "command": "Komenda",
       "port": "Port",
-      "motion": "Ruch"
+      "motion": "Ruch",
+      "fileCheck": "kontrola"
     },
     "program": {
       "start": "Start {{name}}",
@@ -442,7 +446,8 @@
       "line": "Linia z konsoli: {{line}}",
       "jogStart": "Start jogu",
       "jogStep": "Krok jogu",
-      "jogStop": "Koniec jogu"
+      "jogStop": "Koniec jogu",
+      "fileCheck": "Sprawdzenie pliku na sterowniku"
     },
     "port": {
       "open": "Otwarto jako {{type}}, {{baudrate}}",
@@ -478,7 +483,14 @@
       "custom": "Własny zakres…"
     },
     "count": "{{matched}} z {{kept}} wpisów",
-    "show": "Pokaż wpisy: {{count}}"
+    "show": "Pokaż wpisy: {{count}}",
+    "fileCheck": {
+      "clean": "{{name}}: Grbl przyjął każdą linię",
+      "errors": "{{name}}: Grbl odrzucił linie — rodzajów błędów: {{errors}}",
+      "firstError": "{{name}}: sprawdzanie stanęło na pierwszym błędzie",
+      "interrupted": "{{name}}: sprawdzanie przerwane resetem",
+      "stopped": "{{name}}: sprawdzanie przerwane — {{code}}"
+    }
   },
   "grbl": {
     "alarm": {
@@ -572,10 +584,12 @@
     "empty": "Nie ma jeszcze plików. Wgraj program, a zostanie na serwerze.",
     "load": "Wczytaj",
     "loaded": "Wczytany",
+    "unload": "Wyładuj",
     "delete": "Usuń",
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
-    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} mm",
+    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
+    "wcs": "układ {{wcs}}",
     "duration": {
       "hours": "{{hours}} h {{minutes}} min",
       "minutes": "{{minutes}} min {{seconds}} s",
@@ -591,7 +605,7 @@
       "time": "czas",
       "tools": "narzędzia",
       "zmin": "Z min",
-      "area": "XY"
+      "area": "XYZ"
     },
     "preview": {
       "reading": "Czytam plik…",
@@ -661,7 +675,43 @@
       },
       "where": {
         "one": "linia {{line}}",
-        "many": "linia {{line}} · {{count}} razy"
+        "many": "{{count}}× · pierwszy raz w linii {{line}}"
+      },
+      "server": "Serwer — przy wgraniu",
+      "controllerTitle": "Sterownik — $C",
+      "controllerNone": "Jeszcze nie sprawdzony na sterowniku.",
+      "controllerError": "{{code}} — {{text}}",
+      "checkedAt": "sprawdzono {{when}}",
+      "progress": "{{answered}} / {{total}} linii",
+      "blocked": {
+        "notConnected": "połącz maszynę",
+        "checking": "trwa inne sprawdzanie",
+        "programRunning": "trwa program",
+        "notIdle": "maszyna nie stoi w Idle"
+      },
+      "overrun": {
+        "axis": "w {{axis}} o {{by, number(maximumFractionDigits: 1)}} mm",
+        "note": "Przy obecnym zerze program wyjedzie poza stół: {{where}}. Grbl przerwie sprawdzanie alarmem na pierwszym takim ruchu, reszta pliku zostanie niesprawdzona, a maszynę trzeba będzie zresetować i odblokować."
+      },
+      "controllerResult": {
+        "clean": "Grbl przeczytał cały program i przyjął każdą linię.",
+        "errors": "Grbl przeczytał cały program i odrzucił linie wypisane niżej.",
+        "firstError": "Sprawdzanie stanęło na pierwszym błędzie, w linii {{line}}. Reszta programu nie została przeczytana.",
+        "alarm": "Sprawdzanie przerwał {{alarm}} w linii {{line}}. Reszta programu nie została przeczytana.",
+        "reset": "Sprawdzanie przerwał reset w linii {{line}}. Reszta programu nie została przeczytana.",
+        "refused": "Grbl nie wszedł w tryb sprawdzania: {{code}}."
+      },
+      "confirm": {
+        "title": "Sprawdzić program na sterowniku?",
+        "note": "Grbl przeczyta program bez ruchu i zapisze każdą linię, której nie przyjmie.",
+        "reset": "Na koniec sterownik się zresetuje: maszyna zostanie tam, gdzie stoi, ale tryby wrócą do startowych — G54, G90, G21.",
+        "action": "Sprawdź",
+        "anyway": "Sprawdź mimo to"
+      },
+      "scope": {
+        "label": "Jak daleko",
+        "all": "Cały plik",
+        "first": "Do pierwszego błędu"
       }
     }
   },
