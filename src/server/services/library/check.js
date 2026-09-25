@@ -16,7 +16,7 @@ import { parseLine } from 'gcode-parser';
  */
 
 /** Grbl 1.1's G-codes — gnea/grbl wiki, "Grbl v1.1 Commands". */
-const G_CODES = new Set([
+export const G_CODES = new Set([
   'G0', 'G1', 'G2', 'G3', 'G4', 'G10', 'G17', 'G18', 'G19', 'G20', 'G21',
   'G28', 'G28.1', 'G30', 'G30.1', 'G38.2', 'G38.3', 'G38.4', 'G38.5', 'G40',
   'G43.1', 'G49', 'G53', 'G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G61',
@@ -24,17 +24,17 @@ const G_CODES = new Set([
 ]);
 
 /** And its M-codes, as the default build has them: no `M7`, no `M56`. */
-const M_CODES = new Set(['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M8', 'M9', 'M30']);
+export const M_CODES = new Set(['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M8', 'M9', 'M30']);
 
 /** The letters Grbl 1.1 reads; anything else is `error:20`. */
-const LETTERS = new Set(['F', 'G', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'X', 'Y', 'Z']);
+export const LETTERS = new Set(['F', 'G', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'X', 'Y', 'Z']);
 
 /**
  * Grbl's line buffer is 80 bytes and keeps one for the end, so a line of 80
  * characters — counted without spaces and comments, which Grbl drops as it
  * reads — is `error:11`.
  */
-const MAX_LINE = 79;
+export const MAX_LINE = 79;
 
 /**
  * An arc whose end is not on its circle is `error:33` — Grbl's own rule, from
@@ -78,7 +78,7 @@ const DISTANCE = ['G90', 'G91'];
 const PLANE = ['G17', 'G18', 'G19'];
 const GROUPS = [UNITS, DISTANCE, PLANE];
 
-const SEVERITY = {
+export const SEVERITY = {
   'unsupported': 'incompatible',
   'bad-word': 'incompatible',
   'too-long': 'incompatible',

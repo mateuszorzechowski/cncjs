@@ -95,9 +95,23 @@ const frame = EditorView.theme({
   '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
     backgroundColor: wash('acc', 22),
   },
-  // The lines a check has something to say about, in the check's own tones.
-  '.cm-issue-bad': { backgroundColor: wash('red', 12) },
-  '.cm-issue-warn': { backgroundColor: wash('amb', 12) },
+  // Suggestions and the check's messages: panel surfaces, panel words.
+  '.cm-tooltip': {
+    backgroundColor: 'var(--panel)',
+    color: 'var(--ink)',
+    border: '1px solid var(--line)',
+    borderRadius: 'var(--r-ctl)',
+    fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+  },
+  '.cm-tooltip-autocomplete>ul>li': { padding: '2px 8px', fontFamily: 'var(--num)' },
+  '.cm-tooltip-autocomplete>ul>li[aria-selected]': { backgroundColor: 'var(--acc)', color: '#ffffff' },
+  // Muted by weight rather than by colour, so a selected row's white carries.
+  '.cm-completionDetail': { marginLeft: '12px', fontStyle: 'normal', opacity: '0.7', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" },
+  '.cm-diagnostic': { padding: '4px 8px' },
+  '.cm-diagnostic-error': { borderLeft: '3px solid var(--red)' },
+  '.cm-diagnostic-warning': { borderLeft: '3px solid var(--amb)' },
+  '.cm-lintRange-error': { backgroundColor: wash('red', 12) },
+  '.cm-lintRange-warning': { backgroundColor: wash('amb', 14) },
   '.cm-panels': { backgroundColor: 'var(--panel)', color: 'var(--ink)' },
   '.cm-panels-top': { borderBottom: '1px solid var(--line)' },
   '.cm-searchMatch': { backgroundColor: wash('amb', 25) },

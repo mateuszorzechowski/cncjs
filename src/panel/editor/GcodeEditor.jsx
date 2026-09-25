@@ -1,24 +1,9 @@
 import { useEffect, useImperativeHandle, useRef } from 'react';
-import { Compartment, EditorState, RangeSetBuilder } from '@codemirror/state';
-import { Decoration, EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
+import { Compartment, EditorState } from '@codemirror/state';
+import { EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
 import { gcodeEditing } from './gcode';
-
-const TONE_CLASS = { bad: 'cm-issue-bad', warn: 'cm-issue-warn' };
-
-/** The lines the checks have something to say about, as line decorations. */
-const issueLines = (doc, marks) => {
-  const builder = new RangeSetBuilder();
-  [...marks]
-    .filter(({ line }) => line >= 1 && line <= doc.lines)
-    .sort((a, b) => a.line - b.line)
-    .forEach(({ line, tone }) => {
-      const at = doc.line(line).from;
-      builder.add(at, at, Decoration.line({ class: TONE_CLASS[tone] || TONE_CLASS.warn }));
-    });
-  return builder.finish();
-};
 
 /**
  * A G-code file, to read and to change — CodeMirror, in the panel's colours.
@@ -29,15 +14,14 @@ const issueLines = (doc, marks) => {
  * holds `ref` asks for it when saving (`text()`), and hears only whether it
  * differs from what was opened (`onDirty`).
  *
- * `marks` are `[{ line, tone }]` — where a check found something, `bad` or
- * `warn` — and can change without rebuilding: a check finishing while the
- * file is open marks its lines where the operator is looking.
+ * `extensions` are what the editor is given besides reading and writing —
+ * the suggestions and the checks (`assist`), fixed for the file.
  */
-const GcodeEditor = ({ initial, marks = [], readOnly = false, onDirty, label, ref }) => {
+const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, label, ref }) => {
   const host = useRef(null);
   const view = useRef(null);
-  const marking = useRef(new Compartment());
   const locking = useRef(new Compartment());
+  const helping = useRef(new Compartment());
   const dirty = useRef(false);
   const heard = useRef(onDirty);
   heard.current = onDirty;
@@ -54,7 +38,7 @@ const GcodeEditor = ({ initial, marks = [], readOnly = false, onDirty, label, re
         highlightSelectionMatches(),
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         gcodeEditing,
-        marking.current.of([]),
+        helping.current.of(extensions),
         locking.current.of(EditorState.readOnly.of(readOnly)),
         EditorView.contentAttributes.of({ 'aria-label': label }),
         EditorView.updateListener.of((update) => {
@@ -77,22 +61,19 @@ const GcodeEditor = ({ initial, marks = [], readOnly = false, onDirty, label, re
       view.current.destroy();
       view.current = null;
     };
-    // Built again only for another file; `readOnly` and `marks` are
+    // Built again only for another file; `readOnly` and `extensions` are
     // reconfigured in place below.
   }, [initial]);
 
   useEffect(() => {
-    const editor = view.current;
-    if (editor) {
-      editor.dispatch({
-        effects: marking.current.reconfigure(EditorView.decorations.of(issueLines(editor.state.doc, marks))),
-      });
-    }
-  }, [marks, initial]);
-
-  useEffect(() => {
     view.current?.dispatch({ effects: locking.current.reconfigure(EditorState.readOnly.of(readOnly)) });
   }, [readOnly, initial]);
+
+  // The help can arrive after the file — the server's words are asked for
+  // separately — and is put in without touching what has been typed.
+  useEffect(() => {
+    view.current?.dispatch({ effects: helping.current.reconfigure(extensions) });
+  }, [extensions, initial]);
 
   useImperativeHandle(ref, () => ({
     text: () => view.current?.state.doc.toString() ?? initial,

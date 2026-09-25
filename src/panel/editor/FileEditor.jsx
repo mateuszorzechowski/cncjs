@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../ui/Button';
 import ConfirmSheet from '../ui/ConfirmSheet';
 import GcodeEditor from './GcodeEditor';
-import { marksOf } from './marks';
+import { assist } from './assist';
+import { fetchWords } from './words';
 import { isLoaded, loadFile, readFile, writeFile } from '../machine/files';
 import { t } from '../i18n';
 
@@ -44,7 +45,20 @@ const FileEditor = ({ file, machine, className = '' }) => {
     };
   }, [file.name, file.mtime]);
 
-  const marks = useMemo(() => marksOf(file), [file]);
+  /*
+   * The server's words, for the suggestions and the as-you-type check. The
+   * editor opens without them if they cannot be had — reading and saving a
+   * file does not wait on help with writing it.
+   */
+  const [words, setWords] = useState(null);
+  useEffect(() => {
+    let live = true;
+    fetchWords().then((got) => live && setWords(got)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const help = useMemo(() => (words && text !== null ? assist(words, text.length) : []), [words, text]);
   const loaded = isLoaded(machine, file.name);
   const running = loaded && (machine.workflow || 'idle') !== 'idle';
 
@@ -80,7 +94,7 @@ const FileEditor = ({ file, machine, className = '' }) => {
         <GcodeEditor
           ref={editor}
           initial={text}
-          marks={marks}
+          extensions={help}
           readOnly={running}
           onDirty={setDirty}
           label={t('files.editor.label', { name: file.name })}
