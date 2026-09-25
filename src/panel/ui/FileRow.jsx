@@ -9,8 +9,9 @@ import { t } from '../i18n';
  * both. Choosing a row does not load it — that is the details' LOAD.
  */
 
-// The mockup's columns: the name takes what is left.
-export const COLUMNS = 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4';
+// The mockup's columns: the name takes what is left. Fixed, not `auto`: the
+// header is a grid of its own, and two auto grids size their columns apart.
+export const COLUMNS = 'grid grid-cols-[minmax(0,1fr)_var(--fsize)_var(--fdate)] items-center gap-x-4';
 
 export const FileColumns = () => (
   <div className={`${COLUMNS} border-b border-line bg-field px-4 py-2 text-cap font-semibold uppercase tracking-[0.12em] text-mut`}>

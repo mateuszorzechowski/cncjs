@@ -37,10 +37,13 @@ export const durationText = (seconds) => {
 
 export const modifiedText = (mtime) => modified.format(new Date(mtime));
 
-/** The part's footprint, X by Y, from the server's bounds. */
+/** The part's size, X by Y by Z, from the server's bounds. */
 export const areaText = (bounds) => (bounds
-  ? t('files.area', { x: bounds.max.x - bounds.min.x, y: bounds.max.y - bounds.min.y })
+  ? t('files.area', { x: bounds.max.x - bounds.min.x, y: bounds.max.y - bounds.min.y, z: bounds.max.z - bounds.min.z })
   : NO_READING);
+
+/** The coordinate systems the file sets itself, or nothing when it takes the active one. */
+export const wcsText = (wcs) => (wcs && wcs.length > 0 ? t('files.wcs', { wcs: wcs.join(', ') }) : '');
 
 export const toolsText = (tools) => (tools && tools.length > 0 ? tools.map((tool) => `T${tool}`).join(', ') : NO_READING);
 
@@ -95,15 +98,24 @@ export const blockerText = (blocker) => t(BLOCKERS[blocker]);
 
 export const progressText = ({ answered, total }) => t('files.check.progress', { answered, total });
 
-/** The last `$C`, in the few words its button has room for. */
+/**
+ * The last `$C`, in the few words its button has room for: the result
+ * itself, with the line that matters — the first error, or where it stopped.
+ */
 export const lastCheckText = (result) => {
   if (!result) {
     return '';
   }
-  if (result.complete) {
-    return t(result.errors.length > 0 ? 'files.check.last.errors' : 'files.check.last.clean');
+  if (result.refused) {
+    return t('files.check.last.refused');
   }
-  return t(result.firstError ? 'files.check.last.firstError' : 'files.check.last.stopped');
+  if (result.errors.length > 0) {
+    return t('files.check.last.error', { line: result.errors[0].line });
+  }
+  if (result.alarm || !result.complete) {
+    return t('files.check.last.stopped', { line: result.stoppedAt });
+  }
+  return t('files.check.last.clean');
 };
 
 const AXES = { x: 'axis.x', y: 'axis.y', z: 'axis.z' };

@@ -169,7 +169,13 @@ const FilesScreen = ({ machine }) => {
 
       {phone ? null : (
         <Card label={t('files.selected')} className="min-h-0 w-side shrink-0" bodyClassName="gap-3">
-          {details || <p className="m-0 text-note text-mut">{t('files.none')}</p>}
+          {/* With nothing chosen the card holds its place with the hint in its
+            * middle, rather than one line at the top of an empty card. */}
+          {details || (
+            <div className="flex flex-1 items-center justify-center px-pad">
+              <p className="m-0 text-center text-base text-mut">{t('files.none')}</p>
+            </div>
+          )}
         </Card>
       )}
 

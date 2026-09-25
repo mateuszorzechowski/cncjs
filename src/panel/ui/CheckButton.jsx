@@ -13,8 +13,9 @@ import { t } from '../i18n';
  *
  * The question says what the check costs, every word measured on the bench:
  * nothing moves, Grbl resets as it leaves, the position stays, the modes go
- * back to G54 G90 G21. When the program leaves the table at the current zero
- * it says that too — soft limits hold inside `$C`, so the check would end in
+ * back to G54 G90 G21 — the reset in amber, always, since it is a cost and
+ * not a description. When the program leaves the table at the current zero
+ * it says that too, in the same box — soft limits hold inside `$C`, so the check would end in
  * an alarm — and the button becomes "anyway". And it asks how far: the whole
  * file, or to the first error.
  *
@@ -29,7 +30,7 @@ const CheckButton = ({ file, machine, busy = false }) => {
   const [scope, setScope] = useState('all');
   const blocker = checkBlocker(machine);
   const running = machine.fileCheck?.name === file.name ? machine.fileCheck : null;
-  const warning = overrunText(machine.fits, file.name);
+  const overrun = overrunText(machine.fits, file.name);
 
   let status = lastCheckText(file.controllerCheck);
   if (running) {
@@ -54,8 +55,13 @@ const CheckButton = ({ file, machine, busy = false }) => {
         <ConfirmSheet
           title={t('files.check.confirm.title')}
           note={t('files.check.confirm.note')}
-          warning={warning}
-          confirmLabel={warning ? t('files.check.confirm.anyway') : t('files.check.confirm.action')}
+          warning={(
+            <>
+              <span>{t('files.check.confirm.reset')}</span>
+              {overrun ? <span>{overrun}</span> : null}
+            </>
+          )}
+          confirmLabel={overrun ? t('files.check.confirm.anyway') : t('files.check.confirm.action')}
           tone="primary"
           onConfirm={confirm}
           onClose={() => setAsking(false)}

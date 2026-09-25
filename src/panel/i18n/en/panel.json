@@ -587,7 +587,8 @@
     "delete": "Delete",
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
-    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} mm",
+    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
+    "wcs": "system {{wcs}}",
     "duration": {
       "hours": "{{hours}} h {{minutes}} min",
       "minutes": "{{minutes}} min {{seconds}} s",
@@ -603,7 +604,7 @@
       "time": "time",
       "tools": "tools",
       "zmin": "Z min",
-      "area": "XY"
+      "area": "XYZ"
     },
     "preview": {
       "reading": "Reading the file…",
@@ -673,7 +674,7 @@
       },
       "where": {
         "one": "line {{line}}",
-        "many": "line {{line}} · {{count}} times"
+        "many": "{{count}}× · first on line {{line}}"
       },
       "server": "Server — on upload",
       "controllerTitle": "Controller — $C",
@@ -688,10 +689,10 @@
         "notIdle": "the machine is not Idle"
       },
       "last": {
-        "clean": "last: no errors",
-        "errors": "last: with errors",
-        "firstError": "last: to 1st error",
-        "stopped": "last: interrupted"
+        "clean": "no errors",
+        "error": "error on line {{line}}",
+        "stopped": "stopped on line {{line}}",
+        "refused": "did not enter $C"
       },
       "overrun": {
         "axis": "in {{axis}} by {{by, number(maximumFractionDigits: 1)}} mm",
@@ -707,7 +708,8 @@
       },
       "confirm": {
         "title": "Verify the program on the controller?",
-        "note": "Grbl will read the program without moving and note every line it refuses. At the end the controller resets: the machine stays where it is, but the modes go back to their start — G54, G90, G21.",
+        "note": "Grbl will read the program without moving and note every line it refuses.",
+        "reset": "At the end the controller resets: the machine stays where it is, but the modes go back to their start — G54, G90, G21.",
         "action": "Verify",
         "anyway": "Verify anyway"
       },

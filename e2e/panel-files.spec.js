@@ -18,6 +18,7 @@ const ANALYSED = {
     lines: 18204,
     bounds: { min: { x: 0, y: 0, z: -6 }, max: { x: 420, y: 290, z: 5 } },
     tools: [3, 7],
+    wcs: ['G54'],
     seconds: 1913.5,
     check: {
       verdict: 'incompatible',
@@ -121,7 +122,7 @@ test.describe('the files screen', () => {
     await expect(page.getByText('31 min 54 s', { exact: true })).toBeVisible();
     await expect(page.getByText('T3, T7', { exact: true })).toBeVisible();
     await expect(page.getByText('-6,0 mm', { exact: true })).toBeVisible();
-    await expect(page.getByText('XY · 420 × 290 mm')).toBeVisible();
+    await expect(page.getByText('XYZ · 420 × 290 × 11 mm · układ G54')).toBeVisible();
     await expect(page.locator('canvas')).toHaveCount(1);
     // Held over the canvas until the scene has drawn, then gone.
     await expect(page.getByText('Czytam plik…')).toHaveCount(0);
@@ -169,7 +170,7 @@ test.describe('the files screen', () => {
     const sheet = page.getByRole('dialog', { name: 'Kontrola pliku' });
     await expect(sheet.getByText('Grbl odrzuci część linii', { exact: false })).toBeVisible();
     await expect(sheet.getByText('G41 — Grbl 1.1 nie zna tego kodu')).toBeVisible();
-    await expect(sheet.getByText('linia 12 · 340 razy')).toBeVisible();
+    await expect(sheet.getByText('340× · pierwszy raz w linii 12')).toBeVisible();
     await expect(sheet.getByText('G20/G21 nieustawione przed pierwszym ruchem', { exact: false })).toBeVisible();
     await expect(sheet.getByText('linia 1', { exact: true })).toBeVisible();
 
@@ -177,6 +178,36 @@ test.describe('the files screen', () => {
     await expect(sheet).toHaveCount(0);
     // Not a gate: an incompatible file is still loaded the usual way.
     await expect(page.getByText('Połącz maszynę, żeby wczytać program.')).toBeVisible();
+    cncjs.expectNoPageErrors();
+  });
+
+  test("the controller's check is greyed out with no machine, and its last result is kept with the file", async ({ cncjs }) => {
+    const { page } = cncjs;
+    const checked = {
+      ...ANALYSED,
+      controllerCheck: {
+        complete: true,
+        total: 18204,
+        errors: [{ code: 'error:33', line: 624, sent: 'G3 X21 Y-20 I20 J21', count: 5 }],
+        alarm: null,
+        stoppedAt: null,
+        at: '2026-09-25T13:08:04.775Z',
+      },
+    };
+    await serve(page, [{ files: [checked], disk: DISK }]);
+    await open(page);
+    await page.getByRole('button', { name: /front-panel\.nc/ }).click();
+
+    const verify = page.getByRole('button', { name: /Sprawdź na sterowniku/ });
+    await expect(verify).toBeDisabled();
+    await expect(verify).toContainText('połącz maszynę');
+
+    await page.getByRole('button', { name: /stan/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'Kontrola pliku' });
+    await expect(sheet.getByText('Grbl przeczytał cały program i odrzucił linie wypisane niżej.')).toBeVisible();
+    await expect(sheet.getByText('error:33 — Niepoprawny cel polecenia ruchu.')).toBeVisible();
+    await expect(sheet.getByText('5× · pierwszy raz w linii 624')).toBeVisible();
+    await expect(sheet.getByText('G3 X21 Y-20 I20 J21')).toBeVisible();
     cncjs.expectNoPageErrors();
   });
 

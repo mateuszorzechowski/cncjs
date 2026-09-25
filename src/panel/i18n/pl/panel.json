@@ -587,7 +587,8 @@
     "delete": "Usuń",
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
-    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} mm",
+    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
+    "wcs": "układ {{wcs}}",
     "duration": {
       "hours": "{{hours}} h {{minutes}} min",
       "minutes": "{{minutes}} min {{seconds}} s",
@@ -603,7 +604,7 @@
       "time": "czas",
       "tools": "narzędzia",
       "zmin": "Z min",
-      "area": "XY"
+      "area": "XYZ"
     },
     "preview": {
       "reading": "Czytam plik…",
@@ -673,7 +674,7 @@
       },
       "where": {
         "one": "linia {{line}}",
-        "many": "linia {{line}} · {{count}} razy"
+        "many": "{{count}}× · pierwszy raz w linii {{line}}"
       },
       "server": "Serwer — przy wgraniu",
       "controllerTitle": "Sterownik — $C",
@@ -688,10 +689,10 @@
         "notIdle": "maszyna nie stoi w Idle"
       },
       "last": {
-        "clean": "ostatnio: bez błędów",
-        "errors": "ostatnio: z błędami",
-        "firstError": "ostatnio: do 1. błędu",
-        "stopped": "ostatnio: przerwane"
+        "clean": "bez błędów",
+        "error": "błąd w linii {{line}}",
+        "stopped": "przerwane w linii {{line}}",
+        "refused": "nie weszło w $C"
       },
       "overrun": {
         "axis": "w {{axis}} o {{by, number(maximumFractionDigits: 1)}} mm",
@@ -707,7 +708,8 @@
       },
       "confirm": {
         "title": "Sprawdzić program na sterowniku?",
-        "note": "Grbl przeczyta program bez ruchu i zapisze każdą linię, której nie przyjmie. Na koniec sterownik się zresetuje: maszyna zostanie tam, gdzie stoi, ale tryby wrócą do startowych — G54, G90, G21.",
+        "note": "Grbl przeczyta program bez ruchu i zapisze każdą linię, której nie przyjmie.",
+        "reset": "Na koniec sterownik się zresetuje: maszyna zostanie tam, gdzie stoi, ale tryby wrócą do startowych — G54, G90, G21.",
         "action": "Sprawdź",
         "anyway": "Sprawdź mimo to"
       },

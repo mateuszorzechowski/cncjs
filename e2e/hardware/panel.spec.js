@@ -104,7 +104,7 @@ test.describe('panel, connected', () => {
 
       // Measured on the bench: in and out of `$C` is a second or so, and
       // Grbl stands Idle after it — no homing lock.
-      await expect(verify).toContainText('ostatnio: z błędami', { timeout: 15000 });
+      await expect(verify).toContainText('błąd w linii 2', { timeout: 15000 });
       await expect(bar(panel)).toContainText(/idle/i);
 
       await panel.getByRole('button', { name: /stan/ }).click();
