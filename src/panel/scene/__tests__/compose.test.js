@@ -83,16 +83,16 @@ describe('what the camera is framed on', () => {
     });
   });
 
-  test('is the program alone once the machine is switched off — and down to the floor', () => {
+  test('takes in the whole travel whatever is switched on', () => {
     const drawn = scene({ layers: { ...ALL, machineArea: false, machineAxes: false, wcsAxes: false } });
 
-    // Across, the program and no more. Down, as far as the machine's floor,
-    // where the grid is: framed on the program alone, a side view showed the
-    // part hanging in nothing — *"jak mam odznaczone obwiednie maszyny, to w
-    // rzucie z boku nie widzę płaszczyzny maszyny"* (2026-09-25).
+    // Machine zero and the far corner are both always drawn, so the views
+    // always show both ends — *"tak, zawsze cały zakres"* (2026-09-25). It
+    // also keeps the floor in a side view with the envelope off, which is
+    // where this started. Closer in on the program is the fit button's job.
     expect(drawn.frame).toEqual({
-      min: { x: -100, y: -80, z: -200 },
-      max: { x: -90, y: -70, z: -10 },
+      min: { x: -200, y: -200, z: -200 },
+      max: { x: 0, y: 0, z: 0 },
     });
   });
 
@@ -109,13 +109,15 @@ describe('what the camera is framed on', () => {
     const drawn = scene({
       wcs: 'G55',
       toolpath: null,
+      envelope: null,
       layers: { ...NONE, wcsAxes: true },
     });
 
-    // A point, framed — and the floor under it. Otherwise the layer is a
-    // button that appears to do nothing because what it drew is off screen.
+    // A point, framed, on a machine that has not described its travel.
+    // Otherwise the layer is a button that appears to do nothing because
+    // what it drew is off screen.
     expect(drawn.frame).toEqual({
-      min: { x: -40, y: -60, z: -200 },
+      min: { x: -40, y: -60, z: -5 },
       max: { x: -40, y: -60, z: -5 },
     });
   });
@@ -123,8 +125,10 @@ describe('what the camera is framed on', () => {
   test('is something rather than nothing with every layer off', () => {
     const drawn = scene({ layers: NONE });
 
+    // The travel, and the unit box around machine zero that stands in for
+    // nothing at all.
     expect(drawn.frame).toEqual({
-      min: { x: -1, y: -1, z: -200 },
+      min: { x: -200, y: -200, z: -200 },
       max: { x: 1, y: 1, z: 1 },
     });
   });
@@ -132,8 +136,8 @@ describe('what the camera is framed on', () => {
 
 describe('the far corner of the travel', () => {
   test('is the end of each axis farthest from machine zero', () => {
-    // A second set of machine axes goes there — *"drugi znacznik osi w
-    // rogu"* (2026-09-25): where the travel ends, not only where it starts.
+    // The floor's guide lines go through it — where the travel ends, not
+    // only where it starts (2026-09-25).
     expect(scene().farCorner).toEqual({ x: -200, y: -200, z: -200 });
   });
 
@@ -146,7 +150,7 @@ describe('the far corner of the travel', () => {
     expect(scene({ envelope: null }).farCorner).toBeNull();
   });
 
-  test('is framed with machine zero when the machine axes are all that is on', () => {
+  test('is inside the frame whatever is switched on', () => {
     const drawn = scene({ toolpath: null, layers: { ...NONE, machineAxes: true } });
     expect(drawn.frame).toEqual({
       min: { x: -200, y: -200, z: -200 },

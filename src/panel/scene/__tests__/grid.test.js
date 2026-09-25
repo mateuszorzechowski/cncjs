@@ -103,6 +103,31 @@ describe('buildGrid', () => {
     expect(position.count).toBeGreaterThan(0);
   });
 
+  test('adds guide lines at the far ends of the travel, beside the ones through zero', () => {
+    // *"Przez osie miałem na myśli prowadnice/linie"* (2026-09-25): the lines
+    // through zero say where the travel starts, these where it ends.
+    const { axes, lines } = buildGrid(COM3, 0, '#6d7886', { x: -200, y: -200 });
+    const position = attr(axes, 'position');
+    const on = (value, axis) => Array.from({ length: position.count }, (_, i) => (
+      axis === 'x' ? position.getX(i) : position.getY(i)
+    )).some((v) => v === value);
+
+    expect(on(-200, 'x')).toBe(true);
+    expect(on(-200, 'y')).toBe(true);
+    // And not drawn twice: the ordinary grid line along x=-200 gives way to
+    // it. (Its crossings with the other lines still have vertices there.)
+    const x = xs(lines);
+    const along = x.filter((value, i) => i % 2 === 0 && value === -200 && x[i + 1] === -200);
+    expect(along).toHaveLength(0);
+  });
+
+  test('lays a guide exactly on the end of the travel, off the grid\'s own spacing', () => {
+    // A 733mm axis: the grid steps in 50s, the travel ends between them.
+    const odd = { min: { x: -733, y: -200, z: -200 }, max: { x: 0, y: 0, z: 0 } };
+    const { axes } = buildGrid(odd, 0, '#6d7886', { x: -733, y: -200 });
+    expect(xs(axes)).toContain(-733);
+  });
+
   test('splits each line into a segment per square so it can fade along it', () => {
     // One long segment per line cannot fade: a vertex is the only thing that
     // carries an alpha, and a line with two of them has an alpha at each end
