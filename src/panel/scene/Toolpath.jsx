@@ -157,7 +157,17 @@ const buildLine = (set, options) => {
   // `alphaToCoverage` smooths a sub-pixel line against the canvas's own
   // multisampling, the way three's fat-line example does; without it a 0.6px
   // line on a real GPU breaks into dashes. Headless renders cannot show it.
-  const material = new LineMaterial({ vertexColors: true, alphaToCoverage: true, ...options });
+  /*
+   * `depthWrite` off: the path does not hide itself. The done part is only a
+   * colour faded towards the ground, so with depth written a done line in
+   * front of one still to cut took a piece out of it — *"wykonane linie
+   * przykrywają linie toru z różnych perspektyw"* (2026-09-25). Without it
+   * the order drawn decides, and the done part is the start of the buffer:
+   * what is still to cut always lands on top.
+   */
+  const material = new LineMaterial({
+    vertexColors: true, alphaToCoverage: true, depthWrite: false, ...options,
+  });
   const line = new Line2(geometry, material);
   // Something a drag can turn the view about — see `Controls`.
   line.userData.pivot = true;
@@ -238,10 +248,13 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
       dashed: true,
       dashSize: RAPID_DASH,
       gapSize: RAPID_GAP,
-      opacity: 0.85,
-      transparent: true,
     })],
-  ].filter(([, line]) => line), [sets]);
+  ].filter(([, line]) => line).map(([name, line]) => {
+    // Rapids under the cuts, done or not. Opaque, so that this order holds:
+    // a transparent object is drawn after every opaque one whatever it says.
+    line.renderOrder = name === 'rapid' ? -1 : 0;
+    return [name, line];
+  }), [sets]);
 
   /*
    * The material works in screen space, so it has to be told how large the

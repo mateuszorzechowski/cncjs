@@ -155,25 +155,57 @@ test.describe('the toolpath, as drawn', () => {
     });
   }
 
-  test('a running program: what is done fades, what is still to cut does not', async ({ cncjs }) => {
-    await open(cncjs.page);
+  // From above, and from the side where a done line crosses in front of one
+  // still to cut: *"wykonane linie przykrywają linie toru z różnych
+  // perspektyw"* (2026-09-25).
+  for (const [button, slug] of [['GÓRA', 'top'], ['IZO', 'iso']]) {
+    test(`a running program, ${slug}: what is done fades and hides nothing`, async ({ cncjs }) => {
+      await open(cncjs.page);
 
-    // Part way through. The planner runs ahead of the tool, so the sender's
-    // count is a little past the line being cut, and the tool is put there.
-    const received = Math.round(LINES.length * 0.4);
-    await cncjs.page.evaluate(({ state, job }) => {
+      // Part way through. The planner runs ahead of the tool, so the sender's
+      // count is a little past the line being cut, and the tool is put there.
+      const received = Math.round(LINES.length * 0.4);
+      await cncjs.page.evaluate(({ state, job }) => {
+        window.__fire('controller:state', 'Grbl', state);
+        window.__fire('workflow:state', 'running');
+        window.__fire('sender:status', job);
+      }, {
+        state: grbl('Run', toolAfter(received - 8)),
+        job: { name: PROGRAM.name, total: LINES.length, sent: received, received, startTime: 1, elapsedTime: 60000, remainingTime: 90000, finishTime: 0 },
+      });
+
+      await cncjs.page.getByRole('button', { name: button, exact: true }).click();
+      await cncjs.page.getByRole('button', { name: 'Wypełnij kadr obiektem' }).click();
+      await settle(cncjs.page);
+
+      await expect(stage(cncjs.page)).toHaveScreenshot(`preview-running-${slug}.png`, SCREENSHOT);
+    });
+  }
+
+  test('two passes, the first done: from above it does not hide the second', async ({ cncjs }) => {
+    // The same square twice, a millimetre deeper the second time. Seen from
+    // above the done pass lies exactly over the one still to cut, and with
+    // the path writing depth it hid all of it.
+    const square = (z) => [`G1 Z${z} F200`, 'G1 X40 F800', 'G1 Y40', 'G1 X0', 'G1 Y0'];
+    const text = ['G21 G90', 'G0 Z5', 'G0 X0 Y0', ...square(-1), ...square(-2), 'G0 Z5', ''].join('\n');
+
+    await open(cncjs.page);
+    await cncjs.page.evaluate(({ program, state, job }) => {
+      window.__fire('gcode:load', 'passes.gcode', program);
       window.__fire('controller:state', 'Grbl', state);
       window.__fire('workflow:state', 'running');
       window.__fire('sender:status', job);
     }, {
-      state: grbl('Run', toolAfter(received - 8)),
-      job: { name: PROGRAM.name, total: LINES.length, sent: received, received, startTime: 1, elapsedTime: 60000, remainingTime: 90000, finishTime: 0 },
+      program: text,
+      // Plunged for the second pass, on its first side.
+      state: grbl('Run', { x: 20, y: 0, z: -2 }),
+      job: { name: 'passes.gcode', total: 14, sent: 10, received: 10, startTime: 1, elapsedTime: 60000, remainingTime: 60000, finishTime: 0 },
     });
 
     await cncjs.page.getByRole('button', { name: 'GÓRA', exact: true }).click();
     await cncjs.page.getByRole('button', { name: 'Wypełnij kadr obiektem' }).click();
     await settle(cncjs.page);
 
-    await expect(stage(cncjs.page)).toHaveScreenshot('preview-running.png', SCREENSHOT);
+    await expect(stage(cncjs.page)).toHaveScreenshot('preview-passes.png', SCREENSHOT);
   });
 });
