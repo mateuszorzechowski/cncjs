@@ -47,8 +47,8 @@
       "inch": "inch"
     },
     "restore": {
-      "label": "Restore units after a program",
-      "note": "M2 and M30 do not undo G20: after a program in inches the console and macros go on reading inches. When on, the server sends {{modal}} once a program ends or is aborted and the machine stands idle.",
+      "label": "Keep the machine in these units",
+      "note": "A reset puts Grbl back in G21, and M2 and M30 do not undo G20. When on, the server sends {{modal}} after connecting, after a reset and after a program, once the machine stands idle.",
       "off": "Off",
       "on": "On"
     },

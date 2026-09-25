@@ -2385,6 +2385,39 @@ describe('intent commands', () => {
       expect(writes.slice(before).map(write => write.data)).toEqual(['G21\n']);
     });
 
+    test('after a reset — which opening the port is — puts the machine into inches once it is Idle', () => {
+      units.open({ name: 'inch', restore: true });
+      const { controller, writes } = setup();
+
+      // A reset leaves Grbl in G21 whatever it was in before.
+      controller.runner.parse('Grbl 1.1h [\'$\' for help]');
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+      const before = writes.length;
+      controller.restoreUnits();
+      expect(writes.slice(before).map(write => write.data)).not.toContain('G20\n');
+
+      // `$X`, and the machine stands: now the line goes.
+      controller.runner.state.status.activeState = 'Idle';
+      controller.restoreUnits();
+      expect(writes.slice(before).map(write => write.data)).toContain('G20\n');
+    });
+
+    test('waits out a file check, which owns every answer while it runs', () => {
+      units.open({ name: 'inch', restore: true });
+      const { controller, writes } = setup();
+
+      controller.runner.parse('Grbl 1.1h [\'$\' for help]');
+      controller.runner.state.status.activeState = 'Idle';
+      controller.fileCheck = { name: 'part.nc', run: { ok: () => {} } };
+      const before = writes.length;
+      controller.restoreUnits();
+      expect(writes.slice(before).map(write => write.data)).not.toContain('G20\n');
+
+      controller.fileCheck = null;
+      controller.restoreUnits();
+      expect(writes.slice(before).map(write => write.data)).toContain('G20\n');
+    });
+
     test('with the setting off, writes nothing', () => {
       units.open({ name: 'mm', restore: false });
       const { controller, writes } = setup();
