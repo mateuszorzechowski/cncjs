@@ -563,5 +563,79 @@
     "windows": "Windows",
     "macos": "macOS",
     "linux": "Linux"
+  },
+  "files": {
+    "title": "Pliki",
+    "upload": "Wgraj",
+    "selected": "Wybrany plik",
+    "none": "Wybierz plik, żeby go tu zobaczyć.",
+    "empty": "Nie ma jeszcze plików. Wgraj program, a zostanie na serwerze.",
+    "load": "Wczytaj",
+    "loaded": "Wczytany",
+    "delete": "Usuń",
+    "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
+    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
+    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} mm",
+    "duration": {
+      "hours": "{{hours}} h {{minutes}} min",
+      "minutes": "{{minutes}} min {{seconds}} s",
+      "seconds": "{{seconds}} s"
+    },
+    "column": {
+      "name": "Nazwa",
+      "size": "Rozmiar",
+      "modified": "Zmieniono ▾"
+    },
+    "stat": {
+      "lines": "linie",
+      "time": "szac. czas",
+      "tools": "narzędzia",
+      "zmin": "Z min",
+      "area": "XY"
+    },
+    "preview": {
+      "reading": "Czytam plik…",
+      "none": "Brak ruchów do narysowania.",
+      "failed": "Nie udało się odczytać pliku."
+    },
+    "note": {
+      "notConnected": "Połącz maszynę, żeby wczytać program.",
+      "programRunning": "Trwa program. Wczytaj po jego zakończeniu albo przerwaniu.",
+      "loadedStays": "To wczytany program, więc nie można go usunąć."
+    },
+    "disk": {
+      "label": "Zajęte miejsce na dysku",
+      "free": "wolne {{free}} z {{total}}",
+      "low": "Dysk serwera jest prawie pełny. Usuń niepotrzebne pliki."
+    },
+    "confirm": {
+      "delete": {
+        "title": "Usunąć ten plik?",
+        "note": "{{name}} zniknie z serwera dla wszystkich urządzeń. Tego nie da się cofnąć.",
+        "action": "Usuń"
+      },
+      "replace": {
+        "title": "Zastąpić ten plik?",
+        "note": "{{name}} jest już na serwerze. Wgranie zastąpi go dla wszystkich urządzeń.",
+        "action": "Zastąp"
+      }
+    },
+    "refusal": {
+      "badName": "Tej nazwy nie można użyć dla pliku. Zmień nazwę i wgraj jeszcze raz.",
+      "notFound": "Tego pliku nie ma już na serwerze.",
+      "noSpace": "Na dysku serwera nie ma na niego miejsca.",
+      "programRunning": "Trwa program, więc teraz nic nie da się wczytać.",
+      "failed": "Serwer nie odpowiedział. Spróbuj ponownie."
+    },
+    "unit": {
+      "B": "B",
+      "kB": "kB",
+      "MB": "MB",
+      "GB": "GB",
+      "TB": "TB"
+    }
+  },
+  "confirm": {
+    "cancel": "Anuluj"
   }
 }

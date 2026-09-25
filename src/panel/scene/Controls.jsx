@@ -7,6 +7,7 @@ import { fitToBounds } from './fit';
 import { recallCamera, rememberCamera } from './cameraMemory';
 import { UP, VIEWS } from './views';
 import { orbitAbout, pivotFor } from './pivotOrbit';
+import { glide, poseOf } from './glide';
 
 /**
  * The camera: four named views, and a mouse that can go anywhere.
@@ -35,7 +36,7 @@ const TWO_PI = Math.PI * 2;
 // How close, in pixels, a drag has to start to the drawn path to turn about it.
 const PATH_PICK_PIXELS = 6;
 
-const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }) => {
+const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab, glideMs = 0, floor }) => {
   const camera = useThree((state) => state.camera);
   const scene = useThree((state) => state.scene);
   // Read through a ref, like the callback: a new floor must not rebuild the
@@ -52,6 +53,10 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
   // and rebuild the orbit controls — which would drop the camera pose with it.
   const free = useRef(onFree);
   free.current = onFree;
+  const grab = useRef(onGrab);
+  grab.current = onGrab;
+  // A glide under way, stopped by a hand that takes the camera again.
+  const stopGlide = useRef(null);
 
   // What the remembered pose was framed against, and whether this mount has
   // already had its first go.
@@ -163,6 +168,8 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
      */
     let poseAtStart = null;
     const begin = () => {
+      stopGlide.current?.();
+      grab.current?.();
       poseAtStart = {
         position: camera.position.toArray(),
         zoom: camera.zoom,
@@ -379,6 +386,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
       new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.max.z)
     );
 
+    const from = poseOf(camera, orbit.target);
     const target = fitCameraToBounds(
       camera,
       box,
@@ -391,8 +399,17 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
     orbit.target.copy(target);
     orbit.update();
     rememberCamera(memory, signature.current, camera, orbit.target);
+
+    // Framed; now, where asked for, carried there rather than cut to it —
+    // from where the camera was, which the fit above has just overwritten.
+    if (glideMs > 0 && !first) {
+      const to = poseOf(camera, orbit.target);
+      stopGlide.current?.();
+      stopGlide.current = glide({ camera, orbit, from, to, ms: glideMs, invalidate });
+      return;
+    }
     invalidate();
-  }, [camera, view, bounds, revision, invalidate, memory]);
+  }, [camera, view, bounds, revision, invalidate, memory, glideMs]);
 
   /*
    * **Fill the frame with the object, and do not turn the camera.**

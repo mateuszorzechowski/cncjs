@@ -32,6 +32,7 @@ const TOOL_GUIDE_OPACITY = 0.2;
 
 const Scene = ({
   scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking, progress,
+  onGrab, glideMs,
 }) => {
   const colors = useSceneColors();
   const { envelope, origin, toolpath, program, offset, frame } = scene;
@@ -109,6 +110,8 @@ const Scene = ({
         object={program}
         fit={fit}
         onFree={onFree}
+        onGrab={onGrab}
+        glideMs={glideMs}
         floor={floor}
       />
 

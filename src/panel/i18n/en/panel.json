@@ -563,5 +563,79 @@
     "windows": "Windows",
     "macos": "macOS",
     "linux": "Linux"
+  },
+  "files": {
+    "title": "Files",
+    "upload": "Upload",
+    "selected": "Selected file",
+    "none": "Choose a file to see it here.",
+    "empty": "No files yet. Upload a program to keep it on the server.",
+    "load": "Load",
+    "loaded": "Loaded",
+    "delete": "Delete",
+    "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
+    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
+    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} mm",
+    "duration": {
+      "hours": "{{hours}} h {{minutes}} min",
+      "minutes": "{{minutes}} min {{seconds}} s",
+      "seconds": "{{seconds}} s"
+    },
+    "column": {
+      "name": "Name",
+      "size": "Size",
+      "modified": "Modified ▾"
+    },
+    "stat": {
+      "lines": "lines",
+      "time": "est. time",
+      "tools": "tools",
+      "zmin": "Z min",
+      "area": "XY"
+    },
+    "preview": {
+      "reading": "Reading the file…",
+      "none": "No moves to draw.",
+      "failed": "The file could not be read."
+    },
+    "note": {
+      "notConnected": "Connect a machine to load a program.",
+      "programRunning": "A program is under way. Load after it ends or is aborted.",
+      "loadedStays": "This is the loaded program, so it cannot be deleted."
+    },
+    "disk": {
+      "label": "Disk space used",
+      "free": "{{free}} free of {{total}}",
+      "low": "The server's disk is nearly full. Delete files you no longer need."
+    },
+    "confirm": {
+      "delete": {
+        "title": "Delete this file?",
+        "note": "{{name}} is removed from the server for every device. This cannot be undone.",
+        "action": "Delete"
+      },
+      "replace": {
+        "title": "Replace this file?",
+        "note": "{{name}} is already on the server. Uploading replaces it for every device.",
+        "action": "Replace"
+      }
+    },
+    "refusal": {
+      "badName": "That name cannot be used for a file. Rename it and upload again.",
+      "notFound": "The file is no longer on the server.",
+      "noSpace": "There is no room for it on the server's disk.",
+      "programRunning": "A program is under way, so nothing can be loaded now.",
+      "failed": "The server did not answer. Try again."
+    },
+    "unit": {
+      "B": "B",
+      "kB": "kB",
+      "MB": "MB",
+      "GB": "GB",
+      "TB": "TB"
+    }
+  },
+  "confirm": {
+    "cancel": "Cancel"
   }
 }

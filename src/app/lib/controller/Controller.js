@@ -145,6 +145,15 @@ class Controller {
         'journal:entry': [],
 
         /**
+         * The file library changed — a file came, went, or its analysis is
+         * ready. To every socket; read `GET /api/files` again. See
+         * `src/server/services/library`.
+         *
+         * @event files:change
+         */
+        'files:change': [],
+
+        /**
          * Which alarm the machine is in, by Grbl's number.
          *
          * Null when there is none, and also while in the homing lock a reset

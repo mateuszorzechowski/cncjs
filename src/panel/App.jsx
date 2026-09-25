@@ -14,6 +14,7 @@ import StateHelp from './ui/StateHelp';
 import { applyUpdate, isUpdateReady, watchUpdate } from './machine/update';
 import Dashboard from './screens/Dashboard';
 import JogScreen from './screens/JogScreen';
+import FilesScreen from './screens/FilesScreen';
 import JournalScreen from './screens/JournalScreen';
 import PathScreen from './screens/PathScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -39,7 +40,7 @@ const DESTINATIONS = [
   { id: 'dashboard', key: 'nav.dashboard', ready: true },
   { id: 'jog', key: 'nav.jog', ready: true },
   { id: 'zero', key: 'nav.zero', ready: true },
-  { id: 'files', key: 'nav.files', ready: false },
+  { id: 'files', key: 'nav.files', ready: true },
   { id: 'path', key: 'nav.path', ready: true },
   { id: 'probe', key: 'nav.probe', ready: false },
   { id: 'diag', key: 'nav.diag', ready: false },
@@ -98,6 +99,7 @@ const PHONE_REST = DESTINATIONS
  * it is also the fallback, and because it is the only screen that navigates.
  */
 const SCREENS = {
+  files: FilesScreen,
   jog: JogScreen,
   journal: JournalScreen,
   path: PathScreen,

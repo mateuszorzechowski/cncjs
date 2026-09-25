@@ -234,3 +234,43 @@ describe('the shared origin', () => {
     expect(counts.get('mm')).toBe(1);
   });
 });
+
+describe('gridLabels, when zero is inside what is drawn', () => {
+  // A program with its zero in the middle of the part, as the calibration
+  // file is: -25 to 25 on both axes.
+  const PART = { min: { x: -25, y: -25, z: -10 }, max: { x: 25, y: 25, z: 1 } };
+  const numbers = (labels) => labels.filter((l) => l.text !== 'mm');
+
+  test('moves the rulers to the front and right edges, off the part', () => {
+    const labels = numbers(gridLabels(PART, 10));
+    const alongX = labels.filter((l) => l.key.startsWith('x'));
+    const alongY = labels.filter((l) => l.key.startsWith('y'));
+
+    expect(alongX.every((l) => l.y === -25 && l.push.y === -1)).toBe(true);
+    expect(alongY.every((l) => l.x === 25 && l.push.x === 1)).toBe(true);
+  });
+
+  test('numbers zero in each ruler, and writes no shared zero at a corner that is not zero', () => {
+    const labels = gridLabels(PART, 10);
+
+    expect(labels.filter((l) => l.text === '0').map((l) => l.key).sort()).toEqual(['x0', 'y0']);
+    expect(labels.some((l) => l.key === 'origin')).toBe(false);
+    expect(labels.filter((l) => l.text === 'mm')).toHaveLength(1);
+  });
+
+  test('moves only the ruler whose zero line would cross', () => {
+    // Zero inside along X only: the Y figures still run up the zero line.
+    const labels = numbers(gridLabels({ min: { x: -25, y: 0, z: 0 }, max: { x: 25, y: 40, z: 0 } }, 10));
+
+    expect(labels.filter((l) => l.key.startsWith('x')).every((l) => l.y === 0)).toBe(true);
+    expect(labels.filter((l) => l.key.startsWith('y')).every((l) => l.x === 25)).toBe(true);
+  });
+
+  test('a machine, with zero at a corner of its travel, is numbered as before', () => {
+    const COM3 = { min: { x: -200, y: -200, z: -200 }, max: { x: 0, y: 0, z: 0 } };
+    const labels = gridLabels(COM3, 20);
+
+    expect(labels.filter((l) => l.key === 'origin')).toHaveLength(1);
+    expect(numbers(labels).filter((l) => l.key.startsWith('x')).every((l) => l.y === 0)).toBe(true);
+  });
+});

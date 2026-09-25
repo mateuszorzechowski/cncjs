@@ -139,9 +139,23 @@ export const gridLabels = (area, step) => {
 
   const labels = [];
 
-  // Where the zero lines are, and which way is away from the work.
-  const axisY = Math.min(Math.max(0, area.min.y), area.max.y);
-  const axisX = Math.min(Math.max(0, area.min.x), area.max.x);
+  /*
+   * **Where the rulers run: along zero, unless zero is inside the drawing.**
+   *
+   * On a machine, zero is a corner of the travel, so the zero lines are edges
+   * of the area and the figures sit outside everything drawn. A program's
+   * zero is usually in the middle of the part, and there the zero lines
+   * cross it and the figures ended up under it (Mateusz, 2026-09-25, on the
+   * Pliki preview). So a ruler whose zero line would cross the area runs
+   * along an edge instead — the front one for X and the right one for Y,
+   * the two the default isometric view looks at, so the part stands behind
+   * its figures rather than on them.
+   */
+  const crosses = (min, max) => min < 0 && max > 0;
+  const rowOnEdge = crosses(area.min.y, area.max.y);
+  const columnOnEdge = crosses(area.min.x, area.max.x);
+  const axisY = rowOnEdge ? area.min.y : Math.min(Math.max(0, area.min.y), area.max.y);
+  const axisX = columnOnEdge ? area.max.x : Math.min(Math.max(0, area.min.x), area.max.x);
   const outY = axisY > (area.min.y + area.max.y) / 2 ? 1 : -1;
   const outX = axisX > (area.min.x + area.max.x) / 2 ? 1 : -1;
 
@@ -154,7 +168,10 @@ export const gridLabels = (area, step) => {
    * axes meeting. The shared one is pushed out along the diagonal, away from
    * both rows at once.
    */
-  const shared = (value, axis) => value === axis;
+  // Only where the rulers meet at zero: moved to the edges they meet at a
+  // corner whose two figures are different numbers.
+  const meet = !rowOnEdge && !columnOnEdge;
+  const shared = (value, axis) => meet && value === axis;
 
   for (const x of ticks(area.min.x, area.max.x, farX)) {
     if (!shared(x, axisX)) {
@@ -167,13 +184,15 @@ export const gridLabels = (area, step) => {
     }
   }
 
-  labels.push({
-    key: 'origin',
-    text: String(axisX),
-    x: axisX,
-    y: axisY,
-    push: { x: outX * 0.85, y: outY * 0.85 },
-  });
+  if (meet) {
+    labels.push({
+      key: 'origin',
+      text: String(axisX),
+      x: axisX,
+      y: axisY,
+      push: { x: outX * 0.85, y: outY * 0.85 },
+    });
+  }
 
   // The unit, once per axis, past the end of the run of numbers. Every other
   // reading on this panel says `mm` beside it and this one should not be the
