@@ -451,7 +451,8 @@
       "port": "Port",
       "motion": "Ruch",
       "fileCheck": "Kontrola",
-      "file": "Plik"
+      "file": "Plik",
+      "settings": "Ustawienia"
     },
     "program": {
       "start": "Start {{name}}",
@@ -538,6 +539,9 @@
         "warnings": "{{name}}: zweryfikowano na serwerze — ostrzeżenia: {{issues}}",
         "incompatible": "{{name}}: zweryfikowano na serwerze — niezgodny, problemów: {{issues}}"
       }
+    },
+    "settings": {
+      "auto": "Łącz automatycznie: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
     }
   },
   "grbl": {

@@ -1,4 +1,5 @@
 import config from '../services/configstore';
+import journal from '../services/journal';
 import { AUTO_KEY, AUTO_MODES, autoMode } from '../services/cncengine/autoMode';
 import { ERR_BAD_REQUEST } from '../constants';
 
@@ -20,6 +21,10 @@ export const updateAuto = (req, res) => {
     return;
   }
 
+  const was = autoMode();
   config.set(AUTO_KEY, mode);
+  if (was !== mode) {
+    journal.record({ level: 'info', source: 'server', event: 'settings', code: AUTO_KEY, data: { was, mode } });
+  }
   res.send({ mode });
 };

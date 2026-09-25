@@ -77,9 +77,20 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
 
   useImperativeHandle(ref, () => ({
     text: () => view.current?.state.doc.toString() ?? initial,
+    // Back to the file as opened: the text, the cursor at the top, and the
+    // editor let go of, so nothing about it looks still in the middle of
+    // being changed.
     reset: () => {
       const editor = view.current;
-      editor?.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: initial } });
+      if (!editor) {
+        return;
+      }
+      editor.dispatch({
+        changes: { from: 0, to: editor.state.doc.length, insert: initial },
+        selection: { anchor: 0 },
+        scrollIntoView: true,
+      });
+      editor.contentDOM.blur();
     },
   }), [initial]);
 

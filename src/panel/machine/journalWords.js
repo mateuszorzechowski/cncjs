@@ -144,6 +144,7 @@ export const EVENT_KEYS = {
   refused: 'journal.event.refused',
   command: 'journal.event.command',
   port: 'journal.event.port',
+  settings: 'journal.event.settings',
   motion: 'journal.event.motion',
   'file-check': 'journal.event.fileCheck',
   file: 'journal.event.file',
@@ -184,6 +185,11 @@ const BY_EVENT = {
     const key = code === 'analysed' ? ANALYSED[data?.verdict] : FILE[code];
     return key ? keyed(key, { name: data?.name ?? '', issues: data?.issues ?? 0 }) : null;
   },
+  // A server setting changed: which, from what, to what. The names of the
+  // modes are the settings screen's own words, nested by the sentence.
+  settings: ({ code, data }) => (code === 'connection.auto'
+    ? keyed('journal.settings.auto', { was: data?.was ?? 'manual', mode: data?.mode ?? 'manual' })
+    : null),
   'file-check': ({ code, data }) => {
     const params = { name: data?.name ?? '', errors: data?.errors ?? 0, code: code ?? '' };
     return keyed(FILE_CHECK[code] || 'journal.fileCheck.stopped', params);
