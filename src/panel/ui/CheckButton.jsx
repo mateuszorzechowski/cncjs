@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from './Button';
 import ConfirmSheet from './ConfirmSheet';
 import SegmentedChoice from './SegmentedChoice';
-import { blockerText, lastCheckText, overrunText, progressText } from './fileWords';
+import { blockerText, overrunText, progressText } from './fileWords';
 import { checkFile } from '../machine/commands';
 import { checkBlocker } from '../machine/files';
 import { t } from '../i18n';
@@ -19,8 +19,9 @@ import { t } from '../i18n';
  * an alarm — and the button becomes "anyway". And it asks how far: the whole
  * file, or to the first error.
  *
- * The line under the name is the button's state: why it is greyed out, how
- * far a check has got, or how the last one ended.
+ * The line under the name is only what is said nowhere else: why it is
+ * greyed out, or how far a check has got. How the last one ended is in the
+ * sheet under the state tile (Mateusz, 2026-09-25: *"to już jest w state"*).
  */
 const SCOPES = { all: 'files.check.scope.all', first: 'files.check.scope.first' };
 const SCOPE_OPTIONS = Object.keys(SCOPES);
@@ -32,7 +33,7 @@ const CheckButton = ({ file, machine, busy = false }) => {
   const running = machine.fileCheck?.name === file.name ? machine.fileCheck : null;
   const overrun = overrunText(machine.fits, file.name);
 
-  let status = lastCheckText(file.controllerCheck);
+  let status = '';
   if (running) {
     status = progressText(running);
   } else if (blocker) {

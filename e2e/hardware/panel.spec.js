@@ -103,13 +103,14 @@ test.describe('panel, connected', () => {
       await question.getByRole('button', { name: 'Sprawdź', exact: true }).click();
 
       // Measured on the bench: in and out of `$C` is a second or so, and
-      // Grbl stands Idle after it — no homing lock.
-      await expect(verify).toContainText('błąd w linii 2', { timeout: 15000 });
+      // Grbl stands Idle after it — no homing lock. The button is live again
+      // once the check is over.
+      await expect(verify).toBeEnabled({ timeout: 15000 });
       await expect(bar(panel)).toContainText(/idle/i);
 
       await panel.getByRole('button', { name: /stan/ }).click();
       const sheet = panel.getByRole('dialog', { name: 'Kontrola pliku' });
-      await expect(sheet).toContainText('error:20');
+      await expect(sheet).toContainText('error:20', { timeout: 10000 });
       await expect(sheet).toContainText('linia 2');
       await expect(sheet).toContainText('G41 G1 X1');
     } finally {

@@ -689,12 +689,6 @@
         "programRunning": "a program is running",
         "notIdle": "the machine is not Idle"
       },
-      "last": {
-        "clean": "no errors",
-        "error": "error on line {{line}}",
-        "stopped": "stopped on line {{line}}",
-        "refused": "did not enter $C"
-      },
       "overrun": {
         "axis": "in {{axis}} by {{by, number(maximumFractionDigits: 1)}} mm",
         "note": "At the current zero the program leaves the table: {{where}}. Grbl will stop the check with an alarm at the first such move, the rest of the file will go unchecked, and the machine will need a reset and an unlock."

@@ -98,26 +98,6 @@ export const blockerText = (blocker) => t(BLOCKERS[blocker]);
 
 export const progressText = ({ answered, total }) => t('files.check.progress', { answered, total });
 
-/**
- * The last `$C`, in the few words its button has room for: the result
- * itself, with the line that matters — the first error, or where it stopped.
- */
-export const lastCheckText = (result) => {
-  if (!result) {
-    return '';
-  }
-  if (result.refused) {
-    return t('files.check.last.refused');
-  }
-  if (result.errors.length > 0) {
-    return t('files.check.last.error', { line: result.errors[0].line });
-  }
-  if (result.alarm || !result.complete) {
-    return t('files.check.last.stopped', { line: result.stoppedAt });
-  }
-  return t('files.check.last.clean');
-};
-
 const AXES = { x: 'axis.x', y: 'axis.y', z: 'axis.z' };
 
 /**

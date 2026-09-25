@@ -689,12 +689,6 @@
         "programRunning": "trwa program",
         "notIdle": "maszyna nie stoi w Idle"
       },
-      "last": {
-        "clean": "bez błędów",
-        "error": "błąd w linii {{line}}",
-        "stopped": "przerwane w linii {{line}}",
-        "refused": "nie weszło w $C"
-      },
       "overrun": {
         "axis": "w {{axis}} o {{by, number(maximumFractionDigits: 1)}} mm",
         "note": "Przy obecnym zerze program wyjedzie poza stół: {{where}}. Grbl przerwie sprawdzanie alarmem na pierwszym takim ruchu, reszta pliku zostanie niesprawdzona, a maszynę trzeba będzie zresetować i odblokować."
