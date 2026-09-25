@@ -43,10 +43,10 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
       <p className="m-0 font-num text-note text-mut">{t('files.stat.area')}{' · '}{areaText(analysis?.bounds)}</p>
 
       <div className="grid shrink-0 grid-cols-2 gap-2">
-        <StatTile label={t('files.stat.lines')} value={analysis ? analysis.lines : NO_READING} />
-        <StatTile label={t('files.stat.time')} value={durationText(analysis?.seconds)} />
-        <StatTile label={t('files.stat.tools')} value={toolsText(analysis?.tools)} />
-        <StatTile label={t('files.stat.zmin')} value={zmin} />
+        <StatTile compact label={t('files.stat.lines')} value={analysis ? analysis.lines : NO_READING} />
+        <StatTile compact label={t('files.stat.time')} value={durationText(analysis?.seconds)} />
+        <StatTile compact label={t('files.stat.tools')} value={toolsText(analysis?.tools)} />
+        <StatTile compact label={t('files.stat.zmin')} value={zmin} />
       </div>
 
       {/*
@@ -63,6 +63,10 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
         </div>
       </section>
 
+      {/* Why a button below is greyed out, beside the buttons it is about —
+        * and always two lines tall, so a note coming or going moves nothing. */}
+      <p className="m-0 line-clamp-2 min-h-note2 shrink-0 text-note text-mut">{note}</p>
+
       <div className="flex shrink-0 gap-2">
         <Button className="h-ctl px-4" disabled={loaded || busy} onClick={() => onDelete(file)}>
           {t('files.delete')}
@@ -75,9 +79,6 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
           </Button>
         )}
       </div>
-      {/* Always there, two lines tall, so a note coming or going does not
-        * move the card above it. */}
-      <p className="m-0 line-clamp-2 min-h-note2 shrink-0 text-note text-mut">{note}</p>
     </div>
   );
 };
