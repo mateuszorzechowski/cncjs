@@ -588,7 +588,7 @@
     },
     "stat": {
       "lines": "lines",
-      "time": "est. time",
+      "time": "time",
       "tools": "tools",
       "zmin": "Z min",
       "area": "XY"
