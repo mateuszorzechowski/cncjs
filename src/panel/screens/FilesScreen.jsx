@@ -5,6 +5,8 @@ import ConfirmSheet from '../ui/ConfirmSheet';
 import FadeScroller from '../ui/FadeScroller';
 import FileDetails from '../ui/FileDetails';
 import FileEditor from '../editor/FileEditor';
+import FileText from '../editor/FileText';
+import SwipePages from '../ui/SwipePages';
 import FileRow, { FileColumns } from '../ui/FileRow';
 import Meter from '../ui/Meter';
 import Notice from '../ui/Notice';
@@ -135,7 +137,9 @@ const FilesScreen = ({ machine }) => {
 
   const load = (target) => act(() => loadFile(target.name, machine.port));
 
-  const edit = wide ? null : () => setEditing(true);
+  // Editing from the details where there is no room for the editor beside
+  // them — but not on a phone, which reads a file and does not change it.
+  const edit = wide || phone ? null : () => setEditing(true);
   const details = file
     ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onUnload={unloadProgram} onDelete={remove} onEdit={edit} />
     : null;
@@ -226,7 +230,23 @@ const FilesScreen = ({ machine }) => {
 
       {/* One sheet at a time: the question stands in for the file while it is asked. */}
       {phone && file && !asking ? (
-        <Sheet title={t('files.selected')} onClose={() => setChosen(null)}>{details}</Sheet>
+        <Sheet title={t('files.selected')} onClose={() => setChosen(null)}>
+          {/*
+            * The details, and a swipe away the file's text to read — one
+            * sheet, two pages, as tall as the sheet has room for so each
+            * scrolls on its own and the sheet itself never does. The sheet
+            * is 85% of the screen at most; its title row and padding are
+            * the 6rem taken off.
+            */}
+          <SwipePages
+            label={t('files.selected')}
+            className="h-[calc(85dvh-6rem)]"
+            pages={[
+              { key: 'details', label: t('files.pages.details'), content: details },
+              { key: 'text', label: t('files.pages.text'), content: <FileText file={file} /> },
+            ]}
+          />
+        </Sheet>
       ) : null}
 
       {asking ? (

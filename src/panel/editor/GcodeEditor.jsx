@@ -17,6 +17,14 @@ import { gcodeEditing } from './gcode';
  * `extensions` are what the editor is given besides reading and writing —
  * the suggestions and the checks (`assist`), fixed for the file.
  */
+/*
+ * Read-only is not typed into and not typed at: `readOnly` alone keeps the
+ * text editable to the browser, so a tap on a phone brought the keyboard up
+ * over a file nobody may change (Mateusz, 2026-09-25). `editable` off as
+ * well — the text can still be scrolled, selected and searched.
+ */
+const locked = (readOnly) => [EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly)];
+
 const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, label, ref }) => {
   const host = useRef(null);
   const view = useRef(null);
@@ -39,7 +47,7 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         gcodeEditing,
         helping.current.of(extensions),
-        locking.current.of(EditorState.readOnly.of(readOnly)),
+        locking.current.of(locked(readOnly)),
         EditorView.contentAttributes.of({ 'aria-label': label }),
         EditorView.updateListener.of((update) => {
           if (!update.docChanged) {
@@ -66,7 +74,7 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
   }, [initial]);
 
   useEffect(() => {
-    view.current?.dispatch({ effects: locking.current.reconfigure(EditorState.readOnly.of(readOnly)) });
+    view.current?.dispatch({ effects: locking.current.reconfigure(locked(readOnly)) });
   }, [readOnly, initial]);
 
   // The help can arrive after the file — the server's words are asked for

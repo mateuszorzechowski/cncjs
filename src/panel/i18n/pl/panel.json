@@ -781,6 +781,10 @@
         "note": "{{name}} jest wczytany do wysłania. Zapis zmieni plik w bibliotece, a ponowne wczytanie zastąpi wczytany program nową wersją.",
         "action": "Zapisz i wczytaj"
       }
+    },
+    "pages": {
+      "details": "Szczegóły",
+      "text": "Treść pliku"
     }
   },
   "confirm": {
