@@ -4,12 +4,13 @@ import Card from '../ui/Card';
 import ConfirmSheet from '../ui/ConfirmSheet';
 import FadeScroller from '../ui/FadeScroller';
 import FileDetails from '../ui/FileDetails';
+import FileEditor from '../editor/FileEditor';
 import FileRow, { FileColumns } from '../ui/FileRow';
 import Meter from '../ui/Meter';
 import Notice from '../ui/Notice';
 import Sheet from '../ui/Sheet';
 import { sizeText } from '../ui/fileWords';
-import { useIsPhone } from '../ui/shell';
+import { useIsPhone, useIsWide } from '../ui/shell';
 import { deleteFile, diskLibrary, diskLow, diskUsed, isLoaded, loadFile, reasonOf, writeFile } from '../machine/files';
 import { unloadProgram } from '../machine/commands';
 import { useFiles } from '../machine/useFiles';
@@ -82,6 +83,9 @@ const DiskRoom = ({ disk }) => {
 
 const FilesScreen = ({ machine }) => {
   const phone = useIsPhone();
+  const wide = useIsWide();
+  // The editor's sheet, where the screen has no room for it beside the details.
+  const [editing, setEditing] = useState(false);
   const { files, disk, loading, error } = useFiles();
   const [chosen, setChosen] = useState(null);
   const [asking, setAsking] = useState(null);
@@ -131,8 +135,9 @@ const FilesScreen = ({ machine }) => {
 
   const load = (target) => act(() => loadFile(target.name, machine.port));
 
+  const edit = wide ? null : () => setEditing(true);
   const details = file
-    ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onUnload={unloadProgram} onDelete={remove} />
+    ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onUnload={unloadProgram} onDelete={remove} onEdit={edit} />
     : null;
 
   return (
@@ -197,6 +202,22 @@ const FilesScreen = ({ machine }) => {
           )}
         </Card>
       )}
+
+      {/*
+        * The file's text, on a screen wide enough to keep it open beside the
+        * details — list, details, text — with the list giving up the room.
+        */}
+      {wide && file ? (
+        <Card label={t('files.editor.title')} className="min-h-0 flex-1">
+          <FileEditor file={file} machine={machine} />
+        </Card>
+      ) : null}
+
+      {!wide && file && editing ? (
+        <Sheet title={t('files.editor.title')} onClose={() => setEditing(false)}>
+          <FileEditor file={file} machine={machine} className="h-[32rem]" />
+        </Sheet>
+      ) : null}
 
       {/* One sheet at a time: the question stands in for the file while it is asked. */}
       {phone && file && !asking ? (

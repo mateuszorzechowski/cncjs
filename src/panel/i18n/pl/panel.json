@@ -747,6 +747,22 @@
         "all": "Cały plik",
         "first": "Do pierwszego błędu"
       }
+    },
+    "editor": {
+      "title": "Treść pliku",
+      "open": "Edytuj",
+      "label": "Treść pliku {{name}}",
+      "save": "Zapisz",
+      "revert": "Cofnij zmiany",
+      "failed": "Plik nie został zapisany. Serwer go nie przyjął.",
+      "unreadable": "Nie udało się odczytać pliku z serwera.",
+      "loaded": "Ten plik jest wczytany do wysłania. Zapis zapyta, czy wczytać go ponownie.",
+      "running": "Ten plik jest wykonywany. Można go czytać, a zapisać po zatrzymaniu programu.",
+      "reload": {
+        "title": "Zapisać i wczytać ponownie?",
+        "note": "{{name}} jest wczytany do wysłania. Zapis zmieni plik w bibliotece, a ponowne wczytanie zastąpi wczytany program nową wersją.",
+        "action": "Zapisz i wczytaj"
+      }
     }
   },
   "confirm": {

@@ -747,6 +747,22 @@
         "all": "Whole file",
         "first": "To the first error"
       }
+    },
+    "editor": {
+      "title": "File contents",
+      "open": "Edit",
+      "label": "Contents of {{name}}",
+      "save": "Save",
+      "revert": "Undo changes",
+      "failed": "The file was not saved. The server did not take it.",
+      "unreadable": "The file could not be read from the server.",
+      "loaded": "This file is loaded to be sent. Saving asks whether to load it again.",
+      "running": "This file is running. It can be read, and saved once the program has stopped.",
+      "reload": {
+        "title": "Save and load again?",
+        "note": "{{name}} is loaded to be sent. Saving changes the file in the library, and loading it again replaces the loaded program with the new version.",
+        "action": "Save and load"
+      }
     }
   },
   "confirm": {
