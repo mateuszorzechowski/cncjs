@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { t } from './i18n';
+import i18next, { t } from './i18n';
 import { FooterSlotProvider } from './ui/footerSlot';
 import { HeaderHelpProvider } from './ui/headerSlot';
 import { ShellNodeProvider, ShellWidthProvider, useIsPhone, useMeasuredShell } from './ui/shell';
@@ -60,7 +60,15 @@ const DESTINATIONS = [
    * chosen once belong at the end of a list you read top to bottom.
    */
   { id: 'settings', key: 'nav.settings', ready: true },
-].map((destination) => ({ ...destination, label: t(destination.key) }));
+];
+
+/*
+ * Named when drawn, not when this file loads: a list translated once at
+ * import stayed in the language the panel opened in, and the rail went on
+ * saying PULPIT after the settings had switched to English. `short` is the
+ * word a narrow tile uses instead.
+ */
+const named = (list) => list.map((d) => ({ ...d, label: t(d.short || d.key) }));
 
 /*
  * What a phone sees without pulling, and what pulling reveals.
@@ -77,7 +85,7 @@ const DESTINATIONS = [
 const PHONE_IDS = ['dashboard', 'jog', 'zero', 'files', 'journal'];
 const PHONE_DESTINATIONS = PHONE_IDS
   .map((id) => DESTINATIONS.find((d) => d.id === id))
-  .map((d) => (d.id === 'zero' ? { ...d, label: t('nav.zeroShort') } : d));
+  .map((d) => (d.id === 'zero' ? { ...d, short: 'nav.zeroShort' } : d));
 
 /*
  * The rest, in the order the rail has them. A grid that reordered itself by
@@ -89,7 +97,7 @@ const PHONE_REST = DESTINATIONS
   // `Diagnostyka` is eleven characters in a 78px tile and came out as
   // `DIAGNOSTY…`. The same trade the zeroing tab already makes: the rail says
   // the whole word, the grid says as much of it as fits and means.
-  .map((d) => (d.id === 'diag' ? { ...d, label: t('nav.diagShort') } : d));
+  .map((d) => (d.id === 'diag' ? { ...d, short: 'nav.diagShort' } : d));
 
 /*
  * Which component a destination is, for the ones that are anything yet.
@@ -179,7 +187,7 @@ const Panel = ({ machine, screen, onScreen }) => {
 
       <div className="flex min-h-0 flex-1">
         {phone ? null : (
-          <NavRail items={DESTINATIONS} current={screen} onSelect={onScreen} />
+          <NavRail items={named(DESTINATIONS)} current={screen} onSelect={onScreen} />
         )}
 
         {/* `min-h-0` so this constrains its screen rather than growing to fit
@@ -360,8 +368,8 @@ const Panel = ({ machine, screen, onScreen }) => {
         * the screen and there is no room for a status line as well. */}
       {phone ? (
         <NavTabs
-          items={PHONE_DESTINATIONS}
-          rest={PHONE_REST}
+          items={named(PHONE_DESTINATIONS)}
+          rest={named(PHONE_REST)}
           current={screen}
           onSelect={onScreen}
           /*
@@ -424,6 +432,25 @@ const App = () => {
   const shell = useMeasuredShell();
 
   /*
+   * The language, as the key the screens are built under.
+   *
+   * Nothing in the panel re-reads a string by itself — `t()` is called while
+   * rendering, and the footers and the scene hold what they rendered — so a
+   * change of language builds the screens again, once, rather than leaving
+   * half of them in the old one. What must survive that is kept outside
+   * them: the screen here, the settings tab in `SettingsScreen`, the port on
+   * the server.
+   */
+  const [language, setLanguage] = useState(i18next.language);
+  useEffect(() => {
+    i18next.on('languageChanged', setLanguage);
+    return () => i18next.off('languageChanged', setLanguage);
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  /*
    * The shell is measured and the width decides the layout, rather than a mode
    * anybody sets. Which navigation fits is a fact about how much room there
    * is, so there is nothing to set wrongly — and putting the panel in a 390px
@@ -455,7 +482,7 @@ const App = () => {
       <ShellWidthProvider value={shell.width}>
         <ShellNodeProvider value={shell.node}>
           <UnitsProvider value={machine.units}>
-            <Panel machine={machine} screen={screen} onScreen={setScreen} />
+            <Panel key={language} machine={machine} screen={screen} onScreen={setScreen} />
           </UnitsProvider>
         </ShellNodeProvider>
       </ShellWidthProvider>
