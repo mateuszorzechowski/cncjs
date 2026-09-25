@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { AXIS_X, AXIS_Y, AXIS_Z } from 'lib/toolpath/palette';
 import { useScreenScale } from './screenScale';
+import { ABOVE_PATH } from './Toolpath';
 
 /**
  * A zero, drawn as the three axes leaving it.
@@ -42,7 +43,7 @@ const Arm = ({ to, color, opacity }) => {
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   return (
-    <lineSegments geometry={geometry}>
+    <lineSegments geometry={geometry} renderOrder={ABOVE_PATH}>
       <lineBasicMaterial color={color} transparent opacity={opacity} />
     </lineSegments>
   );

@@ -55,6 +55,22 @@ const RAPID_DASH = 2;
 const RAPID_GAP = 2;
 
 /*
+ * Where the path is drawn among the rest of the scene.
+ *
+ * The path writes no depth (see `buildLine`), so what is drawn after it lands
+ * on top of it. Almost everything else here is transparent and three draws
+ * transparent things after opaque ones — the shadow and the grid on the floor
+ * came out over the part: *"cień prześwituje przez ścieżki, tak jakby był nad
+ * modelem"* (2026-09-25). So the path joins the transparent pass, fully
+ * opaque, after everything at the default order: the floor, the outlines, the
+ * guides — the camera never goes under the bed, so those are never in front.
+ * What has to stay readable over the part is drawn at `ABOVE_PATH`.
+ */
+const RAPID_ORDER = 1;
+const CUT_ORDER = 2;
+export const ABOVE_PATH = 3;
+
+/*
  * The program's own shadow, laid flat on the floor.
  *
  * **It is what tells you where the work is, from any angle.** In a parallel
@@ -166,7 +182,7 @@ const buildLine = (set, options) => {
    * what is still to cut always lands on top.
    */
   const material = new LineMaterial({
-    vertexColors: true, alphaToCoverage: true, depthWrite: false, ...options,
+    vertexColors: true, alphaToCoverage: true, depthWrite: false, transparent: true, ...options,
   });
   const line = new Line2(geometry, material);
   // Something a drag can turn the view about — see `Controls`.
@@ -208,7 +224,9 @@ const buildCurrent = (source, { start, end }, color) => {
   const geometry = new LineSegmentsGeometry();
   geometry.setPositions(positions);
   // Over the path it retraces, whatever the depth buffer says.
-  const material = new LineMaterial({ color, linewidth: CURRENT_WIDTH, depthTest: false });
+  const material = new LineMaterial({
+    color, linewidth: CURRENT_WIDTH, depthTest: false, transparent: true,
+  });
   const line = new Line2(geometry, material);
   line.renderOrder = 10;
   return line;
@@ -250,9 +268,8 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
       gapSize: RAPID_GAP,
     })],
   ].filter(([, line]) => line).map(([name, line]) => {
-    // Rapids under the cuts, done or not. Opaque, so that this order holds:
-    // a transparent object is drawn after every opaque one whatever it says.
-    line.renderOrder = name === 'rapid' ? -1 : 0;
+    // Rapids under the cuts, done or not.
+    line.renderOrder = name === 'rapid' ? RAPID_ORDER : CUT_ORDER;
     return [name, line];
   }), [sets]);
 
@@ -321,14 +338,17 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
     <>
       {fill ? (
         <mesh geometry={fill}>
-          {/* `depthWrite` off so overlapping loops — a pocket inside a
-            * profile — do not fight each other for the same depth, and
+          {/* Each point of the floor shaded once. Overlapping loops — every
+            * ring of a pocket — each added their five percent, and a pocket's
+            * middle came out several times darker than its edge: *"cień
+            * zbyt intensywny"* (2026-09-25). The first layer writes the floor's
+            * depth and the rest, at the same depth, fail a strict test.
             * `side` double because a loop traced clockwise faces away. */}
           <meshBasicMaterial
             color={colors.edge}
             transparent
             opacity={SHADOW_FILL_OPACITY}
-            depthWrite={false}
+            depthFunc={THREE.LessDepth}
             side={THREE.DoubleSide}
           />
         </mesh>
@@ -336,7 +356,13 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
 
       {shadow ? (
         <lineSegments geometry={shadow}>
-          <lineBasicMaterial color={colors.edge} transparent opacity={SHADOW_OPACITY} />
+          {/* Once per point too, for passes that lie over each other. */}
+          <lineBasicMaterial
+            color={colors.edge}
+            transparent
+            opacity={SHADOW_OPACITY}
+            depthFunc={THREE.LessDepth}
+          />
         </lineSegments>
       ) : null}
       {lines.map(([name, line]) => <primitive key={name} object={line} />)}

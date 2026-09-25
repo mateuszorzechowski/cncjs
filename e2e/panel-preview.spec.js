@@ -182,12 +182,38 @@ test.describe('the toolpath, as drawn', () => {
     });
   }
 
+  // The same square twice, a millimetre deeper the second time.
+  const square = (z) => [`G1 Z${z} F200`, 'G1 X40 F800', 'G1 Y40', 'G1 X0', 'G1 Y0'];
+  const PASSES = ['G21 G90', 'G0 Z5', 'G0 X0 Y0', ...square(-1), ...square(-2), 'G0 Z5', ''].join('\n');
+
+  test('the shadow on the floor stays under the part', async ({ cncjs }) => {
+    // Seen from the corner: the shadow
+    // sits behind the part on screen, and was drawn over it — *"cień
+    // prześwituje przez ścieżki, tak jakby był nad modelem"* (2026-09-25).
+    await open(cncjs.page);
+    // A pocket, ring inside ring, large and high enough over the floor that
+    // the whole travel is in the frame and the part covers its shadow on
+    // screen. The rings are what made the shadow too dark: each one's fill
+    // added to the ones under it — *"cień zbyt intensywny"*.
+    const rings = [];
+    for (let size = 300; size >= 20; size -= 20) {
+      const at = (300 - size) / 2;
+      rings.push(`G0 X${at} Y${at}`, 'G1 Z90 F200', `G1 X${at + size} F800`, `G1 Y${at + size}`, `G1 X${at}`, `G1 Y${at}`);
+    }
+    const pocket = ['G21 G90', 'G0 Z95', ...rings, 'G0 Z95', ''];
+    await cncjs.page.evaluate((program) => window.__fire('gcode:load', 'pocket.gcode', program), pocket.join(String.fromCharCode(10)));
+    await expect(cncjs.page.getByText('pocket.gcode').first()).toBeVisible();
+
+    await cncjs.page.getByRole('button', { name: 'IZO', exact: true }).click();
+    await settle(cncjs.page);
+
+    await expect(stage(cncjs.page)).toHaveScreenshot('preview-shadow.png', SCREENSHOT);
+  });
+
   test('two passes, the first done: from above it does not hide the second', async ({ cncjs }) => {
-    // The same square twice, a millimetre deeper the second time. Seen from
-    // above the done pass lies exactly over the one still to cut, and with
-    // the path writing depth it hid all of it.
-    const square = (z) => [`G1 Z${z} F200`, 'G1 X40 F800', 'G1 Y40', 'G1 X0', 'G1 Y0'];
-    const text = ['G21 G90', 'G0 Z5', 'G0 X0 Y0', ...square(-1), ...square(-2), 'G0 Z5', ''].join('\n');
+    // Seen from above the done pass lies exactly over the one still to cut,
+    // and with the path writing depth it hid all of it.
+    const text = PASSES;
 
     await open(cncjs.page);
     await cncjs.page.evaluate(({ program, state, job }) => {
