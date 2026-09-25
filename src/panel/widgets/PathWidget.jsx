@@ -4,6 +4,7 @@ import PathStage from '../ui/PathStage';
 import { cancelTravel, canGoToPoint, goToPoint } from '../machine/goto';
 import { machineZeroIsGuess, softLimitsEnabled, workOffset } from '../machine/envelope';
 import { readToolpath } from '../machine/toolpath';
+import { pathProgress } from '../machine/pathProgress';
 import { composeScene, toolPoint } from '../scene/compose';
 import { DEFAULT_VIEW } from '../scene/views';
 import { t } from '../i18n';
@@ -158,6 +159,23 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
   // The one reading taken live. Moving a marker is cheap; rebuilding the
   // scene around it is not.
   const tool = toolPoint(machine.machinePosition);
+
+  /*
+   * How far through the program the tool is, while one runs: the line being
+   * cut, found from the tool's position among the lines the firmware has
+   * taken. The path is in the program's coordinates, the tool in the
+   * machine's, and the work offset is the difference. Nothing while no
+   * program is running — the path is simply the path.
+   */
+  const running = machine.workflow === 'running' || machine.workflow === 'paused';
+  const progress = running && toolpath && machine.job
+    ? pathProgress({
+      frames: toolpath.source.frames,
+      positions: toolpath.source.positions,
+      received: machine.job.received,
+      tool: tool ? { x: tool.x - offset.x, y: tool.y - offset.y, z: tool.z - offset.z } : null,
+    })
+    : null;
 
   /*
    * Three subjects, and the same two words under each where they apply.
@@ -322,6 +340,7 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
          * scene's. Null while the machine has not said where its work zero
          * is, which the readout shows rather than hides. */
         offset={live}
+        progress={progress}
         clickDrives={clickDrives}
         onClickDrives={() => setClickDrives((on) => !on)}
         onGoToPoint={() => goToPoint(point)}

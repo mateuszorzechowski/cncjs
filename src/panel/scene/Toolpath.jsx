@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { closedLoops } from './shadow-shapes';
-import buildSegments, { colorsFromHex } from 'lib/toolpath/toolpath-segments';
+import buildSegments, { colorsFromHex, completedCount } from 'lib/toolpath/toolpath-segments';
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
@@ -24,14 +24,29 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 /*
  * Thickness in CSS pixels.
  *
- * Thinner than they were. A toolpath doubles back on itself hundreds of
- * times, and at two pixels a pocket clears into a solid block of colour where
- * the individual passes should still be countable. The cut still has to read
- * as the heavier of the two, so both came down together rather than the cut
- * alone.
+ * Thinner than they were, twice. A toolpath doubles back on itself hundreds
+ * of times, and at two pixels a pocket cleared into a solid block of colour
+ * where the individual passes should still be countable; at one it still
+ * crowded the line being cut (*"ścieżki toru zrób cieńsze"*, 2026-09-25). The
+ * cut still reads as the heavier of the two, so both came down together.
  */
-const CUT_WIDTH = 1;
-const RAPID_WIDTH = 0.6;
+const CUT_WIDTH = 0.6;
+const RAPID_WIDTH = 0.4;
+
+/*
+ * The line of the program being cut, drawn over the rest — *"zaznaczaj
+ * aktualne polecenie G-code na ścieżce"* — in the tool's own colour, because
+ * it is where the tool is, and thick enough to find at a glance.
+ */
+const CURRENT_WIDTH = 2.5;
+
+/*
+ * What has been cut, faded almost into the ground: *"zrób blade, prawie
+ * niewidoczne ścieżki wykonane"*. A mix towards the background colour rather
+ * than transparency, because the fat-line material takes one opacity for the
+ * whole path and the done part is a prefix of it.
+ */
+const DONE_FADE = 0.88;
 
 // Dash lengths in millimetres — the material measures them in world units.
 // A rapid is dashed as well as thinner because that is the distinction that
@@ -139,7 +154,10 @@ const buildLine = (set, options) => {
   geometry.setPositions(set.positions);
   geometry.setColors(set.colors.slice());
 
-  const material = new LineMaterial({ vertexColors: true, ...options });
+  // `alphaToCoverage` smooths a sub-pixel line against the canvas's own
+  // multisampling, the way three's fat-line example does; without it a 0.6px
+  // line on a real GPU breaks into dashes. Headless renders cannot show it.
+  const material = new LineMaterial({ vertexColors: true, alphaToCoverage: true, ...options });
   const line = new Line2(geometry, material);
 
   if (options.dashed) {
@@ -151,8 +169,42 @@ const buildLine = (set, options) => {
   return line;
 };
 
-const Toolpath = ({ toolpath, colors, shadowZ }) => {
+// `colors` with every endpoint pulled `amount` of the way to `ground`.
+const fadeTowards = (colors, ground, amount) => {
+  const out = new Float32Array(colors.length);
+  const target = [ground.r, ground.g, ground.b];
+  for (let i = 0; i < colors.length; i += 1) {
+    out[i] = colors[i] + ((target[i % 3] - colors[i]) * amount);
+  }
+  return out;
+};
+
+// The segments one line of the program drew, as a line of their own.
+const buildCurrent = (source, { start, end }, color) => {
+  const positions = [];
+  for (let v = Math.max(start, 1); v < end; v += 1) {
+    const a = (v - 1) * 3;
+    const b = v * 3;
+    positions.push(
+      source.positions[a], source.positions[a + 1], source.positions[a + 2],
+      source.positions[b], source.positions[b + 1], source.positions[b + 2],
+    );
+  }
+  if (!positions.length) {
+    return null;
+  }
+  const geometry = new LineSegmentsGeometry();
+  geometry.setPositions(positions);
+  // Over the path it retraces, whatever the depth buffer says.
+  const material = new LineMaterial({ color, linewidth: CURRENT_WIDTH, depthTest: false });
+  const line = new Line2(geometry, material);
+  line.renderOrder = 10;
+  return line;
+};
+
+const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
   const size = useThree((state) => state.size);
+  const invalidate = useThree((state) => state.invalidate);
 
   /*
    * Coloured here rather than where it was parsed, because the colours follow
@@ -199,6 +251,49 @@ const Toolpath = ({ toolpath, colors, shadowZ }) => {
     lines.forEach(([, line]) => line.material.resolution.set(size.width, size.height));
   }, [lines, size.width, size.height]);
 
+  /*
+   * The done part, faded in place: the colour buffer the line already has is
+   * rewritten rather than the line rebuilt, since this moves four times a
+   * second while a program runs. Everything before the line being cut is
+   * done; with no program running, nothing is.
+   */
+  const faded = useMemo(() => {
+    const ground = new THREE.Color(colors.ground);
+    return {
+      cut: fadeTowards(sets.cut.colors, ground, DONE_FADE),
+      rapid: fadeTowards(sets.rapid.colors, ground, DONE_FADE),
+    };
+  }, [sets, colors.ground]);
+
+  const doneBefore = progress ? progress.start : 0;
+  useEffect(() => {
+    lines.forEach(([name, line]) => {
+      const set = sets[name];
+      const done = doneBefore > 0 ? completedCount(set.vertexIndex, doneBefore - 1) : 0;
+      const buffer = line.geometry.attributes.instanceColorStart.data;
+      buffer.array.set(faded[name].subarray(0, done * 6), 0);
+      buffer.array.set(set.colors.subarray(done * 6), done * 6);
+      buffer.needsUpdate = true;
+    });
+    invalidate();
+  }, [lines, sets, faded, doneBefore, invalidate]);
+
+  // Rebuilt when the line changes, not on every report.
+  const start = progress ? progress.start : -1;
+  const end = progress ? progress.end : -1;
+  const current = useMemo(
+    () => (start >= 0 ? buildCurrent(toolpath.source, { start, end }, colors.tool) : null),
+    [toolpath, start, end, colors.tool]
+  );
+  useEffect(() => {
+    current?.material.resolution.set(size.width, size.height);
+    invalidate();
+  }, [current, size.width, size.height, invalidate]);
+  useEffect(() => () => {
+    current?.geometry.dispose();
+    current?.material.dispose();
+  }, [current]);
+
   // Nothing disposes an object handed to `primitive`; the geometry and
   // material here are built per program and would otherwise be left on the
   // GPU every time a new one is loaded.
@@ -230,6 +325,7 @@ const Toolpath = ({ toolpath, colors, shadowZ }) => {
         </lineSegments>
       ) : null}
       {lines.map(([name, line]) => <primitive key={name} object={line} />)}
+      {current ? <primitive object={current} /> : null}
     </>
   );
 };

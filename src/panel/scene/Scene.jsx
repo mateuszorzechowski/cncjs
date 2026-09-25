@@ -31,7 +31,7 @@ const MACHINE_ZERO = { x: 0, y: 0, z: 0 };
 const TOOL_GUIDE_OPACITY = 0.2;
 
 const Scene = ({
-  scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking,
+  scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking, progress,
 }) => {
   const colors = useSceneColors();
   const { envelope, origin, toolpath, program, offset, frame } = scene;
@@ -149,6 +149,7 @@ const Scene = ({
             toolpath={toolpath}
             colors={colors}
             shadowZ={floor - offset.z}
+            progress={progress}
           />
         </group>
       ) : null}
