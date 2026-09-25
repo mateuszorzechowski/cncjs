@@ -32,18 +32,25 @@ const FileEditor = ({ file, machine, className = '' }) => {
 
   // Read again when the file changes on the server — including after this
   // editor saved it, which is how the text and its checks stay in step.
+  // With no file chosen the editor is there and empty, and cannot be typed
+  // in (Mateusz, 2026-09-25: *"edytor niech bedzie zawsze ale pusty"*).
+  const name = file?.name;
   useEffect(() => {
     let live = true;
     setText(null);
     setFailed(false);
     setDirty(false);
-    readFile(file.name)
+    if (!name) {
+      setText('');
+      return undefined;
+    }
+    readFile(name)
       .then(({ data }) => live && setText(data))
       .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, [file.name, file.mtime]);
+  }, [name, file?.mtime]);
 
   /*
    * The server's words, for the suggestions and the as-you-type check. The
@@ -59,16 +66,16 @@ const FileEditor = ({ file, machine, className = '' }) => {
     };
   }, []);
   const help = useMemo(() => (words && text !== null ? assist(words, text.length) : []), [words, text]);
-  const loaded = isLoaded(machine, file.name);
+  const loaded = Boolean(name) && isLoaded(machine, name);
   const running = loaded && (machine.workflow || 'idle') !== 'idle';
 
   const save = async (reload) => {
     setBusy(true);
     setProblem(null);
     try {
-      await writeFile(file.name, editor.current.text());
+      await writeFile(name, editor.current.text());
       if (reload) {
-        await loadFile(file.name, machine.port);
+        await loadFile(name, machine.port);
       }
       setAsking(false);
     } catch (err) {
@@ -95,9 +102,9 @@ const FileEditor = ({ file, machine, className = '' }) => {
           ref={editor}
           initial={text}
           extensions={help}
-          readOnly={running}
+          readOnly={running || !name}
           onDirty={setDirty}
-          label={t('files.editor.label', { name: file.name })}
+          label={name ? t('files.editor.label', { name }) : t('files.editor.title')}
         />
       )}
       {problem ? <p role="alert" className="m-0 text-note text-red">{problem}</p> : null}
@@ -118,7 +125,7 @@ const FileEditor = ({ file, machine, className = '' }) => {
       {asking ? (
         <ConfirmSheet
           title={t('files.editor.reload.title')}
-          note={t('files.editor.reload.note', { name: file.name })}
+          note={t('files.editor.reload.note', { name })}
           confirmLabel={t('files.editor.reload.action')}
           tone="primary"
           busy={busy}

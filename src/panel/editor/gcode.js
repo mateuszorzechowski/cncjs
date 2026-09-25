@@ -81,7 +81,9 @@ const frame = EditorView.theme({
     backgroundColor: 'var(--field)',
     fontSize: '13px',
   },
-  '&.cm-focused': { outline: '2px solid var(--acc)', outlineOffset: '-2px' },
+  // No focus frame: the caret and the active line say where typing goes,
+  // and a blue frame round the whole card read as a state it was in.
+  '&.cm-focused': { outline: 'none' },
   '.cm-scroller': { fontFamily: 'var(--num)', lineHeight: '1.6' },
   '.cm-content': { caretColor: 'var(--acc)' },
   '.cm-cursor': { borderLeftColor: 'var(--acc)' },
