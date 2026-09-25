@@ -55,6 +55,8 @@ import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { activeWcsNumber, zeroLine } from './zero';
 import { changesWorkOffsets } from './offsets';
 import { machineEnvelope } from './envelope';
+import library from '../../services/library';
+import { machineTiming } from '../../services/library/estimate';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
@@ -1340,6 +1342,10 @@ class GrblController {
             this.envelope = envelope;
             this.emit('controller:envelope', envelope);
           }
+
+          // And the limits a program's time depends on, for the library's
+          // estimates — which it keeps until the next machine says otherwise.
+          library.setMachine(machineTiming(this.settings?.settings));
         }
 
         // Grbl state
