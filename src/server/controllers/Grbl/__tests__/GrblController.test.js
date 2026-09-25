@@ -24,6 +24,7 @@ import { GRBL_ACTIVE_STATE_ALARM } from '../constants';
 import { HOLD_CEILING_SECONDS } from '../stop';
 import { LEASE_MS } from '../lease';
 import { DEADMAN_FLOOR_MS } from '../deadman';
+import units from '../../../services/units';
 
 import logger from '../../../lib/logger';
 
@@ -2279,6 +2280,133 @@ describe('intent commands', () => {
 
       controller.runner.parse('ok');
       expect(writes.map(write => write.data)).toEqual(['G0 X0' + '\n', 'G0 Y0' + '\n']);
+    });
+  });
+
+  describe('the server\'s units', () => {
+    const reports = (controller, mpos) => {
+      controller.runner.settings = {
+        ...controller.runner.settings,
+        settings: { $130: '1000', $131: '700', $132: '150', $23: '0' },
+      };
+      controller.runner.state.status.mpos = mpos;
+    };
+
+    afterEach(() => units.open({ name: 'mm', restore: false }));
+
+    test('a step given in inches goes out in millimetres', () => {
+      const { controller, writes } = setup();
+      reports(controller, { x: '-500', y: '-350', z: '-75' });
+
+      controller.command('jogStep', { dir: { x: 1 }, distance: 0.001, feedrate: 60, units: 'inch' });
+
+      // 0.001 in is 0.0254 mm, not 0.025400000000000002; 60 in/min is 1524.
+      expect(writes.map(write => write.data)).toEqual(['$J=G91 G21 X0.0254 F1524' + '\n']);
+    });
+
+    test('a step with no units is millimetres, as every client before this sent it', () => {
+      const { controller, writes } = setup();
+      reports(controller, { x: '-500', y: '-350', z: '-75' });
+
+      controller.command('jogStep', { dir: { x: 1 }, distance: 1, feedrate: 1500 });
+
+      expect(writes.map(write => write.data)).toEqual(['$J=G91 G21 X1 F1500' + '\n']);
+    });
+
+    test('a held jog\'s rate given in inches per minute goes out in millimetres', () => {
+      const { controller, writes } = setup();
+      reports(controller, { x: '-500', y: '-350', z: '-75' });
+      controller.runner.state.status.activeState = 'Idle';
+
+      controller.command('jogStart', { x: 1 }, 60, undefined, 'inch');
+
+      expect(writes.length).toBeGreaterThan(0);
+      expect(writes[0].data).toMatch(/^\$J=G91 G21 X[\d.]+ F1524\n$/);
+    });
+
+    const runAndEnd = (controller) => {
+      controller.command('gcode:load', 'inches.gcode', 'G20\nG0 X1\nM30');
+      controller.command('gcode:start');
+      controller.command('gcode:stop');
+      controller.runner.state.status.activeState = 'Idle';
+    };
+
+    test('with the setting on, puts the machine back after a program — once', () => {
+      units.open({ name: 'mm', restore: true });
+      const { controller, writes } = setup();
+
+      runAndEnd(controller);
+      const before = writes.length;
+      controller.restoreUnits();
+      controller.restoreUnits();
+
+      // M30 leaves G20 in force; the console after it would read inches.
+      expect(writes.slice(before).map(write => write.data)).toEqual(['G21\n']);
+    });
+
+    test('puts it back into inches when inches are the server\'s units', () => {
+      units.open({ name: 'inch', restore: true });
+      const { controller, writes } = setup();
+
+      runAndEnd(controller);
+      const before = writes.length;
+      controller.restoreUnits();
+
+      expect(writes.slice(before).map(write => write.data)).toEqual(['G20\n']);
+    });
+
+    test('waits for the machine: nothing in alarm, the line once it is Idle', () => {
+      units.open({ name: 'mm', restore: true });
+      const { controller, writes } = setup();
+
+      runAndEnd(controller);
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+      const before = writes.length;
+      controller.restoreUnits();
+      expect(writes.length).toBe(before);
+
+      controller.runner.state.status.activeState = 'Idle';
+      controller.restoreUnits();
+      expect(writes.slice(before).map(write => write.data)).toEqual(['G21\n']);
+    });
+
+    test('is owed after an abort from a pause too', () => {
+      units.open({ name: 'mm', restore: true });
+      const { controller, writes } = setup();
+
+      controller.command('gcode:load', 'inches.gcode', 'G20\nG0 X1\nM30');
+      controller.command('gcode:start');
+      controller.command('gcode:pause');
+      controller.command('gcode:stop');
+      controller.runner.state.status.activeState = 'Idle';
+      const before = writes.length;
+      controller.restoreUnits();
+
+      expect(writes.slice(before).map(write => write.data)).toEqual(['G21\n']);
+    });
+
+    test('with the setting off, writes nothing', () => {
+      units.open({ name: 'mm', restore: false });
+      const { controller, writes } = setup();
+
+      runAndEnd(controller);
+      const before = writes.length;
+      controller.restoreUnits();
+
+      expect(writes.length).toBe(before);
+    });
+
+    test('owes nothing for a program that never sent a line', () => {
+      units.open({ name: 'mm', restore: true });
+      const { controller, writes } = setup();
+
+      controller.command('gcode:load', 'inches.gcode', 'G20\nG0 X1\nM30');
+      controller.command('gcode:unload');
+      controller.runner.state.status.activeState = 'Idle';
+      const before = writes.length;
+      controller.restoreUnits();
+
+      expect(writes.length).toBe(before);
     });
   });
 

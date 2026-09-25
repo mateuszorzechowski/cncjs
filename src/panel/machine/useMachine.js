@@ -79,6 +79,12 @@ export const useMachine = () => {
      */
     envelope: null,
     /*
+     * The server's units and the rule for showing a millimetre in them. Not
+     * the machine's: a panel with no port open shows its figures in them all
+     * the same, so it is neither gated on nor cleared with the connection.
+     */
+    units: null,
+    /*
      * Which device the server is letting move the machine, or null when
      * nobody is. Compared with this panel's own id rather than shown: a
      * pendant needs to know whether the keys under its thumb are live, not
@@ -254,6 +260,9 @@ export const useMachine = () => {
        */
       'files:fit': (fits) => {
         setSnapshot((previous) => ({ ...previous, fits: fits || null }));
+      },
+      'units:change': (units) => {
+        setSnapshot((previous) => ({ ...previous, units: units || null }));
       },
       /**
        * Which device is allowed to move the machine.

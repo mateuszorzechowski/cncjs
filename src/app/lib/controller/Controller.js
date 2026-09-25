@@ -176,6 +176,16 @@ class Controller {
         'files:fit': [],
 
         /**
+         * The units every panel shows and the machine goes back to — the
+         * server's setting, with the rule for formatting a millimetre in
+         * them. Sent to every client on arrival and whenever it changes.
+         *
+         * @event units:change
+         * @param {object} rule - `{ name, restore, modal, factor, digits, jog }`
+         */
+        'units:change': [],
+
+        /**
          * Which alarm the machine is in, by Grbl's number.
          *
          * Null when there is none, and also while in the homing lock a reset

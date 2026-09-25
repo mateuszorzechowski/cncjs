@@ -11,6 +11,7 @@ import store from '../../store';
 import config from '../configstore';
 import journal from '../journal';
 import library from '../library';
+import units from '../units';
 import { commandEntry } from '../journal/commands';
 import taskRunner from '../taskrunner';
 import monitor from '../monitor';
@@ -103,6 +104,13 @@ class CNCEngine {
       journalEntry: (entry) => {
         if (this.io) {
           this.io.emit('journal:entry', entry);
+        }
+      },
+      // To everybody: the units are the server's, and a panel with no port
+      // open shows figures in them all the same.
+      unitsChange: (rule) => {
+        if (this.io) {
+          this.io.emit('units:change', rule);
         }
       },
       // To everybody too: a file kept from the phone is on the laptop's list.
@@ -242,6 +250,7 @@ class CNCEngine {
       monitor.on('change', this.listener.watchDirectoryChange);
       journal.on('entry', this.listener.journalEntry);
       library.on('change', this.listener.libraryChange);
+      units.on('change', this.listener.unitsChange);
 
       // System Trigger: Startup
       this.event.trigger('startup');
@@ -344,6 +353,10 @@ class CNCEngine {
           // offer the one that was made. See `rememberConnection`.
           lastConnection: config.get(CONNECTION_KEY, null),
         });
+
+        // The units rule on arrival, so a panel's first figure is already in
+        // them rather than in millimetres until somebody changes the setting.
+        socket.emit('units:change', units.rule());
 
         socket.on('disconnect', () => {
           log.debug(`Disconnected from ${address}: id=${socket.id}, user.id=${user.id}, user.name=${user.name}`);
@@ -676,6 +689,7 @@ class CNCEngine {
       monitor.removeListener('change', this.listener.watchDirectoryChange);
       journal.removeListener('entry', this.listener.journalEntry);
       library.removeListener('change', this.listener.libraryChange);
+      units.removeListener('change', this.listener.unitsChange);
     }
 }
 

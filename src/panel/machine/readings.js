@@ -278,7 +278,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
-  envelope, motion, workflow, device, alarm, fileCheck, fits,
+  envelope, motion, workflow, device, alarm, fileCheck, fits, units,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -490,6 +490,8 @@ export const readMachine = ({
      */
     fileCheck: connected ? (fileCheck || null) : null,
     fits: connected ? (fits || null) : null,
+    // The server's, not the machine's — see the snapshot.
+    units: units || null,
     /*
      * `$C` wants no program and a firmware standing `Idle` — Grbl will not
      * enter check mode from anything else — and one check at a time.
