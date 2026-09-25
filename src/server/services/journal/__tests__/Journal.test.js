@@ -58,6 +58,12 @@ describe('finding entries', () => {
     expect(matches({ ...entry, level: 'info' }, { level: 'warn' })).toBe(false);
   });
 
+  test('or levels, picked one by one', () => {
+    // *"Mogę chcieć tylko info i error"* — not a range.
+    expect(matches(entry, { levels: ['info', 'error'] })).toBe(true);
+    expect(matches({ ...entry, level: 'warn' }, { levels: ['info', 'error'] })).toBe(false);
+  });
+
   test('by source, event, device and time', () => {
     expect(matches(entry, { source: 'controller' })).toBe(true);
     expect(matches(entry, { source: 'server' })).toBe(false);
@@ -67,10 +73,20 @@ describe('finding entries', () => {
     expect(matches(entry, { until: '2026-09-24T17:00:00.000Z' })).toBe(false);
   });
 
-  test('by text, in the code and the program name', () => {
+  test('by text, in anything the entry stored', () => {
     expect(matches(entry, { q: 'alarm:3' })).toBe(true);
     expect(matches(entry, { q: 'circle' })).toBe(true);
+    expect(matches(entry, { q: 'com3' })).toBe(true);
+    expect(matches(entry, { q: '700' })).toBe(true);
+    expect(matches({ ...entry, data: { sent: 'G2 X1 Y1' } }, { q: 'g2 x1' })).toBe(true);
     expect(matches(entry, { q: 'octocat' })).toBe(false);
+  });
+
+  test('by text, in the words the panel says it with', () => {
+    // The panel knows which codes its sentences for the needle belong to;
+    // the server only knows codes.
+    expect(matches(entry, { q: 'blokada', said: ['ALARM:3'] })).toBe(true);
+    expect(matches(entry, { q: 'blokada', said: ['ALARM:1'] })).toBe(false);
   });
 
   test('newest first, a page at a time, stable while more arrive', () => {
@@ -92,6 +108,26 @@ describe('finding entries', () => {
     const last = journal.query({ event: 'alarm' }, { before: second.next, limit: 2 });
     expect(last.records.map((e) => e.id)).toEqual([1]);
     expect(last.next).toBeNull();
+  });
+
+  test('how many, beside the page: per level, matched, and kept', () => {
+    const journal = new Journal();
+    journal.record(ALARM);
+    journal.record(ALARM);
+    journal.record(REFUSED);
+    journal.record(START);
+
+    const page = journal.query({ level: 'warn', source: 'controller' }, { limit: 1 });
+    const picked = journal.query({ levels: ['warn', 'info'] });
+    expect(picked.matched).toBe(2);
+    expect(picked.counts).toEqual({ debug: 0, info: 1, warn: 1, error: 2 });
+    // Per level with everything but the level applied, so each button says
+    // what pressing it would show.
+    expect(page.counts).toEqual({ debug: 0, info: 0, warn: 0, error: 2 });
+    expect(page.matched).toBe(2);
+    expect(page.kept).toBe(4);
+    expect(page.records).toHaveLength(1);
+    expect(page.next).toBe(2);
   });
 });
 

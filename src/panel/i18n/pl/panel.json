@@ -368,7 +368,14 @@
     "more": "Starsze wpisy",
     "filter": {
       "level": "Poziom",
-      "source": "Źródło"
+      "source": "Źródło",
+      "from": "Od",
+      "to": "Do",
+      "search": "Szukaj w dzienniku",
+      "time": "Czas",
+      "open": "Filtry",
+      "title": "Filtry",
+      "reset": "Wyczyść"
     },
     "keep": {
       "label": "Dziennik zapisuje od",
@@ -381,7 +388,6 @@
       "error": "Błąd"
     },
     "source": {
-      "all": "Wszystko",
       "server": "Serwer",
       "controller": "Sterownik"
     },
@@ -453,7 +459,16 @@
       "message": "Komunikat",
       "name": "Plik",
       "id": "Wpis"
-    }
+    },
+    "range": {
+      "m15": "15 min",
+      "h1": "1 h",
+      "today": "Dziś",
+      "all": "Wszystko",
+      "custom": "Własny zakres…"
+    },
+    "count": "{{matched}} z {{kept}} wpisów",
+    "show": "Pokaż wpisy: {{count}}"
   },
   "grbl": {
     "alarm": {
@@ -519,5 +534,16 @@
     "unlock": "Odblokuj",
     "unlockWarning": "Odblokuj tylko, jeśli wiesz, gdzie jest maszyna — współrzędne mogą nie odpowiadać rzeczywistości.",
     "code": "ALARM:{{code}}"
+  },
+  "picker": {
+    "previous": "Poprzedni miesiąc",
+    "next": "Następny miesiąc",
+    "hour": "Godzina",
+    "hourUnit": "h",
+    "minute": "Minuta",
+    "minuteUnit": "min",
+    "now": "Teraz",
+    "clear": "Wyczyść",
+    "none": "dowolnie"
   }
 }

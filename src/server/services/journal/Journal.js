@@ -39,12 +39,24 @@ const MAX_ENTRIES = 50000;
  *
  * Every field optional; a missing one lets everything through. `level` is a
  * floor — `warn` means warn and error — because that is how a level filter
- * is read everywhere else. `q` looks at the code and the program name, which
- * is what somebody searching remembers; it does not search free text,
- * because there is none.
+ * is read everywhere else.
+ *
+ * `q` looks at every value the entry stored — code, program, port, device,
+ * the line sent. What the operator reads, though, is the panel's sentence for
+ * the code, which the server never had: so the panel works out which codes
+ * its sentences for `q` belong to and sends them as `said`, and an entry
+ * with one of those codes matches too. *"Wyszukiwanie tekstowe, czy wpis
+ * zawiera tekst"* (Mateusz, 2026-09-24).
  */
-export const matches = (entry, { level, source, event, device, since, until, q } = {}) => {
+const values = (value) => (value && typeof value === 'object' ? Object.values(value).flatMap(values) : [value]);
+
+export const matches = (entry, { level, levels, source, event, device, since, until, q, said = [] } = {}) => {
   if (level && rank(entry.level) < rank(level)) {
+    return false;
+  }
+  // Picked one by one, as the panel's filter does: `info` and `error`
+  // without `warn` is a real question.
+  if (levels && !levels.includes(entry.level)) {
     return false;
   }
   if (source && entry.source !== source) {
@@ -62,9 +74,10 @@ export const matches = (entry, { level, source, event, device, since, until, q }
   if (until && entry.time > until) {
     return false;
   }
-  if (q) {
+  if (q && !said.includes(entry.code)) {
     const needle = String(q).toLowerCase();
-    const haystack = [entry.code, entry.program?.name].filter(Boolean).join(' ').toLowerCase();
+    const stored = [entry.event, entry.code, entry.port, entry.device, entry.program, entry.data];
+    const haystack = values(stored).filter((v) => v !== undefined && v !== null).join('\n').toLowerCase();
     if (!haystack.includes(needle)) {
       return false;
     }
@@ -237,18 +250,35 @@ class Journal extends events.EventEmitter {
    *
    * `before` is the id to continue below — the `next` of the previous page —
    * so a page does not shift when new entries arrive while somebody reads.
+   *
+   * With the page come the numbers the filter bar shows: `counts` per level
+   * with every other filter applied — what each level button would show —
+   * `matched` for the whole filter, and `kept` for the journal as a whole.
+   * One pass over what is held, which is at most `MAX_ENTRIES`.
    */
   query(filter = {}, { before, limit = 100 } = {}) {
+    const { level, levels, ...rest } = filter;
     const records = [];
-    for (let i = this.entries.length - 1; i >= 0 && records.length < limit; i -= 1) {
+    const counts = { debug: 0, info: 0, warn: 0, error: 0 };
+    let matched = 0;
+    let next = null;
+    for (let i = this.entries.length - 1; i >= 0; i -= 1) {
       const entry = this.entries[i];
-      if ((before === undefined || entry.id < before) && matches(entry, filter)) {
-        records.push(entry);
+      if (matches(entry, rest)) {
+        counts[entry.level] = (counts[entry.level] || 0) + 1;
+        if (matches(entry, { level, levels })) {
+          matched += 1;
+          if (before === undefined || entry.id < before) {
+            if (records.length < limit) {
+              records.push(entry);
+            } else if (next === null) {
+              next = records[records.length - 1].id;
+            }
+          }
+        }
       }
     }
-    const last = records[records.length - 1];
-    const more = last && this.entries.some((entry) => entry.id < last.id && matches(entry, filter));
-    return { records, next: more ? last.id : null };
+    return { records, next, counts, matched, kept: this.entries.length };
   }
 }
 

@@ -22,6 +22,8 @@ const DETAILS = {
   name: 'journal.detail.name',
 };
 
+// The time of day only: the day is the heading above its entries
+// (`JournalDay`), as in the drawing of 2026-09-24.
 const clock = new Intl.DateTimeFormat(undefined, {
   hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3, hour12: false,
 });
@@ -62,10 +64,15 @@ const JournalRow = ({ entry, open, onToggle }) => {
           {t(LEVEL_KEYS[entry.level] || LEVEL_KEYS.info)}
         </span>
         <span className="w-20 shrink-0 text-mut">{t(SOURCE_KEYS[entry.source] || SOURCE_KEYS.server)}</span>
-        <span className="w-24 shrink-0 font-semibold text-ink">
-          {EVENT_KEYS[entry.event] ? t(EVENT_KEYS[entry.event]) : entry.event}
+        {/* The code beside what happened, and the message after both in a
+          * column of its own, so every message starts at the same place —
+          * *"osobna kolumna oprocz wiadomosci"* (2026-09-24). */}
+        <span className="w-48 shrink-0 truncate">
+          <span className="font-semibold text-ink">
+            {EVENT_KEYS[entry.event] ? t(EVENT_KEYS[entry.event]) : entry.event}
+          </span>
+          {entry.code ? <span className="ml-1.5 font-num text-cap text-mut">{entry.code}</span> : null}
         </span>
-        {entry.code ? <span className="shrink-0 font-num text-mut">{entry.code}</span> : null}
         <span className="min-w-0 flex-1 basis-60 text-ink">{said(entry)}</span>
       </button>
 
