@@ -288,7 +288,8 @@
     "other": "Serwer odmówił komendy {{cmd}}: {{reason}}.",
     "checking": "Sterownik sprawdza już plik. Poczekaj, aż skończy.",
     "notIdle": "Maszyna nie stoi w Idle, więc Grbl nie wejdzie w tryb sprawdzania.",
-    "notFound": "Tego pliku nie ma już na serwerze."
+    "notFound": "Tego pliku nie ma już na serwerze.",
+    "startFailed": "Grbl odrzucił linię wysłaną przed programem, więc program nie ruszył. Którą — mówi dziennik."
   },
   "notice": {
     "warning": "Ostrzeżenie"
