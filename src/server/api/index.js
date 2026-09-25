@@ -12,6 +12,7 @@ import * as mdi from './api.mdi';
 import * as users from './api.users';
 import * as tool from './api.tool';
 import * as units from './api.units';
+import * as connection from './api.connection';
 
 export {
   version,
@@ -28,4 +29,5 @@ export {
   users,
   tool,
   units,
+  connection,
 };
