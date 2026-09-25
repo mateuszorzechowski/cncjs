@@ -82,3 +82,61 @@ export const issueText = (issue) => t(ISSUES[issue.code], { word: issue.word });
 export const issueWhere = (issue) => (issue.count > 1
   ? t('files.check.where.many', { line: issue.line, count: issue.count })
   : t('files.check.where.one', { line: issue.line }));
+
+/** Why the controller's check cannot be asked for — `checkBlocker`'s codes. */
+const BLOCKERS = {
+  notConnected: 'files.check.blocked.notConnected',
+  checking: 'files.check.blocked.checking',
+  programRunning: 'files.check.blocked.programRunning',
+  notIdle: 'files.check.blocked.notIdle',
+};
+
+export const blockerText = (blocker) => t(BLOCKERS[blocker]);
+
+export const progressText = ({ answered, total }) => t('files.check.progress', { answered, total });
+
+/** The last `$C`, in the few words its button has room for. */
+export const lastCheckText = (result) => {
+  if (!result) {
+    return '';
+  }
+  if (result.complete) {
+    return t(result.errors.length > 0 ? 'files.check.last.errors' : 'files.check.last.clean');
+  }
+  return t(result.firstError ? 'files.check.last.firstError' : 'files.check.last.stopped');
+};
+
+const AXES = { x: 'axis.x', y: 'axis.y', z: 'axis.z' };
+
+/**
+ * Where the program leaves the table at the current zero, and what that does
+ * to `$C` — or null when it fits, or when the firmware has no soft limits and
+ * so will not stop at the edge. The server's `files:fit`; the words are here.
+ */
+export const overrunText = (fits, name) => {
+  const over = fits?.softLimits ? fits.files?.[name] : null;
+  if (!over || over.length === 0) {
+    return null;
+  }
+  const where = over.map(({ axis, by }) => t('files.check.overrun.axis', { axis: t(AXES[axis]), by })).join(', ');
+  return t('files.check.overrun.note', { where });
+};
+
+/** How the controller's check ended, as a sentence. */
+export const controllerSummary = (result) => {
+  if (result.refused) {
+    return t('files.check.controllerResult.refused', { code: result.refused });
+  }
+  if (result.alarm) {
+    return t('files.check.controllerResult.alarm', { alarm: result.alarm, line: result.stoppedAt });
+  }
+  if (result.firstError) {
+    return t('files.check.controllerResult.firstError', { line: result.stoppedAt });
+  }
+  if (!result.complete) {
+    return t('files.check.controllerResult.reset', { line: result.stoppedAt });
+  }
+  return t(result.errors.length > 0 ? 'files.check.controllerResult.errors' : 'files.check.controllerResult.clean');
+};
+
+export const checkedAtText = (at) => t('files.check.checkedAt', { when: modified.format(new Date(at)) });

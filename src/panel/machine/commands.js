@@ -83,3 +83,12 @@ export const controlledStop = (type) => {
 };
 
 export default emergencyStop;
+
+/**
+ * Put a library file through the controller's check mode, `$C` — to the end,
+ * or to the first error. The server reads the file and keeps the result with
+ * it; see `ui/CheckButton` for the question asked first.
+ */
+export const checkFile = (name, { firstError = false } = {}) => {
+  controller.command('file:check', { name, firstError });
+};

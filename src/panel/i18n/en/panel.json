@@ -265,7 +265,10 @@
     "unknownCommand": "This server does not know the command {{cmd}}. It is older than this panel.",
     "heldElsewhere": "Another device is moving the machine. Wait for it to finish.",
     "notConfirmed": "The jog was stopped because this panel did not confirm the key was still down. Press again.",
-    "other": "The server refused {{cmd}}: {{reason}}."
+    "other": "The server refused {{cmd}}: {{reason}}.",
+    "checking": "The controller is already checking a file. Wait until it is done.",
+    "notIdle": "The machine is not Idle, so Grbl will not enter check mode.",
+    "notFound": "That file is no longer on the server."
   },
   "notice": {
     "warning": "Warning"
@@ -412,7 +415,8 @@
       "refused": "Refused",
       "command": "Command",
       "port": "Port",
-      "motion": "Motion"
+      "motion": "Motion",
+      "fileCheck": "check"
     },
     "program": {
       "start": "Started {{name}}",
@@ -442,7 +446,8 @@
       "line": "Console line: {{line}}",
       "jogStart": "Jog started",
       "jogStep": "Jog step",
-      "jogStop": "Jog stopped"
+      "jogStop": "Jog stopped",
+      "fileCheck": "File verified on the controller"
     },
     "port": {
       "open": "Opened as {{type}} at {{baudrate}}",
@@ -478,7 +483,14 @@
       "custom": "Custom range…"
     },
     "count": "{{matched}} of {{kept}} entries",
-    "show": "Show {{count}} entries"
+    "show": "Show {{count}} entries",
+    "fileCheck": {
+      "clean": "{{name}}: Grbl took every line",
+      "errors": "{{name}}: Grbl refused lines — kinds of error: {{errors}}",
+      "firstError": "{{name}}: the check stopped at the first error",
+      "interrupted": "{{name}}: the check was stopped by a reset",
+      "stopped": "{{name}}: the check was stopped — {{code}}"
+    }
   },
   "grbl": {
     "alarm": {
@@ -662,6 +674,47 @@
       "where": {
         "one": "line {{line}}",
         "many": "line {{line}} · {{count}} times"
+      },
+      "server": "Server — on upload",
+      "controllerTitle": "Controller — $C",
+      "controllerNone": "Not yet verified on the controller.",
+      "controllerError": "{{code}} — {{text}}",
+      "checkedAt": "checked {{when}}",
+      "progress": "{{answered}} / {{total}} lines",
+      "blocked": {
+        "notConnected": "connect the machine",
+        "checking": "another check is running",
+        "programRunning": "a program is running",
+        "notIdle": "the machine is not Idle"
+      },
+      "last": {
+        "clean": "last: no errors",
+        "errors": "last: with errors",
+        "firstError": "last: to 1st error",
+        "stopped": "last: interrupted"
+      },
+      "overrun": {
+        "axis": "in {{axis}} by {{by, number(maximumFractionDigits: 1)}} mm",
+        "note": "At the current zero the program leaves the table: {{where}}. Grbl will stop the check with an alarm at the first such move, the rest of the file will go unchecked, and the machine will need a reset and an unlock."
+      },
+      "controllerResult": {
+        "clean": "Grbl read the whole program and took every line.",
+        "errors": "Grbl read the whole program and refused the lines below.",
+        "firstError": "The check stopped at the first error, on line {{line}}. The rest of the program was not read.",
+        "alarm": "{{alarm}} stopped the check on line {{line}}. The rest of the program was not read.",
+        "reset": "A reset stopped the check on line {{line}}. The rest of the program was not read.",
+        "refused": "Grbl did not enter check mode: {{code}}."
+      },
+      "confirm": {
+        "title": "Verify the program on the controller?",
+        "note": "Grbl will read the program without moving and note every line it refuses. At the end the controller resets: the machine stays where it is, but the modes go back to their start — G54, G90, G21.",
+        "action": "Verify",
+        "anyway": "Verify anyway"
+      },
+      "scope": {
+        "label": "How far",
+        "all": "Whole file",
+        "first": "To the first error"
       }
     }
   },

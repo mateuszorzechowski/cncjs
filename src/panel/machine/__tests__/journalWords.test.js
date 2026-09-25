@@ -87,3 +87,16 @@ describe('which codes a sentence belongs to', () => {
     expect(codesSaying('line', say)).toEqual([]);
   });
 });
+
+describe('a check on the controller', () => {
+  test.each([
+    ['clean', 'journal.fileCheck.clean'],
+    ['errors', 'journal.fileCheck.errors'],
+    ['first-error', 'journal.fileCheck.firstError'],
+    ['interrupted', 'journal.fileCheck.interrupted'],
+    ['ALARM:2', 'journal.fileCheck.stopped'],
+  ])('%s says %s, with the file', (code, key) => {
+    expect(describeEntry(entry({ event: 'file-check', code, data: { name: 'a.nc', errors: 2 } })))
+      .toEqual({ key, params: { name: 'a.nc', errors: 2, code } });
+  });
+});

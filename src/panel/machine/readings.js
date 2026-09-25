@@ -278,7 +278,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
-  envelope, motion, workflow, device, alarm,
+  envelope, motion, workflow, device, alarm, fileCheck, fits,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -483,6 +483,18 @@ export const readMachine = ({
     // has none. Read only while the machine says `Alarm`, so a number the
     // server has not yet cleared is never shown over a machine that is not.
     alarmed: connected && active?.word === ALARM,
+    /**
+     * A file going through `$C` — `{ name, answered, total }` — or null; and
+     * where each file leaves the table at the current zero (`files:fit`).
+     * Both the server's, and both gone with the machine.
+     */
+    fileCheck: connected ? (fileCheck || null) : null,
+    fits: connected ? (fits || null) : null,
+    /*
+     * `$C` wants no program and a firmware standing `Idle` — Grbl will not
+     * enter check mode from anything else — and one check at a time.
+     */
+    canCheckFile: connected && (workflow || 'idle') === 'idle' && active?.word === 'Idle' && !fileCheck,
     alarm: connected && active?.word === ALARM ? (alarm ?? null) : null,
   };
 };

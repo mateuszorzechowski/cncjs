@@ -258,6 +258,58 @@ describe('analysis', () => {
   });
 });
 
+describe("the controller's check", () => {
+  const RESULT = { complete: true, total: 1, errors: [], alarm: null, stoppedAt: null };
+
+  test('is kept with the file, and outlives a restart', async () => {
+    await library.write('part.nc', 'G0 X1');
+    await library.setControllerCheck('part.nc', await library.stamp('part.nc'), RESULT);
+
+    expect((await library.list()).files[0].controllerCheck).toEqual(RESULT);
+
+    library.close();
+    library.open({ dir });
+    expect((await library.list()).files[0].controllerCheck).toEqual(RESULT);
+  });
+
+  test('is not listed as a file, and cannot be reached by name', async () => {
+    await library.write('part.nc', 'G0 X1');
+    await library.setControllerCheck('part.nc', await library.stamp('part.nc'), RESULT);
+
+    expect((await library.list()).files.map(file => file.name)).toEqual(['part.nc']);
+    await expect(library.read('.checks.json')).rejects.toMatchObject({ code: 'bad-name' });
+  });
+
+  test('belongs to the file as it was: a changed file has none', async () => {
+    await library.write('part.nc', 'G0 X1');
+    const stamp = await library.stamp('part.nc');
+    await library.write('part.nc', 'G0 X1\nG0 X2');
+    await library.setControllerCheck('part.nc', stamp, RESULT);
+
+    expect((await library.list()).files[0].controllerCheck).toBeNull();
+  });
+
+  test('goes with the file', async () => {
+    await library.write('part.nc', 'G0 X1');
+    await library.setControllerCheck('part.nc', await library.stamp('part.nc'), RESULT);
+    await library.remove('part.nc');
+    await library.write('part.nc', 'G0 X1');
+
+    expect((await library.list()).files[0].controllerCheck).toBeNull();
+    library.close();
+    library.open({ dir });
+    expect(library.checks.size).toBe(0);
+  });
+
+  test('a kept file that cannot be read is no checks, not a failure', () => {
+    library.close();
+    fs.writeFileSync(path.join(dir, '.checks.json'), '{ not json');
+    library.open({ dir });
+
+    expect(library.checks.size).toBe(0);
+  });
+});
+
 describe('change', () => {
   test('is said once for a burst of writes, and once more when their analyses are in', async () => {
     const said = jest.fn();

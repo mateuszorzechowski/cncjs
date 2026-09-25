@@ -81,4 +81,30 @@ export const machineEnvelope = (settings) => {
   return { min, max };
 };
 
+/**
+ * Where a program leaves the table at the current zero: each axis it goes
+ * past, the side, and by how many millimetres — the most first; empty when
+ * it fits. `bounds` are the program's, from work zero (`library` analysis),
+ * and a machine position is a work position plus `wco`, as Grbl reports it.
+ *
+ * A program that sets its own coordinate system, moves in `G53` or uses `G92`
+ * can land elsewhere — this is the forecast, and the firmware's soft limits
+ * stay the fence.
+ */
+export const programOverrun = (envelope, wco, bounds) => {
+  const over = [];
+  for (const axis of AXES) {
+    const offset = Number(wco?.[axis]) || 0;
+    const below = envelope.min[axis] - (bounds.min[axis] + offset);
+    const above = (bounds.max[axis] + offset) - envelope.max[axis];
+    if (below > 0) {
+      over.push({ axis, side: 'min', by: below });
+    }
+    if (above > 0) {
+      over.push({ axis, side: 'max', by: above });
+    }
+  }
+  return over.sort((a, b) => b.by - a.by);
+};
+
 export default machineEnvelope;

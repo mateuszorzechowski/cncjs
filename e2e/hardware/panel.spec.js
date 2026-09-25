@@ -72,6 +72,51 @@ test.describe('panel, connected', () => {
     await expect(bar(panel)).toContainText(TEST_PORT);
   });
 
+  test('a file goes through $C, and what Grbl refused is kept with it', async ({ grbl, context }) => {
+    const panel = await openPanel(grbl, context);
+    const name = 'e2e-check.nc';
+    // The library on the disk of whoever runs this: one file, of the case's
+    // own, taken out again at the end — and its kept check with it.
+    const library = (method, body) => panel.evaluate(async ([file, how, data]) => {
+      const { token } = await (await fetch('/api/signin', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+      })).json();
+      const res = await fetch(`/api/files/${file}`, {
+        method: how,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: data ? JSON.stringify({ data }) : undefined,
+      });
+      return res.status;
+    }, [name, method, body]);
+
+    expect(await library('PUT', 'G21 G90\nG41 G1 X1\nG0 X0\n')).toBe(200);
+    try {
+      await panel.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Pliki', exact: true }).click();
+      await panel.getByRole('button', { name: new RegExp(name.replace('.', '\\.')) }).click();
+      // The server's own check first: G41 is not Grbl's.
+      await expect(panel.getByRole('button', { name: /stan/ })).toContainText('niezgodny');
+
+      const verify = panel.getByRole('button', { name: /Sprawdź na sterowniku/ });
+      await verify.click();
+      const question = panel.getByRole('dialog', { name: 'Sprawdzić program na sterowniku?' });
+      await expect(question).toContainText('G54, G90, G21');
+      await question.getByRole('button', { name: 'Sprawdź', exact: true }).click();
+
+      // Measured on the bench: in and out of `$C` is a second or so, and
+      // Grbl stands Idle after it — no homing lock.
+      await expect(verify).toContainText('ostatnio: z błędami', { timeout: 15000 });
+      await expect(bar(panel)).toContainText(/idle/i);
+
+      await panel.getByRole('button', { name: /stan/ }).click();
+      const sheet = panel.getByRole('dialog', { name: 'Kontrola pliku' });
+      await expect(sheet).toContainText('error:20');
+      await expect(sheet).toContainText('linia 2');
+      await expect(sheet).toContainText('G41 G1 X1');
+    } finally {
+      await library('DELETE');
+    }
+  });
+
   test('shows the state the controller reports', async ({ grbl, context }) => {
     const panel = await openPanel(grbl, context);
 

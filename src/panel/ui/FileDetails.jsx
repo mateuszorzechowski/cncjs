@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from './Button';
+import CheckButton from './CheckButton';
 import CheckSheet from './CheckSheet';
 import FilePreview from './FilePreview';
 import StatTile from './StatTile';
@@ -54,9 +55,9 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
       </div>
 
       {/*
-        * The two checks: the server's, made when the file is kept and opened
-        * from its verdict, and the controller's, `$C` — which is the next
-        * change, so its button is greyed out until then.
+        * The two checks: the server's, made when the file is kept, whose
+        * verdict opens both results; and the controller's, `$C`, asked for
+        * here and kept with the file.
         */}
       <section className="flex shrink-0 flex-col gap-2" aria-label={t('files.check.title')}>
         <span className="text-cap font-semibold uppercase tracking-[0.12em] text-mut">{t('files.check.title')}</span>
@@ -67,7 +68,7 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
             tone={verdictTone(check)}
             onPress={check ? () => setChecking(true) : undefined}
           />
-          <Button className="h-auto px-3" disabled>{t('files.check.controller')}</Button>
+          <CheckButton file={file} machine={machine} busy={busy} />
         </div>
       </section>
 
@@ -93,7 +94,7 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
         </div>
       </div>
 
-      {checking && check ? <CheckSheet name={file.name} check={check} onClose={() => setChecking(false)} /> : null}
+      {checking && check ? <CheckSheet name={file.name} check={check} controllerCheck={file.controllerCheck} onClose={() => setChecking(false)} /> : null}
     </div>
   );
 };

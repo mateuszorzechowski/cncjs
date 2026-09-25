@@ -1,4 +1,4 @@
-import { machineEnvelope, axisRange } from '../envelope';
+import { machineEnvelope, axisRange, programOverrun } from '../envelope';
 import { RATE_UNKNOWN, goToPointLines, goToWorkZeroLines, rateFor } from '../travel';
 
 // A Grbl that homes to the maximum: travel is [-range, 0], which is the
@@ -100,5 +100,28 @@ describe('travelling to a point off the drawing', () => {
     expect(goToPointLines(HOMES_TO_MAX, null)).toBeNull();
     expect(goToPointLines(HOMES_TO_MAX, { x: -100 })).toBeNull();
     expect(goToPointLines(HOMES_TO_MAX, { x: -100, y: 'nowhere' })).toBeNull();
+  });
+});
+
+describe('whether a program fits the table at the current zero', () => {
+  // The bench: X in [-1000, 0], Y in [-700, 0], Z in [-150, 0].
+  const ENVELOPE = machineEnvelope({ $130: '1000', $131: '700', $132: '150', $23: '0' });
+  const BOUNDS = { min: { x: -25, y: -25, z: -10 }, max: { x: 25, y: 25, z: 1 } };
+
+  test('fits: nothing to say', () => {
+    expect(programOverrun(ENVELOPE, { x: -518.728, y: -309.044, z: -71.468 }, BOUNDS)).toEqual([]);
+  });
+
+  test('says each axis it leaves by, the most first', () => {
+    const over = programOverrun(ENVELOPE, { x: -10, y: -690, z: -0.5 }, BOUNDS);
+
+    expect(over.map(({ axis, side }) => [axis, side])).toEqual([['x', 'max'], ['y', 'min'], ['z', 'max']]);
+    expect(over[0].by).toBeCloseTo(15, 6);
+    expect(over[1].by).toBeCloseTo(15, 6);
+    expect(over[2].by).toBeCloseTo(0.5, 6);
+  });
+
+  test('touching the edge is inside', () => {
+    expect(programOverrun(ENVELOPE, { x: -25, y: -25, z: -1 }, BOUNDS)).toEqual([]);
   });
 });

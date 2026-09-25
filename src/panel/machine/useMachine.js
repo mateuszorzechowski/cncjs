@@ -203,7 +203,7 @@ export const useMachine = () => {
         // no longer hear.
         setSnapshot((previous) => ({
           ...previous, port: '', type: '', baudrate: null, state: {}, attached: false,
-          motion: null, workflow: 'idle', alarm: null,
+          motion: null, workflow: 'idle', alarm: null, fileCheck: null, fits: null,
         }));
       },
       'controller:state': (type, state) => {
@@ -239,6 +239,21 @@ export const useMachine = () => {
        */
       'controller:envelope': (envelope) => {
         setSnapshot((previous) => ({ ...previous, envelope }));
+      },
+      /**
+       * A library file going through `$C`, to every device: how far it has
+       * got while it runs, and nothing once it is done — the result comes
+       * with the listing, kept with the file. See the server's `check-run`.
+       */
+      'file:check': (check) => {
+        setSnapshot((previous) => ({ ...previous, fileCheck: check?.state === 'running' ? check : null }));
+      },
+      /**
+       * Where each library file leaves the table at the current zero, worked
+       * out by the server whenever the zero, the limits or the library move.
+       */
+      'files:fit': (fits) => {
+        setSnapshot((previous) => ({ ...previous, fits: fits || null }));
       },
       /**
        * Which device is allowed to move the machine.

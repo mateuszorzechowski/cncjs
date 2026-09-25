@@ -56,6 +56,10 @@ const KEYS = {
   // A panel newer than the server it is talking to. The only refusal here
   // that is about the installation rather than about the machine.
   'unknown-command': 'refusal.unknownCommand',
+  // `$C`: one check at a time, from a firmware standing Idle, of a file that is there.
+  checking: 'refusal.checking',
+  'not-idle': 'refusal.notIdle',
+  'not-found': 'refusal.notFound',
 };
 
 /**
