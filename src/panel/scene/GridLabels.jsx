@@ -47,6 +47,13 @@ const TEXT_PIXELS = 20;
  */
 const GAP_PIXELS = 22;
 
+/**
+ * The room the figures take outside the grid's edge, in screen pixels: the
+ * gap and about two figure-heights of text. A view is framed with this much
+ * clear on every side (`Controls`), so the rulers are in the picture.
+ */
+export const RULER_PIXELS = GAP_PIXELS + (2 * TEXT_PIXELS);
+
 // Pixels per world unit in the texture. Three times the size a label is ever
 // drawn on screen, so it stays sharp when the view is zoomed into a corner.
 const RESOLUTION = 64;

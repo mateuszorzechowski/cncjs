@@ -8,6 +8,7 @@ import { recallCamera, rememberCamera } from './cameraMemory';
 import { UP, VIEWS } from './views';
 import { orbitAbout, pivotFor } from './pivotOrbit';
 import { glide, poseOf } from './glide';
+import { RULER_PIXELS } from './GridLabels';
 
 /**
  * The camera: four named views, and a mouse that can go anywhere.
@@ -387,10 +388,13 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
     );
 
     const from = poseOf(camera, orbit.target);
+    // With room for the figures along the grid's edges, so a view shows its
+    // rulers too — on a small preview they were framed off the canvas.
     const target = fitCameraToBounds(
       camera,
       box,
-      new THREE.Vector3().fromArray(VIEWS[view].direction)
+      new THREE.Vector3().fromArray(VIEWS[view].direction),
+      { padding: RULER_PIXELS }
     );
 
     // Orbit about what the camera was framed on, rather than about wherever
