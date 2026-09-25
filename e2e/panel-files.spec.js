@@ -112,6 +112,8 @@ test.describe('the files screen', () => {
     await expect(page.getByText('-6,0 mm', { exact: true })).toBeVisible();
     await expect(page.getByText('XY · 420 × 290 mm')).toBeVisible();
     await expect(page.locator('canvas')).toHaveCount(1);
+    // Held over the canvas until the scene has drawn, then gone.
+    await expect(page.getByText('Czytam plik…')).toHaveCount(0);
 
     await expect(page.getByRole('button', { name: 'Wczytaj', exact: true })).toBeDisabled();
     await expect(page.getByText('Połącz maszynę, żeby wczytać program.')).toBeVisible();

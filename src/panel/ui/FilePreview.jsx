@@ -33,6 +33,9 @@ const FilePreview = ({ name, mtime, className = '' }) => {
   const [failed, setFailed] = useState(false);
   // Each bump is a press of the view: back to the framing.
   const [home, setHome] = useState(0);
+  // The note stays over the canvas until the scene has drawn the part and
+  // its figures, so the preview appears once rather than in three steps.
+  const [drawn, setDrawn] = useState(false);
   const idle = useRef(null);
 
   const hold = () => clearTimeout(idle.current);
@@ -46,6 +49,7 @@ const FilePreview = ({ name, mtime, className = '' }) => {
     let live = true;
     setProgram(null);
     setFailed(false);
+    setDrawn(false);
     readFile(name)
       .then(({ data }) => live && setProgram({ name, gcode: data }))
       .catch(() => live && setFailed(true));
@@ -62,7 +66,7 @@ const FilePreview = ({ name, mtime, className = '' }) => {
   let note = null;
   if (failed) {
     note = t('files.preview.failed');
-  } else if (!program) {
+  } else if (!program || (toolpath && !drawn)) {
     note = t('files.preview.reading');
   } else if (!toolpath) {
     note = t('files.preview.none');
@@ -81,10 +85,16 @@ const FilePreview = ({ name, mtime, className = '' }) => {
           onFree={release}
           onGrab={hold}
           glideMs={GLIDE_MS}
+          onReady={() => setDrawn(true)}
         />
-      ) : (
-        <p className="m-0 flex h-full items-center justify-center p-3 text-center font-num text-note text-mut">{note}</p>
-      )}
+      ) : null}
+      {/* Over the canvas rather than instead of it, so the scene can draw
+        * underneath while the note is still up. */}
+      {note ? (
+        <p className="absolute inset-0 m-0 flex items-center justify-center bg-field p-3 text-center font-num text-note text-mut">
+          {note}
+        </p>
+      ) : null}
     </div>
   );
 };

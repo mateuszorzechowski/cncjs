@@ -412,6 +412,15 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
     // from where the camera was, which the fit above has just overwritten.
     if (glideMs > 0 && !first) {
       const to = poseOf(camera, orbit.target);
+      // Put the camera back where it was before anything draws: the fit's
+      // own `update()` has already asked for a frame, and that frame showed
+      // the destination for an instant before the glide set off towards it
+      // — the jump Mateusz saw after zooming out (2026-09-25).
+      camera.position.fromArray(from.position);
+      camera.zoom = from.zoom;
+      camera.updateProjectionMatrix();
+      orbit.target.fromArray(from.target);
+      orbit.update();
       stopGlide.current?.();
       stopGlide.current = glide({ camera, orbit, from, to, ms: glideMs, invalidate });
       return;
