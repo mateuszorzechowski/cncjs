@@ -159,6 +159,8 @@ const buildLine = (set, options) => {
   // line on a real GPU breaks into dashes. Headless renders cannot show it.
   const material = new LineMaterial({ vertexColors: true, alphaToCoverage: true, ...options });
   const line = new Line2(geometry, material);
+  // Something a drag can turn the view about — see `Controls`.
+  line.userData.pivot = true;
 
   if (options.dashed) {
     // Dash phase is measured along the line, so the distances have to exist
