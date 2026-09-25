@@ -61,3 +61,44 @@ export const orbitAbout = ({ position, target, pivot, theta, phi }) => {
 };
 
 export default orbitAbout;
+
+/**
+ * The point a turn is about, for a ray from the pointer.
+ *
+ * In order: the drawn path it touched (`hit`); else, when it passes through
+ * the program's box, the middle of its run inside — *"trafiam w otwór między
+ * ścieżkami"* (Mateusz, 2026-09-25): a pocket's hole is still the part, not
+ * the floor under it, which can be 150 mm lower and turned the part on a
+ * long arm; else the machine's floor; else the target's depth along the ray.
+ *
+ * @param {object} args
+ * @param {THREE.Ray} args.ray From the pointer, into the scene.
+ * @param {THREE.Vector3|null} args.hit Where it touched the path, if it did.
+ * @param {THREE.Box3|null} args.box The program, where it is drawn.
+ * @param {number|null} args.floor The floor's Z.
+ * @param {THREE.Vector3} args.target What the camera looks at.
+ */
+export const pivotFor = ({ ray, hit, box, floor, target }) => {
+  if (hit) {
+    return hit.clone();
+  }
+
+  if (box && !box.isEmpty()) {
+    const entry = ray.intersectBox(box, new THREE.Vector3());
+    if (entry) {
+      // Back along the ray from well past the box, to find where it leaves.
+      const beyond = entry.clone().addScaledVector(ray.direction, box.getSize(new THREE.Vector3()).length() * 2 + 1);
+      const exit = new THREE.Ray(beyond, ray.direction.clone().negate()).intersectBox(box, new THREE.Vector3());
+      return exit ? entry.add(exit).multiplyScalar(0.5) : entry;
+    }
+  }
+
+  if (Number.isFinite(floor)) {
+    const onFloor = ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -floor), new THREE.Vector3());
+    if (onFloor) {
+      return onFloor;
+    }
+  }
+
+  return ray.closestPointToPoint(target, new THREE.Vector3());
+};

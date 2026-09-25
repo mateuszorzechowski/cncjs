@@ -6,7 +6,7 @@ import fitCameraToBounds from 'lib/toolpath/camera-fit';
 import { fitToBounds } from './fit';
 import { recallCamera, rememberCamera } from './cameraMemory';
 import { UP, VIEWS } from './views';
-import { orbitAbout } from './pivotOrbit';
+import { orbitAbout, pivotFor } from './pivotOrbit';
 
 /**
  * The camera: four named views, and a mouse that can go anywhere.
@@ -31,7 +31,6 @@ import { orbitAbout } from './pivotOrbit';
  * it.
  */
 const TWO_PI = Math.PI * 2;
-const Z = new THREE.Vector3(0, 0, 1);
 
 // How close, in pixels, a drag has to start to the drawn path to turn about it.
 const PATH_PICK_PIXELS = 6;
@@ -43,6 +42,9 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
   // controls and drop the pose.
   const floorAt = useRef(floor);
   floorAt.current = floor;
+  // The program's box, for a drag that starts over the part but not on a line.
+  const programAt = useRef(object);
+  programAt.current = object;
   const domElement = useThree((state) => state.gl.domElement);
   const invalidate = useThree((state) => state.invalidate);
   const controls = useRef(null);
@@ -189,8 +191,9 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
      * The controls turn about their target — the middle of the machine, as a
      * view button left it — and zoomed into a corner that swung the work off
      * screen at a fifth of the view per degree. So a turn is about the point
-     * the drag started on instead (`orbitAbout`): the path under the pointer,
-     * else the machine's floor there, else the target's depth along the ray.
+     * the drag started on instead (`orbitAbout`), chosen by `pivotFor`: the
+     * path under the pointer, else inside the part when the pointer is over
+     * it, else the machine's floor there, else the target's depth.
      * The rate is the controls' own, a full turn per canvas height.
      *
      * The left button, or one finger. Shift or Ctrl with the left button, the
@@ -216,13 +219,21 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, floor }
         }
       });
       const [hit] = raycaster.intersectObjects(pickable, false);
-      if (hit) {
-        return hit.point.clone();
+      const program = programAt.current;
+      let box = null;
+      if (program) {
+        box = new THREE.Box3(
+          new THREE.Vector3(program.min.x, program.min.y, program.min.z),
+          new THREE.Vector3(program.max.x, program.max.y, program.max.z)
+        );
       }
-      const onFloor = Number.isFinite(floorAt.current)
-        ? raycaster.ray.intersectPlane(new THREE.Plane(Z, -floorAt.current), new THREE.Vector3())
-        : null;
-      return onFloor || raycaster.ray.closestPointToPoint(orbit.target, new THREE.Vector3());
+      return pivotFor({
+        ray: raycaster.ray,
+        hit: hit ? hit.point : null,
+        box,
+        floor: floorAt.current,
+        target: orbit.target,
+      });
     };
 
     const press = (event) => {
