@@ -3403,6 +3403,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codemirror/autocomplete@npm:^6.20.3":
+  version: 6.20.3
+  resolution: "@codemirror/autocomplete@npm:6.20.3"
+  dependencies:
+    "@codemirror/language": ^6.0.0
+    "@codemirror/state": ^6.0.0
+    "@codemirror/view": ^6.17.0
+    "@lezer/common": ^1.0.0
+  checksum: 872a0671363158e24087f7c2edcbd4435ebb4fb799c9f5ccb4589cf4dc34a80763dace4909a71d75a42c79b75a687ae129fae169c4f835ef8e4695a34e7e99ca
+  languageName: node
+  linkType: hard
+
 "@codemirror/commands@npm:^6.11.1":
   version: 6.11.1
   resolution: "@codemirror/commands@npm:6.11.1"
@@ -3429,6 +3441,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codemirror/lint@npm:^6.9.7":
+  version: 6.9.7
+  resolution: "@codemirror/lint@npm:6.9.7"
+  dependencies:
+    "@codemirror/state": ^6.0.0
+    "@codemirror/view": ^6.42.0
+    crelt: ^1.0.5
+  checksum: a48311c92439f34d2f7af122930690abe72ad9c7cbf185eadf7daf17f5e6f2898739292a78057012079600933211ac675f48686df137b1aa3731c7e9d0b87b14
+  languageName: node
+  linkType: hard
+
 "@codemirror/search@npm:^6.7.2":
   version: 6.7.2
   resolution: "@codemirror/search@npm:6.7.2"
@@ -3449,7 +3472,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemirror/view@npm:^6.23.0, @codemirror/view@npm:^6.27.0, @codemirror/view@npm:^6.37.0, @codemirror/view@npm:^6.43.13":
+"@codemirror/view@npm:^6.17.0, @codemirror/view@npm:^6.23.0, @codemirror/view@npm:^6.27.0, @codemirror/view@npm:^6.37.0, @codemirror/view@npm:^6.42.0, @codemirror/view@npm:^6.43.13":
   version: 6.43.13
   resolution: "@codemirror/view@npm:6.43.13"
   dependencies:
@@ -9116,8 +9139,10 @@ __metadata:
     "@babel/preset-react": ^7.25.9
     "@babel/register": ^7.25.9
     "@changesets/cli": ^2.31.0
+    "@codemirror/autocomplete": ^6.20.3
     "@codemirror/commands": ^6.11.1
     "@codemirror/language": ^6.12.4
+    "@codemirror/lint": ^6.9.7
     "@codemirror/search": ^6.7.2
     "@codemirror/state": ^6.7.6
     "@codemirror/view": ^6.43.13

@@ -13,6 +13,7 @@ import * as users from './api.users';
 import * as tool from './api.tool';
 import * as units from './api.units';
 import * as connection from './api.connection';
+import * as editor from './api.editor';
 
 export {
   version,
@@ -30,4 +31,5 @@ export {
   tool,
   units,
   connection,
+  editor,
 };

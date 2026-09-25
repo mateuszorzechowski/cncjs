@@ -207,9 +207,18 @@ const FilesScreen = ({ machine }) => {
         * The file's text, on a screen wide enough to keep it open beside the
         * details — list, details, text — with the list giving up the room.
         */}
-      {wide && file ? (
-        <Card label={t('files.editor.title')} className="min-h-0 flex-1">
-          <FileEditor file={file} machine={machine} />
+      {/*
+        * Always there on a wide screen, like the details beside it — with no
+        * file chosen it says so the same way, rather than the list growing
+        * into its place and shrinking back when a file is picked.
+        */}
+      {wide ? (
+        <Card label={t('files.editor.title')} className="min-h-0 flex-1" bodyClassName="gap-3">
+          {file ? <FileEditor file={file} machine={machine} /> : (
+            <div className="flex flex-1 items-center justify-center px-pad">
+              <p className="m-0 text-center text-base text-mut">{t('files.none')}</p>
+            </div>
+          )}
         </Card>
       ) : null}
 

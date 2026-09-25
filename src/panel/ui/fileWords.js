@@ -88,6 +88,8 @@ const ISSUES = {
   'undeclared': 'files.check.issue.undeclared',
   'tool-change': 'files.check.issue.toolChange',
   'mist': 'files.check.issue.mist',
+  // The editor's own, as a line is typed: a letter with nothing after it.
+  'no-number': 'files.check.issue.noNumber',
 };
 
 /** A verdict as the tile says it, and the tone the tile says it in. */

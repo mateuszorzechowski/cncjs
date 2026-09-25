@@ -463,6 +463,10 @@ const appMain = () => {
     app.get(urljoin(settings.route, 'api/connection/auto'), api.connection.readAuto);
     app.put(urljoin(settings.route, 'api/connection/auto'), api.connection.updateAuto);
 
+    // The file editor's vocabulary and its check of unsaved text
+    app.get(urljoin(settings.route, 'api/editor/words'), api.editor.words);
+    app.post(urljoin(settings.route, 'api/editor/check'), api.editor.check);
+
     // Machines
     app.get(urljoin(settings.route, 'api/machines'), api.machines.fetch);
     app.post(urljoin(settings.route, 'api/machines'), api.machines.create);
