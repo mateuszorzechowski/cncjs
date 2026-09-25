@@ -81,19 +81,26 @@ const seedModal = (controller, patch) => {
   };
 };
 
-const waitForCallback = (callback) => new Promise((resolve, reject) => {
-  let attempts = 0;
+/*
+ * Until the callback has run, or two seconds have passed.
+ *
+ * A deadline in time, not a number of turns of the event loop: a thousand
+ * `setImmediate` turns go by in well under a millisecond, and a file read on
+ * a loaded machine does not — the full suite failed here once in 1173 while
+ * the case passed on its own.
+ */
+const waitForCallback = (callback, ms = 2000) => new Promise((resolve, reject) => {
+  const deadline = Date.now() + ms;
   const check = () => {
     if (callback.mock.calls.length > 0) {
       resolve();
       return;
     }
-    if (attempts > 1000) {
+    if (Date.now() > deadline) {
       reject(new Error('callback was never invoked'));
       return;
     }
-    attempts += 1;
-    setImmediate(check);
+    setTimeout(check, 5);
   };
   check();
 });

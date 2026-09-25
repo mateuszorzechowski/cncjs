@@ -849,6 +849,7 @@ class GrblController {
          */
         if (this.jogging.inFlight > 0) {
           this.jogging.inFlight -= 1;
+          this.noteJogAnswer(res.raw);
 
           /*
            * **A stop waits for the outstanding segment to be acknowledged.**
@@ -954,6 +955,7 @@ class GrblController {
         if (this.jogging.inFlight > 0) {
           this.jogging.inFlight -= 1;
           log.debug(`Jog segment refused: ${res.raw}`);
+          this.noteJogAnswer(res.raw);
 
           if (this.jogging.stopping) {
             if (this.jogging.inFlight === 0) {
@@ -1898,6 +1900,20 @@ class GrblController {
       if (this.jogging.owner === socket.id) {
         this.endHeldJog();
       }
+    }
+
+    /**
+     * The firmware's answer to a jog segment, for the journal at debug.
+     *
+     * These are consumed by the jog's own count and never emitted, so the
+     * wire as the journal kept it was one-sided: segments going out and
+     * nothing coming back. A stop waits on that count reaching zero, so when
+     * a jog misbehaves — a refusal swallowed, a cancel that goes out late —
+     * this is what shows whether the count came right. Marked `jog` so it
+     * reads apart from an answer the panel saw.
+     */
+    noteJogAnswer(line) {
+      this.note({ level: 'debug', source: 'controller', event: 'received', data: { line, jog: true } });
     }
 
     emit(eventName, ...args) {
