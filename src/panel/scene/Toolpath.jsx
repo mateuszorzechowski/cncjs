@@ -35,8 +35,8 @@ const RAPID_WIDTH = 0.4;
 
 /*
  * The line of the program being cut, drawn over the rest — *"zaznaczaj
- * aktualne polecenie G-code na ścieżce"* — in the tool's own colour, because
- * it is where the tool is, and thick enough to find at a glance.
+ * aktualne polecenie G-code na ścieżce"* — in its own colour (`current` in
+ * the scene palette), and thick enough to find at a glance.
  */
 const CURRENT_WIDTH = 2.5;
 
@@ -282,8 +282,8 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
   const start = progress ? progress.start : -1;
   const end = progress ? progress.end : -1;
   const current = useMemo(
-    () => (start >= 0 ? buildCurrent(toolpath.source, { start, end }, colors.tool) : null),
-    [toolpath, start, end, colors.tool]
+    () => (start >= 0 ? buildCurrent(toolpath.source, { start, end }, colors.current) : null),
+    [toolpath, start, end, colors.current]
   );
   useEffect(() => {
     current?.material.resolution.set(size.width, size.height);
