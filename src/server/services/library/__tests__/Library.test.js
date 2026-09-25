@@ -167,6 +167,10 @@ describe('analysis', () => {
       bounds: { min: { x: 10, y: 5, z: -2 }, max: { x: 10, y: 5, z: 0 } },
       tools: [3],
       seconds: null,
+      check: {
+        verdict: 'warnings',
+        issues: [{ code: 'tool-change', severity: 'warning', word: 'M6', line: 2, count: 1 }],
+      },
     });
   });
 
@@ -220,6 +224,20 @@ describe('analysis', () => {
     const { files } = await analysed();
 
     expect(files[0].analysis.seconds).toBeCloseTo(10.02, 6);
+  });
+
+  test('is checked again when the start events change what they set', async () => {
+    await library.write('part.nc', 'G0 X1\n');
+    expect((await analysed()).files[0].analysis.check.verdict).toBe('warnings');
+
+    library.setStart('G21 G90');
+    for (;;) {
+      const { files } = await analysed();
+      if (files[0].analysis.check.verdict === 'ok') {
+        break;
+      }
+      await nextChange();
+    }
   });
 
   test('of a file replaced while it was being read is not kept', async () => {

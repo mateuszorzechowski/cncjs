@@ -638,7 +638,31 @@
       "title": "Check",
       "state": "state",
       "none": "not checked",
-      "controller": "Verify on controller"
+      "controller": "Verify on controller",
+      "sheet": "File check",
+      "verdict": {
+        "ok": "OK",
+        "warnings": "warnings",
+        "incompatible": "incompatible"
+      },
+      "note": {
+        "ok": "Grbl 1.1 will take every line of this program.",
+        "warnings": "Grbl will take this program, but check these before you run it.",
+        "incompatible": "Grbl will refuse some lines, and the program will stop at the first of them. It can still be loaded."
+      },
+      "issue": {
+        "unsupported": "{{word}} — Grbl 1.1 does not know this code",
+        "badWord": "The letter {{word}} — Grbl 1.1 does not read it",
+        "tooLong": "A line over 79 characters — it will not fit Grbl's buffer",
+        "arc": "A {{word}} arc whose end is not on its circle — Grbl refuses it",
+        "undeclared": "{{word}} not set before the first move — the program takes whatever the last one left",
+        "toolChange": "M6 — the program stops for a tool change",
+        "mist": "M7 — mist coolant; the default Grbl 1.1 build has none"
+      },
+      "where": {
+        "one": "line {{line}}",
+        "many": "line {{line}} · {{count}} times"
+      }
     }
   },
   "confirm": {

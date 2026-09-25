@@ -43,3 +43,42 @@ export const areaText = (bounds) => (bounds
   : NO_READING);
 
 export const toolsText = (tools) => (tools && tools.length > 0 ? tools.map((tool) => `T${tool}`).join(', ') : NO_READING);
+
+/**
+ * The server's check, in words. Whole keys, one per code, so every one can
+ * be found by a search and the resources test sees each asked for.
+ */
+const VERDICTS = {
+  ok: 'files.check.verdict.ok',
+  warnings: 'files.check.verdict.warnings',
+  incompatible: 'files.check.verdict.incompatible',
+};
+
+const VERDICT_NOTES = {
+  ok: 'files.check.note.ok',
+  warnings: 'files.check.note.warnings',
+  incompatible: 'files.check.note.incompatible',
+};
+
+const ISSUES = {
+  'unsupported': 'files.check.issue.unsupported',
+  'bad-word': 'files.check.issue.badWord',
+  'too-long': 'files.check.issue.tooLong',
+  'arc': 'files.check.issue.arc',
+  'undeclared': 'files.check.issue.undeclared',
+  'tool-change': 'files.check.issue.toolChange',
+  'mist': 'files.check.issue.mist',
+};
+
+/** A verdict as the tile says it, and the tone the tile says it in. */
+export const verdictText = (check) => (check ? t(VERDICTS[check.verdict]) : t('files.check.none'));
+
+export const verdictTone = (check) => ({ warnings: 'warn', incompatible: 'bad' }[check?.verdict]);
+
+export const verdictNote = (check) => t(VERDICT_NOTES[check.verdict]);
+
+export const issueText = (issue) => t(ISSUES[issue.code], { word: issue.word });
+
+export const issueWhere = (issue) => (issue.count > 1
+  ? t('files.check.where.many', { line: issue.line, count: issue.count })
+  : t('files.check.where.one', { line: issue.line }));
