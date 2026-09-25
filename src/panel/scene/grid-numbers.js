@@ -96,6 +96,14 @@ const MAX_LABELS = 40;
  *   where `push` is in multiples of the caller's gap — out of the machine,
  *   and for the unit, along the axis past the last figure.
  */
+/**
+ * A figure as printed: to a tenth at most. The far end of a program's reach
+ * is its exact extent — `-58.1149` — and printed in full it was the widest
+ * thing on the ruler and ran into the axis (Mateusz, 2026-09-25). The exact
+ * size is in the caption beside the drawing.
+ */
+const figure = (value) => String(Math.round(value * 10) / 10);
+
 export const gridLabels = (area, step) => {
   const first = (min) => snapUp(min, step);
   const last = (max) => snapDown(max, step);
@@ -175,19 +183,19 @@ export const gridLabels = (area, step) => {
 
   for (const x of ticks(area.min.x, area.max.x, farX)) {
     if (!shared(x, axisX)) {
-      labels.push({ key: `x${x}`, text: String(x), x, y: axisY, push: { x: 0, y: outY } });
+      labels.push({ key: `x${x}`, text: figure(x), x, y: axisY, push: { x: 0, y: outY } });
     }
   }
   for (const y of ticks(area.min.y, area.max.y, farY)) {
     if (!shared(y, axisY)) {
-      labels.push({ key: `y${y}`, text: String(y), x: axisX, y, push: { x: outX, y: 0 } });
+      labels.push({ key: `y${y}`, text: figure(y), x: axisX, y, push: { x: outX, y: 0 } });
     }
   }
 
   if (meet) {
     labels.push({
       key: 'origin',
-      text: String(axisX),
+      text: figure(axisX),
       x: axisX,
       y: axisY,
       push: { x: outX * 0.85, y: outY * 0.85 },

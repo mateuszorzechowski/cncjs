@@ -274,3 +274,15 @@ describe('gridLabels, when zero is inside what is drawn', () => {
     expect(numbers(labels).filter((l) => l.key.startsWith('x')).every((l) => l.y === 0)).toBe(true);
   });
 });
+
+describe('a figure', () => {
+  test('is printed to a tenth at most, so the far end of a program is not the widest thing on the ruler', () => {
+    // jsdc's reach in Y, exactly as the file has it.
+    const area = { min: { x: 0, y: -58.1149, z: -1 }, max: { x: 102.3526, y: 0, z: 1 } };
+    const texts = gridLabels(area, 10).map((l) => l.text);
+
+    expect(texts).toContain('-58.1');
+    expect(texts).toContain('102.4');
+    expect(texts.some((text) => /\.\d\d/.test(text))).toBe(false);
+  });
+});

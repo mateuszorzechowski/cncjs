@@ -7,10 +7,16 @@ import * as THREE from 'three';
  * has been turned and let go (Mateusz, 2026-09-25): a jump would read as the
  * preview resetting, a glide reads as the preview going home.
  *
- * The target and the zoom move in a straight line; the camera's offset from
- * the target turns on the shortest arc (a slerp) and changes length in a
- * straight line, so the part stays in the middle of the turn instead of the
- * camera cutting through it. Eased in and out.
+ * The camera's offset from the target turns on the shortest arc (a slerp),
+ * so the part stays in the middle of the turn instead of the camera cutting
+ * through it. Eased in and out.
+ *
+ * **Zoom and pan are paced on screen, not in millimetres.** The zoom changes
+ * by the same ratio every moment (geometrically), and the target moves so
+ * that its speed *on screen* is even. In straight lines the pan was paced in
+ * millimetres while the zoom grew, so the same millimetre was ever more
+ * pixels and a glide home from far out arrived in a rush at the end — the
+ * jump Mateusz saw after zooming out (2026-09-25).
  */
 
 /** A pose as plain numbers: `{ position, target, zoom }`, arrays of three. */
@@ -31,14 +37,20 @@ export const poseBetween = (from, to, t) => {
   const offset1 = new THREE.Vector3().fromArray(to.position).sub(target1);
   const length = offset0.length() + (offset1.length() - offset0.length()) * k;
 
+  // z(k) = z0·r^k. The pan's share by k is ∫z⁻¹ over [0, k] against [0, 1],
+  // which is (1 − r^−k) / (1 − r^−1) — straight k when the zoom does not change.
+  const ratio = to.zoom / from.zoom;
+  const zoom = from.zoom * (ratio ** k);
+  const pan = Math.abs(ratio - 1) < 1e-9 ? k : (1 - (ratio ** -k)) / (1 - (1 / ratio));
+
   const turn = new THREE.Quaternion().setFromUnitVectors(offset0.clone().normalize(), offset1.clone().normalize());
   const direction = offset0.clone().normalize().applyQuaternion(new THREE.Quaternion().slerp(turn, k));
-  const target = target0.lerp(target1, k);
+  const target = target0.lerp(target1, pan);
 
   return {
     position: target.clone().add(direction.multiplyScalar(length)).toArray(),
     target: target.toArray(),
-    zoom: from.zoom + (to.zoom - from.zoom) * k,
+    zoom,
   };
 };
 

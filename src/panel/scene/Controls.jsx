@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -70,7 +70,11 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
   // destination: it has no state to compare against, only a count of asks.
   const fitted = useRef(fit);
 
-  useEffect(() => {
+  // Layout effects, this one and the framing below: they run before the
+  // canvas draws its first frame, where a passive effect ran after it and the
+  // preview showed the default camera — a plan view — for a frame before the
+  // view it was asked for (Mateusz, 2026-09-25).
+  useLayoutEffect(() => {
     /*
      * **Z is up, and it has to be said before the controls are built.**
      *
@@ -323,7 +327,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
    * the button would look broken. The widget counts presses instead, and the
    * count is what this watches.
    */
-  useEffect(() => {
+  useLayoutEffect(() => {
     const orbit = controls.current;
     if (!orbit) {
       return;
