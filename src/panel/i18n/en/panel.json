@@ -51,7 +51,10 @@
       "note": "M2 and M30 do not undo G20: after a program in inches the console and macros go on reading inches. When on, the server sends {{modal}} once a program ends or is aborted and the machine stands idle.",
       "off": "Off",
       "on": "On"
-    }
+    },
+    "inch": "in",
+    "inPerMin": "in/min",
+    "quantity": "{{value}} {{unit}}"
   },
   "axis": {
     "x": "X",
@@ -101,9 +104,7 @@
     "stop": "Stops at the current speed — XY, then Z",
     "close": "Closes this sheet",
     "help": "Opens this help",
-    "step": "{{value, number}} mm",
-    "coarseSteps": "XY {{xy, number}} mm · Z {{z, number}} mm",
-    "stopDistance": "{{distance, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
+    "coarseSteps": "XY {{xy}} {{unit}} · Z {{z}} {{unit}}",
     "note": "Change the step and the speed on the jog card. The keys do nothing while you are typing in a text field, or while there is no connection to the controller."
   },
   "dro": {
@@ -136,7 +137,7 @@
   },
   "zheight": {
     "title": "Z height",
-    "machine": "mach. {{value}} mm",
+    "machine": "mach. {{value}} {{unit}}",
     "zeroZ": "Zero Z",
     "zeroXY": "Zero XY",
     "probeZ": "Probe Z"
@@ -395,8 +396,7 @@
     "brakingNote": "the machine's own, from its acceleration — the part no faster computer removes",
     "panel": "Pendant",
     "panelNote": "the worst gap between this panel's own confirmations; it decides how far the machine goes if this page stops responding with a key down",
-    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 1)}} mm",
-    "atFeed": "distances at {{feedrate}} mm/min"
+    "atFeed": "distances at {{feedrate}} {{unit}}"
   },
   "journal": {
     "title": "Journal",
@@ -621,8 +621,7 @@
     "unload": "Unload",
     "delete": "Delete",
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
-    "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",
-    "area": "{{x, number(maximumFractionDigits: 1)}} × {{y, number(maximumFractionDigits: 1)}} × {{z, number(maximumFractionDigits: 1)}} mm",
+    "area": "{{x}} × {{y}} × {{z}} {{unit}}",
     "units": {
       "mm": "mm (G21)",
       "inch": "inches (G20)",
@@ -724,7 +723,7 @@
       "checkedAt": "checked {{when}}",
       "progress": "{{answered}} / {{total}} lines",
       "overrun": {
-        "axis": "in {{axis}} by {{by, number(maximumFractionDigits: 1)}} mm",
+        "axis": "in {{axis}} by {{by}} {{unit}}",
         "note": "At the current zero the program leaves the table: {{where}}. Grbl will stop the check with an alarm at the first such move, the rest of the file will go unchecked, and the machine will need a reset and an unlock."
       },
       "controllerResult": {

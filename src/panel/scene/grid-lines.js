@@ -76,8 +76,17 @@ const geometryOf = ({ points, alphas }, color) => {
   return buffer;
 };
 
-export const gridStep = (extent) => (
-  STEPS.find((step) => (extent / step) <= TARGET_DIVISIONS) || STEPS[STEPS.length - 1]
+/*
+ * `factor` is the server's units per millimetre (`machine/units`). The round
+ * numbers are counted in those units and the step handed back in millimetres,
+ * because the world is drawn in them: in inches the lines fall every 1, 2 or
+ * 5 inches — 25.4, 50.8, 127 mm — and the rulers' figures land on them. With
+ * the lines in round millimetres, an inch ruler would count between them.
+ */
+const counted = (mm, factor) => Math.round(mm * factor * 1e6) / 1e6;
+
+export const gridStep = (extent, factor = 1) => (
+  (STEPS.find((step) => ((extent * factor) / step) <= TARGET_DIVISIONS) || STEPS[STEPS.length - 1]) / factor
 );
 
 /**
@@ -91,11 +100,11 @@ export const gridStep = (extent) => (
  * Null when nothing in the table divides this square, which is the honest
  * answer: no sub-grid is better than one on the wrong spacing.
  */
-export const fineStep = (step) => {
+export const fineStep = (step, factor = 1) => {
   for (const divisions of [5, 4, 2]) {
-    const candidate = step / divisions;
+    const candidate = counted(step, factor) / divisions;
     if (STEPS.includes(candidate)) {
-      return candidate;
+      return candidate / factor;
     }
   }
   return null;
@@ -114,12 +123,12 @@ export const fineStep = (step) => {
  *   Drawn like the lines through zero, exactly there even off the spacing:
  *   *"przez osie miałem na myśli prowadnice/linie"* (Mateusz, 2026-09-25).
  */
-export const buildGrid = (area, z, color, ends) => {
+export const buildGrid = (area, z, color, ends, factor = 1) => {
   const step = gridStep(Math.max(
     area.max.x - area.min.x,
     area.max.y - area.min.y,
     1
-  ));
+  ), factor);
 
   const margin = step * FADE_CELLS;
   const minX = snapDown(area.min.x - margin, step);

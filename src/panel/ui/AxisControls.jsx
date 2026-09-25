@@ -1,6 +1,7 @@
 import SegmentedChoice from './SegmentedChoice';
 import Stepper from './Stepper';
 import { t } from '../i18n';
+import { useUnits } from './units';
 
 /**
  * How far one axis group moves, and how fast.
@@ -23,41 +24,44 @@ const Label = ({ children, unit }) => (
 
 const AxisControls = ({
   title, steps, step, onStep, speed, onSpeed, fine, coarse, min, max, disabled,
-}) => (
-  <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-gap">
-    {/* The rule runs on from the title rather than under it, so two of these
-      * stacked read as two sections and not as two underlined words. */}
-    <div className="flex shrink-0 items-center gap-2.5">
-      <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{title}</span>
-      <span className="h-px flex-1 bg-line" />
-    </div>
+}) => {
+  const units = useUnits();
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-gap">
+      {/* The rule runs on from the title rather than under it, so two of these
+        * stacked read as two sections and not as two underlined words. */}
+      <div className="flex shrink-0 items-center gap-2.5">
+        <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{title}</span>
+        <span className="h-px flex-1 bg-line" />
+      </div>
 
-    <div className="flex min-w-0 shrink-0 flex-col gap-2.5">
-      <Label unit={t('units.mm')}>{t('jog.step')}</Label>
-      <SegmentedChoice
-        options={steps}
-        value={step}
-        onChange={onStep}
-        label={t('jog.stepFor', { axes: title })}
-        unit={t('units.mm')}
-        disabled={disabled}
-      />
-    </div>
+      <div className="flex min-w-0 shrink-0 flex-col gap-2.5">
+        <Label unit={units.length}>{t('jog.step')}</Label>
+        <SegmentedChoice
+          options={steps}
+          value={step}
+          onChange={onStep}
+          label={t('jog.stepFor', { axes: title })}
+          unit={units.length}
+          disabled={disabled}
+        />
+      </div>
 
-    <div className="flex min-w-0 shrink-0 flex-col gap-2.5">
-      <Label unit={t('units.mmPerMin')}>{t('jog.speed')}</Label>
-      <Stepper
-        value={speed}
-        onChange={onSpeed}
-        fine={fine}
-        coarse={coarse}
-        min={min}
-        max={max}
-        label={t('jog.speedFor', { axes: title })}
-        disabled={disabled}
-      />
+      <div className="flex min-w-0 shrink-0 flex-col gap-2.5">
+        <Label unit={units.feed}>{t('jog.speed')}</Label>
+        <Stepper
+          value={speed}
+          onChange={onSpeed}
+          fine={fine}
+          coarse={coarse}
+          min={min}
+          max={max}
+          label={t('jog.speedFor', { axes: title })}
+          disabled={disabled}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default AxisControls;

@@ -3,6 +3,7 @@ import JogWidget from '../widgets/JogWidget';
 import PathWidget from '../widgets/PathWidget';
 import { useFooterContent } from '../ui/footerSlot';
 import { NO_READING } from '../machine/readings';
+import { useUnits } from '../ui/units';
 import { t } from '../i18n';
 
 const reading = (value) => (value === null || value === undefined ? NO_READING : value);
@@ -22,6 +23,7 @@ const SEPARATOR = ' · ';
  * hands ninety pixels back to the canvas.
  */
 const JogWide = ({ machine }) => {
+  const units = useUnits();
   /*
    * The facts checked before touching a jog key go in the status bar rather
    * than in a card of their own. They are one line of text and they were
@@ -42,7 +44,7 @@ const JogWide = ({ machine }) => {
     <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 font-num text-base leading-tight text-mut">
       <span>{t('footer.state')}{SEPARATOR}<span className="text-ink">{machine.status.word}</span></span>
       <span>{t('footer.wcs')}{SEPARATOR}<span className="text-ink">{machine.modal.wcs || NO_READING}</span></span>
-      <span>{t('footer.feed')}{SEPARATOR}<span className="text-ink">{reading(machine.tool.feedrate)}</span> {t('units.mmPerMin')}</span>
+      <span>{t('footer.feed')}{SEPARATOR}<span className="text-ink">{units.figure(machine.tool.feedrate, 'feed')}</span> {units.feed}</span>
       <span>{t('footer.spindle')}{SEPARATOR}<span className="text-ink">{reading(machine.tool.spindle)}</span> {t('units.rpm')}</span>
     </span>
   ), [
@@ -51,6 +53,7 @@ const JogWide = ({ machine }) => {
     machine.modal.wcs,
     machine.tool.feedrate,
     machine.tool.spindle,
+    units.rule,
   ]);
 
   return (

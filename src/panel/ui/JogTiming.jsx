@@ -1,6 +1,7 @@
 import { NO_READING } from '../machine/readings';
 import { installationTimings, travelParts } from '../machine/timings';
 import { t } from '../i18n';
+import { useUnits } from './units';
 
 /**
  * What a jog costs on *this* installation, in milliseconds and in the unit
@@ -43,15 +44,21 @@ const Row = ({ label, value, note }) => (
 /** A figure in milliseconds, or nothing at all when it has not been measured. */
 const ms = (value) => (value === null ? null : t('timings.ms', { ms: value }));
 
-/** The same stretch as a distance, or nothing when either half is unknown. */
-const mm = (value) => (
-  value === null || value === undefined ? null : t('timings.mm', { mm: value })
+/**
+ * The same stretch as a distance, or nothing when either half is unknown.
+ * Worked out in millimetres, shown in the server's units.
+ */
+const length = (value, units) => (
+  value === null || value === undefined
+    ? null
+    : t('units.quantity', { value: units.figure(value, 'size'), unit: units.length })
 );
 
 /** Both, when both are known, and whichever one is when only one is. */
-const both = (msValue, mmValue) => [ms(msValue), mm(mmValue)].filter(Boolean).join(' · ') || null;
+const both = (msValue, mmValue, units) => [ms(msValue), length(mmValue, units)].filter(Boolean).join(' · ') || null;
 
 const JogTiming = ({ timing, linkMs, beatMs, settings, xySpeed, zSpeed }) => {
+  const units = useUnits();
   const timings = installationTimings({ timing, linkMs, beatMs });
   const travel = travelParts({ timings, settings, xySpeed, zSpeed });
 
@@ -65,7 +72,7 @@ const JogTiming = ({ timing, linkMs, beatMs, settings, xySpeed, zSpeed }) => {
           * two would understate a distance somebody is about to put a hand
           * near. */}
         <span className="text-cap text-mut">
-          {t('timings.atFeed', { feedrate: travel.feedrate })}
+          {t('timings.atFeed', { feedrate: units.figure(travel.feedrate, 'feed'), unit: units.feed })}
         </span>
       </div>
 
@@ -85,7 +92,7 @@ const JogTiming = ({ timing, linkMs, beatMs, settings, xySpeed, zSpeed }) => {
         */}
       <Row
         label={t('timings.link')}
-        value={timings.linkMatters ? both(timings.linkMs, travel.linkMm) : null}
+        value={timings.linkMatters ? both(timings.linkMs, travel.linkMm, units) : null}
         note={timings.linkKnown && !timings.linkMatters
           ? t('timings.linkHere')
           : t('timings.linkNote')}
@@ -96,7 +103,7 @@ const JogTiming = ({ timing, linkMs, beatMs, settings, xySpeed, zSpeed }) => {
         * release overshoots on a link that is not the problem. */}
       <Row
         label={t('timings.queue')}
-        value={both(timings.leadMs, travel.queueMm)}
+        value={both(timings.leadMs, travel.queueMm, units)}
         note={t('timings.queueNote')}
       />
 
@@ -104,7 +111,7 @@ const JogTiming = ({ timing, linkMs, beatMs, settings, xySpeed, zSpeed }) => {
         * 16ms latency timer shows up here and nowhere else. */}
       <Row
         label={t('timings.reply')}
-        value={both(timings.ackMs, travel.replyMm)}
+        value={both(timings.ackMs, travel.replyMm, units)}
         note={t('timings.replyNote')}
       />
 
@@ -120,7 +127,7 @@ const JogTiming = ({ timing, linkMs, beatMs, settings, xySpeed, zSpeed }) => {
         */}
       <Row
         label={t('timings.braking')}
-        value={mm(travel.brakingMm)}
+        value={length(travel.brakingMm, units)}
         note={t('timings.brakingNote')}
       />
 

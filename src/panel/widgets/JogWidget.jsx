@@ -12,7 +12,9 @@ import controller from '../machine/controller';
 import { canGoToWorkZero, goToWorkZero } from '../machine/goto';
 import { home } from '../machine/homing';
 import { useIsPhone } from '../ui/shell';
-import { jog, jogStart, jogStop, XY_STEPS, Z_STEPS } from '../machine/jog';
+import { jog, jogStart, jogStop } from '../machine/jog';
+import { inMm } from '../machine/units';
+import { useUnits } from '../ui/units';
 import ShortcutHelp from '../ui/ShortcutHelp';
 import useHoldToJog from '../ui/useHoldToJog';
 import useJogKeys from '../ui/useJogKeys';
@@ -42,10 +44,35 @@ import { t } from '../i18n';
 const JogWidget = ({ machine, className = '' }) => {
   const phone = useIsPhone();
   const { connected, type } = machine;
-  const [xyStep, setXyStep] = useState(1);
-  const [zStep, setZStep] = useState(1);
-  const [xySpeed, setXySpeed] = useState(1500);
-  const [zSpeed, setZSpeed] = useState(600);
+  const units = useUnits();
+  const offer = units.rule?.jog;
+
+  /*
+   * The step and the speed, in the server's units — a step of `0.01` means
+   * a hundredth of whatever the panel is showing, and that is what goes to
+   * the server with the units named (`machine/jog`).
+   *
+   * Held with the units they were chosen in, and back to the rule's own
+   * starting point when the units change: `10` chosen in millimetres is not
+   * a thing to carry into inches as `10`, and converting it would land on a
+   * step the rule does not offer.
+   */
+  const [chosen, setChosen] = useState(null);
+  const current = chosen && chosen.units === units.rule?.name
+    ? chosen
+    : {
+      units: units.rule?.name,
+      xyStep: offer?.xy.step ?? null,
+      zStep: offer?.z.step ?? null,
+      xySpeed: offer?.xy.rate ?? null,
+      zSpeed: offer?.z.rate ?? null,
+    };
+  const { xyStep, zStep, xySpeed, zSpeed } = current;
+  const choose = (field) => (value) => setChosen({ ...current, [field]: value });
+  const setXyStep = choose('xyStep');
+  const setZStep = choose('zStep');
+  const setXySpeed = choose('xySpeed');
+  const setZSpeed = choose('zSpeed');
   // Which axis group is being set, on a phone. Nothing on the panel, where
   // both are open on the screen already.
   const [editing, setEditing] = useState(null);
@@ -67,7 +94,7 @@ const JogWidget = ({ machine, className = '' }) => {
    * go.
    */
   const stepFor = (dir, coarse) => {
-    const steps = isZ(dir) ? Z_STEPS : XY_STEPS;
+    const steps = isZ(dir) ? offer.zSteps : offer.xySteps;
     // Shift is the coarse step: the largest the axis offers, which is what
     // "get across the work" means without asking anyone to change a setting
     // they will have to change back.
@@ -86,6 +113,7 @@ const JogWidget = ({ machine, className = '' }) => {
     dir,
     distance: stepFor(dir, coarse),
     feedrate: rateFor(dir),
+    units: units.rule,
     envelope: machine.envelope,
     position: machine.machinePosition,
   });
@@ -100,7 +128,7 @@ const JogWidget = ({ machine, className = '' }) => {
     // The link goes with it: how long the panel may go without confirming the
     // hold is partly how long a confirmation takes to arrive. See
     // `machine/deadman`.
-    start: (dir) => jogStart(type, dir, rateFor(dir), machine.linkMs),
+    start: (dir) => jogStart(type, dir, rateFor(dir), machine.linkMs, units.rule),
     stop: () => jogStop(type),
   });
 
@@ -117,7 +145,7 @@ const JogWidget = ({ machine, className = '' }) => {
    * device or to a running program, in which case the server refuses it and
    * these keys have to say so before they are pressed rather than after.
    */
-  const canMove = connected && machine.canMove;
+  const canMove = connected && machine.canMove && Boolean(offer);
 
   const holdToJog = useHoldToJog({
     step: (dir) => stepJog(dir),
@@ -155,29 +183,29 @@ const JogWidget = ({ machine, className = '' }) => {
   // two; only the shape they are drawn in differs.
   const xy = {
     title: t('axis.xy'),
-    steps: XY_STEPS,
+    steps: offer?.xySteps ?? [],
     step: xyStep,
     onStep: setXyStep,
     speed: xySpeed,
     onSpeed: setXySpeed,
-    fine: 100,
-    coarse: 500,
-    min: 100,
-    max: 5000,
-    disabled: !connected,
+    fine: offer?.xy.fine,
+    coarse: offer?.xy.coarse,
+    min: offer?.xy.min,
+    max: offer?.xy.max,
+    disabled: !connected || !offer,
   };
   const z = {
     title: t('axis.z'),
-    steps: Z_STEPS,
+    steps: offer?.zSteps ?? [],
     step: zStep,
     onStep: setZStep,
     speed: zSpeed,
     onSpeed: setZSpeed,
-    fine: 50,
-    coarse: 200,
-    min: 50,
-    max: 2000,
-    disabled: !connected,
+    fine: offer?.z.fine,
+    coarse: offer?.z.coarse,
+    min: offer?.z.min,
+    max: offer?.z.max,
+    disabled: !connected || !offer,
   };
 
   const open = editing === 'xy' ? xy : (editing === 'z' ? z : null);
@@ -233,8 +261,8 @@ const JogWidget = ({ machine, className = '' }) => {
         <SettingSummary
           title={xy.title}
           values={[
-            { value: xyStep, unit: t('units.mm') },
-            { value: xySpeed, unit: t('units.mmPerMin') },
+            { value: xyStep, unit: units.length },
+            { value: xySpeed, unit: units.feed },
           ]}
           onOpen={() => setEditing('xy')}
           disabled={!connected}
@@ -242,8 +270,8 @@ const JogWidget = ({ machine, className = '' }) => {
         <SettingSummary
           title={z.title}
           values={[
-            { value: zStep, unit: t('units.mm') },
-            { value: zSpeed, unit: t('units.mmPerMin') },
+            { value: zStep, unit: units.length },
+            { value: zSpeed, unit: units.feed },
           ]}
           onOpen={() => setEditing('z')}
           disabled={!connected}
@@ -256,10 +284,10 @@ const JogWidget = ({ machine, className = '' }) => {
           onClose={() => setHelping(false)}
           xyStep={xyStep}
           zStep={zStep}
-          xyCoarse={XY_STEPS[XY_STEPS.length - 1]}
-          zCoarse={Z_STEPS[Z_STEPS.length - 1]}
-          xySpeed={xySpeed}
-          zSpeed={zSpeed}
+          xyCoarse={offer?.xySteps.at(-1)}
+          zCoarse={offer?.zSteps.at(-1)}
+          xySpeedMm={inMm(xySpeed, units.rule)}
+          zSpeedMm={inMm(zSpeed, units.rule)}
           timing={machine.timing}
           settings={machine.settings}
           linkMs={machine.linkMs}
@@ -271,19 +299,19 @@ const JogWidget = ({ machine, className = '' }) => {
         <Sheet title={t('jog.sheet', { axes: open.title })} onClose={() => setEditing(null)}>
           <div className="flex flex-col gap-2.5">
             <span className="text-label font-semibold uppercase leading-none text-ink">
-              {t('jog.step')} <span className="normal-case text-mut">{t('units.mm')}</span>
+              {t('jog.step')} <span className="normal-case text-mut">{units.length}</span>
             </span>
             <SegmentedChoice
               options={open.steps}
               value={open.step}
               onChange={open.onStep}
               label={t('jog.stepFor', { axes: open.title })}
-              unit={t('units.mm')}
+              unit={units.length}
             />
           </div>
           <div className="flex flex-col gap-2.5">
             <span className="text-label font-semibold uppercase leading-none text-ink">
-              {t('jog.speed')} <span className="normal-case text-mut">{t('units.mmPerMin')}</span>
+              {t('jog.speed')} <span className="normal-case text-mut">{units.feed}</span>
             </span>
             <Stepper
               value={open.speed}

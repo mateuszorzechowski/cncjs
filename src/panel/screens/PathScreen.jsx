@@ -3,6 +3,7 @@ import PathWidget from '../widgets/PathWidget';
 import { useFooterContent } from '../ui/footerSlot';
 import { NO_READING } from '../machine/readings';
 import { readToolpath } from '../machine/toolpath';
+import { useUnits } from '../ui/units';
 import { t } from '../i18n';
 
 /**
@@ -22,8 +23,8 @@ import { t } from '../i18n';
 // resources.
 const SEPARATOR = ' · ';
 
-const extent = (bounds, axis) => (
-  bounds ? (bounds.max[axis] - bounds.min[axis]).toFixed(1) : NO_READING
+const extent = (bounds, axis, units) => (
+  bounds ? units.figure(bounds.max[axis] - bounds.min[axis], 'size') : NO_READING
 );
 
 const PathScreen = ({ machine }) => {
@@ -43,6 +44,7 @@ const PathScreen = ({ machine }) => {
    * sake of three numbers.
    */
   const toolpath = useMemo(() => readToolpath(machine.gcode), [machine.gcode]);
+  const units = useUnits();
   const bounds = toolpath?.bounds;
 
   useFooterContent(machine.job
@@ -51,9 +53,9 @@ const PathScreen = ({ machine }) => {
     <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 font-num text-base leading-tight text-mut">
       <span>{t('footer.program')}{SEPARATOR}<span className="text-ink">{toolpath ? toolpath.name : NO_READING}</span></span>
       <span>
-        {t('footer.size')}{SEPARATOR}<span className="text-ink">{extent(bounds, 'x')}</span>
-        {' × '}<span className="text-ink">{extent(bounds, 'y')}</span>
-        {' × '}<span className="text-ink">{extent(bounds, 'z')}</span> {t('units.mm')}
+        {t('footer.size')}{SEPARATOR}<span className="text-ink">{extent(bounds, 'x', units)}</span>
+        {' × '}<span className="text-ink">{extent(bounds, 'y', units)}</span>
+        {' × '}<span className="text-ink">{extent(bounds, 'z', units)}</span> {units.length}
       </span>
       <span>{t('footer.wcs')}{SEPARATOR}<span className="text-ink">{machine.modal.wcs || NO_READING}</span></span>
     </span>
@@ -61,6 +63,7 @@ const PathScreen = ({ machine }) => {
     Boolean(machine.job),
     machine.gcode,
     machine.modal.wcs,
+    units.rule,
   ]);
 
   return <PathWidget machine={machine} className="min-h-0 flex-1" />;

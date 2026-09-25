@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import GridLabels from './GridLabels';
+import { useUnits } from '../ui/units';
 import { buildGrid, buildSubGrid, fineStep } from './grid-lines';
 
 /**
@@ -81,11 +82,13 @@ const SubGrid = ({ area, z, color, step, coarse }) => {
 const Grid = ({ area, z, color, ends }) => {
   const endX = ends?.x;
   const endY = ends?.y;
+  // Lines on round numbers of the server's units, drawn in millimetres.
+  const factor = useUnits().rule?.factor ?? 1;
   const { lines, axes, step } = useMemo(
-    () => buildGrid(area, z, color, { x: endX, y: endY }),
-    [area, z, color, endX, endY]
+    () => buildGrid(area, z, color, { x: endX, y: endY }, factor),
+    [area, z, color, endX, endY, factor]
   );
-  const fine = fineStep(step);
+  const fine = fineStep(step, factor);
 
   useEffect(() => () => {
     lines.dispose();

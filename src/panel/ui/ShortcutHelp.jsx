@@ -2,6 +2,7 @@ import Sheet from './Sheet';
 import JogTiming from './JogTiming';
 import { t } from '../i18n';
 import { stoppingDistanceFor } from '../machine/stopping';
+import { useUnits } from './units';
 
 /**
  * What the keyboard does on this screen, with the numbers it will actually use.
@@ -45,48 +46,52 @@ const Row = ({ keys, does, value }) => (
  * `replace('.', ',')` here. It used to be written in, which was correct in
  * Polish and would have been a typo in English.
  */
-const stopText = ({ timing, settings, feedrate, axes, linkMs }) => {
+// Worked out in millimetres, from a rate in millimetres per minute, and
+// shown in the server's units like every other length.
+const stopText = ({ timing, settings, feedrate, axes, linkMs, units }) => {
   const distance = stoppingDistanceFor({ timing, settings, feedrate, axes, linkMs });
 
   if (distance === null) {
     return null;
   }
 
-  return t('shortcuts.stopDistance', { distance });
+  return t('units.quantity', { value: units.figure(distance, 'size'), unit: units.length });
 };
 
 const ShortcutHelp = ({
-  onClose, xyStep, zStep, xyCoarse, zCoarse, xySpeed, zSpeed, timing, settings, linkMs, beatMs,
-}) => (
+  onClose, xyStep, zStep, xyCoarse, zCoarse, xySpeedMm, zSpeedMm, timing, settings, linkMs, beatMs,
+}) => {
+  const units = useUnits();
+  return (
     <Sheet title={t('shortcuts.title')} onClose={onClose}>
       <div className="flex flex-col">
         <Row
           keys={[t('shortcuts.key.left'), t('shortcuts.key.right')]}
           does={t('shortcuts.jogX')}
-          value={t('shortcuts.step', { value: xyStep })}
+          value={t('units.quantity', { value: xyStep, unit: units.length })}
         />
         <Row
           keys={[t('shortcuts.key.up'), t('shortcuts.key.down')]}
           does={t('shortcuts.jogY')}
-          value={t('shortcuts.step', { value: xyStep })}
+          value={t('units.quantity', { value: xyStep, unit: units.length })}
         />
         <Row
           keys={[t('shortcuts.key.pageUp'), t('shortcuts.key.pageDown')]}
           does={t('shortcuts.jogZ')}
-          value={t('shortcuts.step', { value: zStep })}
+          value={t('units.quantity', { value: zStep, unit: units.length })}
         />
         <Row
           keys={[t('shortcuts.key.shift'), t('shortcuts.key.andDirection')]}
           does={t('shortcuts.coarse')}
-          value={t('shortcuts.coarseSteps', { xy: xyCoarse, z: zCoarse })}
+          value={t('shortcuts.coarseSteps', { xy: xyCoarse, z: zCoarse, unit: units.length })}
         />
         <Row keys={[t('shortcuts.key.hold')]} does={t('shortcuts.held')} />
         <Row
           keys={[t('shortcuts.key.onRelease')]}
           does={t('shortcuts.stop')}
           value={[
-            stopText({ timing, settings, feedrate: xySpeed, axes: ['x', 'y'], linkMs }),
-            stopText({ timing, settings, feedrate: zSpeed, axes: ['z'], linkMs }),
+            stopText({ timing, settings, feedrate: xySpeedMm, axes: ['x', 'y'], linkMs, units }),
+            stopText({ timing, settings, feedrate: zSpeedMm, axes: ['z'], linkMs, units }),
           ].filter(Boolean).join(' · ') || null}
         />
         <Row keys={[t('shortcuts.key.escape')]} does={t('shortcuts.close')} />
@@ -99,12 +104,13 @@ const ShortcutHelp = ({
         linkMs={linkMs}
         beatMs={beatMs}
         settings={settings}
-        xySpeed={xySpeed}
-        zSpeed={zSpeed}
+        xySpeed={xySpeedMm}
+        zSpeed={zSpeedMm}
       />
 
       <p className="m-0 text-note text-mut">{t('shortcuts.note')}</p>
     </Sheet>
   );
+};
 
 export default ShortcutHelp;

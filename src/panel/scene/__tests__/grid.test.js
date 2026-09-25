@@ -229,3 +229,18 @@ describe('buildSubGrid', () => {
     expect(perLine).toBeGreaterThan(5);
   });
 });
+
+describe('a grid counted in inches', () => {
+  const INCH = 1 / 25.4;
+
+  test('puts its lines on round inches, given back in millimetres', () => {
+    // 20 inches across: 16 divisions at most, so 2 inches — 50.8 mm.
+    expect(gridStep(508, INCH)).toBeCloseTo(50.8, 9);
+  });
+
+  test('finds a finer step in inches too, where one is round', () => {
+    // 10 inches divides into 2-inch squares; 1 inch into none of STEPS.
+    expect(fineStep(254, INCH)).toBeCloseTo(50.8, 9);
+    expect(fineStep(25.4, INCH)).toBeNull();
+  });
+});

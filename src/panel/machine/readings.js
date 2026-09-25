@@ -500,8 +500,3 @@ export const readMachine = ({
     alarm: connected && active?.word === ALARM ? (alarm ?? null) : null,
   };
 };
-
-/** A position in millimetres, fixed to three decimals so digits do not move. */
-export const formatPosition = (value) => (
-  value === null || Number.isNaN(value) ? NO_READING : value.toFixed(3)
-);
