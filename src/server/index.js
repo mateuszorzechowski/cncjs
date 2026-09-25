@@ -21,6 +21,7 @@ import settings from './config/settings';
 import app from './app';
 import cncengine from './services/cncengine';
 import journal from './services/journal';
+import library from './services/library';
 import monitor from './services/monitor';
 import config from './services/configstore';
 import createWebApp from './lib/create-web-app';
@@ -65,6 +66,15 @@ const createServer = (options, callback) => {
     file: path.join(path.dirname(rcfile), '.cncjs-journal.jsonl'),
     level: config.get('journal.level', 'info'),
   });
+
+  // The panel's files, beside the configuration unless `.cncrc` says
+  // `library.directory`. Made on first use. See `services/library`.
+  {
+    const dir = expandTilde(config.get('library.directory', path.join(path.dirname(rcfile), '.cncjs-files')));
+
+    library.open({ dir });
+    log.info(`Keeping files in ${chalk.yellow(JSON.stringify(dir))}`);
+  }
 
   { // secret
     if (!config.get('secret')) {

@@ -443,6 +443,13 @@ const appMain = () => {
     app.put(urljoin(settings.route, 'api/events/:id'), api.events.update);
     app.delete(urljoin(settings.route, 'api/events/:id'), api.events.__delete);
 
+    // Files — the panel's library. See `services/library`.
+    app.get(urljoin(settings.route, 'api/files'), api.files.fetch);
+    app.get(urljoin(settings.route, 'api/files/:name'), api.files.read);
+    app.put(urljoin(settings.route, 'api/files/:name'), api.files.write);
+    app.delete(urljoin(settings.route, 'api/files/:name'), api.files.remove);
+    app.post(urljoin(settings.route, 'api/files/:name/load'), api.files.load);
+
     // Journal
     app.get(urljoin(settings.route, 'api/journal'), api.journal.fetch);
     app.get(urljoin(settings.route, 'api/journal/settings'), api.journal.readSettings);

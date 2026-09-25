@@ -816,3 +816,30 @@ strony albo restart serwera — po którym wyścig rozgrywa się od nowa.
 **Uwaga o tym, jak to znaleźć u siebie:** nie po objawie na ekranie, tylko
 `/api/controllers` — `ready:false` przy otwartym porcie to cała diagnoza, a
 preflight pokazuje to w sekundę.
+
+---
+
+## Katalog obserwowany (`watchDirectory`) — wychodzi razem ze starą apką
+
+**Panel ma:** własną bibliotekę plików, `services/library` i `/api/files`
+(2026-09-25). Katalog domyślny `.cncjs-files` obok `.cncrc`, zmienialny kluczem
+`library.directory`, zakładany sam — ekran Pliki działa bez konfiguracji.
+Czytana z dysku przy każdej liście, `fs.watch` mówi tylko kiedy spojrzeć
+jeszcze raz (`files:change` do wszystkich gniazd).
+
+**Serwer ma dalej:** katalog obserwowany starej apki, który panel **nie**
+używa i nie będzie. Działa tylko z wpisem `watchDirectory` w `.cncrc`,
+nie umie usuwać, a `readFile` przepuszcza `../` (`path.join(root, file)` bez
+sprawdzenia) — świadomie niełatane, bo kod wychodzi.
+
+**Do usunięcia RAZEM ZE STARĄ APKĄ, nie wcześniej** (zdecydował Mateusz
+2026-09-25):
+- `src/server/api/api.watch.js`, jego trasy w `app.js` i eksport w `api/index.js`
+- `src/server/services/monitor/` (z `FSMonitor.js` i testami) — biblioteka go
+  nie używa; oraz zależność `watch` w `package.json`, jeśli nic innego jej nie trzyma
+- blok `watchDirectory` w `src/server/index.js`, opcja `--watch-directory`
+  w `src/server-cli.js`
+- `watchdir:load` w czterech sterownikach i w `program-gate.js`;
+  `watchDirectoryChange` / `watchdir:change` w `CNCEngine.js`
+- `watchdir:change` w `app/lib/controller/Controller.js` (współdzielony z panelem)
+- `e2e/hardware/watch-directory.spec.js`

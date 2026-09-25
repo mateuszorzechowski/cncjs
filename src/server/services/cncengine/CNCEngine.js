@@ -10,6 +10,7 @@ import settings from '../../config/settings';
 import store from '../../store';
 import config from '../configstore';
 import journal from '../journal';
+import library from '../library';
 import { commandEntry } from '../journal/commands';
 import taskRunner from '../taskrunner';
 import monitor from '../monitor';
@@ -102,6 +103,12 @@ class CNCEngine {
       journalEntry: (entry) => {
         if (this.io) {
           this.io.emit('journal:entry', entry);
+        }
+      },
+      // To everybody too: a file kept from the phone is on the laptop's list.
+      libraryChange: () => {
+        if (this.io) {
+          this.io.emit('files:change');
         }
       },
       taskStart: (...args) => {
@@ -234,6 +241,7 @@ class CNCEngine {
       config.on('change', this.listener.configChange);
       monitor.on('change', this.listener.watchDirectoryChange);
       journal.on('entry', this.listener.journalEntry);
+      library.on('change', this.listener.libraryChange);
 
       // System Trigger: Startup
       this.event.trigger('startup');
@@ -667,6 +675,7 @@ class CNCEngine {
       config.removeListener('change', this.listener.configChange);
       monitor.removeListener('change', this.listener.watchDirectoryChange);
       journal.removeListener('entry', this.listener.journalEntry);
+      library.removeListener('change', this.listener.libraryChange);
     }
 }
 
