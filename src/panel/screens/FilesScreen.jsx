@@ -11,6 +11,7 @@ import Sheet from '../ui/Sheet';
 import { sizeText } from '../ui/fileWords';
 import { useIsPhone } from '../ui/shell';
 import { deleteFile, diskLow, diskUsed, isLoaded, loadFile, reasonOf, writeFile } from '../machine/files';
+import { unloadProgram } from '../machine/commands';
 import { useFiles } from '../machine/useFiles';
 import { t } from '../i18n';
 
@@ -113,7 +114,7 @@ const FilesScreen = ({ machine }) => {
   const load = (target) => act(() => loadFile(target.name, machine.port));
 
   const details = file
-    ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onDelete={remove} />
+    ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onUnload={unloadProgram} onDelete={remove} />
     : null;
 
   return (

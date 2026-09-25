@@ -92,3 +92,8 @@ export default emergencyStop;
 export const checkFile = (name, { firstError = false } = {}) => {
   controller.command('file:check', { name, firstError });
 };
+
+/** Take the loaded program off the controller — the Pliki screen's way back out of LOAD. */
+export const unloadProgram = () => {
+  controller.command('gcode:unload');
+};

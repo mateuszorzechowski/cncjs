@@ -584,6 +584,7 @@
     "empty": "No files yet. Upload a program to keep it on the server.",
     "load": "Load",
     "loaded": "Loaded",
+    "unload": "Unload",
     "delete": "Delete",
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",

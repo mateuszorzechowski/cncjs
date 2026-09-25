@@ -584,6 +584,7 @@
     "empty": "Nie ma jeszcze plików. Wgraj program, a zostanie na serwerze.",
     "load": "Wczytaj",
     "loaded": "Wczytany",
+    "unload": "Wyładuj",
     "delete": "Usuń",
     "size": "{{amount, number(maximumFractionDigits: 1)}} {{suffix}}",
     "mm": "{{mm, number(minimumFractionDigits: 1; maximumFractionDigits: 3)}} mm",

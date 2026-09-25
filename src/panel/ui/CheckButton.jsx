@@ -67,6 +67,7 @@ const CheckButton = ({ file, machine, busy = false }) => {
           onClose={() => setAsking(false)}
         >
           <SegmentedChoice
+            joined
             label={t('files.check.scope.label')}
             options={SCOPE_OPTIONS}
             value={scope}

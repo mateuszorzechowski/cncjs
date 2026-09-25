@@ -26,7 +26,7 @@ const loadNote = (machine) => {
   return t('files.note.programRunning');
 };
 
-const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDelete }) => {
+const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onUnload, onDelete }) => {
   const [checking, setChecking] = useState(false);
   const analysis = file.analysis;
   const check = analysis?.check;
@@ -88,7 +88,11 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
             {t('files.delete')}
           </Button>
           {loaded ? (
-            <Button tone="soft" className="h-ctl flex-1" aria-disabled>{t('files.loaded')}</Button>
+            // The loaded file offers the way back out — the server's
+            // `gcode:unload`, held back like loading while a program runs.
+            <Button className="h-ctl flex-1" disabled={!loadable || busy} onClick={() => onUnload(file)}>
+              {t('files.unload')}
+            </Button>
           ) : (
             <Button tone="primary" className="h-ctl flex-1" disabled={!loadable || busy} onClick={() => onLoad(file)}>
               {t('files.load')}
