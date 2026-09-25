@@ -1,7 +1,7 @@
 import Card from '../ui/Card';
 import DroStack from '../ui/DroStack';
 import DroStrip from '../ui/DroStrip';
-import { NO_READING } from '../machine/readings';
+import WcsBadge from '../ui/WcsBadge';
 import { t } from '../i18n';
 
 /**
@@ -37,13 +37,7 @@ const DroWidget = ({ machine, label = t('dro.work'), strip = false, className = 
   return (
     <Card
       label={label}
-      aside={(
-        /* A marker rather than a footnote: as plain muted text it read as a
-         * label on the card rather than a reading from the machine. */
-        <span className="rounded-ctl border border-line bg-field px-3 py-1 text-base font-semibold uppercase tracking-[0.08em] text-ink">
-          {machine.modal.wcs || NO_READING}
-        </span>
-      )}
+      aside={<WcsBadge wcs={machine.modal.wcs} />}
       className={className}
       bodyClassName="gap-0"
     >

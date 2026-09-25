@@ -633,6 +633,12 @@
       "MB": "MB",
       "GB": "GB",
       "TB": "TB"
+    },
+    "check": {
+      "title": "Check",
+      "state": "state",
+      "none": "not checked",
+      "controller": "Verify on controller"
     }
   },
   "confirm": {

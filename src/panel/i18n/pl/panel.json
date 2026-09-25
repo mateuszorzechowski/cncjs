@@ -633,6 +633,12 @@
       "MB": "MB",
       "GB": "GB",
       "TB": "TB"
+    },
+    "check": {
+      "title": "Kontrola",
+      "state": "stan",
+      "none": "nie sprawdzono",
+      "controller": "Sprawdź na sterowniku"
     }
   },
   "confirm": {

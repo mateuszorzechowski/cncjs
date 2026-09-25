@@ -28,6 +28,12 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
   const loaded = isLoaded(machine, file.name);
   const loadable = canLoad(machine);
   const zmin = analysis?.bounds ? t('files.mm', { mm: analysis.bounds.min.z }) : NO_READING;
+  let note = '';
+  if (loaded) {
+    note = t('files.note.loadedStays');
+  } else if (!loadable) {
+    note = loadNote(machine);
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -43,6 +49,20 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
         <StatTile label={t('files.stat.zmin')} value={zmin} />
       </div>
 
+      {/*
+        * Where the checks go — the server's, made when the file is kept, and
+        * the controller's, `$C` — laid out now so the card does not change
+        * shape when they arrive (Mateusz, 2026-09-25). Both are the next
+        * change; until then the state says so and the button is greyed out.
+        */}
+      <section className="flex shrink-0 flex-col gap-2" aria-label={t('files.check.title')}>
+        <span className="text-cap font-semibold uppercase tracking-[0.12em] text-mut">{t('files.check.title')}</span>
+        <div className="grid grid-cols-2 gap-2">
+          <StatTile label={t('files.check.state')} value={t('files.check.none')} />
+          <Button className="h-auto px-3" disabled>{t('files.check.controller')}</Button>
+        </div>
+      </section>
+
       <div className="flex shrink-0 gap-2">
         <Button className="h-ctl px-4" disabled={loaded || busy} onClick={() => onDelete(file)}>
           {t('files.delete')}
@@ -55,8 +75,9 @@ const FileDetails = ({ file, machine, phone = false, busy = false, onLoad, onDel
           </Button>
         )}
       </div>
-      {loaded ? <p className="m-0 text-note text-mut">{t('files.note.loadedStays')}</p> : null}
-      {!loaded && !loadable ? <p className="m-0 text-note text-mut">{loadNote(machine)}</p> : null}
+      {/* Always there, two lines tall, so a note coming or going does not
+        * move the card above it. */}
+      <p className="m-0 line-clamp-2 min-h-note2 shrink-0 text-note text-mut">{note}</p>
     </div>
   );
 };

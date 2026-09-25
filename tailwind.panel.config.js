@@ -121,6 +121,7 @@ module.exports = {
         chipw: 'var(--chipw)',
         ctl: 'var(--ctl)',
         chiph: 'var(--chiph)',
+        note2: 'var(--note2)',
         jbtn: 'var(--jbtn)',
         jbtnh: 'var(--jbtnh)',
         jgap: 'var(--jgap)',

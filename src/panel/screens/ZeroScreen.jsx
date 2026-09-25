@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import DroStack from '../ui/DroStack';
+import WcsBadge from '../ui/WcsBadge';
 import ZeroHelp from '../ui/ZeroHelp';
 import { useHeaderHelp } from '../ui/headerSlot';
 import { zero, activeWcsNumber } from '../machine/zero';
@@ -101,7 +102,7 @@ const ZeroScreen = ({ machine }) => {
   return (
     <Card
       label={t('zero.title')}
-      aside={wcs || null}
+      aside={<WcsBadge wcs={wcs} />}
       onHelp={() => setHelp(true)}
       helpLabel={t('zero.help.open')}
       className="min-h-0 flex-1"

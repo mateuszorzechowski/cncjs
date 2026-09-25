@@ -119,6 +119,12 @@
   --chipw: 128px;
   --ctl: 52px;
   --chiph: 42px;
+  /*
+   * Two lines of `text-note` (12px at 1.5). Kept for a note that comes and
+   * goes — why a button is greyed out — so its coming does not move what is
+   * above it (Pliki, 2026-09-25).
+   */
+  --note2: 36px;
   --jbtn: 74px;
   --jbtnh: 58px;
   --jgap: 10px;
