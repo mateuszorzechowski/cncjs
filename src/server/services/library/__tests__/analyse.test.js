@@ -37,6 +37,16 @@ describe('what a program is', () => {
     expect(bounds.max.y).toBeCloseTo(10, 3);
   });
 
+  test('an arc in another plane reaches past its ends in that plane', async () => {
+    const zx = (await analyse(program('G21 G90 G18 G0 X0 Y0 Z0', 'G2 X10 Z0 I5 K0 F300'), null)).bounds;
+    const yz = (await analyse(program('G21 G90 G19 G0 X0 Y0 Z0', 'G2 Y10 Z0 J5 K0 F300'), null)).bounds;
+
+    expect([zx.min.x, zx.max.x, zx.min.y, zx.max.y]).toEqual([0, 10, 0, 0]);
+    expect(zx.max.z - zx.min.z).toBeCloseTo(5, 2); // chords, within $12
+    expect([yz.min.x, yz.max.x, yz.min.y, yz.max.y]).toEqual([0, 0, 0, 10]);
+    expect(yz.max.z - yz.min.z).toBeCloseTo(5, 2);
+  });
+
   test('inches are millimetres by the time they are counted', async () => {
     const { bounds } = await analyse(program('G20 G90 G0 X1 Y2'), null);
 

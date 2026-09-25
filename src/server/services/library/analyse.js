@@ -35,6 +35,16 @@ const STOPS_AFTER = new Set(['M0', 'M1', 'M2', 'M30']);
 
 const turn = () => new Promise((resolve) => setImmediate(resolve));
 
+/**
+ * gcode-toolpath hands an arc over in its plane's own axes — for G18 `x` is
+ * Z and `y` is X — so it is turned back once, here, and everything after it
+ * reads the machine's axes.
+ */
+const MACHINE_AXES = {
+  G18: ({ x, y, z }) => ({ x: y, y: z, z: x }),
+  G19: ({ x, y, z }) => ({ x: z, y: x, z: y }),
+};
+
 const analyse = async (text, machine) => {
   const planner = machine ? new Planner(machine) : null;
   const min = { x: Infinity, y: Infinity, z: Infinity };
@@ -56,7 +66,8 @@ const analyse = async (text, machine) => {
       reach(to);
       pending.push({ kind: 'line', modal, from: { ...from }, to: { ...to } });
     },
-    addArcCurve: (modal, from, to, center) => {
+    addArcCurve: (modal, ...points) => {
+      const [from, to, center] = points.map(MACHINE_AXES[modal.plane] || (point => point));
       // An arc bulges past its ends; its chords are where the tool goes.
       const clockwise = modal.motion === 'G2';
       arcPoints(from, to, center, { plane: modal.plane, clockwise }, machine?.arcTolerance || ARC_TOLERANCE).forEach(reach);
