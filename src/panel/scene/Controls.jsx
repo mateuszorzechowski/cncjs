@@ -81,17 +81,28 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree }) => {
     orbit.enableDamping = false;
 
     /*
-     * Stopped just short of straight up and straight down.
+     * Stopped just short of straight down, and at the horizon.
      *
-     * This is a turntable: the machine's Z stays up, so there is a pole at
-     * each end and the azimuth is undefined at it. Reaching one exactly makes
+     * This is a turntable: the machine's Z stays up, so there is a pole
+     * overhead and the azimuth is undefined at it. Reaching it exactly makes
      * a sideways drag spin the view about the line of sight by an arbitrary
      * amount — the "it stops following the mouse" that comes just before "and
-     * now it is stuck". A hundredth of a radian short of each pole is half a
-     * degree, invisible on the drawing, and the singularity is never reached.
+     * now it is stuck". A hundredth of a radian short is half a degree,
+     * invisible on the drawing, and the singularity is never reached.
+     *
+     * **Never below the bed.** It could go down to the other pole, and from
+     * under the table a drawing made only of lines is the view from above
+     * mirrored: nothing hides anything, so the machine's outline and the
+     * position markers read as if they had moved through the floor, a
+     * sideways drag turned the other way, and dragging back over the horizon
+     * put it all back — *"do góry nogami… sterowanie się odwraca… aż się w
+     * głowie kręci"* (Mateusz, 2026-09-25). Measured: an upward drag took the
+     * camera to 135° and then 179° from vertical. There is nothing under a
+     * machine bed to look at; the front and side views sit exactly on the
+     * horizon, so they are still reachable.
      */
     orbit.minPolarAngle = 0.01;
-    orbit.maxPolarAngle = Math.PI - 0.01;
+    orbit.maxPolarAngle = Math.PI / 2;
 
     /*
      * The wheel zooms towards the pointer rather than towards the middle.
