@@ -25,16 +25,18 @@ describe('a length as an operator reads it', () => {
   });
 
   test('a size is written the way the language of the panel writes a number', async () => {
-    // Read once, in a sentence, with no zeros it does not need — unlike a
-    // reading, which keeps its point and its width.
+    // Read once, in a sentence: one measured length keeps its digits, a size
+    // among others drops its spare zeros — and a reading, unlike either,
+    // keeps its point and its width.
     const was = i18next.language;
     await i18next.changeLanguage('pl');
     expect(figure(123.456, MM, 'size')).toBe('123,5');
-    expect(figure(420, MM, 'size')).toBe('420');
-    expect(figure(50, INCH, 'size')).toBe('1,97');
+    expect(figure(-6, MM, 'size')).toBe('-6,0');
+    expect(figure(420, MM, 'extent')).toBe('420');
+    expect(figure(50, INCH, 'extent')).toBe('1,97');
     expect(figure(-26.4, INCH)).toBe('-1.0394');
     await i18next.changeLanguage('en');
-    expect(figure(50, INCH, 'size')).toBe('1.97');
+    expect(figure(50, INCH, 'extent')).toBe('1.97');
     await i18next.changeLanguage(was);
   });
 

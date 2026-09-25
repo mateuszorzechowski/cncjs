@@ -216,8 +216,16 @@ const Panel = ({ machine, screen, onScreen }) => {
           * the layout, and the layout is what this element owns.
           */}
         <main
-          className={`relative flex min-h-0 min-w-0 flex-1 flex-col p-shellPad ${phone
-            ? 'pb-0 [--thumbGutter:var(--shellPad)] [&_section:last-child]:pb-[calc(var(--pad)+var(--navBite))]'
+          /*
+            * `--thumbGutter` is the frame round the screen, at every width: a
+            * scroller that is not inside a card — the settings screen's —
+            * puts its indicator in that frame. Set for phones only, the wide
+            * screens fell back to a card's 18px against a 10px frame and drew
+            * the indicator six pixels past the edge of the window, so a
+            * settings tab that scrolled showed nothing that said it did.
+            */
+          className={`relative flex min-h-0 min-w-0 flex-1 flex-col p-shellPad [--thumbGutter:var(--shellPad)] ${phone
+            ? 'pb-0 [&_section:last-child]:pb-[calc(var(--pad)+var(--navBite))]'
             : ''}`}
         >
           {/*

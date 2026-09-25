@@ -80,7 +80,7 @@ test.describe('panel, disconnected', () => {
      * screen that fixes this one is several taps away through a menu the
      * operator would have to think about first.
      */
-    const go = cncjs.page.getByRole('button', { name: 'Przejdź do połączenia' });
+    const go = cncjs.page.getByRole('button', { name: 'Przejdź do ustawień' });
     await expect(go).toBeVisible();
     await go.click();
     await expect(cncjs.page.getByRole('button', { name: 'Odśwież porty' })).toBeVisible();

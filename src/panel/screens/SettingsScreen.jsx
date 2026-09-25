@@ -79,9 +79,12 @@ const SettingsScreen = ({ machine }) => {
         * The fade that says how much is left is `FadeScroller`, which began
         * here and now belongs to every scroller in the panel.
         *
-        * The card is as tall as what is in it, on every tab. The connection
-        * tab used to stretch to the bottom of the screen to push its buttons
-        * there, and left ~180px of empty card above them (drawing, point 10).
+        * The card reaches the bottom of the screen on every tab, and its rows
+        * stay at the top — *"to powinno byc na cala wysokosc, ale karta,
+        * kontent moze zostac jak jest"* (2026-09-25). Fitted to its content,
+        * a tab with two rows was a small box floating in an empty screen. The
+        * buttons no longer ride down with it, which is what the drawing's
+        * point 10 was really about.
         *
         * No padding of its own below that. There was a `pb-5` here for a few
         * minutes, on a misreading -- *"tutaj nie musi byc dodatkowgo
@@ -90,40 +93,42 @@ const SettingsScreen = ({ machine }) => {
         * one under it only made the bottom different from the rest.
         */}
       <FadeScroller>
-        {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
-        {tab === 'appearance' ? (
-          <Card>
-            <SettingRow title={t('theme.label')} scope="device">
-              <ThemeChoice />
-            </SettingRow>
-          </Card>
-        ) : null}
-        {tab === 'preferences' ? (
-          <Card>
-            <SettingRow title={t('units.choice.label')} note={t('units.choice.note')} scope="server">
-              <UnitsChoice units={machine.units} />
-            </SettingRow>
-            {/*
-              * Right under the units, because it is about them: which units
-              * the machine is put back into is the choice above.
-              */}
-            <SettingRow
-              title={t('units.restore.label')}
-              note={t('units.restore.note', { modal: machine.units?.modal ?? 'G21' })}
-              scope="server"
-            >
-              <RestoreUnitsChoice units={machine.units} />
-            </SettingRow>
-            <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')} scope="server">
-              <JournalLevelChoice />
-            </SettingRow>
-          </Card>
-        ) : null}
-        {tab === 'install' ? (
-          <Card>
-            <AppScreen />
-          </Card>
-        ) : null}
+        <div className="flex min-h-full flex-col">
+          {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
+          {tab === 'appearance' ? (
+            <Card className="flex-1">
+              <SettingRow title={t('theme.label')} scope="device">
+                <ThemeChoice />
+              </SettingRow>
+            </Card>
+          ) : null}
+          {tab === 'preferences' ? (
+            <Card className="flex-1">
+              <SettingRow title={t('units.choice.label')} note={t('units.choice.note')} scope="server">
+                <UnitsChoice units={machine.units} />
+              </SettingRow>
+              {/*
+                * Right under the units, because it is about them: which units
+                * the machine is put back into is the choice above.
+                */}
+              <SettingRow
+                title={t('units.restore.label')}
+                note={t('units.restore.note', { modal: machine.units?.modal ?? 'G21' })}
+                scope="server"
+              >
+                <RestoreUnitsChoice units={machine.units} />
+              </SettingRow>
+              <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')} scope="server">
+                <JournalLevelChoice />
+              </SettingRow>
+            </Card>
+          ) : null}
+          {tab === 'install' ? (
+            <Card className="flex-1">
+              <AppScreen />
+            </Card>
+          ) : null}
+        </div>
       </FadeScroller>
     </div>
   );

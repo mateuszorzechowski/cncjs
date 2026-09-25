@@ -32,8 +32,9 @@ const usable = (value) => typeof value === 'number' && Number.isFinite(value);
 /**
  * A length in millimetres, as text in the server's units.
  *
- * `kind` is `position` (the machine's resolution), `size` (a program's
- * extent, read not set) or `feed` (a rate, per minute). A dash when there is
+ * `kind` is `position` (the machine's resolution), `size` (one measured
+ * length, read not set), `extent` (a size among others, without spare zeros)
+ * or `feed` (a rate, per minute). A dash when there is
  * no figure, or no rule yet — never a millimetre dressed as an inch.
  */
 export const figure = (mm, rule, kind = 'position') => {
@@ -48,11 +49,20 @@ export const figure = (mm, rule, kind = 'position') => {
    * number that changes under the operator's eye, and digits that shift or a
    * separator that differs from the controller's own console would both be
    * noise. A size is read once, in a sentence, so it is written the way the
-   * panel's language writes a number (`-6 mm`, `1,97 in` in Polish) with no
-   * zeros it does not need — the file card as it was agreed on 2026-09-25.
+   * panel's language writes a number: `-6,0 mm` in Polish.
+   *
+   * `size` keeps its digits — a single measurement, Z min or a stopping
+   * distance, read against something, where `,0` says it was measured.
+   * `extent` drops the zeros it does not need — three sizes in a row,
+   * `420 × 290 × 11 mm`, where they would only lengthen it. Both as the file
+   * card was agreed on 2026-09-25, before this was one function.
    */
-  if (kind === 'size') {
-    return new Intl.NumberFormat(i18next.language, { maximumFractionDigits: rule.digits.size }).format(value);
+  if (kind === 'size' || kind === 'extent') {
+    const digits = rule.digits.size;
+    return new Intl.NumberFormat(i18next.language, {
+      minimumFractionDigits: kind === 'size' ? digits : 0,
+      maximumFractionDigits: digits,
+    }).format(value);
   }
   return value.toFixed(rule.digits[kind]);
 };

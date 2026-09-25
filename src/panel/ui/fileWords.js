@@ -41,9 +41,9 @@ export const modifiedText = (mtime) => modified.format(new Date(mtime));
 /** The part's size, X by Y by Z, from the server's bounds, in its units. */
 export const areaText = (bounds, units) => (bounds && units
   ? t('files.area', {
-    x: figure(bounds.max.x - bounds.min.x, units, 'size'),
-    y: figure(bounds.max.y - bounds.min.y, units, 'size'),
-    z: figure(bounds.max.z - bounds.min.z, units, 'size'),
+    x: figure(bounds.max.x - bounds.min.x, units, 'extent'),
+    y: figure(bounds.max.y - bounds.min.y, units, 'extent'),
+    z: figure(bounds.max.z - bounds.min.z, units, 'extent'),
     unit: lengthLabel(units),
   })
   : NO_READING);
@@ -118,7 +118,7 @@ export const overrunText = (fits, name, units) => {
     return null;
   }
   const where = over.map(({ axis, by }) => t('files.check.overrun.axis', {
-    axis: t(AXES[axis]), by: figure(by, units, 'size'), unit: lengthLabel(units),
+    axis: t(AXES[axis]), by: figure(by, units, 'extent'), unit: lengthLabel(units),
   })).join(', ');
   return t('files.check.overrun.note', { where });
 };
