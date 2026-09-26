@@ -32,6 +32,8 @@ export const GROUPS = [
   { id: 'signals', titleKey: 'machine.group.signals.title', noteKey: 'machine.group.signals.note' },
   { id: 'motion', titleKey: 'machine.group.motion.title', noteKey: 'machine.group.motion.note' },
   { id: 'other', titleKey: 'machine.group.other.title', noteKey: 'machine.group.other.note' },
+  // No rows of its own: the server's summary of the ones above.
+  { id: 'geo', titleKey: 'machine.group.geo.title', noteKey: 'machine.group.geo.note' },
 ];
 
 const TEXT = {

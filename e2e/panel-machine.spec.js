@@ -171,6 +171,29 @@ test.describe('the Sterownik tab', () => {
     await expect(field(cncjs.page, 'Kroki silnika X')).toBeDisabled();
   });
 
+  test('Geometria: the server\'s summary and checks, each line going to its setting', async ({ cncjs }) => {
+    const geometry = {
+      summary: [
+        { id: 'travel', names: ['$130', '$131', '$132'], group: 'axes', value: { x: 420, y: 290, z: 11 } },
+        { id: 'homingSide', names: ['$23'], group: 'axes', value: { x: '-', y: '+', z: '+' } },
+        { id: 'softLimits', names: ['$20'], group: 'limits', value: 'inactive' },
+      ],
+      checks: [{ level: 'error', code: 'soft-without-homing', name: '$22', group: 'homing' }],
+      homing: ['x', 'y', 'z'].map((axis) => ({ axis, side: '+', range: { min: -100, max: 0 }, after: null, switchAt: 0 })),
+    };
+    await open(cncjs.page, { ...VIEW, geometry });
+    await cncjs.page.evaluate(() => window.__fire('controller:envelope', { min: { x: -420, y: -290, z: -11 }, max: { x: 0, y: 0, z: 0 } }));
+
+    await groups(cncjs.page).getByRole('tab', { name: 'Geometria' }).click();
+    await expect(cncjs.page.getByText('420 × 290 × 11 mm')).toBeVisible();
+    await expect(cncjs.page.getByText('X− Y+ Z+')).toBeVisible();
+    await expect(cncjs.page.getByText(/bazowanie jest wyłączone\. GRBL ich nie użyje/)).toBeVisible();
+
+    await cncjs.page.getByRole('button', { name: /Limity programowe bazowanie jest wyłączone|\$22 →/ }).click();
+    await expect(groups(cncjs.page).getByRole('tab', { name: 'Bazowanie' })).toHaveAttribute('aria-selected', 'true');
+    cncjs.expectNoPageErrors();
+  });
+
   test('connected with no rows yet says so, not "connect"', async ({ cncjs }) => {
     await open(cncjs.page, { rows: [], history: [] });
 

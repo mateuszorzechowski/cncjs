@@ -40,6 +40,8 @@ const TOKENS = {
   over: '--grn',
   // The tool. The one mark on screen that has to be found without looking.
   tool: '--amb',
+  // A limit switch: what stops the machine, in the STOP's colour.
+  stop: '--red',
   /*
    * The line of the program being cut. Not the tool's amber, which it sits
    * right under — *"bieżąca linia innego koloru, żeby się nie zlewała ze

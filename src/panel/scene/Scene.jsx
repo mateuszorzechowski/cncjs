@@ -33,7 +33,7 @@ const TOOL_GUIDE_OPACITY = 0.2;
 
 const Scene = ({
   scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking, progress,
-  onGrab, glideMs, onReady,
+  onGrab, glideMs, onReady, children,
 }) => {
   const colors = useSceneColors();
   const { envelope, origin, toolpath, program, offset, frame } = scene;
@@ -196,6 +196,9 @@ const Scene = ({
       {tool ? (
         <ToolMarker position={tool} color={colors.tool} floor={floor} />
       ) : null}
+      {/* Marks of the screen's own, over the machine's — the settings' HOME and switches. */}
+      {children}
+
       {onReady ? <Drawn onReady={onReady} /> : null}
     </Canvas>
   );

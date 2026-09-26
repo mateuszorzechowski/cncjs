@@ -1,3 +1,4 @@
+import useLitIntoView from './useLitIntoView';
 import { t } from '../i18n';
 
 // Written out, so every key is a literal the resources test can find. The
@@ -42,14 +43,17 @@ const SCOPES = {
  *
  * `code`, a setting's own name where it has one — Grbl's `$22` — in a grey
  * tag beside the title, the link to the firmware's documentation (the
- * controller settings design, decision 4).
+ * controller settings design, decision 4). `lit`, the row just reached
+ * from the Geometria summary: lit, then fading back.
  */
 export const CodeTag = ({ code }) => (
   <span className="rounded-ctl bg-mutS px-1.5 py-0.5 font-num text-cap font-normal text-mut">{code}</span>
 );
 
-const SettingRow = ({ title, note, scope, code, noteBelow = false, children }) => (
-  <div className="grid grid-cols-1 gap-y-2 border-b border-line py-4 first:pt-0 last:border-b-0 last:pb-0 @3xl/shell:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] @3xl/shell:grid-rows-[auto_auto_1fr] @3xl/shell:items-start @3xl/shell:gap-x-10 @3xl/shell:gap-y-1">
+const SettingRow = ({ title, note, scope, code, lit = false, noteBelow = false, children }) => {
+  const ref = useLitIntoView(lit);
+  return (
+  <div ref={ref} className={`grid grid-cols-1 gap-y-2 border-b border-line py-4 transition-colors duration-700 first:pt-0 last:border-b-0 last:pb-0 ${lit ? 'bg-accS' : ''} @3xl/shell:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] @3xl/shell:grid-rows-[auto_auto_1fr] @3xl/shell:items-start @3xl/shell:gap-x-10 @3xl/shell:gap-y-1`}>
     {/*
       * The name and the scope share a line on a phone and wrap as a pair when
       * they do not fit — `SERWER · WSZYSTKIE URZĄDZENIA` beside a long name
@@ -77,6 +81,7 @@ const SettingRow = ({ title, note, scope, code, noteBelow = false, children }) =
       <p className={`${noteBelow ? 'order-4' : 'order-2'} m-0 text-note text-mut @3xl/shell:col-start-1 @3xl/shell:row-start-2`}>{note}</p>
     ) : null}
   </div>
-);
+  );
+};
 
 export default SettingRow;

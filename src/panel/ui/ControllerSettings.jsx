@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AxesSettings from './AxesSettings';
 import Card from './Card';
+import GeometrySettings from './GeometrySettings';
 import Notice from './Notice';
 import RawSettings from './RawSettings';
 import ReportUnitsFix from './ReportUnitsFix';
@@ -33,6 +34,10 @@ import { t } from '../i18n';
 const ANSWER_MS = 10000;
 
 const HISTORY = 'history';
+const GEOMETRY = 'geo';
+
+// How long a setting reached from the Geometria group stays lit.
+const FLASH_MS = 1800;
 
 const refusalText = ({ reason, name }) => {
   if (GRBL_ERROR_KEYS[reason]) {
@@ -44,12 +49,12 @@ const refusalText = ({ reason, name }) => {
 // The group last open, for as long as the page lives.
 let lastGroup = 'axes';
 
-const Row = ({ row, rows, drafts, onDraft, rule, disabled }) => {
+const Row = ({ row, rows, drafts, onDraft, rule, disabled, flash }) => {
   const text = settingText(row);
   const inactive = isInactive(row, rows, drafts, rule);
   const note = inactive ? t('machine.needs', { name: row.needs }) : text.note;
   return (
-    <SettingRow title={text.title} code={row.name} note={note}>
+    <SettingRow title={text.title} code={row.name} note={note} lit={flash === row.name}>
       {/* A column of its own at the right, as wide as panel v2 gives it, rather than the row's whole width. */}
       <div className="w-full @3xl/shell:max-w-[340px] @3xl/shell:self-end">
         <SettingControl row={row} draft={drafts[row.name]} onDraft={onDraft} rule={rule} disabled={disabled || inactive} label={text.title} />
@@ -75,7 +80,18 @@ const ControllerSettings = ({ machine, raw }) => {
   const pending = pendingRows(rows, drafts, rule);
   const counts = pendingCounts(pending);
   const bad = pending.some((row) => isBad(row, drafts[row.name], rule));
-  const groups = [...groupsIn(rows).map(({ id }) => id), HISTORY];
+  const geometry = machine.machineSettings?.geometry;
+  const groups = [...groupsIn(rows).map(({ id }) => id), ...(geometry ? [GEOMETRY] : []), HISTORY];
+  const [flash, setFlash] = useState(null);
+  const flashTimer = useRef(null);
+  // From a Geometria line to the setting behind it, lit for a moment.
+  const jump = (to, name) => {
+    setGroup(to);
+    setFlash(name);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
+  };
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
   const shownGroup = groups.includes(group) ? group : groups[0];
   const about = GROUPS.find(({ id }) => id === shownGroup);
 
@@ -153,13 +169,16 @@ const ControllerSettings = ({ machine, raw }) => {
                 {about ? <p className="m-0 text-note text-mut">{t(about.noteKey)}</p> : null}
               </div>
               {shownGroup === 'axes' ? (
-                <AxesSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} />
+                <AxesSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} flash={flash} />
               ) : null}
               {shownGroup === HISTORY ? <SettingsHistory history={machine.machineSettings?.history ?? []} /> : null}
-              {shownGroup !== 'axes' && shownGroup !== HISTORY ? (
+              {shownGroup === GEOMETRY ? (
+                <GeometrySettings geometry={geometry} envelope={machine.envelope} pending={new Set(pending.map(({ name }) => name))} onJump={jump} />
+              ) : null}
+              {!['axes', HISTORY, GEOMETRY].includes(shownGroup) ? (
                 <div className="flex flex-col">
                   {groupRows(rows, shownGroup).map((row) => (
-                    <Row key={row.name} row={row} rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} />
+                    <Row key={row.name} row={row} rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} flash={flash} />
                   ))}
                 </div>
               ) : null}

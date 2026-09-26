@@ -4,6 +4,7 @@ import SegmentedChoice from './SegmentedChoice';
 import SettingControl from './SettingControl';
 import { CodeTag } from './SettingRow';
 import { useIsPhone } from './shell';
+import useLitIntoView from './useLitIntoView';
 import {
   AXES, AXIS_MASKS, AXIS_QUANTITIES, bitOf, isDirty, settingText, withBit,
 } from '../machine/machineSettings';
@@ -45,16 +46,19 @@ const BitChoice = ({ row, draft, index, onDraft, optionKeys, disabled, label }) 
 
 // The name, then its unit and its `$` — in this column, so the fields beside
 // it hold the figure alone (panel v2: `5000.000` fits a 95 px field).
-const Label = ({ title, code, unit, note }) => (
-  <div className="flex min-w-0 flex-col items-start gap-1">
+const Label = ({ title, code, unit, note, lit = false }) => {
+  const ref = useLitIntoView(lit);
+  return (
+  <div ref={ref} className={`-mx-2 flex min-w-0 flex-col items-start gap-1 rounded-ctl px-2 py-1 transition-colors duration-700 ${lit ? 'bg-accS' : ''}`}>
     <span className="text-base font-semibold text-ink">{title}</span>
     {note ? <span className="text-cap text-mut">{note}</span> : null}
     {unit ? <span className="font-num text-cap text-mut">{unit}</span> : null}
     <CodeTag code={code} />
   </div>
-);
+  );
+};
 
-const AxesSettings = ({ rows, drafts, onDraft, rule, disabled }) => {
+const AxesSettings = ({ rows, drafts, onDraft, rule, disabled, flash }) => {
   const phone = useIsPhone();
   const [axis, setAxis] = useState(0);
   const named = byName(rows);
@@ -105,7 +109,7 @@ const AxesSettings = ({ rows, drafts, onDraft, rule, disabled }) => {
           ))}
           {quantities.map(({ id, first, titleKey }) => (
             <div key={id} className="contents">
-              <Label title={t(titleKey)} unit={unitOf(first)} code={`$${first}–${first + 2}`} />
+              <Label title={t(titleKey)} unit={unitOf(first)} code={`$${first}–${first + 2}`} lit={[0, 1, 2].some((i) => flash === `$${first + i}`)} />
               {AXES.map((a, i) => (
                 <div key={a} className="min-w-0">{cell(`$${first + i}`, `${t(titleKey)} ${t(AXIS_LABELS[a])}`)}</div>
               ))}
@@ -113,7 +117,7 @@ const AxesSettings = ({ rows, drafts, onDraft, rule, disabled }) => {
           ))}
           {masks.map(({ name, optionKeys }) => (
             <div key={name} className="contents">
-              <Label title={settingText(named[name]).title} note={settingText(named[name]).note} code={name} />
+              <Label title={settingText(named[name]).title} note={settingText(named[name]).note} code={name} lit={flash === name} />
               {AXES.map((a, i) => (
                 <BitChoice
                   key={a}

@@ -986,6 +986,10 @@
       "other": {
         "title": "Other",
         "note": "Settings the panel does not know — as numbers only."
+      },
+      "geo": {
+        "title": "Geometry",
+        "note": "A summary to check. Tap a line to go to the setting."
       }
     },
     "axes": {
@@ -1149,6 +1153,42 @@
     "s32": {
       "title": "Laser mode",
       "note": "Power follows speed, with no stops on M3/M4."
+    },
+    "geo": {
+      "travel": "Work area",
+      "direction": "Direction",
+      "homingSide": "Homing side",
+      "homing": "Homing",
+      "softLimits": "Soft limits",
+      "hardLimits": "Limit switches",
+      "on": "on",
+      "off": "off",
+      "inactive": "inactive",
+      "box": "{{x}} × {{y}} × {{z}} {{unit}}",
+      "inverted": "inv. {{axes}}",
+      "normal": "normal",
+      "homingOn": "on · pull-off {{pullOff}} {{unit}}",
+      "checks": "Consistency",
+      "goTo": "{{name}} →",
+      "check": {
+        "none": "Nothing to note.",
+        "softWithoutHoming": "Soft limits are on but homing is off. GRBL will not use them.",
+        "pullOffLong": "The pull-off after homing ({{value}} {{unit}}) is more than 10% of the shortest axis.",
+        "seekSlower": "The seek rate is slower than the locate rate.",
+        "hardOff": "Limit switches off: outside homing they will not stop motion."
+      },
+      "axis": "Axis",
+      "side": "$H",
+      "range": "MPos range",
+      "after": "After $H",
+      "span": "{{min}} … {{max}}",
+      "legend": {
+        "home": "HOME",
+        "zero": "◇ MPos 0 — axes",
+        "switches": "limit switches",
+        "soft": "— soft limits",
+        "softOff": "— soft limits off"
+      }
     }
   }
 }
