@@ -3,10 +3,30 @@ import { currentToken } from './session';
 import { useLastConnection } from './usePorts';
 
 /**
- * Who opens the port unasked — the server's setting (board note 2,
- * 2026-09-25): `server`, `panel` or `manual`.
+ * When the port opens unasked: this device's half of it, and the server's.
+ * The rule that joins the two is `connectMode.js`.
  */
-export const AUTO_MODES = ['server', 'panel', 'manual'];
+const DEVICE_KEY = 'panel.connectOnOpen';
+
+export const readConnectOnOpen = () => {
+  try {
+    return window.localStorage.getItem(DEVICE_KEY) === 'on';
+  } catch (error) {
+    return false;
+  }
+};
+
+export const keepConnectOnOpen = (on) => {
+  try {
+    if (on) {
+      window.localStorage.setItem(DEVICE_KEY, 'on');
+    } else {
+      window.localStorage.removeItem(DEVICE_KEY);
+    }
+  } catch (error) {
+    // A browser that keeps nothing connects by hand, which is the default.
+  }
+};
 
 const request = async (url, options) => {
   const token = currentToken();
@@ -28,8 +48,8 @@ export const saveAutoMode = (mode) => request('/api/connection/auto', {
 }).then((saved) => saved.mode);
 
 /**
- * With `panel`: the first panel to open while no port is open connects to
- * what was connected last.
+ * With this device set to connect when opened: on opening, while no port is
+ * open, connect to what was connected last.
  *
  * Once per page, and only on opening it. A panel that has been disconnected
  * by hand stays disconnected — this runs when the page loads, not whenever
@@ -46,10 +66,10 @@ export const useAutoConnect = (machine) => {
       return;
     }
     tried.current = true;
+    if (!readConnectOnOpen()) {
+      return;
+    }
     (async () => {
-      if (await fetchAutoMode() !== 'panel') {
-        return;
-      }
       const open = await request('/api/controllers');
       if (open.length > 0) {
         return;

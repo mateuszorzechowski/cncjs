@@ -6,6 +6,8 @@ import PortRow from '../ui/PortRow';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import Sheet from '../ui/Sheet';
 import AutoConnectChoice, { AUTO_NOTES, useAutoMode } from '../ui/AutoConnectChoice';
+import SettingGroup from '../ui/SettingGroup';
+import { connectScope } from '../machine/connectMode';
 import SettingRow from '../ui/SettingRow';
 import SettingSummary from '../ui/SettingSummary';
 import { NO_READING } from '../machine/readings';
@@ -41,6 +43,12 @@ import { t } from '../i18n';
  * sheet"*. A finger is a finger at 390px and at 1280, so there is one shape
  * again and it is the one built for a finger.
  */
+
+/** What each mode will do about a port that is not open — the state row's second sentence. */
+const UNLINKED_NEXT = {
+  panel: 'connect.auto.panelNext',
+  server: 'connect.auto.serverNext',
+};
 
 const ConnectScreen = ({ machine }) => {
   const [autoMode, chooseAuto] = useAutoMode();
@@ -178,14 +186,13 @@ const ConnectScreen = ({ machine }) => {
   const sheet = SHEETS[editing];
 
   /*
+   * Three groups, from the settings design's variant 3a (2026-09-26):
+   * the controller — what is opened and when; the server — where this panel
+   * talks to; and the state — the link, with the two actions that change it.
+   *
    * Rows, the same as every other settings tab — settings drawing,
    * 2026-09-25, *"Connection przebudowane na wiersze z Application"*.
-   *
    * No caption on the card: the tab above already says which one this is.
-   * And no separate list of what is connected: the controller and the port
-   * were said three times — the top bar, a list here, and the choices below
-   * it — so the choices are now the only place, and the server gets a row of
-   * its own.
    *
    * The three choices stay, always all three. They used to disappear once
    * the port was open, on the reasoning that attaching to a running port
@@ -196,45 +203,58 @@ const ConnectScreen = ({ machine }) => {
    * what the open port is actually running at rather than the last thing
    * picked from a list. The port locks with them, because one port at a
    * time is the rule — see the button below.
+   *
+   * The connection mode is a parameter of the port, so it stands with the
+   * port (design, 3a). Its scope follows the choice: `panel` is this
+   * device's, the other two the server's — see `machine/connectMode`.
    */
   return (
     <Card className="flex-1">
-      <SettingRow title={t('connect.port')}>
-        <SettingSummary
-          label={t('connect.choosePort')}
-          values={[{ value: (held || selected) || NO_READING }]}
-          locked={open}
-          onOpen={() => setEditing('port')}
-        />
-      </SettingRow>
-      <SettingRow title={t('connect.controller')}>
-        <SettingSummary
-          label={t('connect.controller')}
-          values={[{ value: (open ? machine.type : controllerType) || NO_READING }]}
-          locked={open}
-          onOpen={() => setEditing('controller')}
-        />
-      </SettingRow>
-      <SettingRow title={t('connect.baudrate')}>
-        <SettingSummary
-          label={t('connect.baudrate')}
-          values={[{
-            value: (open ? machine.baudrate : baudrate) || NO_READING,
-            unit: t('units.baud'),
-          }]}
-          locked={open}
-          onOpen={() => setEditing('baudrate')}
-        />
-      </SettingRow>
-      {/*
-        * Once, under all three, because it is about all three: *"ta
-        * informacja nie tyczy sie tylko portu tylko kazdej opcji"*
-        * (2026-09-25). Written as the port row's note it read as the port's
-        * alone.
-        */}
-      {open ? (
-        <p className="m-0 border-b border-line py-4 text-note text-mut">{t('connect.locked')}</p>
-      ) : null}
+      <SettingGroup title={t('connect.group.controller')}>
+        <SettingRow title={t('connect.port')}>
+          <SettingSummary
+            label={t('connect.choosePort')}
+            values={[{ value: (held || selected) || NO_READING }]}
+            locked={open}
+            onOpen={() => setEditing('port')}
+          />
+        </SettingRow>
+        <SettingRow title={t('connect.controller')}>
+          <SettingSummary
+            label={t('connect.controller')}
+            values={[{ value: (open ? machine.type : controllerType) || NO_READING }]}
+            locked={open}
+            onOpen={() => setEditing('controller')}
+          />
+        </SettingRow>
+        <SettingRow title={t('connect.baudrate')}>
+          <SettingSummary
+            label={t('connect.baudrate')}
+            values={[{
+              value: (open ? machine.baudrate : baudrate) || NO_READING,
+              unit: t('units.baud'),
+            }]}
+            locked={open}
+            onOpen={() => setEditing('baudrate')}
+          />
+        </SettingRow>
+        {/*
+          * Once, under all three, because it is about all three: *"ta
+          * informacja nie tyczy sie tylko portu tylko kazdej opcji"*
+          * (2026-09-25). Written as the port row's note it read as the port's
+          * alone.
+          */}
+        {open ? (
+          <p className="m-0 border-b border-line py-4 text-note text-mut">{t('connect.locked')}</p>
+        ) : null}
+        <SettingRow
+          title={t('connect.auto.label')}
+          note={autoMode ? t(AUTO_NOTES[autoMode]) : null}
+          scope={autoMode ? connectScope(autoMode) : null}
+        >
+          <AutoConnectChoice mode={autoMode} onChoose={chooseAuto} />
+        </SettingRow>
+      </SettingGroup>
 
       {/*
         * The server's address is the origin the panel was served from — the
@@ -244,55 +264,50 @@ const ConnectScreen = ({ machine }) => {
         * at the wrong host (*"domyslnie wyswietlaj steronik i port oraz adres
         * serwera"*, 2026-09-23).
         */}
-      <SettingRow title={t('connect.server')} note={t('connect.serverNote')}>
-        <span className="font-num text-base text-ink">{window.location.host}</span>
-      </SettingRow>
-
-      <SettingRow
-        title={t('connect.link')}
-        note={open
-          ? t('connect.linked', { port: held, baudrate: machine.baudrate })
-          : t('connect.unlinked')}
-      >
-        <div className="flex gap-2 @3xl/shell:self-start">
-          <Button
-            onClick={refresh}
-            disabled={!machine.linked || busy}
-            className="h-ctl flex-1 @3xl/shell:flex-none"
-          >
-            {t('connect.refresh')}
-          </Button>
-          <Button
-            tone={open ? 'end' : 'primary'}
-            disabled={(open ? !held : !selected) || busy}
-            onClick={() => act(() => (open
-              ? machine.disconnect(held)
-              : machine.connect(selected, { controllerType, baudrate })))}
-            className="h-ctl flex-1 @3xl/shell:flex-none"
-          >
-            {t(open ? 'connect.disconnect' : 'connect.connect')}
-          </Button>
-        </div>
-        {failure ? (
-          <p className="m-0 rounded-ctl border border-red bg-redS px-4 py-3 text-base text-red">
-            {t(failure.key, failure.vars)}
-          </p>
-        ) : null}
-      </SettingRow>
+      <SettingGroup title={t('connect.group.server')}>
+        <SettingRow title={t('connect.address')} note={t('connect.serverNote')}>
+          <span className="font-num text-base text-ink">{window.location.host}</span>
+        </SettingRow>
+      </SettingGroup>
 
       {/*
-        * Board note 2: *"tutaj checkbox/toggle łącz automatycznie"*. Three
-        * answers rather than a switch, because "automatically" has two
-        * meanings on a pendant: the server connecting on its own, with no
-        * panel open, or a panel connecting when it is opened.
+        * What the link is, and — while there is none — what the chosen mode
+        * will do about it (design, 3a: *"opis stanu przypomina o wybranym
+        * trybie"*).
         */}
-      <SettingRow
-        title={t('connect.auto.label')}
-        note={autoMode ? t(AUTO_NOTES[autoMode]) : null}
-        scope="server"
-      >
-        <AutoConnectChoice mode={autoMode} onChoose={chooseAuto} />
-      </SettingRow>
+      <SettingGroup title={t('connect.group.state')}>
+        <SettingRow
+          title={t('connect.link')}
+          note={open
+            ? t('connect.linked', { port: held, baudrate: machine.baudrate })
+            : [t('connect.unlinked'), autoMode && UNLINKED_NEXT[autoMode] ? t(UNLINKED_NEXT[autoMode]) : null].filter(Boolean).join(' ')}
+        >
+          <div className="flex gap-2 @3xl/shell:self-start">
+            <Button
+              onClick={refresh}
+              disabled={!machine.linked || busy}
+              className="h-ctl flex-1 @3xl/shell:flex-none"
+            >
+              {t('connect.refresh')}
+            </Button>
+            <Button
+              tone={open ? 'end' : 'primary'}
+              disabled={(open ? !held : !selected) || busy}
+              onClick={() => act(() => (open
+                ? machine.disconnect(held)
+                : machine.connect(selected, { controllerType, baudrate })))}
+              className="h-ctl flex-1 @3xl/shell:flex-none"
+            >
+              {t(open ? 'connect.disconnect' : 'connect.connect')}
+            </Button>
+          </div>
+          {failure ? (
+            <p className="m-0 rounded-ctl border border-red bg-redS px-4 py-3 text-base text-red">
+              {t(failure.key, failure.vars)}
+            </p>
+          ) : null}
+        </SettingRow>
+      </SettingGroup>
 
       {/*
         * What opening a port does to the machine, behind the `?` rather than

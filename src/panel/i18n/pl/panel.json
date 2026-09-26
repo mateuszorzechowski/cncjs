@@ -303,7 +303,6 @@
       "insecure": "Ten panel jest serwowany bez szyfrowania, więc telefon nie zainstaluje go jako aplikacji. Uruchom serwer z certyfikatem — patrz scripts/serve-panel.sh.",
       "untrusted": "To urządzenie nie ufa certyfikatowi panelu, więc nie zainstaluje go jako aplikacji. Kliknięcie „mimo to przejdź” nie wystarczy: strona się wczyta, a połączenie zostaje niezaufane."
     },
-    "server": "Serwer",
     "controller": "Typ sterownika",
     "baudrate": "Prędkość transmisji",
     "refresh": "Odśwież porty",
@@ -323,14 +322,22 @@
     "linked": "Połączono z {{port}} przy {{baudrate}} bodów.",
     "unlinked": "Żaden port nie jest otwarty.",
     "auto": {
-      "label": "Łącz automatycznie",
-      "server": "Serwer",
-      "panel": "Panel",
+      "label": "Tryb łączenia",
+      "server": "Przy starcie serwera",
+      "panel": "Przy otwarciu panelu",
       "manual": "Ręcznie",
       "serverNote": "Serwer sam otwiera ostatnie połączenie po starcie i po podłączeniu kabla, bez żadnego otwartego panelu. Port rozłączony ręcznie zostaje zamknięty, dopóki kabel nie zostanie wyjęty.",
-      "panelNote": "Pierwszy panel otwarty, gdy żaden port nie jest otwarty, łączy się z ostatnim połączeniem.",
-      "manualNote": "Port otwiera tylko przycisk Połącz."
-    }
+      "panelNote": "Panel łączy się, gdy otworzysz go w tej przeglądarce. Inne urządzenia zachowują własne ustawienie.",
+      "manualNote": "Port otwiera tylko przycisk Połącz.",
+      "panelNext": "Panel połączy się przy następnym otwarciu.",
+      "serverNext": "Serwer połączy się przy następnym starcie albo po ponownym podłączeniu kabla."
+    },
+    "group": {
+      "controller": "Sterownik",
+      "server": "Serwer",
+      "state": "Stan"
+    },
+    "address": "Adres"
   },
   "ports": {
     "state": {
@@ -545,7 +552,7 @@
       }
     },
     "settings": {
-      "auto": "Łącz automatycznie: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
+      "auto": "Tryb łączenia: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
     }
   },
   "grbl": {

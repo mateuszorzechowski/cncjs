@@ -3,14 +3,14 @@ import journal from '../services/journal';
 import { AUTO_KEY, AUTO_MODES, autoMode } from '../services/cncengine/autoMode';
 import { ERR_BAD_REQUEST } from '../constants';
 
-/** `GET /api/connection/auto` — who opens the port unasked: `{ mode }`. */
+/** `GET /api/connection/auto` — whether the server opens the port unasked: `{ mode }`. */
 export const readAuto = (req, res) => {
   res.send({ mode: autoMode() });
 };
 
 /**
- * `PUT /api/connection/auto` — `{ mode }`, one of `server`, `panel`,
- * `manual`; kept in `.cncrc`. The server reads it on its next look at the
+ * `PUT /api/connection/auto` — `{ mode }`, `server` or `manual`; kept in
+ * `.cncrc`. The server reads it on its next look at the
  * ports (every few seconds), so `server` takes effect without a restart.
  */
 export const updateAuto = (req, res) => {
