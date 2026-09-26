@@ -211,3 +211,13 @@ describe('the tool', () => {
     expect(scene()).not.toHaveProperty('tool');
   });
 });
+
+describe('where the floor’s figures run', () => {
+  test('along zero unless a screen says otherwise — the file preview keeps the rule it had', () => {
+    expect(scene().rulers).toBe('zero');
+  });
+
+  test('along the nearest edges when the screen asks, as Ścieżka does', () => {
+    expect(scene({ rulers: 'near' }).rulers).toBe('near');
+  });
+});
