@@ -59,7 +59,27 @@ export const RULER_PIXELS = GAP_PIXELS + (2 * TEXT_PIXELS);
 // drawn on screen, so it stays sharp when the view is zoomed into a corner.
 const RESOLUTION = 64;
 
-const paint = (text, color) => {
+// The text's own box, in texture pixels: a figure's height is this.
+const BOX = Math.ceil(RESOLUTION * 1.4);
+
+/*
+ * **A cut in the lines under each figure, fading at its edge.** Where a
+ * figure sat on a grid line or an axis the line ran straight through the
+ * digits — a `0` with a stroke in it (Mateusz, 2026-09-26: *"to nie ma być
+ * poświata, tylko wycięcie na napis z fadem"*). So each figure carries a
+ * patch of the ground's own colour, solid over the text's box — the lines
+ * stop there — and blurred at its border, so they fade out rather than end
+ * at an edge. `HALO_PAD` is the room round the text for that fade.
+ */
+const HALO_PAD = Math.round(RESOLUTION * 0.6);
+
+/** The pad around the text, in figure heights, for the plane that carries it. */
+const PAD = HALO_PAD / BOX;
+
+// Between the floor's lines (the default, 0) and the path (1 and up).
+const FIGURES_ORDER = 0.5;
+
+const paint = (text, color, halo, alpha) => {
   const canvas = document.createElement('canvas');
   // Not a sentence: a CSS font shorthand, which happens to have two words in
   // it because a typeface has a name.
@@ -70,17 +90,45 @@ const paint = (text, color) => {
   // and resets the font with it.
   const probe = canvas.getContext('2d');
   probe.font = font;
-  const width = Math.ceil(probe.measureText(text).width);
+  const width = Math.max(1, Math.ceil(probe.measureText(text).width));
 
-  canvas.width = Math.max(1, width);
-  canvas.height = Math.ceil(RESOLUTION * 1.4);
+  canvas.width = width + (2 * HALO_PAD);
+  canvas.height = BOX + (2 * HALO_PAD);
 
   const context = canvas.getContext('2d');
   context.font = font;
-  context.fillStyle = color;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(text, canvas.width / 2, canvas.height / 2);
+  const middle = [canvas.width / 2, canvas.height / 2];
+
+  // The cut: in the ground's colour, a little smaller than the letters —
+  // the box a line is dropped by is the digits, not the space above and
+  // below them — and blurred wide into the pad, so the lines fade out
+  // rather than stop at an edge (*"mniejszy ten box, albo większe
+  // rozmycie"*, 2026-09-26).
+  // Two layers: the fade, blurred wide from the letters' box, and over it
+  // a solid core a little inside that box, so the middle is fully cut
+  // however wide the blur — a small box blurred alone lets the line through.
+  const blur = Math.round(HALO_PAD * 0.5);
+  // The core is the digits' own box: the text's width, and the height of a
+  // figure rather than of the line it is set in.
+  const insetX = HALO_PAD;
+  const insetY = HALO_PAD + (BOX * 0.12);
+  const box = (grow) => context.fillRect(
+    insetX - grow, insetY - grow, canvas.width - (2 * (insetX - grow)), canvas.height - (2 * (insetY - grow))
+  );
+  context.fillStyle = halo;
+  context.filter = `blur(${blur}px)`;
+  box(blur * 0.5);
+  context.filter = 'none';
+  box(0);
+
+  // The figure over it, at its own strength: the material is opaque now, so
+  // the faintness a reference mark wants is painted in.
+  context.filter = 'none';
+  context.globalAlpha = alpha;
+  context.fillStyle = color;
+  context.fillText(text, ...middle);
 
   const texture = new THREE.CanvasTexture(canvas);
   // The canvas was painted in sRGB; saying so is what stops the figures
@@ -88,7 +136,8 @@ const paint = (text, color) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
 
-  return { texture, aspect: canvas.width / canvas.height };
+  // The text's own proportions, for placing it; the pad goes on the plane.
+  return { texture, aspect: width / BOX };
 };
 
 // Scratch vectors for the per-frame projection, so a frame allocates nothing.
@@ -107,7 +156,7 @@ const runsLeft = (camera, dx, dy) => {
  * Along the edges nearest the camera, turned to read from the left, with a
  * title per axis — design 03a, on every scene. See `grid-numbers`.
  */
-const GridLabels = ({ area, step, z, color }) => {
+const GridLabels = ({ area, step, z, color, halo }) => {
   const units = useUnits();
   const factor = units.rule?.factor ?? 1;
   const length = units.length;
@@ -130,12 +179,12 @@ const GridLabels = ({ area, step, z, color }) => {
   const labels = useMemo(() => {
     const toward = { x: facing.endsWith('left') ? -1 : 1, y: facing.startsWith('back') ? 1 : -1 };
     return gridLabels(area, spacing, { factor, length }, toward).map((label) => {
-      const { texture, aspect } = paint(label.text, color);
+      const { texture, aspect } = paint(label.text, color, halo, label.title ? 0.85 : 0.55);
       // Built one unit tall; the group is scaled to whatever that has to be on
       // screen, so the geometry never has to be rebuilt for a zoom.
       return { ...label, texture, width: aspect, height: 1 };
     });
-  }, [area, spacing, color, factor, length, facing]);
+  }, [area, spacing, color, halo, factor, length, facing]);
 
   useEffect(() => () => labels.forEach(({ texture }) => texture.dispose()), [labels]);
 
@@ -205,21 +254,28 @@ const GridLabels = ({ area, step, z, color }) => {
     }
   });
 
-  return labels.map(({ key, x, y, texture, width, height, title }, index) => (
+  return labels.map(({ key, x, y, texture, width, height }, index) => (
     <group
       key={key}
       position={[x, y, z]}
       ref={(node) => { groups.current[index] = node; }}
     >
-    <mesh>
-      <planeGeometry args={[width, height]} />
       {/*
-        * `depthWrite` off so a figure never hides the grid line behind it,
-        * and `opacity` matching the grid's own weight — these are reference
-        * marks, read when looked for and ignorable otherwise.
+        * The plane is the text and the halo's pad round it; placing goes by
+        * the text alone (`width`, `height`), so the pad changes no gap.
+        *
+        * After the floor's lines and before the path, and over them whatever
+        * the depth: the outline's top edge is nearer the camera than the
+        * floor, and with the depth test it ran through the cut. So the cut
+        * takes out the grid, the outline and the guides under a figure,
+        * never the program, which is drawn after it.
         */}
-      <meshBasicMaterial map={texture} transparent opacity={title ? 0.85 : 0.55} depthWrite={false} />
-    </mesh>
+      <mesh renderOrder={FIGURES_ORDER}>
+        <planeGeometry args={[width + (2 * PAD), height + (2 * PAD)]} />
+        {/* Not tone-mapped: the cut has to be the ground's exact colour, and
+          * R3F's default tone mapping turned it into a grey box. */}
+        <meshBasicMaterial map={texture} transparent depthTest={false} depthWrite={false} toneMapped={false} />
+      </mesh>
     </group>
   ));
 };

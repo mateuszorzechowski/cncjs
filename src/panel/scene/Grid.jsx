@@ -79,7 +79,7 @@ const SubGrid = ({ area, z, color, step, coarse }) => {
  * at 216 against a ground of 247, where from the side it was 133. Measured
  * 2026-09-25, when the plane could not be seen in a side view.
  */
-const Grid = ({ area, z, color, ends }) => {
+const Grid = ({ area, z, color, ends, ground }) => {
   const endX = ends?.x;
   const endY = ends?.y;
   // Lines on round numbers of the server's units, drawn in millimetres.
@@ -113,7 +113,7 @@ const Grid = ({ area, z, color, ends }) => {
         <lineBasicMaterial vertexColors transparent opacity={0.5} depthWrite={false} />
       </lineSegments>
 
-      <GridLabels area={area} step={step} z={z} color={color} />
+      <GridLabels area={area} step={step} z={z} color={color} halo={ground} />
     </>
   );
 };
