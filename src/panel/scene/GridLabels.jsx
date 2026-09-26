@@ -176,6 +176,13 @@ const GridLabels = ({ area, step, z, color, rulers = 'zero' }) => {
     // one render later: shown, the first frame of a view printed every
     // millimetre on top of each other.
     const settled = next === spacing && !turned;
+    // How deep each row of figures is, in figure heights, for the title that
+    // stands outside it: the X row is a figure tall, the Y column as wide as
+    // its widest figure (the figures lie along X either way).
+    const depth = {
+      x: 1,
+      y: Math.max(0, ...labels.filter((l) => !l.title && l.key.startsWith('y')).map((l) => l.width)),
+    };
     for (let i = 0; i < groups.current.length; ++i) {
       const group = groups.current[i];
       const label = labels[i];
@@ -190,9 +197,12 @@ const GridLabels = ({ area, step, z, color, rulers = 'zero' }) => {
         const alongY = label.along === 'y';
         const spanX = (alongY ? label.height : label.width) * scale;
         const spanY = (alongY ? label.width : label.height) * scale;
+        // A title stands outside its row of figures: the row's depth and a
+        // third of a figure of air past where a figure would stand.
+        const past = label.beyond ? (depth[label.beyond] + 0.35) * scale : 0;
         group.position.set(
-          label.x + (label.push.x * (gap + (spanX / 2))) + ((label.clear?.x ?? 0) * scale),
-          label.y + (label.push.y * (gap + (spanY / 2))) + ((label.clear?.y ?? 0) * scale),
+          label.x + (label.push.x * (gap + past + (spanX / 2))),
+          label.y + (label.push.y * (gap + past + (spanY / 2))),
           z
         );
         // Turned half round when its direction runs leftward on screen, so
