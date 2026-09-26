@@ -2766,7 +2766,7 @@ class GrblController {
           }
           if (![GRBL_ACTIVE_STATE_IDLE, GRBL_ACTIVE_STATE_ALARM].includes(activeState) ||
             this.jogging.inFlight > 0 || this.workflow.state !== WORKFLOW_STATE_IDLE) {
-            this.refuse(cmd, 'not-idle');
+            this.refuse(cmd, 'setting-not-idle');
             return;
           }
           const { line, refusal } = settingWrite(asked, this.runner.settings?.settings);

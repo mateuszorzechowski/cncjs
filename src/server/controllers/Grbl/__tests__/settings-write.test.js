@@ -83,7 +83,7 @@ describe('settings:write', () => {
     controller.command('settings:write', { name: '$110', value: 800 });
 
     expect(writes).toEqual([]);
-    expect(refusals).toEqual([{ event: 'command:refused', payload: { cmd: 'settings:write', reason: 'not-idle' } }]);
+    expect(refusals).toEqual([{ event: 'command:refused', payload: { cmd: 'settings:write', reason: 'setting-not-idle' } }]);
   });
 
   test('refused while a program is loaded and paused, whatever Grbl says', () => {
@@ -96,7 +96,7 @@ describe('settings:write', () => {
     controller.command('settings:write', { name: '$110', value: 800 });
 
     expect(writes).toEqual([]);
-    expect(refusals.map(({ payload }) => payload.reason)).toEqual(['not-idle']);
+    expect(refusals.map(({ payload }) => payload.reason)).toEqual(['setting-not-idle']);
   });
 
   test.each([
