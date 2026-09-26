@@ -9,22 +9,40 @@
  * wears the same face. `unit`, when given, stands inside the field at its
  * right, muted — the figure typed and what it is in (Mateusz, 2026-09-26,
  * the jog steps: *"dodaj maskę do wartości z jednostkami"*).
+ *
+ * The unit beside the figure inside one frame, not laid over the field: a
+ * unit as long as `kroków/mm` ran under the digits. The frame takes the
+ * focus colour from the input inside it.
+ *
+ * For a value that is not saved yet (the controller settings design,
+ * 2026-09-26, decision 6): `was`, what it replaces, small and struck
+ * through inside the field so the row keeps its height; `state` `changed`
+ * frames it in amber, `bad` in red.
  */
-const TextField = ({ label, unit, className = '', ...rest }) => (
-  <label className={`relative flex h-chiph min-w-0 items-center gap-2 ${className}`}>
+const FRAMES = {
+  changed: 'border-amb bg-ambS',
+  bad: 'border-red bg-redS',
+};
+
+const TextField = ({ label, unit, was, state, className = '', ...rest }) => (
+  <label
+    className={[
+      'flex h-chiph min-w-0 items-center gap-2 rounded-ctl border px-3 focus-within:border-acc',
+      FRAMES[state] || 'border-line bg-field',
+      className,
+    ].join(' ')}
+  >
     <input
       aria-label={label}
       className={[
-        'h-full min-w-0 flex-1 rounded-ctl border border-line bg-field px-3 text-note text-ink',
-        'outline-none placeholder:text-mut focus:border-acc',
+        'h-full min-w-0 flex-1 bg-transparent text-note text-ink outline-none placeholder:text-mut',
         // A figure with a unit reads in the panel's figures face.
-        unit ? 'pr-10 font-num' : '',
+        unit ? 'font-num' : '',
       ].join(' ')}
       {...rest}
     />
-    {unit ? (
-      <span className="pointer-events-none absolute right-3 font-num text-note text-mut">{unit}</span>
-    ) : null}
+    {was !== undefined ? <s className="shrink-0 font-num text-cap text-ambT">{was}</s> : null}
+    {unit ? <span className="pointer-events-none shrink-0 font-num text-note text-mut">{unit}</span> : null}
   </label>
 );
 

@@ -1,3 +1,5 @@
+import { WasDot } from './SegmentedChoice';
+
 /**
  * Several things that are each on or off, as opposed to one choice among many.
  *
@@ -15,8 +17,11 @@
  * no work coordinate systems to draw" is an answer, and a row that changed
  * length as the machine reported things would move under the finger reaching
  * for it.
+ *
+ * `was`, the chips as they stood before an unsaved change: an amber dot on
+ * each that has changed since — `SegmentedChoice`'s mark, for a set.
  */
-const ToggleChips = ({ options, value, onChange, label }) => (
+const ToggleChips = ({ options, value, onChange, label, was }) => (
   /*
    * The row's height is not fixed, and that is the difference between a
    * wrapping control and a broken one. `h-chiph` here — copied from
@@ -36,7 +41,7 @@ const ToggleChips = ({ options, value, onChange, label }) => (
           title={option.note}
           onClick={() => onChange({ ...value, [option.id]: !value[option.id] })}
           className={[
-            'h-chiph min-w-0 rounded-ctl border px-4 text-base font-semibold uppercase',
+            'flex h-chiph min-w-0 items-center gap-2 rounded-ctl border px-4 text-base font-semibold uppercase',
             'tracking-[0.1em] transition-colors',
             on
               ? 'border-acc bg-acc text-white'
@@ -45,6 +50,7 @@ const ToggleChips = ({ options, value, onChange, label }) => (
           ].join(' ')}
         >
           {option.label}
+          {was && Boolean(was[option.id]) !== Boolean(value[option.id]) ? <WasDot /> : null}
         </button>
       );
     })}

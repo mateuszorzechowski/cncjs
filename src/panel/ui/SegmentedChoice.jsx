@@ -37,11 +37,19 @@
  * the monospace they were the one place on a settings page where a word
  * looked like a reading (point 9). `unit` is what says an option is a
  * quantity.
+ *
+ * `was`, the option held before an unsaved change: an amber dot on it, so
+ * what the change replaces stays on screen without the row growing (the
+ * controller settings design, 2026-09-26, decision 6).
  */
 const COLUMNS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 4: 'grid-cols-4' };
 
+/** The mark on an option that was held before an unsaved change. */
+export const WasDot = () => <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amb" />;
+
 const SegmentedChoice = ({
   options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, covers, counts, columns, joined = false, fitWide = false,
+  was,
 }) => (
   <div
     className={[
@@ -95,6 +103,7 @@ const SegmentedChoice = ({
         >
           {format(option)}
           {count === undefined ? null : <span className="tabular-nums opacity-75">{count}</span>}
+          {was !== undefined && was === option && !chosen ? <WasDot /> : null}
         </button>
       );
     })}

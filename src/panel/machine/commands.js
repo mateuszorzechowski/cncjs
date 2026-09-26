@@ -94,13 +94,19 @@ export const checkFile = (name, { firstError = false } = {}) => {
 };
 
 /**
- * One of Grbl's `$` settings, into its EEPROM, through the server:
- * `{ name, value, units }`, `units` the server's unit the value was shown in.
- * The server converts, checks, writes and reads `$$` back; the answer is the
- * new value in `machine:settings`, or a refusal.
+ * Grbl's `$` settings, into its EEPROM, through the server: a list of
+ * `{ name, value, units }`, `units` the server's unit each value was shown
+ * in. The server checks them all, writes them one by one and reads `$$`
+ * back; the answer is the new values in `machine:settings`, or a refusal
+ * naming the one that was not taken.
  */
-export const writeSetting = ({ name, value, units }) => {
-  controller.command('settings:write', { name, value, units });
+export const writeSettings = (changes) => {
+  controller.command('settings:write', { changes });
+};
+
+/** `$$` again — the settings screen's "read again". */
+export const readSettings = () => {
+  controller.command('settings:read');
 };
 
 /** Take the loaded program off the controller — the Pliki screen's way back out of LOAD. */

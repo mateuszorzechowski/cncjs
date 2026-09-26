@@ -1,7 +1,8 @@
 import {
-  axisQuantityOf, maskNumber, maskOptions, maskValue, settingGroups, settingText, shownSetting,
+  changesOf, decoded, fieldText, filterRows, groupRows, groupsIn, isBad, isDirty, isInactive,
+  pendingCounts, pendingRows, rowTitle, settingText, valueText, withBit, bitOf,
 } from '../machineSettings';
-import { settingFigure } from '../units';
+import { grblUnit, settingFigure, settingInGrbl } from '../units';
 import { NO_READING } from '../readings';
 import i18next from '../../i18n';
 
@@ -9,110 +10,133 @@ const MM = { name: 'mm', factor: 1, digits: { position: 3, size: 1, feed: 0 } };
 const INCH = { name: 'inch', factor: 1 / 25.4, digits: { position: 4, size: 2, feed: 1 } };
 
 // Rows as the server sends them (`describeSettings`), trimmed.
-const row = (name, extra) => ({ name, kind: 'float', ...extra });
 const ROWS = [
-  row('$0', { group: 'motors', kind: 'int', unit: 'us', value: 10 }),
-  row('$10', { group: 'report', kind: 'mask', bits: 'report', value: 3 }),
-  row('$20', { group: 'limits', kind: 'bool', value: 1 }),
-  row('$23', { group: 'homing', kind: 'mask', bits: 'axes', value: 5 }),
-  row('$100', { group: 'axes', unit: 'perLength', axis: 'x', value: 800 }),
-  row('$101', { group: 'axes', unit: 'perLength', axis: 'y', value: 800 }),
-  row('$102', { group: 'axes', unit: 'perLength', axis: 'z', value: 400 }),
-  row('$110', { group: 'axes', unit: 'feed', axis: 'x', value: 500 }),
-  row('$400', { group: 'other', value: 2 }),
+  { name: '$3', group: 'axes', kind: 'mask', max: 7, bits: 'axes', value: 2, raw: '2' },
+  { name: '$100', group: 'axes', kind: 'float', unit: 'perLength', min: 0, positive: true, axis: 'x', value: 800, raw: '800.000' },
+  { name: '$110', group: 'axes', kind: 'float', unit: 'feed', min: 0, positive: true, axis: 'x', value: 3000, raw: '3000.000' },
+  { name: '$22', group: 'homing', kind: 'bool', value: 1, raw: '1' },
+  { name: '$20', group: 'limits', kind: 'bool', needs: '$22', value: 1, raw: '1' },
+  { name: '$0', group: 'signals', kind: 'int', unit: 'us', min: 3, max: 255, value: 10, raw: '10' },
+  { name: '$10', group: 'motion', kind: 'mask', max: 3, bits: 'report', value: 1, raw: '1' },
+  { name: '$13', group: 'motion', kind: 'bool', locked: 'units', required: 0, value: 0, raw: '0', wrong: false },
 ];
+const row = (name) => ROWS.find((r) => r.name === name);
 
 beforeAll(() => i18next.changeLanguage('pl'));
 
-describe('settingFigure', () => {
-  test('a length, a rate, an acceleration: multiplied by the factor', () => {
-    expect(settingFigure(420, 'length', MM)).toEqual({ value: '420.000', unit: 'mm' });
-    expect(settingFigure(25.4, 'length', INCH)).toEqual({ value: '1.0000', unit: 'in' });
-    expect(settingFigure(508, 'feed', INCH)).toEqual({ value: '20.0000', unit: 'in/min' });
-    expect(settingFigure(12.7, 'accel', INCH)).toEqual({ value: '0.5000', unit: 'in/s²' });
+describe('units for settings', () => {
+  test('a figure there and back: steps divide, the rest multiply', () => {
+    expect(settingFigure(800, 'perLength', INCH).value).toBe('20320.0000');
+    expect(settingInGrbl('20320', 'perLength', INCH)).toBeCloseTo(800);
+    expect(settingInGrbl('20', 'feed', INCH)).toBeCloseTo(508);
+    expect(settingInGrbl('3,5', 'feed', MM)).toBe(3.5);
+    expect(settingInGrbl('', 'feed', MM)).toBeNaN();
+    expect(settingInGrbl('x', undefined, MM)).toBeNaN();
   });
 
-  test('steps per length: divided — 800 steps/mm is 20320 steps/in', () => {
-    expect(settingFigure(800, 'perLength', MM)).toEqual({ value: '800.000', unit: 'kroków/mm' });
-    expect(settingFigure(800, 'perLength', INCH)).toEqual({ value: '20320.0000', unit: 'kroków/in' });
-  });
-
-  test('what does not convert is what Grbl has', () => {
-    expect(settingFigure(10, 'us', INCH)).toEqual({ value: '10', unit: 'µs' });
-    expect(settingFigure(12000, 'rpm', INCH)).toEqual({ value: '12000', unit: 'obr/min' });
-    expect(settingFigure(2, undefined, INCH)).toEqual({ value: '2', unit: '' });
-  });
-
-  test('no rule yet: a dash, never a millimetre dressed as an inch', () => {
+  test('no rule: a dash for what converts, what Grbl has for the rest', () => {
     expect(settingFigure(420, 'length', null)).toEqual({ value: NO_READING, unit: '' });
     expect(settingFigure(10, 'us', null)).toEqual({ value: '10', unit: 'µs' });
-    expect(settingFigure(undefined, 'us', MM)).toEqual({ value: NO_READING, unit: '' });
+  });
+
+  test('Grbl\'s own unit, for the raw view, whatever the server shows', () => {
+    expect(grblUnit('feed')).toBe('mm/min');
+    expect(grblUnit('perLength')).toBe('kroków/mm');
+    expect(grblUnit('ms')).toBe('ms');
+    expect(grblUnit(undefined)).toBe('');
   });
 });
 
-describe('shownSetting', () => {
-  test('a switch in words', () => {
-    expect(shownSetting(ROWS[2], MM)).toEqual({ value: 'Włączone', unit: '' });
-    expect(shownSetting({ ...ROWS[2], value: 0 }, MM)).toEqual({ value: 'Wyłączone', unit: '' });
+describe('a draft', () => {
+  test('shows as typed in its own view, converted in the other', () => {
+    const draft = { text: '20', raw: false };
+    expect(fieldText(row('$110'), draft, false, INCH)).toBe('20');
+    expect(fieldText(row('$110'), draft, true, INCH)).toBe('508');
+    const raw = { text: '508', raw: true };
+    expect(fieldText(row('$110'), raw, false, INCH)).toBe('20.0000');
   });
 
-  test('a mask as what its bits stand for', () => {
-    expect(shownSetting(ROWS[3], MM).value).toBe('X · Z');
-    expect(shownSetting(ROWS[1], MM).value).toBe('Pozycja maszyny · Bufor planera');
-    expect(shownSetting({ ...ROWS[3], value: 0 }, MM).value).toBe('Żadna');
+  test('no draft: the controller\'s value, Grbl\'s text in the raw view', () => {
+    expect(fieldText(row('$110'), undefined, true, INCH)).toBe('3000.000');
+    expect(fieldText(row('$110'), undefined, false, MM)).toBe('3000.000');
   });
 
-  test('a figure in the server\'s units', () => {
-    expect(shownSetting(ROWS[7], INCH)).toEqual({ value: '19.6850', unit: 'in/min' });
+  test('is a change only when it changes what Grbl keeps', () => {
+    expect(isDirty(row('$110'), { text: '3000', raw: false }, MM)).toBe(false);
+    expect(isDirty(row('$110'), { text: '3000.0001', raw: false }, MM)).toBe(false);
+    expect(isDirty(row('$110'), { text: '3500', raw: false }, MM)).toBe(true);
+    expect(isDirty(row('$110'), undefined, MM)).toBe(false);
+  });
+
+  test('is bad outside the server\'s bounds', () => {
+    expect(isBad(row('$110'), { text: '0' }, MM)).toBe(true);
+    expect(isBad(row('$110'), { text: '-1' }, MM)).toBe(true);
+    expect(isBad(row('$110'), { text: 'abc' }, MM)).toBe(true);
+    expect(isBad(row('$0'), { text: '2' }, MM)).toBe(true);
+    expect(isBad(row('$0'), { text: '5.5' }, MM)).toBe(true);
+    expect(isBad(row('$22'), { text: '2' }, MM)).toBe(true);
+    expect(isBad(row('$0'), { text: '5' }, MM)).toBe(false);
   });
 });
 
-describe('masks as ToggleChips hold them', () => {
-  test('there and back', () => {
-    expect(maskValue(5)).toEqual({ 1: true, 2: false, 4: true });
-    expect(maskNumber(maskValue(5))).toBe(5);
-    expect(maskNumber({ 1: false, 2: true, 4: false })).toBe(2);
+describe('what the save bar holds', () => {
+  const drafts = {
+    $110: { text: '3500', raw: false },
+    $0: { text: '10', raw: false },
+    $22: { text: '0', raw: false },
+  };
+
+  test('only the drafts that change something, counted by group', () => {
+    const pending = pendingRows(ROWS, drafts, MM);
+    expect(pending.map(({ name }) => name)).toEqual(['$110', '$22']);
+    expect(pendingCounts(pending)).toEqual({ axes: 1, homing: 1 });
   });
 
-  test('options by what the bits are', () => {
-    expect(maskOptions('axes')).toEqual([{ id: '1', label: 'X' }, { id: '2', label: 'Y' }, { id: '4', label: 'Z' }]);
-    expect(maskOptions('report').map(({ id }) => id)).toEqual(['1', '2']);
-    expect(maskOptions(undefined)).toEqual([]);
-  });
-});
-
-describe('settingGroups', () => {
-  test('the tab\'s order, the axes as quantities of three, empty groups left out', () => {
-    const groups = settingGroups(ROWS);
-
-    expect(groups.map(({ group }) => group)).toEqual(['axes', 'limits', 'homing', 'report', 'motors', 'other']);
-    const [axes] = groups;
-    expect(axes.rows).toEqual([]);
-    expect(axes.quantities.map(({ id, rows }) => [id, rows.map(({ name }) => name)])).toEqual([
-      ['steps', ['$100', '$101', '$102']],
-      ['rate', ['$110']],
+  test('sent as typed, with the units a figure was shown in', () => {
+    const pending = pendingRows(ROWS, drafts, INCH);
+    expect(changesOf(pending, drafts, INCH)).toEqual([
+      { name: '$110', value: '3500', units: 'inch' },
+      { name: '$22', value: '0', units: undefined },
     ]);
   });
 
-  test('nothing reported, nothing to group', () => {
-    expect(settingGroups([])).toEqual([]);
-    expect(settingGroups(undefined)).toEqual([]);
+  test('a switch or a mask by what it means', () => {
+    expect(valueText(row('$22'), { text: '0' }, false, MM)).toBe('Wył.');
+    expect(valueText(row('$3'), { text: '3' }, false, MM)).toBe('X · Y');
+    expect(rowTitle(row('$110'))).toBe('Maks. prędkość X');
+    expect(rowTitle(row('$0'))).toBe('Impuls kroku');
   });
 });
 
-describe('settingText', () => {
-  test('a setting the panel knows is named and described', () => {
-    expect(settingText(ROWS[2])).toEqual({ title: 'Miękkie limity', note: expect.stringContaining('bazowania') });
+describe('the layout', () => {
+  test('groups with anything in them, rows outside the axes table', () => {
+    expect(groupsIn(ROWS).map(({ id }) => id)).toEqual(['axes', 'homing', 'limits', 'signals', 'motion']);
+    expect(groupRows(ROWS, 'axes')).toEqual([]);
+    expect(groupRows(ROWS, 'motion').map(({ name }) => name)).toEqual(['$10', '$13']);
   });
 
-  test('an axis setting by its quantity', () => {
-    expect(settingText(ROWS[4], axisQuantityOf('$100')).title).toBe('Kroki silnika');
-    expect(axisQuantityOf('$132').id).toBe('travel');
-    expect(axisQuantityOf('$133')).toBe(null);
-    expect(axisQuantityOf('$20')).toBe(null);
+  test('`$20` does nothing while `$22` is off, draft or not', () => {
+    expect(isInactive(row('$20'), ROWS, {}, MM)).toBe(false);
+    expect(isInactive(row('$20'), ROWS, { $22: { text: '0' } }, MM)).toBe(true);
+    expect(isInactive(row('$0'), ROWS, {}, MM)).toBe(false);
   });
 
-  test('one it does not know, by its `$` alone', () => {
-    expect(settingText(ROWS[8])).toEqual({ title: '$400', note: '' });
+  test('the raw filter by `$`, name or group', () => {
+    expect(filterRows(ROWS, '$1').map(({ name }) => name)).toEqual(['$100', '$110', '$10', '$13']);
+    expect(filterRows(ROWS, 'bazow').map(({ name }) => name)).toEqual(['$22']);
+    expect(filterRows(ROWS, ' ').length).toBe(ROWS.length);
+  });
+
+  test('what a value means', () => {
+    expect(decoded(row('$10'))).toBe('MPos');
+    expect(decoded({ ...row('$3'), value: 0 })).toBe('brak');
+    expect(decoded(row('$0'))).toBe('');
+    expect(settingText({ name: '$400' })).toEqual({ title: '$400', note: '' });
+  });
+
+  test('a mask\'s bits', () => {
+    expect(bitOf(5, 2)).toBe(1);
+    expect(withBit(5, 0, false)).toBe(4);
+    expect(withBit(0, 1, true)).toBe(2);
   });
 });

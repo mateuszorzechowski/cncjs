@@ -12,7 +12,7 @@ import { useKeepAwakeStatus } from '../ui/keepAwake';
 import { useSwipe } from '../ui/swipe';
 import { RestoreUnitsChoice, UnitsChoice } from '../ui/UnitsChoice';
 import ConnectScreen from './ConnectScreen';
-import MachineSettings from '../ui/MachineSettings';
+import ControllerSettings from '../ui/ControllerSettings';
 import AppScreen from './AppScreen';
 import { t } from '../i18n';
 
@@ -34,7 +34,8 @@ import { t } from '../i18n';
  * and maintenance in one list; split by how often a thing is touched and by
  * what has to come before what:
  * - connection: which machine;
- * - machine: the controller's own settings, `$0`-`$132` (2026-09-26);
+ * - controller: Grbl's own settings, `$0`-`$132`, after the settings
+ *   design of 2026-09-26 — with its view switch in this row;
  * - appearance: what this device's screen looks like;
  * - preferences: how the panel works — the rows marked for the server are
  *   the same on every device;
@@ -51,7 +52,7 @@ import { t } from '../i18n';
  */
 const LABELS = {
   connection: 'settings.connection',
-  machine: 'settings.machine',
+  controller: 'settings.controller',
   appearance: 'settings.appearance',
   preferences: 'settings.preferences',
   install: 'settings.install',
@@ -66,8 +67,15 @@ const TABS = Object.keys(LABELS);
  */
 let lastTab = 'connection';
 
+// The controller tab's view — described or Grbl's `$$` — the same way.
+let lastRaw = false;
+
+const VIEWS = { described: 'machine.view.described', raw: 'machine.view.raw' };
+
 const SettingsScreen = ({ machine }) => {
   const [tab, setTab] = useState(() => lastTab);
+  const [raw, setRaw] = useState(() => lastRaw);
+  const view = raw ? 'raw' : 'described';
   const keepAwake = useKeepAwakeStatus();
   /*
    * A finger swiped across the tab's content turns to the tab beside it
@@ -82,19 +90,33 @@ const SettingsScreen = ({ machine }) => {
   useSwipe(pages, turn);
   useEffect(() => {
     lastTab = tab;
-  }, [tab]);
+    lastRaw = raw;
+  }, [tab, raw]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2.5">
-      <SegmentedChoice
-        joined
-        fitWide
-        label={t('nav.settings')}
-        options={TABS}
-        value={tab}
-        onChange={setTab}
-        format={(id) => t(LABELS[id])}
-      />
+      <div className="flex flex-col gap-2 @3xl/shell:flex-row @3xl/shell:items-center @3xl/shell:justify-between">
+        <SegmentedChoice
+          joined
+          fitWide
+          label={t('nav.settings')}
+          options={TABS}
+          value={tab}
+          onChange={setTab}
+          format={(id) => t(LABELS[id])}
+        />
+        {tab === 'controller' ? (
+          <SegmentedChoice
+            joined
+            fitWide
+            label={t('machine.view.label')}
+            options={Object.keys(VIEWS)}
+            value={view}
+            onChange={(id) => setRaw(id === 'raw')}
+            format={(id) => t(VIEWS[id])}
+          />
+        ) : null}
+      </div>
 
       {/*
         * The screen scrolls, not the card.
@@ -126,7 +148,7 @@ const SettingsScreen = ({ machine }) => {
       <FadeScroller>
         <div className="flex min-h-full flex-col">
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
-          {tab === 'machine' ? <MachineSettings machine={machine} /> : null}
+          {tab === 'controller' ? <ControllerSettings machine={machine} raw={raw} /> : null}
           {tab === 'appearance' ? (
             <Card className="flex-1">
               <SettingRow title={t('theme.label')} scope="device">

@@ -68,6 +68,27 @@ describe('adviceFor', () => {
     expect(adviceFor(door)).toBeNull();
   });
 
+  test('a controller reporting in inches: red, whatever the state, with its fix', () => {
+    // `$13=1` makes every reading wrong under a server that reads millimetres
+    // (Mateusz, 2026-09-26: a red warning that demands action). The server
+    // marks the row; the panel only reads the mark.
+    const inches = read({
+      connection: 'open', port: 'COM3', type: 'Grbl', attached: true,
+      state: { status: { activeState: 'Idle' } },
+      machineSettings: { rows: [{ name: '$13', value: 1, wrong: true }] },
+    });
+    expect(inches.status.tone).toBe('stopped');
+    expect(adviceFor(inches)).toEqual({ key: 'advice.reportInches', go: false, fix: 'report-units' });
+
+    const fine = read({
+      connection: 'open', port: 'COM3', type: 'Grbl', attached: true,
+      state: { status: { activeState: 'Idle' } },
+      machineSettings: { rows: [{ name: '$13', value: 0, wrong: false }] },
+    });
+    expect(fine.status.tone).not.toBe('stopped');
+    expect(adviceFor(fine)).toBeNull();
+  });
+
   test('survives being asked about nothing', () => {
     // Called before the first reading on a page that has only just loaded.
     expect(adviceFor()).toEqual({ key: 'advice.noServer', go: true });

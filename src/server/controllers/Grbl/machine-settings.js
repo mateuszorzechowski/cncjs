@@ -78,7 +78,16 @@ const TABLE = [
 ];
 
 // `positive`: above nought, not merely not below it — for the panel's check too.
-export const SETTINGS = TABLE.map((s) => (POSITIVE.includes(s.unit) ? { ...s, positive: true } : s));
+// Marked in place rather than by `map`: `react-refresh/babel` takes a
+// capitalised name set by a call for a component, and the server then dies
+// on `$RefreshReg$` at start.
+for (const setting of TABLE) {
+  if (POSITIVE.includes(setting.unit)) {
+    setting.positive = true;
+  }
+}
+
+export const SETTINGS = TABLE;
 
 // Lower case: `react-refresh/babel` takes a capitalised name set by a call
 // for a component, and the server then dies on `$RefreshReg$` at start.
