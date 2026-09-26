@@ -103,7 +103,8 @@ const Layer = ({ label, value, tone, ok }) => (
 
 const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) => {
   const last = useLastConnection(machine.linked);
-  const [failed, setFailed] = useState(false);
+  // The key of what went wrong, or null.
+  const [failed, setFailed] = useState(null);
   /*
    * Connecting from here, to what was connected last — *"tutaj dwa przyciski,
    * przekierowanie do ustawien i polacz (port powinien byc uzupelniony
@@ -113,10 +114,14 @@ const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) 
    */
   const again = advice?.key === 'advice.noPort' && machine.linked && last?.port ? last : null;
   const connect = () => {
-    setFailed(false);
+    setFailed(null);
     machine.connect(again.port, { controllerType: again.controllerType, baudrate: again.baudrate })
       .then(onClose)
-      .catch(() => setFailed(true));
+      .catch(() => setFailed('connect.openFailed'));
+  };
+  const disconnect = () => {
+    setFailed(null);
+    machine.disconnect(machine.port).catch(() => setFailed('connect.closeFailed'));
   };
 
   return (
@@ -155,11 +160,18 @@ const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) 
         value={window.location.host}
         ok={machine.linked}
       />
+      {/*
+        * The port open, or — with none — the one the server would open: the
+        * last connection, with its cross, so the row says where the panel
+        * connects before it does (*"tutaj chcę widzieć aktualnie wybrane
+        * wartości nawet jak jest nie połączone"*, 2026-09-26). It was a dash,
+        * and the same values stood again in a line under the rows.
+        */}
       <Layer
         label={t('layers.port')}
-        value={machine.port
-          ? [machine.port, machine.type, machine.baudrate].filter(Boolean).join('  ')
-          : ''}
+        value={(machine.port
+          ? [machine.port, machine.type, machine.baudrate]
+          : [last?.port, last?.controllerType, last?.baudrate]).filter(Boolean).join('  ')}
         ok={machine.connected}
       />
       {/*
@@ -173,14 +185,18 @@ const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) 
         value={machine.connected ? status.word : ''}
         tone={TONES[status.tone]}
       />
+      {/*
+        * Disconnecting from here, beside what it disconnects — the settings'
+        * own button and face (a red outline, not the STOP's fill).
+        */}
+      {machine.connected ? (
+        <Button tone="end" onClick={disconnect} className="mt-1 h-ctl self-start px-6">
+          {t('connect.disconnect')}
+        </Button>
+      ) : null}
     </div>
 
-    {again ? (
-      <p className="m-0 font-num text-note text-mut">
-        {[again.port, again.controllerType, again.baudrate].filter(Boolean).join('  ')}
-      </p>
-    ) : null}
-    {failed ? <p className="m-0 text-note text-red">{t('connect.openFailed')}</p> : null}
+    {failed ? <p className="m-0 text-note text-red">{t(failed)}</p> : null}
     {advice && advice.go ? (
       <div className="flex gap-2">
         <Button tone={again ? 'outline' : 'primary'} onClick={onGo} className="h-ctl flex-1">

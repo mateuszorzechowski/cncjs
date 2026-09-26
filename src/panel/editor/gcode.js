@@ -84,8 +84,12 @@ const frame = EditorView.theme({
   // No focus frame: the caret and the active line say where typing goes,
   // and a blue frame round the whole card read as a state it was in.
   '&.cm-focused': { outline: 'none' },
-  '.cm-scroller': { fontFamily: 'var(--num)', lineHeight: '1.6' },
-  '.cm-content': { caretColor: 'var(--acc)' },
+  // The browser's scrollbar hidden: the panel draws its own, with the
+  // findings marked on it (`EditorScrollbar`).
+  '.cm-scroller': { fontFamily: 'var(--num)', lineHeight: '1.6', scrollbarWidth: 'none' },
+  '.cm-scroller::-webkit-scrollbar': { display: 'none' },
+  // Room at the right for that scrollbar, so it never sits on the text.
+  '.cm-content': { caretColor: 'var(--acc)', paddingRight: '14px' },
   '.cm-cursor': { borderLeftColor: 'var(--acc)' },
   '.cm-gutters': {
     backgroundColor: 'var(--panel)',
@@ -112,6 +116,18 @@ const frame = EditorView.theme({
   '.cm-diagnostic': { padding: '4px 8px' },
   '.cm-diagnostic-error': { borderLeft: '3px solid var(--red)' },
   '.cm-diagnostic-warning': { borderLeft: '3px solid var(--amb)' },
+  // The gutter's marks: small solid dots, not the default outlined circle
+  // and triangle (*"mniejsze, i lite czerwone"*, 2026-09-26).
+  '.cm-lint-marker': {
+    content: 'normal',
+    width: '7px',
+    height: '7px',
+    borderRadius: '50%',
+    margin: '0 auto',
+    verticalAlign: 'middle',
+  },
+  '.cm-lint-marker-error': { content: 'normal', backgroundColor: 'var(--red)' },
+  '.cm-lint-marker-warning': { content: 'normal', backgroundColor: 'var(--amb)' },
   '.cm-lintRange-error': { backgroundColor: wash('red', 12) },
   '.cm-lintRange-warning': { backgroundColor: wash('amb', 14) },
   '.cm-panels': { backgroundColor: 'var(--panel)', color: 'var(--ink)' },

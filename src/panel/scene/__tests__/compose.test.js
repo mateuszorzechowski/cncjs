@@ -146,8 +146,13 @@ describe('the far corner of the travel', () => {
     expect(scene({ envelope }).farCorner).toEqual({ x: -200, y: -200, z: 200 });
   });
 
-  test('is nothing when the machine has not said how far it goes', () => {
-    expect(scene({ envelope: null }).farCorner).toBeNull();
+  test('with no machine to say, is the far corner of the program — the file preview', () => {
+    // The program, shifted by the work offset: machine (-100..-90, -80..-70).
+    expect(scene({ envelope: null }).farCorner).toEqual({ x: -100, y: -80, z: -12 });
+  });
+
+  test('is nothing with neither a machine nor a program', () => {
+    expect(scene({ envelope: null, toolpath: null }).farCorner).toBeNull();
   });
 
   test('is inside the frame whatever is switched on', () => {

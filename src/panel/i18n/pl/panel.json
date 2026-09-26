@@ -911,6 +911,7 @@
       "retract": "Odjazd Z na górę",
       "toolChange": "Wymiana narzędzia",
       "end": "Koniec programu"
-    }
+    },
+    "markLine": "Linia {{line}}"
   }
 }
