@@ -116,9 +116,6 @@ const FileEditor = ({ file, machine, className = '' }) => {
       {note ? <p className="m-0 text-note text-mut">{note}</p> : null}
       {failed ? <p className="m-0 text-base text-red">{t('files.editor.unreadable')}</p> : null}
       {text === null && !failed ? <p className="m-0 flex-1 text-base text-mut">{t('files.preview.reading')}</p> : null}
-      {missing.length && name && !running ? (
-        <DeclareBar missing={missing} onInsert={(line) => editor.current?.insertAtHead(line)} />
-      ) : null}
       {text === null ? null : (
         <GcodeEditor
           ref={editor}
@@ -126,6 +123,9 @@ const FileEditor = ({ file, machine, className = '' }) => {
           extensions={help}
           readOnly={running || !name}
           onDirty={setDirty}
+          overlay={missing.length && name && !running
+            ? <DeclareBar missing={missing} onInsert={(line) => editor.current?.insertAtHead(line)} />
+            : null}
           label={name ? t('files.editor.label', { name }) : t('files.editor.title')}
         />
       )}
