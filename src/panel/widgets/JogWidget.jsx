@@ -16,6 +16,7 @@ import { jog, jogStart, jogStop } from '../machine/jog';
 import { inMm } from '../machine/units';
 import { useUnits } from '../ui/units';
 import ShortcutHelp from '../ui/ShortcutHelp';
+import { useHeaderHelp } from '../ui/headerSlot';
 import useHoldToJog from '../ui/useHoldToJog';
 import useJogKeys from '../ui/useJogKeys';
 import useJogStream from '../ui/useJogStream';
@@ -77,6 +78,14 @@ const JogWidget = ({ machine, className = '' }) => {
   // both are open on the screen already.
   const [editing, setEditing] = useState(null);
   const [helping, setHelping] = useState(false);
+  /*
+   * **In the top bar, right after the state chip** — the help design's
+   * variant 1a (2026-09-26). It was a KEYBOARD SHORTCUTS button at the foot
+   * of this card, then a `?` beside the chip on a phone only; now the same
+   * `?` in the same place on every screen that has help and at every width,
+   * away from STOP, and the card keeps its height for the keys.
+   */
+  useHeaderHelp(t('shortcuts.title'), () => setHelping(true));
 
   /*
    * A direction is Z or it is not. The corners of the cross move X and Y
@@ -226,26 +235,6 @@ const JogWidget = ({ machine, className = '' }) => {
             <AxisControls {...xy} />
             <AxisControls {...z} />
           </div>
-
-          {/* **At the foot of the section, and always there.**
-            *
-            * It used to hide in the top corner and appear on hover, on the
-            * reasoning that a shortcut nobody knows about does not exist but
-            * need not sit on screen to be findable. Two things were wrong
-            * with that. Reaching it meant moving the pointer across the keys
-            * to a target that only appeared once you were already over them,
-            * and hover is not a thing a touchscreen has at all.
-            *
-            * Below the settings rather than above the keys: it is the least
-            * urgent control on the card, and the foot is where a reference
-            * belongs — out of the way of the things that move a machine. */}
-          <button
-            type="button"
-            onClick={() => setHelping(true)}
-            className="shrink-0 rounded-ctl border border-line py-1 text-cap uppercase text-mut transition-colors hover:border-acc hover:text-acc"
-          >
-            {t('shortcuts.title')}
-          </button>
         </FadeScroller>
       )}
 

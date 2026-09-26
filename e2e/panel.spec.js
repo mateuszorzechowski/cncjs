@@ -139,10 +139,7 @@ test.describe('panel, disconnected', () => {
     await cncjs.page.getByRole('navigation', { name: 'Nawigacja' })
       .getByRole('button', { name: 'Jog' }).click();
 
-    // The pad itself, not the card around it. The card also carries the help
-    // button, which opens a list of keyboard shortcuts and has no business
-    // being disabled by a machine being absent — reading what the keys do is
-    // exactly what somebody might be doing while waiting to connect one.
+    // The pad itself, not the card around it.
     const pad = cncjs.page.getByRole('group', { name: 'Jog' });
     await expect(pad).toBeVisible();
 
@@ -153,6 +150,30 @@ test.describe('panel, disconnected', () => {
     for (let i = 0; i < count; i += 1) {
       await expect(keys.nth(i)).toBeDisabled();
     }
+  });
+
+  test('help is the `?` right after the state chip, on the screens that have it', async ({ cncjs }) => {
+    // The help design's variant 1a (2026-09-26): the same place on every
+    // screen and at every width, away from STOP; gone where there is none.
+    // Live with no machine — reading what the keys do is exactly what
+    // somebody might be doing while waiting to connect one.
+    await openPanel(cncjs.page);
+    const nav = cncjs.page.getByRole('navigation', { name: 'Nawigacja' });
+    const bar = cncjs.page.getByRole('banner');
+
+    await nav.getByRole('button', { name: 'Jog' }).click();
+    await expect(bar.getByRole('button', { name: 'Skróty klawiszowe' })).toBeEnabled();
+    // The card no longer carries its own button for it.
+    await expect(cncjs.page.getByRole('main').getByRole('button', { name: 'Skróty klawiszowe' })).toHaveCount(0);
+    await bar.getByRole('button', { name: 'Skróty klawiszowe' }).click();
+    await expect(cncjs.page.getByRole('dialog', { name: 'Skróty klawiszowe' })).toBeVisible();
+    await cncjs.page.keyboard.press('Escape');
+
+    await nav.getByRole('button', { name: 'Zerowanie' }).click();
+    await expect(bar.getByRole('button', { name: 'Czym jest zerowanie' })).toBeVisible();
+
+    await nav.getByRole('button', { name: 'Pliki', exact: true }).click();
+    await expect(bar.getByRole('button', { name: /Skróty klawiszowe|Czym jest zerowanie/ })).toHaveCount(0);
   });
 
   test('the rail says where you are', async ({ cncjs }) => {
