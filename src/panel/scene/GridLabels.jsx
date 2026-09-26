@@ -71,7 +71,7 @@ const BOX = Math.ceil(RESOLUTION * 1.4);
  * stop there — and blurred at its border, so they fade out rather than end
  * at an edge. `HALO_PAD` is the room round the text for that fade.
  */
-const HALO_PAD = Math.round(RESOLUTION * 0.6);
+const HALO_PAD = Math.round(RESOLUTION * 0.75);
 
 /** The pad around the text, in figure heights, for the plane that carries it. */
 const PAD = HALO_PAD / BOX;
@@ -109,11 +109,11 @@ const paint = (text, color, halo, alpha) => {
   // Two layers: the fade, blurred wide from the letters' box, and over it
   // a solid core a little inside that box, so the middle is fully cut
   // however wide the blur — a small box blurred alone lets the line through.
-  const blur = Math.round(HALO_PAD * 0.5);
-  // The core is the digits' own box: the text's width, and the height of a
-  // figure rather than of the line it is set in.
-  const insetX = HALO_PAD;
-  const insetY = HALO_PAD + (BOX * 0.12);
+  const blur = Math.round(RESOLUTION * 0.3);
+  // The core is the digits' box and a little air round it — a sixth of a
+  // figure either side (*"może jeszcze trochę powiększyć box"*).
+  const insetX = HALO_PAD - (RESOLUTION * 0.15);
+  const insetY = HALO_PAD + (BOX * 0.04);
   const box = (grow) => context.fillRect(
     insetX - grow, insetY - grow, canvas.width - (2 * (insetX - grow)), canvas.height - (2 * (insetY - grow))
   );
