@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { gridLabels, labelStep, nearSides } from './grid-numbers';
+import { gridLabels, labelStep } from './grid-numbers';
 import { useUnits } from '../ui/units';
 
 /**
@@ -104,17 +104,14 @@ const runsLeft = (camera, dx, dy) => {
 };
 
 /**
- * `rulers` is the scene's: `zero` along the zero lines, figures as they
- * lie (the file preview); `near` along the edges nearest the camera, turned
- * to read from the left, with a title per axis (the Ścieżka screen, design
- * 03a). See `grid-numbers`.
+ * Along the edges nearest the camera, turned to read from the left, with a
+ * title per axis — design 03a, on every scene. See `grid-numbers`.
  */
-const GridLabels = ({ area, step, z, color, rulers = 'zero' }) => {
+const GridLabels = ({ area, step, z, color }) => {
   const units = useUnits();
   const factor = units.rule?.factor ?? 1;
   const length = units.length;
   const groups = useRef([]);
-  const near = rulers === 'near';
 
   /*
    * Which edges are nearest, as the signs of the view's direction — state,
@@ -132,14 +129,13 @@ const GridLabels = ({ area, step, z, color, rulers = 'zero' }) => {
 
   const labels = useMemo(() => {
     const toward = { x: facing.endsWith('left') ? -1 : 1, y: facing.startsWith('back') ? 1 : -1 };
-    const where = near ? { sides: nearSides(area, toward), titles: true } : {};
-    return gridLabels(area, spacing, { factor, length }, where).map((label) => {
+    return gridLabels(area, spacing, { factor, length }, toward).map((label) => {
       const { texture, aspect } = paint(label.text, color);
       // Built one unit tall; the group is scaled to whatever that has to be on
       // screen, so the geometry never has to be rebuilt for a zoom.
       return { ...label, texture, width: aspect, height: 1 };
     });
-  }, [area, spacing, color, factor, length, near, facing]);
+  }, [area, spacing, color, factor, length, facing]);
 
   useEffect(() => () => labels.forEach(({ texture }) => texture.dispose()), [labels]);
 
@@ -156,19 +152,14 @@ const GridLabels = ({ area, step, z, color, rulers = 'zero' }) => {
     }
 
     // From the scene towards the camera: the reverse of where it looks.
-    let flipX = false;
-    let flipY = false;
-    let turned = false;
-    if (near) {
-      camera.getWorldDirection(FORWARD);
-      const now = `${-FORWARD.y > 1e-6 ? 'back' : 'front'}-${-FORWARD.x < -1e-6 ? 'left' : 'right'}`;
-      if (now !== facing) {
-        setFacing(now);
-        turned = true;
-      }
-      flipX = runsLeft(camera, 1, 0);
-      flipY = runsLeft(camera, 0, 1);
+    camera.getWorldDirection(FORWARD);
+    const now = `${-FORWARD.y > 1e-6 ? 'back' : 'front'}-${-FORWARD.x < -1e-6 ? 'left' : 'right'}`;
+    const turned = now !== facing;
+    if (turned) {
+      setFacing(now);
     }
+    const flipX = runsLeft(camera, 1, 0);
+    const flipY = runsLeft(camera, 0, 1);
 
     const scale = TEXT_PIXELS / camera.zoom;
     const gap = GAP_PIXELS / camera.zoom;
@@ -207,11 +198,9 @@ const GridLabels = ({ area, step, z, color, rulers = 'zero' }) => {
         );
         // Turned half round when its direction runs leftward on screen, so
         // it reads from the left whichever side the view is from (design 03a).
-        if (near) {
-          group.rotation.z = alongY
-            ? (flipY ? -Math.PI / 2 : Math.PI / 2)
-            : (flipX ? Math.PI : 0);
-        }
+        group.rotation.z = alongY
+          ? (flipY ? -Math.PI / 2 : Math.PI / 2)
+          : (flipX ? Math.PI : 0);
       }
     }
   });

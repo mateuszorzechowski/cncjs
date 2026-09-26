@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // Jest has no module mapping for it, and arithmetic that cannot be imported
 // into a test is arithmetic nobody checks. Webpack resolves both.
 import fitCameraToBounds from '../../lib/toolpath/camera-fit';
-import { nearSides, rulerSides } from './grid-numbers';
+import { nearSides } from './grid-numbers';
 
 /**
  * Framing one object without turning the camera.
@@ -59,11 +59,10 @@ export const fitToBounds = (camera, target, bounds) => fitCameraToBounds(
  * Mateusz, 2026-09-25). Widening the floor makes room exactly where the
  * figures are and nowhere a taller part already reaches.
  *
- * Only on the sides that have figures — `rulerSides`, the rule the grid
- * draws them by: the side of Y the X figures run along, and in X the side
- * the Y figures run along and the far end of the X ruler, where the unit
- * is. Widened all round, the back of the floor rose above a tall part's top
- * and took the room back.
+ * Only on the sides that have figures — `nearSides`, the rule the grid
+ * draws them by: the two edges nearest the camera, each with its row of
+ * figures and its axis title outside it. Widened all round, the back of the
+ * floor rose above a tall part's top and took the room back.
  *
  * Pixels on screen are millimetres over the zoom, and the zoom depends on
  * the room, so the fit is taken a few times until it settles. Returns what
@@ -71,31 +70,25 @@ export const fitToBounds = (camera, target, bounds) => fitCameraToBounds(
  */
 export const RULER_FIT_PASSES = 3;
 
-export const fitWithRulers = (camera, box, direction, rulerPixels, rulers = 'zero') => {
-  const near = rulers === 'near';
-  const { outX, outY } = near ? nearSides(box, direction) : rulerSides(box);
-  // Where the unit goes along zero: the far figure of the X ruler. Along the
-  // nearest edges it is a title outside each row instead, so there is no far
-  // end to make room at — the rows' own sides take twice the room.
-  const farX = near ? 0 : (Math.abs(box.min.x) > Math.abs(box.max.x) ? -1 : 1);
-  const rows = near ? 2 : 1;
+/**
+ * The room a ruler and its axis title take, in rulers: the gap and a row of
+ * figures, then a third of a figure of air and the title — about 1.3 times
+ * what the figures alone took (`GridLabels`). Twice was measured too much:
+ * the calibration file came out a quarter of a 360px preview.
+ */
+export const TITLED_RULER = 1.3;
+
+export const fitWithRulers = (camera, box, direction, rulerPixels) => {
+  const { outX, outY } = nearSides(box, direction);
   let target = fitCameraToBounds(camera, box, direction);
-  // The titles ask for more room, and the fit takes longer to settle on it.
-  const passes = near ? 2 * RULER_FIT_PASSES : RULER_FIT_PASSES;
-  for (let i = 1; i < passes; i++) {
-    const room = rulerPixels / camera.zoom;
+  // A row of figures and a title outside it, and the fit takes longer to
+  // settle on the larger room.
+  for (let i = 1; i < 2 * RULER_FIT_PASSES; i++) {
+    const room = TITLED_RULER * (rulerPixels / camera.zoom);
     const widen = (side, out) => (side === out ? room : 0);
     const floor = new THREE.Box3(
-      new THREE.Vector3(
-        box.min.x - Math.max(rows * widen(-1, outX), widen(-1, farX)),
-        box.min.y - (rows * widen(-1, outY)),
-        box.min.z
-      ),
-      new THREE.Vector3(
-        box.max.x + Math.max(rows * widen(1, outX), widen(1, farX)),
-        box.max.y + (rows * widen(1, outY)),
-        box.min.z
-      )
+      new THREE.Vector3(box.min.x - widen(-1, outX), box.min.y - widen(-1, outY), box.min.z),
+      new THREE.Vector3(box.max.x + widen(1, outX), box.max.y + widen(1, outY), box.min.z)
     );
     target = fitCameraToBounds(camera, box.clone().union(floor), direction);
   }
