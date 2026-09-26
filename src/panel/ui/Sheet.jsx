@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useShellNode } from './shell';
 import { dimPanel } from './themeColor';
 import FadeScroller from './FadeScroller';
+import { useDragToClose } from './swipe';
 import HelpButton from './HelpButton';
 import { t } from '../i18n';
 
@@ -74,6 +75,13 @@ const useLayer = () => {
 
 const Sheet = ({ title, onHelp, onClose, children }) => {
   const { layer, active } = useLayer();
+  /*
+   * Dragged down, it closes — the top sheet only, and told apart from a
+   * scroll (`useDragToClose`): Mateusz, 2026-09-26, *"chowanie sheetów
+   * gestem w dół, ale trzeba rozróżnić od scrollowania"*.
+   */
+  const panel = useRef(null);
+  useDragToClose(panel, onClose, active);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -108,6 +116,7 @@ const Sheet = ({ title, onHelp, onClose, children }) => {
         className={`fixed inset-0 ${layer.scrim} cursor-default ${active ? 'bg-scrim' : 'bg-transparent'}`}
       />
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={title}
