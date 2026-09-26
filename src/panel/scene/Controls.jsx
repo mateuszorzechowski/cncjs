@@ -44,7 +44,7 @@ const TURN_PIXELS = 600;
 // How close, in pixels, a drag has to start to the drawn path to turn about it.
 const PATH_PICK_PIXELS = 6;
 
-const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab, glideMs = 0, floor, rulers = 'zero' }) => {
+const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab, glideMs = 0, floor }) => {
   const camera = useThree((state) => state.camera);
   const scene = useThree((state) => state.scene);
   // Read through a ref, like the callback: a new floor must not rebuild the
@@ -406,8 +406,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
       camera,
       box,
       new THREE.Vector3().fromArray(VIEWS[view].direction),
-      RULER_PIXELS,
-      rulers
+      RULER_PIXELS
     );
 
     // Orbit about what the camera was framed on, rather than about wherever
