@@ -912,6 +912,11 @@
       "toolChange": "Tool change",
       "end": "Program end"
     },
-    "markLine": "Line {{line}}"
+    "markLine": "Line {{line}}",
+    "fix": {
+      "add": "Add {{code}} at the top",
+      "missing": "The program takes these from whatever ran before it. Choose what to declare:",
+      "insert": "Insert at the top"
+    }
   }
 }

@@ -5,6 +5,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirro
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
 import { gcodeEditing } from './gcode';
 import EditorScrollbar from './EditorScrollbar';
+import { headAt } from './declarations';
 
 /**
  * A G-code file, to read and to change — CodeMirror, in the panel's colours.
@@ -96,6 +97,15 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
 
   useImperativeHandle(ref, () => ({
     text: () => view.current?.state.doc.toString() ?? initial,
+    // A line at the head of the program — after an opening `%` — for the
+    // declarations the check found missing (`declarations`).
+    insertAtHead: (line) => {
+      const editor = view.current;
+      if (!editor) {
+        return;
+      }
+      editor.dispatch({ changes: { from: headAt(editor.state.doc.toString()), insert: line } });
+    },
     // Back to the file as opened: the text, the cursor at the top, and the
     // editor let go of, so nothing about it looks still in the middle of
     // being changed.

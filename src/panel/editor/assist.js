@@ -3,6 +3,7 @@ import { linter, lintGutter } from '@codemirror/lint';
 import { checkLine } from './lineCheck';
 import { BLOCK_KEYS, BUILTIN_KEYS, CODE_KEYS, LETTER_KEYS, checkText } from './words';
 import { codeBefore, machineFigures, wordsFor } from './hints';
+import { declarationLine, headAt, offerFor } from './declarations';
 import { issueText } from '../ui/fileWords';
 import { t } from '../i18n';
 
@@ -114,18 +115,37 @@ const byLine = (words) => (view) => {
 };
 
 /** The whole program, by the server, once typing pauses — what needs context. */
-const byServer = async (view) => {
+/*
+ * The fix a missing declaration offers in its message: its code, added at
+ * the head of the file — see `declarations`. Only where the text may be
+ * changed; a read-only page shows the finding and nothing to press.
+ */
+const addDeclaration = (code) => ({
+  name: t('editor.fix.add', { code }),
+  apply: (view) => {
+    view.dispatch({ changes: { from: headAt(view.state.doc.toString()), insert: declarationLine([code]) } });
+  },
+});
+
+/**
+ * `onFindings` hears every answer, for the bar over the editor; `units` is
+ * the code a missing unit declaration is offered (the server's).
+ */
+const byServer = ({ onFindings, units, fixes = false } = {}) => async (view) => {
   const { doc } = view.state;
   const { findings } = await checkText(doc.toString());
+  onFindings?.(findings);
   return findings
     .filter((finding) => !BY_LINE.has(finding.code) && finding.line >= 1 && finding.line <= doc.lines)
     .map((finding) => {
       const line = doc.line(finding.line);
+      const code = fixes && finding.code === 'undeclared' ? offerFor(finding.word, units) : null;
       return {
         from: line.from,
         to: Math.max(line.to, line.from + 1),
         severity: SEVERITY[finding.severity] || 'warning',
         message: issueText(finding),
+        ...(code ? { actions: [addDeclaration(code)] } : {}),
       };
     });
 };
@@ -136,9 +156,9 @@ const byServer = async (view) => {
  * own file check a moment after typing stops. Both underline in place and
  * mark the gutter; the message is on the mark and under the pointer.
  */
-export const assist = (words, size, machine = () => null) => [
+export const assist = (words, size, { machine = () => null, onFindings, units } = {}) => [
   autocompletion({ override: [suggest(words, machine)], activateOnTyping: true }),
-  ...findings(words, size),
+  ...findings(words, size, { onFindings, units, fixes: true }),
 ];
 
 /**
@@ -146,8 +166,8 @@ export const assist = (words, size, machine = () => null) => [
  * of a file (Mateusz, 2026-09-26: *"na telefonie też chcę widzieć błędy do
  * wglądu"*): the marks in the gutter and on the scrollbar, no suggestions.
  */
-export const findings = (words, size) => [
+export const findings = (words, size, server = {}) => [
   linter(byLine(words), { delay: 150 }),
-  linter(byServer, { delay: size > BIG ? SERVER_DELAY_BIG_MS : SERVER_DELAY_MS }),
+  linter(byServer(server), { delay: size > BIG ? SERVER_DELAY_BIG_MS : SERVER_DELAY_MS }),
   lintGutter(),
 ];

@@ -912,6 +912,11 @@
       "toolChange": "Wymiana narzędzia",
       "end": "Koniec programu"
     },
-    "markLine": "Linia {{line}}"
+    "markLine": "Linia {{line}}",
+    "fix": {
+      "add": "Dodaj {{code}} na początku",
+      "missing": "Program bierze je od tego, co było przed nim. Wybierz, co zadeklarować:",
+      "insert": "Wstaw na początku"
+    }
   }
 }

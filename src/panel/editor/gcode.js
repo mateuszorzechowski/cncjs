@@ -115,7 +115,22 @@ const frame = EditorView.theme({
   '.cm-tooltip-autocomplete>ul>li[aria-selected]': { backgroundColor: 'var(--acc)', color: '#ffffff' },
   // Muted by weight rather than by colour, so a selected row's white carries.
   '.cm-completionDetail': { marginLeft: '12px', fontStyle: 'normal', opacity: '0.7', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" },
-  '.cm-diagnostic': { padding: '4px 8px' },
+  // Narrow enough to stay over the card, the words wrapping; the fix in it
+  // a panel button rather than CodeMirror's dark default.
+  '.cm-tooltip-lint': { maxWidth: '360px' },
+  '.cm-diagnostic': { padding: '6px 10px', whiteSpace: 'normal' },
+  '.cm-diagnosticAction': {
+    display: 'inline-block',
+    marginTop: '6px',
+    marginLeft: '0',
+    padding: '4px 10px',
+    border: '1px solid var(--acc)',
+    borderRadius: 'var(--r-ctl)',
+    backgroundColor: 'var(--accS)',
+    color: 'var(--acc)',
+    font: "600 12px 'IBM Plex Sans', system-ui, sans-serif",
+    cursor: 'pointer',
+  },
   '.cm-diagnostic-error': { borderLeft: '3px solid var(--red)' },
   '.cm-diagnostic-warning': { borderLeft: '3px solid var(--amb)' },
   // The gutter's marks: small solid dots, not the default outlined circle
