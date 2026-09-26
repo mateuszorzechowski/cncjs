@@ -218,16 +218,26 @@ const readJob = (job) => {
   // the truth is "all of it"; a bar that dropped to empty at the finish line
   // would be the panel reporting the counter rather than the run.
   const received = finished ? job.total : (job.received || 0);
+  /*
+   * Where the machine is, as the server works it out (`progress.js`): the
+   * line being cut, seconds left, percent through. Not `received`, which
+   * runs up to sixteen lines ahead of the tool — measured on COM3,
+   * 2026-09-26, it said line 16 while the machine cut line 2.
+   */
+  const progress = job.progress || {};
 
   return {
     name: job.name || '',
     total: job.total,
     sent: job.sent || 0,
     received,
-    remaining: job.remainingTime || 0,
-    percent: Math.min(100, Math.round((received / job.total) * 100)),
+    line: finished ? job.total : (progress.line || 0),
+    remaining: finished ? 0 : (progress.remaining || 0),
+    percent: finished ? 100 : (progress.percent || 0),
     /** Whether this program ran to its last line. Not "is it stopped". */
     finished,
+    /** The Grbl error a program is paused on, and its line — or null. */
+    error: job.error || null,
   };
 };
 

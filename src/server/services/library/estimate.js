@@ -123,8 +123,26 @@ export class Planner {
 
   previous = null;
 
-  constructor(machine) {
+  /**
+   * Seconds and blocks by the line they came from, when asked for: a running
+   * program's timeline — where the time goes, and how many blocks each line
+   * puts into Grbl's planner. `line` in the options of `line`, `arc`, `stop`.
+   */
+  lines = null;
+
+  constructor(machine, { byLine = false } = {}) {
     this.machine = machine;
+    if (byLine) {
+      this.lines = { seconds: [], blocks: [] };
+    }
+  }
+
+  /** Time to line `line` (1-based), as it is known so far. */
+  spend(line, seconds) {
+    this.seconds += seconds;
+    if (this.lines && line) {
+      this.lines.seconds[line - 1] = (this.lines.seconds[line - 1] || 0) + seconds;
+    }
   }
 
   /**
@@ -132,7 +150,7 @@ export class Planner {
    * when the feed is G93's, where F says how many times a minute the block
    * completes.
    */
-  line(from, to, { feed, inverseTime = false }) {
+  line(from, to, { feed, inverseTime = false, line }) {
     const delta = { x: to.x - from.x, y: to.y - from.y, z: to.z - from.z };
     const length = Math.hypot(delta.x, delta.y, delta.z);
 
@@ -148,7 +166,10 @@ export class Planner {
     }
     const accel = alongAxes(this.machine.accel, unit);
 
-    const block = { length, unit, nominal, accel, maxEntry: 0, entry: 0 };
+    const block = { length, unit, nominal, accel, maxEntry: 0, entry: 0, line };
+    if (this.lines && line) {
+      this.lines.blocks[line - 1] = (this.lines.blocks[line - 1] || 0) + 1;
+    }
     if (this.previous) {
       block.maxEntry = Math.min(this.junctionSpeed(this.previous, block), this.previous.nominal, nominal);
     }
@@ -185,22 +206,22 @@ export class Planner {
   }
 
   /** An arc, as the chords Grbl cuts it into. `clockwise` is G2. */
-  arc(from, to, center, { plane, clockwise, feed, inverseTime }) {
+  arc(from, to, center, { plane, clockwise, feed, inverseTime, line }) {
     const points = arcPoints(from, to, center, { plane, clockwise }, this.machine.arcTolerance);
     // G93 gives the whole arc a time; each chord gets its share of it.
     const chordFeed = inverseTime ? feed * points.length : feed;
 
     let previous = from;
     for (const point of points) {
-      this.line(previous, point, { feed: chordFeed, inverseTime });
+      this.line(previous, point, { feed: chordFeed, inverseTime, line });
       previous = point;
     }
   }
 
   /** Motion stops here — a dwell, a spindle change, a pause. */
-  stop(seconds = 0) {
+  stop(seconds = 0, line) {
     this.flush();
-    this.seconds += seconds;
+    this.spend(line, seconds);
   }
 
   /**
@@ -232,7 +253,7 @@ export class Planner {
     if (next) {
       next.started = true;
     }
-    this.seconds += blockSeconds(block.length, block.entry, next ? next.entry : 0, block.nominal, block.accel);
+    this.spend(block.line, blockSeconds(block.length, block.entry, next ? next.entry : 0, block.nominal, block.accel));
   }
 
   flush() {
