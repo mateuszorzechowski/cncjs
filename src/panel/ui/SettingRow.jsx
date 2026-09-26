@@ -30,8 +30,14 @@ const SCOPES = {
  * what is read. The name's row is as tall as the name and the note's takes
  * the rest when wide, or a tall control — the certificate's — stretched both
  * and pushed the note to the bottom.
+ *
+ * `noteBelow`: a note that tells what the chosen option does, and so changes
+ * with the choice, stays under the control on a phone — above it, a note of
+ * another length moved the buttons away from the finger that had just
+ * pressed one (Mateusz, 2026-09-26: *"na telefonie to pod przyciskami, bo
+ * teraz przyciski przeskakują przy zmianie opcji"*).
  */
-const SettingRow = ({ title, note, scope, children }) => (
+const SettingRow = ({ title, note, scope, noteBelow = false, children }) => (
   <div className="grid grid-cols-1 gap-y-2 border-b border-line py-4 first:pt-0 last:border-b-0 last:pb-0 @3xl/shell:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] @3xl/shell:grid-rows-[auto_auto_1fr] @3xl/shell:items-start @3xl/shell:gap-x-10 @3xl/shell:gap-y-1">
     {/*
       * The name and the scope share a line on a phone and wrap as a pair when
@@ -54,7 +60,7 @@ const SettingRow = ({ title, note, scope, children }) => (
       {children}
     </div>
     {note ? (
-      <p className="order-2 m-0 text-note text-mut @3xl/shell:col-start-1 @3xl/shell:row-start-2">{note}</p>
+      <p className={`${noteBelow ? 'order-4' : 'order-2'} m-0 text-note text-mut @3xl/shell:col-start-1 @3xl/shell:row-start-2`}>{note}</p>
     ) : null}
   </div>
 );

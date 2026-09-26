@@ -128,7 +128,7 @@ const SettingsScreen = ({ machine }) => {
               <SettingRow title={t('theme.label')} scope="device">
                 <ThemeChoice />
               </SettingRow>
-              <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} scope="device">
+              <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} scope="device" noteBelow>
                 <KeepAwakeChoice status={keepAwake} />
               </SettingRow>
             </Card>

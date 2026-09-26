@@ -26,8 +26,28 @@ export const fetchWords = () => {
   return asked;
 };
 
-/** The server's check of text not yet saved: `{ findings, more }`. */
-export const checkText = (text) => request('/api/editor/check', { method: 'POST', body: JSON.stringify({ text }) });
+// The answers to the last few texts checked, by the text itself.
+const KEPT = 8;
+const answers = new Map();
+
+/**
+ * The server's check of text not yet saved: `{ findings, more }`. The same
+ * text is answered once — a file opened again, or typed back to what it was,
+ * is marked without asking (Mateusz, 2026-09-26: *"walidacja z serwera długo
+ * się ładuje, czy nie jest cachowana?"*). A failed answer is not kept.
+ */
+export const checkText = (text) => {
+  if (!answers.has(text)) {
+    answers.set(text, request('/api/editor/check', { method: 'POST', body: JSON.stringify({ text }) }).catch((err) => {
+      answers.delete(text);
+      throw err;
+    }));
+    if (answers.size > KEPT) {
+      answers.delete(answers.keys().next().value);
+    }
+  }
+  return answers.get(text);
+};
 
 /*
  * What each word means, for the suggestions. Written out, so every key is a
