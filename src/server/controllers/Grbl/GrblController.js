@@ -64,6 +64,9 @@ import { Progress } from './progress';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
+import { describeSettings, settingWrite } from './machine-settings';
+import machineSettings from '../../services/machine-settings';
+import devices from '../../services/devices';
 import { deadmanMsFor, isAbandoned } from './deadman';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
@@ -848,6 +851,19 @@ class GrblController {
           return;
         }
 
+        /*
+         * A settings write's acknowledgement, then `$$` again: Grbl answers
+         * `$110=800` with a bare `ok`, and the value it keeps is what `$$`
+         * says, not what was sent. That `$$` ends in an `ok` of its own,
+         * which falls through to the empty feeder as the one at port open does.
+         */
+        if (this.settingWrite) {
+          this.settingWrite = null;
+          this.emit('serialport:read', res.raw);
+          this.writeln('$$');
+          return;
+        }
+
         // A file going through `$C` owns every other answer until it is done.
         if (this.fileCheck?.run) {
           this.fileCheck.run.ok();
@@ -921,6 +937,15 @@ class GrblController {
 
         if (this.fileCheck?.run) {
           this.fileCheck.run.error(error ? `error:${code}` : res.raw);
+          return;
+        }
+
+        if (this.settingWrite) {
+          const { name, socket } = this.settingWrite;
+          this.settingWrite = null;
+          machineSettings.forget(name);
+          this.emit('serialport:read', res.raw);
+          this.refuse('settings:write', error ? `error:${code}` : res.raw, socket);
           return;
         }
 
@@ -1202,6 +1227,8 @@ class GrblController {
       });
 
       this.runner.on('settings', (res) => {
+        machineSettings.observe(res.name, res.value);
+
         const setting = _.find(GRBL_SETTINGS, { setting: res.name });
 
         if (!res.message && setting) {
@@ -1215,6 +1242,7 @@ class GrblController {
 
       this.runner.on('startup', (res) => {
         this.fileCheck?.run?.startup();
+        this.settingWrite = null;
         this.emit('serialport:read', res.raw);
         this.note({ level: 'info', source: 'controller', event: 'startup', data: { text: res.raw } });
 
@@ -1390,6 +1418,7 @@ class GrblController {
           this.settings = this.runner.settings;
           this.emit('controller:settings', GRBL, this.settings);
           this.emit('Grbl:settings', this.settings); // Backward compatibility
+          this.emit('machine:settings', this.machineSettingsView());
 
           /*
            * And the box those settings describe, worked out once.
@@ -1629,6 +1658,7 @@ class GrblController {
 
     destroy() {
       this.fileCheck = null;
+      this.settingWrite = null;
 
       if (this.queryTimer) {
         clearInterval(this.queryTimer);
@@ -1889,6 +1919,7 @@ class GrblController {
         // controller settings
         socket.emit('controller:settings', GRBL, this.settings);
         socket.emit('Grbl:settings', this.settings); // Backward compatibility
+        socket.emit('machine:settings', this.machineSettingsView());
       }
       if (!_.isEmpty(this.state)) {
         // controller state
@@ -2215,6 +2246,20 @@ class GrblController {
         log.error(`Could not keep the check of "${name}": ${err}`);
       });
       this.emit('file:check', { name, state: 'done', result: kept });
+    }
+
+    /**
+     * Grbl's settings as the panel's Maszyna tab lists them — see
+     * `machine-settings.js` — with the server's history of changes to them,
+     * each by the name of the device that made it, as the journal has it.
+     */
+    machineSettingsView() {
+      const { history } = machineSettings.saved();
+      const named = devices.describe(history.map(({ device }) => device));
+      return {
+        rows: describeSettings(this.settings?.settings),
+        history: history.map((entry) => ({ ...entry, deviceName: named[entry.device]?.name ?? null })),
+      };
     }
 
     /**
@@ -2708,6 +2753,36 @@ class GrblController {
           this.abandonJog();
 
           this.writeln('$SLP');
+        },
+        /**
+         * One of Grbl's `$` settings, into its EEPROM: `{ name, value, units }`,
+         * `units` being what the panel showed the value in.
+         *
+         * Straight onto the wire rather than through the feeder, which drops
+         * every line in alarm — and Grbl takes a setting in alarm as it does
+         * when Idle, which is where a machine that homes stands from power-on.
+         * In any other state Grbl answers `error:8`; the server says so first.
+         */
+        'settings:write': () => {
+          const [asked] = args;
+          const activeState = this.runner.state?.status?.activeState;
+          if (this.settingWrite) {
+            this.refuse(cmd, 'setting-pending');
+            return;
+          }
+          if (![GRBL_ACTIVE_STATE_IDLE, GRBL_ACTIVE_STATE_ALARM].includes(activeState) ||
+            this.jogging.inFlight > 0 || this.workflow.state !== WORKFLOW_STATE_IDLE) {
+            this.refuse(cmd, 'setting-not-idle');
+            return;
+          }
+          const { line, refusal } = settingWrite(asked, this.runner.settings?.settings);
+          if (refusal) {
+            this.refuse(cmd, refusal);
+            return;
+          }
+          machineSettings.expect(asked.name, this.commandSocket?.device);
+          this.settingWrite = { name: asked.name, socket: this.commandSocket };
+          this.writeln(line);
         },
         'unlock': () => {
           this.writeln('$X');

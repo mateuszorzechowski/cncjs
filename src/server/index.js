@@ -23,6 +23,7 @@ import cncengine from './services/cncengine';
 import journal from './services/journal';
 import library from './services/library';
 import devices from './services/devices';
+import machineSettings from './services/machine-settings';
 import units from './services/units';
 import monitor from './services/monitor';
 import config from './services/configstore';
@@ -77,6 +78,15 @@ const createServer = (options, callback) => {
   // `services/devices`. Kept in `.cncrc` when what a reader sees changes.
   devices.open(config.get('devices', {}));
   devices.on('change', (known) => config.set('devices', known));
+
+  // The server's copy of the controller's `$` settings and the history of
+  // changes to them — see `services/machine-settings`. Each change is in
+  // the journal too, as the machine's own event.
+  machineSettings.open(config.get('machine.settings', {}));
+  machineSettings.on('change', (saved) => config.set('machine.settings', saved));
+  machineSettings.on('entry', ({ name, from, to, device }) => journal.record({
+    level: 'info', source: 'controller', event: 'setting', code: name, device: device || undefined, data: { from, to },
+  }));
 
   // The panel's files, beside the configuration unless `.cncrc` says
   // `library.directory`. Made on first use. See `services/library`.
