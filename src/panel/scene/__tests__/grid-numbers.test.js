@@ -360,4 +360,3 @@ describe('rulers along the edges nearest the camera (Ścieżka, design 03a)', ()
     expect(labels.find((l) => l.key === 'x-1000').text).toBe('-1000 mm');
   });
 });
-
