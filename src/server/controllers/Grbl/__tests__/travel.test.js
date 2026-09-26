@@ -6,7 +6,9 @@ import { RATE_UNKNOWN, goToPointLines, goToWorkZeroLines, rateFor } from '../tra
 const HOMES_TO_MAX = {
   $130: '1000', $131: '700', $132: '150', $23: '0', $110: '5000', $112: '4000',
 };
-// The Z bit set in `$23`: that axis homes at the bottom, travel is [0, range].
+// The Z bit set in `$23`: that axis homes at the bottom — and its travel is
+// still [-range, 0] (Grbl 1.1h on COM3, 2026-09-26: X+1 from 0 with `$23=1`
+// is `error:15`).
 const Z_HOMES_TO_MIN = { ...HOMES_TO_MAX, $23: '4' };
 
 describe('where the machine reaches', () => {
@@ -17,11 +19,11 @@ describe('where the machine reaches', () => {
     });
   });
 
-  test('flips the axis whose bit is set in $23', () => {
-    // An envelope taken as [0, travel] regardless comes out mirrored through
-    // the origin: the right size, in the wrong place, plausible enough to ship.
-    expect(machineEnvelope(Z_HOMES_TO_MIN).min.z).toBe(0);
-    expect(machineEnvelope(Z_HOMES_TO_MIN).max.z).toBe(150);
+  test('stays where it is when a bit is set in $23', () => {
+    // The mask says which end the switch is at, not which side of zero the
+    // machine lives on. Flipped, the box came out mirrored through the origin:
+    // the right size, in the wrong place, plausible enough to ship.
+    expect(machineEnvelope(Z_HOMES_TO_MIN)).toEqual(machineEnvelope(HOMES_TO_MAX));
   });
 
   test('is nothing at all when an axis has not said', () => {
@@ -37,16 +39,15 @@ describe('where the machine reaches', () => {
 describe('going back to the work zero', () => {
   test('lifts Z to the top of the travel before it crosses', () => {
     /*
-     * To the top of the travel, not to `G53 Z0`. They are the same place on a
-     * Grbl that homes to the maximum, and on one with the Z bit set in `$23`
-     * machine zero is at the *bottom* — `G53 Z0` would be a plunge to the
-     * table.
+     * To the top of the travel, which is `G53 Z0` whichever end Z homes to:
+     * the top of `[-travel, 0]`. With the Z bit set in `$23` this used to be
+     * `Z150`, which a real Grbl refuses with `error:15`.
      */
     expect(goToWorkZeroLines(HOMES_TO_MAX)).toEqual([
       '$J=G53 G90 G21 Z0 F4000',
       '$J=G90 G21 X0 Y0 F5000',
     ]);
-    expect(goToWorkZeroLines(Z_HOMES_TO_MIN)[0]).toBe('$J=G53 G90 G21 Z150 F4000');
+    expect(goToWorkZeroLines(Z_HOMES_TO_MIN)[0]).toBe('$J=G53 G90 G21 Z0 F4000');
   });
 
   test('crosses in work coordinates, because that is where the zero is', () => {

@@ -5,7 +5,8 @@ import {
 
 // A Grbl that homes to the maximum: travel is [-range, 0].
 const HOMES_TO_MAX = { $130: '1000', $131: '700', $132: '150', $23: '0' };
-// The Z bit set in `$23`: that axis homes at the bottom, travel is [0, range].
+// The Z bit set in `$23`: that axis homes at the bottom; its travel is still
+// [-range, 0] (Grbl 1.1h on COM3, 2026-09-26).
 const Z_HOMES_TO_MIN = { ...HOMES_TO_MAX, $23: '4' };
 const MIDDLE = { x: '-500', y: '-350', z: '-75' };
 
@@ -121,11 +122,12 @@ describe('how much room is left', () => {
     expect(roomFor('z', 1, HOMES_TO_MAX, MIDDLE)).toBe(75);
   });
 
-  test('follows `$23` to the other end of the axis', () => {
-    // With the bit set the volume is [0, range], so a tool at -75 is outside
-    // it and driving further negative has nothing left.
-    expect(roomFor('z', 1, Z_HOMES_TO_MIN, { ...MIDDLE, z: '75' })).toBe(75);
-    expect(roomFor('z', -1, Z_HOMES_TO_MIN, { ...MIDDLE, z: '75' })).toBe(75);
+  test('is the same whichever end `$23` homes the axis to', () => {
+    // The mask moves the switch, not the volume: from the middle there is as
+    // much room each way as without it, and from MPos 0 none upwards.
+    expect(roomFor('z', 1, Z_HOMES_TO_MIN, MIDDLE)).toBe(roomFor('z', 1, HOMES_TO_MAX, MIDDLE));
+    expect(roomFor('z', -1, Z_HOMES_TO_MIN, MIDDLE)).toBe(roomFor('z', -1, HOMES_TO_MAX, MIDDLE));
+    expect(roomFor('z', 1, Z_HOMES_TO_MIN, { ...MIDDLE, z: '0' })).toBe(0);
   });
 
   test('is null when the machine has not said how far it goes or where it is', () => {
