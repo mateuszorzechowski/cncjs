@@ -155,10 +155,10 @@ describe('framing with room for the rulers', () => {
     expect(c.zoom).toBeGreaterThan(margin.zoom * 1.15);
   });
 
-  test('along the nearest edges, leaves room for them and twice that past the far ends for the titles', () => {
+  test('along the nearest edges, leaves twice the room beside them — the figures and the titles outside them', () => {
     // COM3's travel, seen from the default view: the nearest edges are the
-    // front (min Y) and the right (max X); the X title is past min X, the Y
-    // title past max Y.
+    // front (min Y) and the right (max X), each with a row of figures and a
+    // title outside it.
     const TRAVEL = boundsBox({ min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 } });
     const c = camera(4 / 3, 244);
     fitWithRulers(c, TRAVEL, ISO, RULERS, 'near');
@@ -166,9 +166,9 @@ describe('framing with room for the rulers', () => {
 
     const room = (RULERS * 0.95) / c.zoom;
     [
-      [TRAVEL.max.x + room, TRAVEL.min.y - room],
-      [TRAVEL.min.x - (2 * room), TRAVEL.min.y - room],
-      [TRAVEL.max.x + room, TRAVEL.max.y + (2 * room)],
+      [TRAVEL.max.x + (2 * room), TRAVEL.min.y - (2 * room)],
+      [TRAVEL.min.x, TRAVEL.min.y - (2 * room)],
+      [TRAVEL.max.x + (2 * room), TRAVEL.max.y],
     ].map(([x, y]) => new THREE.Vector3(x, y, TRAVEL.min.z)).forEach((corner) => {
       const p = corner.project(c);
       expect(Math.abs(p.x)).toBeLessThanOrEqual(1);

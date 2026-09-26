@@ -272,28 +272,21 @@ export const gridLabels = (area, step, units = { factor: 1, length: 'mm' }, { si
 /**
  * **The unit once per axis, in a title — `X [mm]`, `Y [mm]`** (design 03a).
  *
- * On the line of the figures, past the end of the ruler away from the
- * corner where the two rulers meet: Mateusz, 2026-09-26, *"tytuł zostaje przy
- * osi / linii z wartościami liczbowymi"*, where the design had it further
- * out. `along` is the direction its text runs: the X title along X, the Y
- * title along Y. `clear` is extra room past the end figure, in figure
- * heights, so a four-digit end figure and the title do not touch.
+ * Along its axis, at the middle, just outside the row of figures: Mateusz,
+ * 2026-09-26, *"etykiety na osi miały być wzdłuż osi"*, with a drawing of
+ * `X [mm]` centred under `0 50 100 … 300`. The first night's version put it
+ * past the end of the ruler, and was wrong. `along` is the direction its text
+ * runs; `beyond` names the row of figures it stands outside, whose depth the
+ * renderer knows (`GridLabels`) — a figure's height under the X row, the
+ * widest figure's width beside the Y column.
  */
-const TITLE_CLEAR = 1.6;
-
-export const axisTitles = (area, { axisY, outY, axisX, outX }, length) => {
-  const endX = axisX === area.max.x ? area.min.x : area.max.x;
-  const endY = axisY === area.min.y ? area.max.y : area.min.y;
-  const dirX = endX < axisX ? -1 : 1;
-  const dirY = endY < axisY ? -1 : 1;
-  return [
-    {
-      key: 'title-x', text: `X [${length}]`, title: true, along: 'x',
-      x: endX, y: axisY, push: { x: dirX, y: outY }, clear: { x: dirX * TITLE_CLEAR, y: 0 },
-    },
-    {
-      key: 'title-y', text: `Y [${length}]`, title: true, along: 'y',
-      x: axisX, y: endY, push: { x: outX, y: dirY }, clear: { x: 0, y: dirY * TITLE_CLEAR },
-    },
-  ];
-};
+export const axisTitles = (area, { axisY, outY, axisX, outX }, length) => [
+  {
+    key: 'title-x', text: `X [${length}]`, title: true, along: 'x', beyond: 'x',
+    x: (area.min.x + area.max.x) / 2, y: axisY, push: { x: 0, y: outY },
+  },
+  {
+    key: 'title-y', text: `Y [${length}]`, title: true, along: 'y', beyond: 'y',
+    x: axisX, y: (area.min.y + area.max.y) / 2, push: { x: outX, y: 0 },
+  },
+];
