@@ -901,5 +901,16 @@
     "save": "Save",
     "defaults": "Back to defaults",
     "invalid": "Steps are numbers above 0, each larger than the one before, one to six in each group."
+  },
+  "editor": {
+    "forCode": "{{what}} — for {{code}}",
+    "machine": "this machine’s top figure ({{setting}})",
+    "wcsAt": "{{what}} — now at X {{x}} Y {{y}} Z {{z}}",
+    "block": {
+      "header": "Program header",
+      "retract": "Retract Z to the top",
+      "toolChange": "Tool change",
+      "end": "Program end"
+    }
   }
 }

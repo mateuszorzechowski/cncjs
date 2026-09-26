@@ -1,4 +1,6 @@
-import { check, words } from '../api.editor';
+import { PARAMS, check, readyBlocks, words } from '../api.editor';
+import { G_CODES, LETTERS, M_CODES } from '../../services/library/check';
+import units from '../../services/units';
 
 const call = async (handler, req) => {
   const res = { statusCode: 200 };
@@ -22,6 +24,46 @@ describe("the editor's vocabulary", () => {
     expect(body.letters).toContain('X');
     expect(body.maxLine).toBe(79);
     expect(body.builtins).toEqual(['%wait', '%msg']);
+  });
+});
+
+describe('what the editor offers after a code, and ready blocks', () => {
+  afterEach(() => units.open({}));
+
+  test('an arc takes its end, its centre or radius, a feed; a dwell its seconds', () => {
+    expect(PARAMS.G2).toEqual(expect.arrayContaining(['X', 'Y', 'I', 'J', 'R', 'F']));
+    expect(PARAMS.G4).toEqual(['P']);
+    expect(PARAMS.M3).toEqual(['S']);
+  });
+
+  test('every code and letter in it is one the file check accepts', () => {
+    for (const [code, letters] of Object.entries(PARAMS)) {
+      expect(G_CODES.has(code) || M_CODES.has(code)).toBe(true);
+      letters.forEach((letter) => expect(LETTERS.has(letter)).toBe(true));
+    }
+  });
+
+  test('the retract goes to the top of Z in machine coordinates, whichever way Z homes', () => {
+    expect(readyBlocks(0).find((b) => b.id === 'retract').lines).toEqual(['G53 G0 Z0']);
+    expect(readyBlocks(150).find((b) => b.id === 'retract').lines).toEqual(['G53 G0 Z150']);
+    expect(readyBlocks(0).find((b) => b.id === 'end').lines).toEqual(['M5', 'G53 G0 Z0', 'M30']);
+  });
+
+  test('with no machine to ask, no retract anywhere rather than a guessed one', () => {
+    const blocks = readyBlocks(null);
+    expect(blocks.map((b) => b.id)).toEqual(['header', 'toolChange', 'end']);
+    expect(blocks.flatMap((b) => b.lines).some((line) => line.includes('G53'))).toBe(false);
+  });
+
+  test('the header declares the server’s units', () => {
+    units.open({ name: 'inch' });
+    expect(readyBlocks(null)[0].lines).toEqual(['G20 G90 G17 G94']);
+  });
+
+  test('are in the vocabulary', async () => {
+    const { body } = await call(words, {});
+    expect(body.params.G3).toContain('R');
+    expect(body.blocks[0].id).toBe('header');
   });
 });
 

@@ -100,6 +100,14 @@ export const LETTER_KEYS = {
   Z: 'gcode.letter.Z',
 };
 
+// The editor's ready blocks, by the server's ids (`api.editor` — `readyBlocks`).
+export const BLOCK_KEYS = {
+  header: 'editor.block.header',
+  retract: 'editor.block.retract',
+  toolChange: 'editor.block.toolChange',
+  end: 'editor.block.end',
+};
+
 export const BUILTIN_KEYS = {
   '%wait': 'gcode.builtin.wait',
   '%msg': 'gcode.builtin.msg',
