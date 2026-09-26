@@ -152,10 +152,6 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
       offset,
       toolpath,
       layers,
-      // The machine's travel is the floor here: rulers along its nearest
-      // edges, with a title per axis (design 03a). The file preview keeps
-      // the zero rule.
-      rulers: 'near',
     }),
     [machine.settings, machine.envelope, machine.modal?.wcs, offset, toolpath, layers]
   );
