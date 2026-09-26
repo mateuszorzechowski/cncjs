@@ -13,7 +13,7 @@ describe('describeSettings', () => {
     // The settings design's order: axes, homing, limits, spindle, signals, motion.
     expect(rows.map((row) => row.name)).toEqual(['$100', '$110', '$120', '$130', '$24', '$20', '$30', '$0', '$2', '$10', '$13']);
     expect(rows.find((row) => row.name === '$110')).toEqual({
-      name: '$110', group: 'axes', kind: 'float', unit: 'feed', min: 0, axis: 'x', value: 500, raw: '500.000',
+      name: '$110', group: 'axes', kind: 'float', unit: 'feed', min: 0, axis: 'x', positive: true, value: 500, raw: '500.000',
     });
   });
 

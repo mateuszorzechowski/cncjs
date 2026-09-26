@@ -25,6 +25,9 @@
  * mask's bits are: `axes` X, Y, Z, or `report` for `$10`.
  */
 
+// A rate, an acceleration, steps: nought stops the axis for good.
+const POSITIVE = ['perLength', 'feed', 'accel'];
+
 const axes = (first, group, unit, extra = {}) => ['x', 'y', 'z'].map((axis, i) => ({
   name: `$${first + i}`, group, kind: 'float', unit, min: 0, axis, ...extra,
 }));
@@ -35,7 +38,7 @@ const axes = (first, group, unit, extra = {}) => ['x', 'y', 'z'].map((axis, i) =
  * masks, then homing, limits, spindle, the motors' signals, and motion with
  * the report.
  */
-export const SETTINGS = [
+const TABLE = [
   { name: '$3', group: 'axes', kind: 'mask', max: 7, bits: 'axes' },
   { name: '$23', group: 'axes', kind: 'mask', max: 7, bits: 'axes' },
   ...axes(100, 'axes', 'perLength'),
@@ -73,6 +76,9 @@ export const SETTINGS = [
    */
   { name: '$13', group: 'motion', kind: 'bool', locked: 'units', required: 0 },
 ];
+
+// `positive`: above nought, not merely not below it — for the panel's check too.
+export const SETTINGS = TABLE.map((s) => (POSITIVE.includes(s.unit) ? { ...s, positive: true } : s));
 
 // Lower case: `react-refresh/babel` takes a capitalised name set by a call
 // for a component, and the server then dies on `$RefreshReg$` at start.
@@ -151,8 +157,7 @@ export const settingWrite = ({ name, value, units } = {}, reported = {}) => {
   const ok = (!whole || Number.isInteger(grbl)) &&
     grbl >= (setting.min ?? 0) &&
     (max === undefined || grbl <= max) &&
-    // A rate, an acceleration, steps: nought stops the axis for good.
-    !(setting.unit && ['perLength', 'feed', 'accel'].includes(setting.unit) && grbl === 0);
+    !(setting.positive && grbl === 0);
   if (!ok) {
     return { refusal: 'bad-value' };
   }
