@@ -118,13 +118,13 @@ const frame = EditorView.theme({
   '.cm-diagnostic-warning': { borderLeft: '3px solid var(--amb)' },
   // The gutter's marks: small solid dots, not the default outlined circle
   // and triangle (*"mniejsze, i lite czerwone"*, 2026-09-26).
+  // Centred in the line, both ways (*"kropka wyśrodkowana na środku linii"*).
+  '.cm-gutter-lint .cm-gutterElement': { display: 'flex', alignItems: 'center', justifyContent: 'center' },
   '.cm-lint-marker': {
     content: 'normal',
     width: '7px',
     height: '7px',
     borderRadius: '50%',
-    margin: '0 auto',
-    verticalAlign: 'middle',
   },
   '.cm-lint-marker-error': { content: 'normal', backgroundColor: 'var(--red)' },
   '.cm-lint-marker-warning': { content: 'normal', backgroundColor: 'var(--amb)' },
