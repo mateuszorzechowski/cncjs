@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from './Button';
+import FadeScroller from './FadeScroller';
 import SettingControl from './SettingControl';
 import TextField from './TextField';
 import { decoded, fieldText, filterRows, isBad, isDirty, rowTitle } from '../machine/machineSettings';
@@ -31,8 +32,8 @@ const RawSettings = ({ rows, drafts, onDraft, rule, disabled, canRead }) => {
   const [query, setQuery] = useState('');
   const shown = filterRows(rows, query);
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <TextField
           label={t('machine.filter.label')}
           placeholder={t('machine.filter.placeholder')}
@@ -44,7 +45,7 @@ const RawSettings = ({ rows, drafts, onDraft, rule, disabled, canRead }) => {
         <span className="flex-1" />
         <Button tone="outline" className="h-chiph px-4" disabled={!canRead} onClick={readSettings}>{t('machine.readRaw')}</Button>
       </div>
-      <div className="flex flex-col">
+      <FadeScroller>
         {shown.map((row) => (
           <div
             key={row.name}
@@ -59,7 +60,7 @@ const RawSettings = ({ rows, drafts, onDraft, rule, disabled, canRead }) => {
             </span>
           </div>
         ))}
-      </div>
+      </FadeScroller>
     </div>
   );
 };

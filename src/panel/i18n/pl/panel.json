@@ -986,6 +986,10 @@
       "other": {
         "title": "Pozostałe",
         "note": "Ustawienia, których panel nie zna — tylko jako liczby."
+      },
+      "geo": {
+        "title": "Geometria",
+        "note": "Podsumowanie do sprawdzenia. Dotknij pozycji, aby przejść do ustawienia."
       }
     },
     "axes": {
@@ -1149,6 +1153,35 @@
     "s32": {
       "title": "Tryb lasera",
       "note": "Moc zmienia się z prędkością, bez zatrzymań przy M3/M4."
+    },
+    "geo": {
+      "travel": "Obszar roboczy",
+      "direction": "Kierunek ruchu",
+      "homingSide": "Strona bazowania",
+      "homing": "Bazowanie",
+      "softLimits": "Limity programowe",
+      "hardLimits": "Krańcówki",
+      "on": "włączone",
+      "off": "wyłączone",
+      "inactive": "nieaktywne",
+      "box": "{{x}} × {{y}} × {{z}} {{unit}}",
+      "inverted": "odwr. {{axes}}",
+      "normal": "normalne",
+      "homingOn": "wł. · odjazd {{pullOff}} {{unit}}",
+      "checks": "Spójność",
+      "goTo": "{{name}} →",
+      "check": {
+        "none": "Brak uwag.",
+        "softWithoutHoming": "Limity programowe są włączone, ale bazowanie jest wyłączone. GRBL ich nie użyje.",
+        "pullOffLong": "Odjazd po bazowaniu ({{value}} {{unit}}) przekracza 10% najkrótszej osi.",
+        "seekSlower": "Posuw szukania jest wolniejszy niż posuw dokładny.",
+        "hardOff": "Krańcówki wyłączone: poza bazowaniem nie zatrzymają ruchu."
+      },
+      "axis": "Oś",
+      "side": "$H",
+      "range": "Obszar MPos",
+      "after": "Po $H",
+      "span": "{{min}} … {{max}}"
     }
   }
 }
