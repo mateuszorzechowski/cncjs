@@ -152,8 +152,9 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
       offset,
       toolpath,
       layers,
+      factor: machine.units?.factor,
     }),
-    [machine.settings, machine.envelope, machine.modal?.wcs, offset, toolpath, layers]
+    [machine.settings, machine.envelope, machine.modal?.wcs, offset, toolpath, layers, machine.units?.factor]
   );
 
   // The one reading taken live. Moving a marker is cheap; rebuilding the

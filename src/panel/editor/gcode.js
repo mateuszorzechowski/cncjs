@@ -88,8 +88,10 @@ const frame = EditorView.theme({
   // findings marked on it (`EditorScrollbar`).
   '.cm-scroller': { fontFamily: 'var(--num)', lineHeight: '1.6', scrollbarWidth: 'none' },
   '.cm-scroller::-webkit-scrollbar': { display: 'none' },
-  // Room at the right for that scrollbar, so it never sits on the text.
-  '.cm-content': { caretColor: 'var(--acc)', paddingRight: '14px' },
+  // Room at the right for that scrollbar and the strip it is grabbed by —
+  // wide enough for a thumb on a phone (*"opcja szybkiego scrolla"*,
+  // 2026-09-26) — so it never sits on the text.
+  '.cm-content': { caretColor: 'var(--acc)', paddingRight: '30px' },
   '.cm-cursor': { borderLeftColor: 'var(--acc)' },
   '.cm-gutters': {
     backgroundColor: 'var(--panel)',

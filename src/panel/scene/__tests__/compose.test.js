@@ -216,3 +216,11 @@ describe('the tool', () => {
     expect(scene()).not.toHaveProperty('tool');
   });
 });
+
+describe('the empty floor', () => {
+  test('is one unit either way, in the server’s units', () => {
+    const empty = { settings: null, envelope: null, wcs: null, offset: { x: 0, y: 0, z: 0 }, toolpath: null, layers: NONE };
+    expect(composeScene(empty).frame).toEqual({ min: { x: -1, y: -1, z: -1 }, max: { x: 1, y: 1, z: 1 } });
+    expect(composeScene({ ...empty, factor: 1 / 25.4 }).frame.max.x).toBeCloseTo(25.4, 9);
+  });
+});
