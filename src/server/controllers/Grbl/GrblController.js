@@ -858,9 +858,8 @@ class GrblController {
          * which falls through to the empty feeder as the one at port open does.
          */
         if (this.settingWrite) {
-          this.settingWrite = null;
           this.emit('serialport:read', res.raw);
-          this.writeln('$$');
+          this.writeNextSetting();
           return;
         }
 
@@ -941,11 +940,17 @@ class GrblController {
         }
 
         if (this.settingWrite) {
-          const { name, socket } = this.settingWrite;
+          const { lines, next, socket } = this.settingWrite;
           this.settingWrite = null;
-          machineSettings.forget(name);
+          for (const { name } of lines.slice(next - 1)) {
+            machineSettings.forget(name);
+          }
           this.emit('serialport:read', res.raw);
-          this.refuse('settings:write', error ? `error:${code}` : res.raw, socket);
+          this.refuse('settings:write', error ? `error:${code}` : res.raw, socket, {
+            name: lines[next - 1].name,
+            written: lines.slice(0, next - 1).map(({ name }) => name),
+          });
+          this.writeln('$$');
           return;
         }
 
@@ -2254,26 +2259,59 @@ class GrblController {
      * each by the name of the device that made it, as the journal has it.
      */
     machineSettingsView() {
-      const { history } = machineSettings.saved();
+      const { copy, history } = machineSettings.saved();
       const named = devices.describe(history.map(({ device }) => device));
       return {
         rows: describeSettings(this.settings?.settings),
         history: history.map((entry) => ({ ...entry, deviceName: named[entry.device]?.name ?? null })),
+        // When `$$` last said anything: the save bar's "read at".
+        readAt: copy.time,
       };
+    }
+
+    /**
+     * Whether Grbl may be asked about its settings now, refusing when not:
+     * Idle or Alarm, no jog under way, no program, no write in flight.
+     */
+    settingsMayChange(cmd) {
+      const activeState = this.runner.state?.status?.activeState;
+      if (this.settingWrite) {
+        this.refuse(cmd, 'setting-pending');
+        return false;
+      }
+      if (![GRBL_ACTIVE_STATE_IDLE, GRBL_ACTIVE_STATE_ALARM].includes(activeState) ||
+        this.jogging.inFlight > 0 || this.workflow.state !== WORKFLOW_STATE_IDLE) {
+        this.refuse(cmd, 'setting-not-idle');
+        return false;
+      }
+      return true;
+    }
+
+    /** The next line of a settings write, or `$$` once they have all gone. */
+    writeNextSetting() {
+      const write = this.settingWrite;
+      if (write.next < write.lines.length) {
+        this.writeln(write.lines[write.next].line);
+        write.next += 1;
+        return;
+      }
+      this.settingWrite = null;
+      this.writeln('$$');
     }
 
     /**
      * `socket` is who asked: `commandSocket` while a command is being
      * handled, and passed in by one that refuses after an `await`, when
-     * `CNCEngine` has already put `commandSocket` back to null.
+     * `CNCEngine` has already put `commandSocket` back to null. `extra` is
+     * what else the asker needs — which setting of several was refused.
      */
-    refuse(cmd, reason, socket = this.commandSocket) {
+    refuse(cmd, reason, socket = this.commandSocket, extra = {}) {
       log.warn(`Refused "${cmd}": ${reason}`);
       this.note({
-        level: 'warn', source: 'server', event: 'refused', code: reason, device: socket?.device, data: { cmd },
+        level: 'warn', source: 'server', event: 'refused', code: reason, device: socket?.device, data: { cmd, ...extra },
       });
       if (socket) {
-        socket.emit('command:refused', { cmd, reason });
+        socket.emit('command:refused', { cmd, reason, ...extra });
       }
     }
 
@@ -2755,8 +2793,15 @@ class GrblController {
           this.writeln('$SLP');
         },
         /**
-         * One of Grbl's `$` settings, into its EEPROM: `{ name, value, units }`,
-         * `units` being what the panel showed the value in.
+         * Grbl's `$` settings, into its EEPROM: `{ name, value, units }` for
+         * one, or `{ changes: [...] }` for the settings screen's save bar —
+         * `units` being what the panel showed each value in.
+         *
+         * Every change is checked before the first goes out, so a bad value
+         * writes nothing. Then one line at a time, each after the last one's
+         * `ok`, and `$$` read once at the end. Grbl refusing one stops the
+         * rest: the refusal names it, and what went before is already in the
+         * EEPROM, which `$$` then shows.
          *
          * Straight onto the wire rather than through the feeder, which drops
          * every line in alarm — and Grbl takes a setting in alarm as it does
@@ -2765,24 +2810,34 @@ class GrblController {
          */
         'settings:write': () => {
           const [asked] = args;
-          const activeState = this.runner.state?.status?.activeState;
-          if (this.settingWrite) {
-            this.refuse(cmd, 'setting-pending');
+          if (!this.settingsMayChange(cmd)) {
             return;
           }
-          if (![GRBL_ACTIVE_STATE_IDLE, GRBL_ACTIVE_STATE_ALARM].includes(activeState) ||
-            this.jogging.inFlight > 0 || this.workflow.state !== WORKFLOW_STATE_IDLE) {
-            this.refuse(cmd, 'setting-not-idle');
+          const changes = Array.isArray(asked?.changes) ? asked.changes : [asked];
+          if (changes.length === 0) {
+            this.refuse(cmd, 'bad-value');
             return;
           }
-          const { line, refusal } = settingWrite(asked, this.runner.settings?.settings);
-          if (refusal) {
-            this.refuse(cmd, refusal);
-            return;
+          const lines = [];
+          for (const change of changes) {
+            const { line, refusal } = settingWrite(change, this.runner.settings?.settings);
+            if (refusal) {
+              this.refuse(cmd, refusal, this.commandSocket, { name: change?.name });
+              return;
+            }
+            lines.push({ name: change.name, line });
           }
-          machineSettings.expect(asked.name, this.commandSocket?.device);
-          this.settingWrite = { name: asked.name, socket: this.commandSocket };
-          this.writeln(line);
+          for (const { name } of lines) {
+            machineSettings.expect(name, this.commandSocket?.device);
+          }
+          this.settingWrite = { lines, next: 0, socket: this.commandSocket };
+          this.writeNextSetting();
+        },
+        /** `$$` again, for the settings screen's "read again". */
+        'settings:read': () => {
+          if (this.settingsMayChange(cmd)) {
+            this.writeln('$$');
+          }
         },
         'unlock': () => {
           this.writeln('$X');

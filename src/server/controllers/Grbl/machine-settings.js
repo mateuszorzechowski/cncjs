@@ -1,5 +1,5 @@
 /**
- * Grbl's own settings — `$0` to `$132` — as the panel's Maszyna tab shows
+ * Grbl's own settings — `$0` to `$132` — as the panel's Sterownik tab shows
  * them and as a write to one is checked before it reaches the EEPROM.
  *
  * Asked for by Mateusz on 2026-09-26: settings grouped by topic and each one
@@ -29,40 +29,49 @@ const axes = (first, group, unit, extra = {}) => ['x', 'y', 'z'].map((axis, i) =
   name: `$${first + i}`, group, kind: 'float', unit, min: 0, axis, ...extra,
 }));
 
+/*
+ * In the groups and the order of the settings design (`Ustawienia
+ * sterownika`, 2026-09-26): the axes with their direction and homing-side
+ * masks, then homing, limits, spindle, the motors' signals, and motion with
+ * the report.
+ */
 export const SETTINGS = [
-  { name: '$0', group: 'motors', kind: 'int', unit: 'us', min: 3, max: 255 },
-  { name: '$1', group: 'motors', kind: 'int', unit: 'ms', min: 0, max: 255 },
-  { name: '$2', group: 'motors', kind: 'mask', max: 7, bits: 'axes' },
-  { name: '$3', group: 'motors', kind: 'mask', max: 7, bits: 'axes' },
-  { name: '$4', group: 'motors', kind: 'bool' },
-  { name: '$5', group: 'limits', kind: 'bool' },
-  { name: '$6', group: 'limits', kind: 'bool' },
-  { name: '$10', group: 'report', kind: 'mask', max: 3, bits: 'report' },
-  { name: '$11', group: 'motion', kind: 'float', unit: 'length', min: 0 },
-  { name: '$12', group: 'motion', kind: 'float', unit: 'length', min: 0 },
-  /*
-   * Read, never written from here. Every figure the server hands out is in
-   * millimetres because Grbl reports in them with `$13=0` (measured on COM3,
-   * 2026-09-25); `$13=1` would turn every position into inches underneath a
-   * server that reads them as millimetres. The mm/inch switch is the
-   * server's, one level up.
-   */
-  { name: '$13', group: 'report', kind: 'bool', locked: 'units' },
-  { name: '$20', group: 'limits', kind: 'bool' },
-  { name: '$21', group: 'limits', kind: 'bool' },
-  { name: '$22', group: 'homing', kind: 'bool' },
-  { name: '$23', group: 'homing', kind: 'mask', max: 7, bits: 'axes' },
-  { name: '$24', group: 'homing', kind: 'float', unit: 'feed', min: 0 },
-  { name: '$25', group: 'homing', kind: 'float', unit: 'feed', min: 0 },
-  { name: '$26', group: 'homing', kind: 'int', unit: 'ms', min: 0, max: 65535 },
-  { name: '$27', group: 'homing', kind: 'float', unit: 'length', min: 0 },
-  { name: '$30', group: 'spindle', kind: 'float', unit: 'rpm', min: 0 },
-  { name: '$31', group: 'spindle', kind: 'float', unit: 'rpm', min: 0 },
-  { name: '$32', group: 'spindle', kind: 'bool' },
+  { name: '$3', group: 'axes', kind: 'mask', max: 7, bits: 'axes' },
+  { name: '$23', group: 'axes', kind: 'mask', max: 7, bits: 'axes' },
   ...axes(100, 'axes', 'perLength'),
   ...axes(110, 'axes', 'feed'),
   ...axes(120, 'axes', 'accel'),
   ...axes(130, 'axes', 'length'),
+  { name: '$22', group: 'homing', kind: 'bool' },
+  { name: '$25', group: 'homing', kind: 'float', unit: 'feed', min: 0 },
+  { name: '$24', group: 'homing', kind: 'float', unit: 'feed', min: 0 },
+  { name: '$26', group: 'homing', kind: 'int', unit: 'ms', min: 0, max: 65535 },
+  { name: '$27', group: 'homing', kind: 'float', unit: 'length', min: 0 },
+  // Grbl turns `$20` off by itself when `$22` is turned off (measured on
+  // COM3, 2026-09-26) and refuses `$20=1` without homing: `needs` says so.
+  { name: '$20', group: 'limits', kind: 'bool', needs: '$22' },
+  { name: '$21', group: 'limits', kind: 'bool' },
+  { name: '$5', group: 'limits', kind: 'bool' },
+  { name: '$30', group: 'spindle', kind: 'float', unit: 'rpm', min: 0 },
+  { name: '$31', group: 'spindle', kind: 'float', unit: 'rpm', min: 0 },
+  { name: '$32', group: 'spindle', kind: 'bool' },
+  { name: '$0', group: 'signals', kind: 'int', unit: 'us', min: 3, max: 255 },
+  { name: '$1', group: 'signals', kind: 'int', unit: 'ms', min: 0, max: 255 },
+  { name: '$2', group: 'signals', kind: 'mask', max: 7, bits: 'axes' },
+  { name: '$4', group: 'signals', kind: 'bool' },
+  { name: '$6', group: 'signals', kind: 'bool' },
+  { name: '$11', group: 'motion', kind: 'float', unit: 'length', min: 0 },
+  { name: '$12', group: 'motion', kind: 'float', unit: 'length', min: 0 },
+  { name: '$10', group: 'motion', kind: 'mask', max: 3, bits: 'report' },
+  /*
+   * Locked at the value the server needs. Every figure the server hands out
+   * is in millimetres because Grbl reports in them with `$13=0` (measured on
+   * COM3, 2026-09-25); `$13=1` would turn every position into inches
+   * underneath a server that reads them as millimetres. The mm/inch switch
+   * is the server's, one level up. `required` is the one value that may be
+   * written — the panel's fix when a controller has the other.
+   */
+  { name: '$13', group: 'motion', kind: 'bool', locked: 'units', required: 0 },
 ];
 
 // Lower case: `react-refresh/babel` takes a capitalised name set by a call
@@ -97,11 +106,15 @@ const written = (value, kind) => (kind === 'float' ? (Math.round(value * 1000) /
  * reported that the table does not know (grblHAL has hundreds) as raw ones.
  * `value` is a number — Grbl's, in millimetres; the panel converts it with
  * the units rule. `raw` is the text `$$` said, for the panel's `$x` view.
+ * `wrong` marks a locked setting holding anything but its `required` value.
  */
 export const describeSettings = (reported = {}) => {
   const known = SETTINGS
     .filter((s) => reported[s.name] !== undefined)
-    .map((s) => ({ ...s, value: Number(reported[s.name]), raw: reported[s.name] }));
+    .map((s) => {
+      const value = Number(reported[s.name]);
+      return { ...s, value, raw: reported[s.name], ...(s.required !== undefined ? { wrong: value !== s.required } : {}) };
+    });
   const unknown = Object.keys(reported)
     .filter((name) => !byName[name])
     .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))
@@ -124,10 +137,11 @@ export const settingWrite = ({ name, value, units } = {}, reported = {}) => {
     return { refusal: 'unknown-setting' };
   }
   const setting = byName[name] || { kind: 'float' };
-  if (setting.locked) {
+  const given = typeof value === 'string' ? Number(value.trim().replace(',', '.')) : value;
+  // A locked setting takes its required value and nothing else.
+  if (setting.locked && given !== setting.required) {
     return { refusal: 'setting-locked' };
   }
-  const given = typeof value === 'string' ? Number(value.trim().replace(',', '.')) : value;
   if (typeof given !== 'number' || !Number.isFinite(given)) {
     return { refusal: 'bad-value' };
   }

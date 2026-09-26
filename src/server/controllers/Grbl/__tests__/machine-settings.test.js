@@ -10,7 +10,8 @@ describe('describeSettings', () => {
   test('the table\'s order, only what the controller reported, values as numbers', () => {
     const rows = describeSettings(REPORTED);
 
-    expect(rows.map((row) => row.name)).toEqual(['$0', '$2', '$10', '$13', '$20', '$24', '$30', '$100', '$110', '$120', '$130']);
+    // The settings design's order: axes, homing, limits, spindle, signals, motion.
+    expect(rows.map((row) => row.name)).toEqual(['$100', '$110', '$120', '$130', '$24', '$20', '$30', '$0', '$2', '$10', '$13']);
     expect(rows.find((row) => row.name === '$110')).toEqual({
       name: '$110', group: 'axes', kind: 'float', unit: 'feed', min: 0, axis: 'x', value: 500, raw: '500.000',
     });
@@ -19,7 +20,7 @@ describe('describeSettings', () => {
   test('a setting the table does not know is listed last, as a raw one', () => {
     const rows = describeSettings({ '$0': '10', '$400': '2', '$33': '5000' });
 
-    expect(rows.map(({ name, group }) => [name, group])).toEqual([['$0', 'motors'], ['$33', 'other'], ['$400', 'other']]);
+    expect(rows.map(({ name, group }) => [name, group])).toEqual([['$0', 'signals'], ['$33', 'other'], ['$400', 'other']]);
   });
 
   test('nothing reported, nothing listed', () => {
@@ -89,6 +90,16 @@ describe('settingWrite', () => {
 
   test('`$13` is read, never written: the server reads every report as millimetres', () => {
     expect(settingWrite({ name: '$13', value: 1 }, REPORTED)).toEqual({ refusal: 'setting-locked' });
+  });
+
+  test('except back to what the server needs — the fix for a controller set otherwise', () => {
+    expect(settingWrite({ name: '$13', value: 0 }, { ...REPORTED, $13: '1' }).line).toBe('$13=0');
+  });
+
+  test('a locked setting holding the wrong value says so', () => {
+    expect(describeSettings({ $13: '1' })[0]).toEqual(expect.objectContaining({ wrong: true, required: 0 }));
+    expect(describeSettings({ $13: '0' })[0]).toEqual(expect.objectContaining({ wrong: false }));
+    expect(describeSettings({ $20: '1' })[0]).not.toHaveProperty('wrong');
   });
 
   test('one the table does not know is written as a number', () => {
