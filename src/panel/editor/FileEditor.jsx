@@ -65,7 +65,14 @@ const FileEditor = ({ file, machine, className = '' }) => {
       live = false;
     };
   }, []);
-  const help = useMemo(() => (words && text !== null ? assist(words, text.length) : []), [words, text]);
+  // The machine as it is when a suggestion is asked for, not when the editor
+  // was built: read through a ref, so a new status report rebuilds nothing.
+  const settings = useRef(machine.settings);
+  settings.current = machine.settings;
+  const help = useMemo(
+    () => (words && text !== null ? assist(words, text.length, () => settings.current) : []),
+    [words, text]
+  );
   const loaded = Boolean(name) && isLoaded(machine, name);
   const running = loaded && (machine.workflow || 'idle') !== 'idle';
 

@@ -901,5 +901,16 @@
     "save": "Zapisz",
     "defaults": "Przywróć domyślne",
     "invalid": "Kroki to liczby powyżej 0, każda większa od poprzedniej, od jednej do sześciu w grupie."
+  },
+  "editor": {
+    "forCode": "{{what}} — dla {{code}}",
+    "machine": "najwyższa wartość tej maszyny ({{setting}})",
+    "wcsAt": "{{what}} — teraz X {{x}} Y {{y}} Z {{z}}",
+    "block": {
+      "header": "Nagłówek programu",
+      "retract": "Odjazd Z na górę",
+      "toolChange": "Wymiana narzędzia",
+      "end": "Koniec programu"
+    }
   }
 }

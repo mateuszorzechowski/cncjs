@@ -1,4 +1,6 @@
 import library from '../services/library';
+import store from '../store';
+import units from '../services/units';
 import analyse from '../services/library/analyse';
 import { G_CODES, LETTERS, MAX_LINE, M_CODES, SEVERITY } from '../services/library/check';
 import { BUILTIN_COMMAND_MSG, BUILTIN_COMMAND_WAIT } from '../controllers/constants';
@@ -7,6 +9,59 @@ import { ERR_BAD_REQUEST } from '../constants';
 // A program is checked a line at a time, and a screen shows a few hundred
 // of them; past this the editor says "and more" rather than drawing them.
 const MAX_FINDINGS = 500;
+
+/**
+ * Which words each code takes, for the editor to suggest first after it: an
+ * arc's end, centre or radius, a dwell's seconds, a spindle's speed. Grbl's
+ * own reading of them (its `gc_execute_line`), not every word it would let
+ * through.
+ */
+const ARC = ['X', 'Y', 'Z', 'I', 'J', 'K', 'R', 'F', 'P'];
+const PROBE = ['X', 'Y', 'Z', 'F'];
+const AXES = ['X', 'Y', 'Z'];
+export const PARAMS = {
+  G0: AXES,
+  G1: [...AXES, 'F'],
+  G2: ARC,
+  G3: ARC,
+  G4: ['P'],
+  G10: ['L', 'P', ...AXES],
+  G28: AXES,
+  G30: AXES,
+  'G38.2': PROBE,
+  'G38.3': PROBE,
+  'G38.4': PROBE,
+  'G38.5': PROBE,
+  'G43.1': ['Z'],
+  G53: AXES,
+  G92: AXES,
+  M3: ['S'],
+  M4: ['S'],
+};
+
+/** The top of Z on the machine that is connected, in its own coordinates — or null. */
+const zTop = () => {
+  const controllers = store.get('controllers') || {};
+  const found = Object.values(controllers).find((controller) => controller?.envelope);
+  return found ? found.envelope.max.z : null;
+};
+
+/**
+ * Ready blocks, as lines. The retract goes to the top of Z **in machine
+ * coordinates** (`G53`), worked out from the connected machine's travel and
+ * homing direction (`envelope.js`): `G53 G0 Z0` is the top only on a machine
+ * that homes Z up, and the bottom on one that homes it down. With no machine
+ * to ask there is no retract, rather than a guessed one.
+ */
+export const readyBlocks = (top) => {
+  const retract = top === null ? [] : [`G53 G0 Z${Number(top.toFixed(3))}`];
+  return [
+    { id: 'header', lines: [`${units.modal()} G90 G17 G94`] },
+    ...(retract.length ? [{ id: 'retract', lines: retract }] : []),
+    { id: 'toolChange', lines: ['M5', ...retract, 'T1 M6'] },
+    { id: 'end', lines: ['M5', ...retract, 'M30'] },
+  ];
+};
 
 /**
  * `GET /api/editor/words` — what the file check accepts, for the editor's
@@ -23,6 +78,8 @@ export const words = (req, res) => {
     letters: [...LETTERS],
     builtins: [BUILTIN_COMMAND_WAIT, BUILTIN_COMMAND_MSG],
     maxLine: MAX_LINE,
+    params: PARAMS,
+    blocks: readyBlocks(zTop()),
   });
 };
 
