@@ -23,19 +23,37 @@
  */
 export const CONNECT_MODES = ['manual', 'panel', 'server'];
 
-/** What the control shows, from the server's mode and this device's. */
+/**
+ * What the control shows as chosen: this device's own choice first — a
+ * device set to connect when opened shows that, whatever the server does —
+ * else the server's (Mateusz, 2026-09-26: *"opcja panel tyczy się tylko tego
+ * urządzenia, opcja serwer ją nadpisuje, ale na urządzeniu dalej zaznaczony
+ * jest panel … ale serwer zaznaczony też jest widoczny"*).
+ */
 export const connectMode = (serverMode, onOpen) => {
-  if (serverMode === 'server') {
-    return 'server';
+  if (onOpen) {
+    return 'panel';
   }
-  return onOpen ? 'panel' : 'manual';
+  return serverMode === 'server' ? 'server' : 'manual';
 };
 
-/** What choosing `mode` sets: the server's mode, and this device's. */
-export const connectPlan = (mode) => ({
-  server: mode === 'server' ? 'server' : 'manual',
-  onOpen: mode === 'panel',
-});
+/**
+ * The server's own mode, shown in the lighter mark beside this device's
+ * choice — `manual` or `server`, whichever it is — or null when the server's
+ * is what is shown as chosen (Mateusz, 2026-09-26: *"opcja manual podobnie
+ * jak serwer, delikatnie niebieska, nie nadpisuje automatycznego łączenia na
+ * urządzeniu"*). Two settings, both always visible.
+ */
+export const serverBeside = (serverMode, onOpen) => (onOpen && serverMode ? serverMode : null);
+
+/**
+ * What choosing `mode` sets. The panel choice is this device's alone: it
+ * turns on, and off again, without touching the server's. Manually and the
+ * server's start are the server's, and leave this device's own as it is.
+ */
+export const connectPlan = (mode, onOpen = false) => (mode === 'panel'
+  ? { onOpen: !onOpen }
+  : { server: mode === 'server' ? 'server' : 'manual' });
 
 /** Whose setting a mode is: `panel` this device's, the other two the server's. */
 export const connectScope = (mode) => (mode === 'panel' ? 'device' : 'server');
