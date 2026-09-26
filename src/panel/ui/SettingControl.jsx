@@ -11,7 +11,8 @@ import { t } from '../i18n';
  * over the controller's value and what that value was.
  *
  * `raw`: the `$$` view, where a figure is Grbl's own (millimetres) and has
- * no unit beside it.
+ * no unit beside it. `bare`: the unit stands elsewhere — the axes table
+ * gives it once per row, in the name's column.
  */
 
 // The mask's bits as ToggleChips holds them, and back.
@@ -20,7 +21,7 @@ const chipsOf = (value) => Object.fromEntries(AXIS_IDS.map((id, i) => [id, bitOf
 const maskOf = (chips) => AXIS_IDS.reduce((sum, id, i) => withBit(sum, i, chips[id]), 0);
 const AXIS_LABELS = { x: 'axis.x', y: 'axis.y', z: 'axis.z' };
 
-const SettingControl = ({ row, draft, onDraft, raw = false, rule, disabled, label }) => {
+const SettingControl = ({ row, draft, onDraft, raw = false, bare = false, rule, disabled, label }) => {
   const value = draft ? Number(draft.text) : row.value;
   const set = (next) => onDraft(row.name, { text: String(next), raw });
 
@@ -78,7 +79,7 @@ const SettingControl = ({ row, draft, onDraft, raw = false, rule, disabled, labe
     <TextField
       label={label}
       inputMode="decimal"
-      unit={shown?.unit || undefined}
+      unit={bare ? undefined : shown?.unit || undefined}
       value={fieldText(row, draft, raw, rule)}
       was={dirty && !raw ? fieldText(row, null, raw, rule) : undefined}
       state={frame}

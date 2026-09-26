@@ -4,12 +4,11 @@ import Card from './Card';
 import Notice from './Notice';
 import RawSettings from './RawSettings';
 import ReportUnitsFix from './ReportUnitsFix';
-import SegmentedChoice from './SegmentedChoice';
+import GroupTabs from './GroupTabs';
 import SettingControl from './SettingControl';
 import SettingRow from './SettingRow';
 import SettingsHistory from './SettingsHistory';
 import SettingsSaveBar from './SettingsSaveBar';
-import { useIsPhone } from './shell';
 import { useUnits } from './units';
 import {
   changesOf, GROUPS, groupRows, groupsIn, isBad, isInactive, pendingCounts, pendingRows, settingText,
@@ -50,8 +49,11 @@ const Row = ({ row, rows, drafts, onDraft, rule, disabled }) => {
   const inactive = isInactive(row, rows, drafts, rule);
   const note = inactive ? t('machine.needs', { name: row.needs }) : text.note;
   return (
-    <SettingRow title={<>{text.title} <span className="font-num text-cap font-normal text-mut">{row.name}</span></>} note={note}>
-      <SettingControl row={row} draft={drafts[row.name]} onDraft={onDraft} rule={rule} disabled={disabled || inactive} label={text.title} />
+    <SettingRow title={text.title} code={row.name} note={note}>
+      {/* A column of its own at the right, as wide as panel v2 gives it, rather than the row's whole width. */}
+      <div className="w-full @3xl/shell:max-w-[340px] @3xl/shell:self-end">
+        <SettingControl row={row} draft={drafts[row.name]} onDraft={onDraft} rule={rule} disabled={disabled || inactive} label={text.title} />
+      </div>
       {row.wrong ? (
         <div className="flex flex-wrap items-center gap-3 rounded-ctl border border-red bg-redS px-3 py-2">
           <span className="flex-1 text-note text-red">{t('machine.reportFix.wrong')}</span>
@@ -63,7 +65,6 @@ const Row = ({ row, rows, drafts, onDraft, rule, disabled }) => {
 };
 
 const ControllerSettings = ({ machine, raw }) => {
-  const phone = useIsPhone();
   const { rule } = useUnits();
   const [group, setGroup] = useState(() => lastGroup);
   const [drafts, setDrafts] = useState({});
@@ -126,14 +127,12 @@ const ControllerSettings = ({ machine, raw }) => {
   }
 
   const menu = (
-    <SegmentedChoice
+    <GroupTabs
       label={t('machine.groups')}
       options={groups}
       value={shownGroup}
       onChange={setGroup}
-      columns={phone ? undefined : 1}
-      compact={phone}
-      counts={Object.fromEntries(groups.map((id) => [id, counts[id] || undefined]))}
+      counts={counts}
       format={(id) => t(id === HISTORY ? 'machine.history.title' : GROUPS.find((g) => g.id === id).titleKey)}
     />
   );
@@ -145,10 +144,11 @@ const ControllerSettings = ({ machine, raw }) => {
         {raw ? (
           <RawSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} canRead={machine.canWriteSettings} />
         ) : (
-          <div className="flex flex-col gap-4 @3xl/shell:flex-row @3xl/shell:items-start">
-            <div className={phone ? '-mx-1 overflow-x-auto px-1' : 'w-52 shrink-0'}>{menu}</div>
-            <div className="flex min-w-0 max-w-[1180px] flex-1 flex-col gap-4">
-              <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-4">
+            {menu}
+            <div className="flex min-w-0 max-w-[1180px] flex-col gap-4">
+              {/* The group's name and what it is about, on one line — panel v2. */}
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line pb-3">
                 <h2 className="m-0 text-lead font-semibold text-ink">{t(about ? about.titleKey : 'machine.history.title')}</h2>
                 {about ? <p className="m-0 text-note text-mut">{t(about.noteKey)}</p> : null}
               </div>
@@ -166,7 +166,8 @@ const ControllerSettings = ({ machine, raw }) => {
             </div>
           </div>
         )}
-        <div className="sticky bottom-0">
+        {/* Above the joined choices, whose chosen button is drawn at z-10. */}
+        <div className="sticky bottom-0 z-30">
           <SettingsSaveBar
             pending={pending}
             drafts={drafts}

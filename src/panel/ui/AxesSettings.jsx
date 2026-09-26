@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Notice from './Notice';
 import SegmentedChoice from './SegmentedChoice';
 import SettingControl from './SettingControl';
+import { CodeTag } from './SettingRow';
 import { useIsPhone } from './shell';
 import {
   AXES, AXIS_MASKS, AXIS_QUANTITIES, bitOf, isDirty, settingText, withBit,
@@ -42,11 +43,14 @@ const BitChoice = ({ row, draft, index, onDraft, optionKeys, disabled, label }) 
   );
 };
 
+// The name, then its unit and its `$` — in this column, so the fields beside
+// it hold the figure alone (panel v2: `5000.000` fits a 95 px field).
 const Label = ({ title, code, unit, note }) => (
-  <div className="flex min-w-0 flex-col gap-0.5">
+  <div className="flex min-w-0 flex-col items-start gap-1">
     <span className="text-base font-semibold text-ink">{title}</span>
     {note ? <span className="text-cap text-mut">{note}</span> : null}
-    <span className="font-num text-cap text-mut">{[unit, code].filter(Boolean).join(' · ')}</span>
+    {unit ? <span className="font-num text-cap text-mut">{unit}</span> : null}
+    <CodeTag code={code} />
   </div>
 );
 
@@ -64,7 +68,7 @@ const AxesSettings = ({ rows, drafts, onDraft, rule, disabled }) => {
   // A cell the controller did not report stays empty: a firmware with fewer
   // axes, or a report still arriving.
   const cell = (name, label) => (named[name]
-    ? <SettingControl row={named[name]} draft={drafts[name]} onDraft={onDraft} rule={rule} disabled={disabled} label={label} />
+    ? <SettingControl bare={!phone} row={named[name]} draft={drafts[name]} onDraft={onDraft} rule={rule} disabled={disabled} label={label} />
     : null);
 
   return (

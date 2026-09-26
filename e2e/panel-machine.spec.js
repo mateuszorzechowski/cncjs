@@ -74,7 +74,7 @@ const open = async (page, view = VIEW) => {
 };
 
 const sent = (page) => page.evaluate(() => window.__sent.filter(([cmd]) => cmd === 'settings:write').map(([, args]) => args));
-const groups = (page) => page.getByRole('group', { name: 'Grupy ustawień' });
+const groups = (page) => page.getByRole('tablist', { name: 'Grupy ustawień' });
 const field = (page, name) => page.getByRole('textbox', { name, exact: true });
 
 test.describe('the Sterownik tab', () => {
@@ -83,7 +83,7 @@ test.describe('the Sterownik tab', () => {
   test('groups in a menu, the axes as a table of X, Y and Z', async ({ cncjs }) => {
     await open(cncjs.page);
 
-    await expect(groups(cncjs.page).getByRole('button', { name: 'Osie' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(groups(cncjs.page).getByRole('tab', { name: 'Osie' })).toHaveAttribute('aria-selected', 'true');
     await expect(field(cncjs.page, 'Kroki silnika X')).toHaveValue('800.000');
     await expect(field(cncjs.page, 'Kroki silnika Z')).toHaveValue('400.000');
     await expect(cncjs.page.getByText('Zgodne ze sterownikiem')).toBeVisible();
@@ -95,7 +95,7 @@ test.describe('the Sterownik tab', () => {
 
     await field(cncjs.page, 'Maks. prędkość X').fill('3500');
     await expect(cncjs.page.getByText('Niezapisane w sterowniku: 1')).toBeVisible();
-    await expect(groups(cncjs.page).getByRole('button', { name: /Osie\s*1/ })).toBeVisible();
+    await expect(groups(cncjs.page).getByRole('tab', { name: /Osie\s*1/ })).toBeVisible();
     expect(await sent(cncjs.page)).toEqual([]);
 
     await cncjs.page.getByRole('button', { name: 'Zapisz w sterowniku (1)' }).click();
@@ -145,9 +145,9 @@ test.describe('the Sterownik tab', () => {
   test('soft limits are dark while homing is off', async ({ cncjs }) => {
     await open(cncjs.page);
 
-    await groups(cncjs.page).getByRole('button', { name: 'Bazowanie' }).click();
+    await groups(cncjs.page).getByRole('tab', { name: 'Bazowanie' }).click();
     await cncjs.page.getByRole('group', { name: 'Bazowanie' }).getByRole('button', { name: 'Wył.' }).click();
-    await groups(cncjs.page).getByRole('button', { name: 'Limity' }).click();
+    await groups(cncjs.page).getByRole('tab', { name: 'Limity' }).click();
 
     await expect(cncjs.page.getByText('Włącz bazowanie ($22), aby użyć.')).toBeVisible();
     await expect(cncjs.page.getByRole('group', { name: 'Limity programowe' }).getByRole('button', { name: 'Wył.' })).toBeDisabled();
@@ -156,7 +156,7 @@ test.describe('the Sterownik tab', () => {
   test('a controller reporting in inches: red, and the fix asks first', async ({ cncjs }) => {
     await open(cncjs.page, { ...VIEW, rows: ROWS.map((r) => (r.name === '$13' ? { ...r, value: 1, raw: '1', wrong: true } : r)) });
 
-    await groups(cncjs.page).getByRole('button', { name: 'Ruch i raporty' }).click();
+    await groups(cncjs.page).getByRole('tab', { name: 'Ruch i raporty' }).click();
     await expect(cncjs.page.getByText(/raportuje w calach \(\$13=1\)/).first()).toBeVisible();
     await cncjs.page.getByRole('button', { name: 'Napraw: $13=0' }).click();
     await cncjs.page.getByRole('dialog').getByRole('button', { name: 'Zapisz $13=0' }).click();

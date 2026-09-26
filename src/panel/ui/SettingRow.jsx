@@ -39,8 +39,16 @@ const SCOPES = {
  * another length moved the buttons away from the finger that had just
  * pressed one (Mateusz, 2026-09-26: *"na telefonie to pod przyciskami, bo
  * teraz przyciski przeskakują przy zmianie opcji"*).
+ *
+ * `code`, a setting's own name where it has one — Grbl's `$22` — in a grey
+ * tag beside the title, the link to the firmware's documentation (the
+ * controller settings design, decision 4).
  */
-const SettingRow = ({ title, note, scope, noteBelow = false, children }) => (
+export const CodeTag = ({ code }) => (
+  <span className="rounded-ctl bg-mutS px-1.5 py-0.5 font-num text-cap font-normal text-mut">{code}</span>
+);
+
+const SettingRow = ({ title, note, scope, code, noteBelow = false, children }) => (
   <div className="grid grid-cols-1 gap-y-2 border-b border-line py-4 first:pt-0 last:border-b-0 last:pb-0 @3xl/shell:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] @3xl/shell:grid-rows-[auto_auto_1fr] @3xl/shell:items-start @3xl/shell:gap-x-10 @3xl/shell:gap-y-1">
     {/*
       * The name and the scope share a line on a phone and wrap as a pair when
@@ -52,7 +60,10 @@ const SettingRow = ({ title, note, scope, noteBelow = false, children }) => (
       * lewej? wyglada jakby bylo nierowno"*, 2026-09-25).
       */}
     <div className="order-1 flex flex-wrap items-center gap-x-2 gap-y-1 @3xl/shell:contents">
-      <h3 className="m-0 text-base font-semibold text-ink @3xl/shell:col-start-1 @3xl/shell:row-start-1">{title}</h3>
+      <h3 className="m-0 flex flex-wrap items-center gap-2 text-base font-semibold text-ink @3xl/shell:col-start-1 @3xl/shell:row-start-1">
+        {title}
+        {code ? <CodeTag code={code} /> : null}
+      </h3>
       {scope ? (
         <span className={`whitespace-nowrap rounded-ctl px-1.5 py-0.5 font-num text-cap uppercase tracking-[0.08em] @3xl/shell:col-start-1 @3xl/shell:row-start-3 @3xl/shell:-ml-1.5 @3xl/shell:mt-1 @3xl/shell:justify-self-start ${SCOPES[scope].face}`}>
           {t(SCOPES[scope].key)}

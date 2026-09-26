@@ -106,15 +106,20 @@ const SettingsScreen = ({ machine }) => {
           format={(id) => t(LABELS[id])}
         />
         {tab === 'controller' ? (
-          <SegmentedChoice
-            joined
-            fitWide
-            label={t('machine.view.label')}
-            options={Object.keys(VIEWS)}
-            value={view}
-            onChange={(id) => setRaw(id === 'raw')}
-            format={(id) => t(VIEWS[id])}
-          />
+          <div className="flex items-center gap-3">
+            <span className="hidden text-cap font-semibold uppercase tracking-[0.1em] text-mut @3xl/shell:inline">{t('machine.view.label')}</span>
+            <div className="flex-1">
+              <SegmentedChoice
+                joined
+                fitWide
+                label={t('machine.view.label')}
+                options={Object.keys(VIEWS)}
+                value={view}
+                onChange={(id) => setRaw(id === 'raw')}
+                format={(id) => t(VIEWS[id])}
+              />
+            </div>
+          </div>
         ) : null}
       </div>
 
