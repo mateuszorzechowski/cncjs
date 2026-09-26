@@ -301,12 +301,17 @@ describe('a job, and whether it has finished', () => {
     expect(read(null)).toBeNull();
   });
 
-  test('part way through, the bar is what has come back', () => {
-    // Received, not sent: sent counts what the controller has been handed,
-    // which runs seconds ahead of the tool while the planner drains.
-    expect(read(sender({ sent: 30, received: 12 }))).toMatchObject({
-      received: 12, percent: 39, finished: false,
+  test('part way through, the line and the bar are the server’s — not what has come back', () => {
+    // Received runs up to sixteen lines ahead of the tool, sent further
+    // still; the server works out the line being cut (`progress.js`).
+    expect(read(sender({ sent: 30, received: 12, progress: { line: 4, remaining: 95, percent: 11 } }))).toMatchObject({
+      received: 12, line: 4, remaining: 95, percent: 11, finished: false, error: null,
     });
+  });
+
+  test('a program paused on an error carries the error and its line', () => {
+    const error = { code: 'error:33', line: 624 };
+    expect(read(sender({ sent: 30, received: 30, error }))).toMatchObject({ error });
   });
 
   test('finished reads as finished, not as never started', () => {
@@ -322,6 +327,8 @@ describe('a job, and whether it has finished', () => {
     expect(read(afterTheRun)).toMatchObject({
       finished: true,
       received: 31,
+      line: 31,
+      remaining: 0,
       percent: 100,
     });
   });
@@ -334,9 +341,10 @@ describe('a job, and whether it has finished', () => {
      * counters of an abandoned run are rewound exactly like the counters of a
      * completed one.
      */
-    expect(read(sender({ sent: 0, received: 0, startTime: 1700000000000 }))).toMatchObject({
+    expect(read(sender({ sent: 0, received: 0, startTime: 1700000000000, progress: { line: 0, remaining: 40, percent: 0 } }))).toMatchObject({
       finished: false,
       received: 0,
+      line: 0,
       percent: 0,
     });
   });
@@ -344,7 +352,7 @@ describe('a job, and whether it has finished', () => {
   test('the same program started again is not finished any more', () => {
     // `Sender.next()` clears `finishTime` when a run begins, so a second run
     // cannot inherit the first one's answer.
-    expect(read(sender({ sent: 4, received: 1, finishTime: 0 }))).toMatchObject({
+    expect(read(sender({ sent: 4, received: 1, finishTime: 0, progress: { line: 1, remaining: 30, percent: 3 } }))).toMatchObject({
       finished: false, percent: 3,
     });
   });

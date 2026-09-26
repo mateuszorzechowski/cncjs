@@ -45,6 +45,17 @@ const WCS = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59'];
 
 const turn = () => new Promise((resolve) => setImmediate(resolve));
 
+/** The planner's sparse arrays, filled out to one entry per line. */
+const timeline = (lines, count) => {
+  if (!lines) {
+    return null;
+  }
+  return {
+    seconds: Array.from({ length: count }, (_, i) => lines.seconds[i] || 0),
+    blocks: Array.from({ length: count }, (_, i) => lines.blocks[i] || 0),
+  };
+};
+
 /**
  * gcode-toolpath hands an arc over in its plane's own axes — for G18 `x` is
  * Z and `y` is X — so it is turned back once, here, and everything after it
@@ -55,9 +66,9 @@ const MACHINE_AXES = {
   G19: ({ x, y, z }) => ({ x: z, y: x, z: y }),
 };
 
-const analyse = async (text, machine, start = '', onFinding = null) => {
+const analyse = async (text, machine, start = '', onFinding = null, { byLine = false } = {}) => {
   const check = createCheck(start, onFinding);
-  const planner = machine ? new Planner(machine) : null;
+  const planner = machine ? new Planner(machine, { byLine }) : null;
   const min = { x: Infinity, y: Infinity, z: Infinity };
   const max = { x: -Infinity, y: -Infinity, z: -Infinity };
   const tools = new Set();
@@ -113,15 +124,15 @@ const analyse = async (text, machine, start = '', onFinding = null) => {
 
     if (planner) {
       if (codes.has('G4')) {
-        planner.stop(word('P') || 0);
+        planner.stop(word('P') || 0, number);
       } else if ([...codes].some(code => STOPS_BEFORE.has(code))) {
-        planner.stop();
+        planner.stop(0, number);
       }
       for (const move of pending) {
         const inverseTime = move.modal.feedrate === 'G93';
         // mm/min in the program, mm/s in the planner; G93's F is a rate, not a speed.
         const rate = inverseTime ? feed / (inches ? INCH : 1) : feed / 60;
-        const options = { feed: move.modal.motion === 'G0' ? null : rate, inverseTime };
+        const options = { feed: move.modal.motion === 'G0' ? null : rate, inverseTime, line: number };
         if (move.kind === 'line') {
           planner.line(move.from, move.to, options);
         } else {
@@ -152,6 +163,8 @@ const analyse = async (text, machine, start = '', onFinding = null) => {
     units: [...units],
     seconds: planner ? planner.finish() : null,
     check: check.result(),
+    // Per line, `lines` long: seconds each takes and blocks each plans.
+    ...(byLine ? { byLine: timeline(planner?.lines, number) } : {}),
   };
 };
 

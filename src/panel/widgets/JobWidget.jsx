@@ -4,27 +4,18 @@ import { useIsPhone } from '../ui/shell';
 import Meter from '../ui/Meter';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from '../ui/units';
+import { jobError, jobTime } from '../ui/jobWords';
 import { t } from '../i18n';
 
 const reading = (value) => (value === null || value === undefined ? NO_READING : value);
 
-/** How long is left, until there is nothing left — and then, that there is not. */
-const jobTime = (job) => {
-  if (!job) {
-    return NO_READING;
-  }
-  return job.finished
-    ? t('job.finished')
-    : t('job.remaining', { minutes: Math.round(job.remaining / 60) });
-};
-
 /**
  * How far through the job the machine is.
  *
- * Driven by lines *received*, not sent. Sent counts what has been handed to
- * the controller, which runs several seconds behind while its planner drains —
- * a bar driven by that reads ahead of the tool and reaches the end with the
- * job still cutting.
+ * Driven by the line the server says is being cut, not by lines received or
+ * sent: both run ahead of the tool while Grbl's planner drains — sixteen lines
+ * and more — and a bar driven by them reaches the end with the job still
+ * cutting. See `progress.js` on the server.
  *
  * With nothing loaded it says so in words. The bar below still sits at zero,
  * which the status bar avoids by drawing nothing at all — a difference worth
@@ -47,6 +38,8 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
   const phone = useIsPhone();
   const units = useUnits();
   const { job, tool } = machine;
+  // On a phone this card is where a program paused on an error says why.
+  const stopped = jobError(job);
 
   return (
     <Card label={label} className={`@container min-h-0 ${className}`} bodyClassName="justify-between gap-2">
@@ -60,10 +53,14 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
         {job ? (
           <span className="font-num text-head font-medium tabular-nums text-ink">{job.percent}</span>
         ) : null}
-        <span className="min-w-0 truncate font-num text-note text-mut">
-          {job ? t('job.percentLine') : t('job.none')}
-          {job ? `${job.received}/${job.total}` : null}
-        </span>
+        {stopped ? (
+          <span className="min-w-0 font-num text-note text-red">{stopped}</span>
+        ) : (
+          <span className="min-w-0 truncate font-num text-note text-mut">
+            {job ? t('job.percentLine') : t('job.none')}
+            {job ? `${job.line}/${job.total}` : null}
+          </span>
+        )}
       </div>
 
       <Meter percent={job ? job.percent : 0} label={label} tone="bg-grn" />
@@ -79,7 +76,7 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
           * same cell says so, because "0 min" is equally true before a run
           * and after one. See `readJob`. */}
         <span className="truncate">
-          {jobTime(job)}
+          {job ? jobTime(job) : NO_READING}
         </span>
       </div>
 

@@ -59,6 +59,8 @@ import { checkLines, createCheckRun } from './check-run';
 import library from '../../services/library';
 import units, { toMm } from '../../services/units';
 import { machineTiming } from '../../services/library/estimate';
+import analyse from '../../services/library/analyse';
+import { Progress } from './progress';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
@@ -674,6 +676,9 @@ class GrblController {
         this.programRunning = true;
         this.noteProgram('info', 'start');
         this.sender.rewind();
+        this.progress = this.timeline ? new Progress(this.timeline) : null;
+        this.progressAt = Date.now();
+        this.pausedOn = null;
       });
       this.workflow.on('stop', (...args) => {
         this.emit('workflow:state', this.workflow.state);
@@ -691,6 +696,9 @@ class GrblController {
         // — seen on the live journal, 2026-09-24.
         const finished = this.programRunning && this.sender.state.finishTime > 0;
         this.programRunning = false;
+        // Ready for the next run: the whole program's time, nothing done.
+        this.progress = this.timeline ? new Progress(this.timeline) : null;
+        this.pausedOn = null;
         this.noteProgram('info', finished ? 'finish' : 'abort');
         this.sender.rewind();
       });
@@ -712,6 +720,7 @@ class GrblController {
         }
       });
       this.workflow.on('resume', (...args) => {
+        this.pausedOn = null;
         this.emit('workflow:state', this.workflow.state);
         this.programRunning = true;
         this.noteProgram('info', 'resume');
@@ -941,6 +950,10 @@ class GrblController {
             this.emit('serialport:read', `error:${code} (${error.message})`);
 
             if (pauseError) {
+              // The code and the line, so a panel can say at once which line
+              // stopped the program. Not in the hold reason: a sender already
+              // held on the closing `%wait` keeps the reason it had.
+              this.pausedOn = { code: `error:${code}`, line: ln };
               this.workflow.pause({
                 err: true,
                 msg: `error:${code} (${error.message})`,
@@ -1361,8 +1374,10 @@ class GrblController {
         }
 
         // Sender
-        if (this.sender.peek()) {
-          this.emit('sender:status', this.sender.toJSON());
+        const senderChanged = this.sender.peek();
+        const progressChanged = this.advanceProgress();
+        if (senderChanged || progressChanged) {
+          this.emit('sender:status', this.senderStatus());
         }
 
         const zeroOffset = _.isEqual(
@@ -1400,6 +1415,11 @@ class GrblController {
           // And the limits a program's time depends on, for the library's
           // estimates — which it keeps until the next machine says otherwise.
           library.setMachine(machineTiming(this.settings?.settings));
+          // A program loaded before the machine said its limits has no
+          // timeline yet.
+          if (!this.timeline && this.loadedGcode) {
+            this.planTimeline(this.loadedGcode);
+          }
         }
 
         // Grbl state
@@ -1431,24 +1451,7 @@ class GrblController {
         this.restoreUnits();
 
         // Check if the machine has stopped movement after completion
-        if (this.actionTime.senderFinishTime > 0) {
-          const machineIdle = zeroOffset && this.runner.isIdle();
-          const now = new Date().getTime();
-          const timespan = Math.abs(now - this.actionTime.senderFinishTime);
-          const toleranceTime = 500; // in milliseconds
-
-          if (!machineIdle) {
-            // Extend the sender finish time
-            this.actionTime.senderFinishTime = now;
-          } else if (timespan > toleranceTime) {
-            log.silly(`Finished sending G-code: timespan=${timespan}`);
-
-            this.actionTime.senderFinishTime = 0;
-
-            // Stop workflow
-            this.command('gcode:stop');
-          }
-        }
+        this.finishWhenStopped(zeroOffset);
       /*
        * 100ms rather than 250.
        *
@@ -1684,7 +1687,7 @@ class GrblController {
           state: this.state
         },
         feeder: this.feeder.toJSON(),
-        sender: this.sender.toJSON(),
+        sender: this.senderStatus(),
         workflow: {
           state: this.workflow.state
         }
@@ -1898,7 +1901,7 @@ class GrblController {
       }
       if (this.sender) {
         // sender status
-        socket.emit('sender:status', this.sender.toJSON());
+        socket.emit('sender:status', this.senderStatus());
 
         const { name, gcode, context } = this.sender.state;
         if (gcode) {
@@ -2268,6 +2271,7 @@ class GrblController {
 
           this.emit('gcode:load', name, this.sender.state.gcode, context);
           this.event.trigger('gcode:load');
+          this.planTimeline(gcode);
 
           log.debug(`Load G-code: name="${this.sender.state.name}", size=${this.sender.state.gcode.length}, total=${this.sender.state.total}`);
 
@@ -2277,6 +2281,9 @@ class GrblController {
         },
         'gcode:unload': () => {
           this.cancelStart();
+          this.timeline = null;
+          this.progress = null;
+          this.loadedGcode = null;
           this.workflow.stop();
 
           // Sender
@@ -3946,6 +3953,126 @@ class GrblController {
       this.noteOffsetChange(cmd);
       this.connection.write(data);
       log.silly(`> ${data}`);
+    }
+
+    /**
+     * End the program once the machine has stopped after its last line.
+     * `zeroOffset` is whether the work position held still since last tick.
+     */
+    finishWhenStopped(zeroOffset) {
+      if (!(this.actionTime.senderFinishTime > 0)) {
+        return;
+      }
+
+      const machineIdle = zeroOffset && this.runner.isIdle();
+      const now = new Date().getTime();
+      const timespan = Math.abs(now - this.actionTime.senderFinishTime);
+      const toleranceTime = 500; // in milliseconds
+
+      if (!machineIdle) {
+        // Extend the sender finish time
+        this.actionTime.senderFinishTime = now;
+      } else if (this.workflow.state === WORKFLOW_STATE_PAUSED) {
+        /*
+         * A program paused on an error has often had every line
+         * answered — the error was the last answer — and this used to
+         * end it 500 ms later, so the pause flashed past before anyone
+         * read it. A pause waits for the operator: Resume finishes it,
+         * Abort ends it (decided 2026-09-26).
+         */
+        this.actionTime.senderFinishTime = now;
+      } else if (timespan > toleranceTime) {
+        log.silly(`Finished sending G-code: timespan=${timespan}`);
+
+        this.actionTime.senderFinishTime = 0;
+
+        // Stop workflow
+        this.command('gcode:stop');
+      }
+    }
+
+    /**
+     * The timeline of the program just loaded — seconds and planner blocks per
+     * line, from the server's own planner — for `Progress`. Worked out after
+     * the load returns, in the library's batches, so a large file does not
+     * stall the stream; a program started before it is ready runs on the
+     * sender's counters, as before. Nothing without a machine's limits.
+     */
+    planTimeline(gcode) {
+      this.timeline = null;
+      this.progress = null;
+      this.loadedGcode = gcode;
+      const machine = machineTiming(this.settings?.settings);
+      if (!machine) {
+        return;
+      }
+      analyse(gcode, machine, '', null, { byLine: true }).then(({ byLine }) => {
+        if (this.loadedGcode !== gcode) {
+          return;
+        }
+        this.timeline = byLine;
+        // Loaded: the whole program's time is what is left. Started before
+        // this was ready: the clock begins now, and the window Grbl allows
+        // puts it where the machine is.
+        if (!this.progress) {
+          this.progress = new Progress(byLine);
+          this.progressAt = Date.now();
+        }
+      }).catch((err) => log.error(`Could not plan the program's timeline: ${err}`));
+    }
+
+    /**
+     * Move the program's clock on. True when what a panel shows has changed:
+     * the line, the whole seconds left, or the percent.
+     */
+    advanceProgress() {
+      if (!this.progress) {
+        return false;
+      }
+      const now = Date.now();
+      const seconds = (now - this.progressAt) / 1000;
+      this.progressAt = now;
+
+      const status = this.runner.state.status || {};
+      const override = Number(status.ov?.[0]) || 100;
+      const before = this.progressReport();
+      this.progress.tick(seconds, {
+        // A dwell reports Idle, and is program time all the same.
+        moving: this.workflow.state === WORKFLOW_STATE_RUNNING && ['Run', 'Idle'].includes(status.activeState),
+        override,
+        received: this.sender.state.received,
+      });
+      return !_.isEqual(before, this.progressReport());
+    }
+
+    /**
+     * What a panel shows of the job: the line being cut, whole seconds left,
+     * percent through. Without a timeline — no machine limits yet — the
+     * sender's counters, as the panel read them before, but in seconds.
+     */
+    progressReport() {
+      const { total, received, remainingTime } = this.sender.state;
+      if (!(total > 0)) {
+        return null;
+      }
+      if (!this.progress) {
+        return {
+          line: received,
+          remaining: Math.round((remainingTime || 0) / 1000),
+          percent: Math.min(100, Math.round((received / total) * 100)),
+        };
+      }
+      const override = Number(this.runner.state.status?.ov?.[0]) || 100;
+      return {
+        line: this.progress.line,
+        remaining: Math.round(this.progress.remaining(override)),
+        percent: this.progress.percent(),
+      };
+    }
+
+    /** The sender's report, and where the machine is in the program — see `progress.js`. */
+    senderStatus() {
+      return { ...this.sender.toJSON(), progress: this.progressReport(), error: this.pausedOn || null };
     }
 
     /**

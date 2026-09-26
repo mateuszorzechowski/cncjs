@@ -133,3 +133,32 @@ describe('a large program', () => {
     expect(turned).toBeGreaterThanOrEqual(5000 / 200);
   });
 });
+
+describe('the timeline of a program, line by line', () => {
+  const PART = program('G21 G90', '', 'G1 X10 F600', 'G4 P1.5', 'G2 X20 Y0 I5 J0', 'M30');
+
+  test('one entry per sent line, blank ones skipped, and the seconds add up to the whole', async () => {
+    const { lines, seconds, byLine } = await analyse(PART, MACHINE, '', null, { byLine: true });
+
+    expect(byLine.seconds).toHaveLength(lines);
+    expect(byLine.blocks).toHaveLength(lines);
+    expect(byLine.seconds.reduce((a, b) => a + b, 0)).toBeCloseTo(seconds, 6);
+  });
+
+  test('a dwell is its own line’s time, and an arc is many blocks', async () => {
+    const { byLine } = await analyse(PART, MACHINE, '', null, { byLine: true });
+
+    expect(byLine.seconds[0]).toBe(0);
+    expect(byLine.blocks[1]).toBe(1);
+    expect(byLine.seconds[1]).toBeGreaterThan(1);
+    expect(byLine.seconds[2]).toBe(1.5);
+    expect(byLine.blocks[3]).toBeGreaterThan(10);
+    expect(byLine.blocks[4]).toBe(0);
+  });
+
+  test('only when asked for', async () => {
+    const result = await analyse(PART, MACHINE);
+
+    expect(result.byLine).toBeUndefined();
+  });
+});
