@@ -135,9 +135,11 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
       <div ref={host} className="min-h-0 min-w-0 flex-1" />
       {built ? <EditorScrollbar view={built} tick={tick} /> : null}
       {/* Laid over the foot of the text, clear of the scrollbar's strip:
-        * a note that comes and goes without moving the editor. */}
+        * a note that comes and goes without moving the editor. In the
+        * bottom right corner, where editors put such notes (Mateusz,
+        * 2026-09-26: *"w edytorach taki dymek jest chyba po prawej na dole"*). */}
       {overlay ? (
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 right-9 z-10 flex">
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 right-9 z-10 flex justify-end">
           <div className="pointer-events-auto max-w-full">{overlay}</div>
         </div>
       ) : null}
