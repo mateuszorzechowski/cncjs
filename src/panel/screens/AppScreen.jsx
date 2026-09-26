@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Notice from '../ui/Notice';
 import SegmentedChoice from '../ui/SegmentedChoice';
-import SettingRow from '../ui/SettingRow';
+import StepRow from '../ui/StepRow';
 import { PLATFORMS, platformOf } from '../machine/platform';
 import { trustState } from '../machine/trust';
+import { installSteps } from '../machine/installSteps';
 import { AUTHORITY_URL, fetchAuthority } from '../machine/authority';
 import { canInstall, isInstalled, promptInstall, watchInstall } from '../machine/install';
 import { applyUpdate, isUpdateReady, watchUpdate } from '../machine/update';
@@ -51,6 +52,25 @@ const HOW = {
   linux: 'app.certHow.linux',
 };
 
+// What step 2 says, by where it stands.
+const INSTALL_NOTES = {
+  blocked: 'app.step2Blocked',
+  waiting: 'app.notYet',
+  ready: 'app.ready',
+  done: 'app.step2Done',
+};
+
+// How step 2 looks, by where it stands: waiting and ready are both to do.
+const STEP_FACE = {
+  blocked: 'blocked',
+  waiting: 'todo',
+  ready: 'todo',
+  done: 'done',
+};
+
+// The panel's own version, from the build (`webpack.config.panel.js`).
+const VERSION = process.env.BUILD_VERSION;
+
 const PLATFORM_NAMES = {
   android: 'platform.android',
   ios: 'platform.ios',
@@ -67,7 +87,7 @@ const AppScreen = () => {
    */
   const detected = platformOf(window.navigator);
   const [picked, setPicked] = useState(null);
-  const platform = detected || picked;
+  const platform = picked || detected;
 
   /*
    * Re-read rather than held: `machine/install` owns the state, because the
@@ -99,155 +119,124 @@ const AppScreen = () => {
 
   const installed = isInstalled();
   const ready = canInstall();
+  const steps = installSteps({ trust, installed, ready });
 
   /*
-   * Rows of `SettingRow`, handed back as a list rather than wrapped: the
-   * settings card lays every row of the tab out as siblings, so the rules
-   * between them and the first and last row's spacing come out the same
-   * whichever component a row came from.
+   * Two steps and a footer, from the settings design's Install tab (variant
+   * 2b): the certificate, then the application — a sequence, because a
+   * browser installs only a secure page — and under them the version this
+   * device is running with the button that fetches a newer one.
    */
-  return [
-    <SettingRow
-      key="install"
-      title={t('app.installTitle')}
-      /*
-        * Why not, when not.
-        *
-        * Two different problems with two different answers, and only one of
-        * them is fixed by a certificate — see `machine/trust`. A browser that
-        * is simply being cautious about engagement gets the third message:
-        * nothing is wrong, it has not offered yet.
-        */
-      note={installed ? null : (trust ? t(trust.key) : t(ready ? 'app.ready' : 'app.notYet'))}
-    >
+  return (
+    <>
       {/*
-        * The button first, because it is what this row is for. It is dead
-        * more often than it is live — the note beside it says why.
-        */}
-      <Button
-        tone="primary"
-        disabled={!ready}
-        onClick={promptInstall}
-        className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start"
-      >
-        {t(installed ? 'app.installed' : 'app.install')}
-      </Button>
-    </SettingRow>,
-
-    /*
-        * Reloading the panel, because the gesture that used to do it is gone.
-        *
-        * Pull-to-refresh is switched off across the whole panel — the same
-        * drag scrolls this screen and opens the menu, and a reload triggered
-        * by either would arrive in the middle of a job. That is the right
-        * trade only if the panel offers the reload somewhere deliberate:
-        * *"odswiezanie przez scrolowanie mozesz wylaczyc, ale dodaj do
-        * ustawien aplikacji przycisk do odswiezania"* (2026-09-23).
-        *
-        * The line under it says what pressing it *does*, not why a gesture
-        * went away: *"to do wywalenia, chyba ze piszesz ze odswieza,
-        * aktualizuje aplikacje"*. Somebody reading a settings screen wants to
-        * know what the button will do to them, and the history of the panel
-        * is not that.
-        *
-        * Safe to press at any time. The port and the running job belong to
-        * the server; this page re-attaches to both on the way back up.
-        */
-    <SettingRow
-      key="refresh"
-      title={t('app.refreshTitle')}
-      note={t(isUpdateReady() ? 'app.updateReady' : 'app.refreshWhy')}
-    >
-      <Button
-        tone={isUpdateReady() ? 'primary' : 'outline'}
-        onClick={applyUpdate}
-        className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start"
-      >
-        {t('app.refresh')}
-      </Button>
-    </SettingRow>,
-
-    /*
-        * The certificate, shown whether or not anything is wrong with it.
+        * Step 1, shown whether or not anything is wrong with it.
         *
         * It used to appear only while the device distrusted the server, which
         * got it backwards twice over: on a panel served over plain HTTP — the
         * development case, and the first place anybody looks — it was not
         * there at all, and the moment it started working it vanished, so
         * there was no way to check *which* authority a phone had ended up
-        * with. An operator asking "what did I install, and is it still the
-        * right one" is asking after it worked, not before.
-        */
-    authority
-      ? (
-        <SettingRow key="cert" title={t('app.certTitle')} note={t('app.certWhat')}>
-          {/*
-            * The warning goes above the button, and it is not a formality.
-            *
-            * Installing a certificate authority is normally the worst thing a
-            * web page can talk somebody into: it hands the device's trust to
-            * whoever holds the matching key, for every site it visits.
-            *
-            * This one is name-constrained -- see scripts/make-certs.sh -- so
-            * it can only vouch for `.lan` and private addresses. Worth saying
-            * plainly rather than repeating a warning that is no longer true,
-            * because a warning nobody can act on is one everybody learns to
-            * tap through.
-            */}
-          {detected ? null : (
-            <SegmentedChoice
-              joined
-              fitWide
-              label={t('app.certPlatform')}
-              options={PLATFORMS}
-              value={picked}
-              onChange={setPicked}
-              format={(id) => t(PLATFORM_NAMES[id])}
-            />
-          )}
-          <Notice>
-            <span>{t('app.certWarning')}</span>
-            {platform ? <span className="text-note">{t(HOW[platform])}</span> : null}
-          </Notice>
+        * with. Done, it says so, and keeps what it knows.
+        */}
+      <StepRow
+        number={1}
+        title={t('app.step1Title')}
+        note={steps.cert === 'done' ? t('app.step1Done') : t(trust.key)}
+        state={steps.cert}
+      >
+        {/*
+          * The warning goes first, and it is not a formality. Installing a
+          * certificate authority is normally the worst thing a web page can
+          * talk somebody into; this one is name-constrained — see
+          * scripts/make-certs.sh — so it can only vouch for `.lan` and
+          * private addresses, and the warning says that rather than one
+          * everybody learns to tap through.
+          */}
+        <Notice>
+          <span>{t('app.certWarning')}</span>
+        </Notice>
+        {/*
+          * The instructions for this device's system, chosen for it where it
+          * can be told (`machine/platform`) and changeable — the file may be
+          * going to another device than the one reading this.
+          */}
+        <SegmentedChoice
+          joined
+          fitWide
+          label={t('app.certPlatform')}
+          options={PLATFORMS}
+          value={platform}
+          onChange={setPicked}
+          format={(id) => t(PLATFORM_NAMES[id])}
+        />
+        {platform ? <p className="m-0 text-note text-ink">{t(HOW[platform])}</p> : null}
+        {/*
+          * "Download", not "install". Tapping this saves a file; installing
+          * it is a separate trip into the device's own settings.
+          */}
+        <Button href={AUTHORITY_URL} className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start">
+          {t('app.certDownload')}
+        </Button>
+        {authority ? (
+          <>
+            <Fact label={t('app.certName')}>{authority.name}</Fact>
+            {authority.validTo ? (
+              <Fact label={t('app.certValidTo')}>{authority.validTo.toLocaleDateString()}</Fact>
+            ) : null}
+            {/*
+              * Long, and deliberately not shortened. Half a fingerprint
+              * compared against half a fingerprint is a habit that reads as
+              * checking without being it.
+              */}
+            <Fact label={t('app.certFingerprint')}>{authority.fingerprint}</Fact>
+            <p className="m-0 text-note text-mut">{t('app.certLife')}</p>
+          </>
+        ) : null}
+      </StepRow>
 
-          {/*
-            * "Download", not "install". Tapping this saves a file; installing
-            * it is a separate trip into the phone's own settings, and a
-            * button that claims to have done that leaves somebody waiting for
-            * something that already finished.
-            */}
-          <Button href={AUTHORITY_URL} className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start">
-            {t('app.certDownload')}
-          </Button>
+      {/*
+        * Step 2, dark until step 1 is done: over an untrusted connection the
+        * browser will not install, and a live button that does nothing is
+        * worse than a dark one that says why.
+        */}
+      <StepRow
+        number={2}
+        title={t('app.step2Title')}
+        note={t(INSTALL_NOTES[steps.install])}
+        state={STEP_FACE[steps.install]}
+      >
+        <Button
+          tone="primary"
+          disabled={steps.install !== 'ready'}
+          onClick={promptInstall}
+          className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start"
+        >
+          {t(installed ? 'app.installed' : 'app.install')}
+        </Button>
+      </StepRow>
 
-          {/*
-            * The facts sit below the button rather than above it.
-            *
-            * They are what somebody reads to answer "which authority did I
-            * end up with", which is a question asked *after* installing --
-            * while the button is the task. Above, they pushed the one thing
-            * this section exists for off the bottom of a 390px screen, with a
-            * wall of amber in between. Lifetimes moved out of the warning for
-            * the same reason: a thing that happens in a year is information,
-            * not a hazard, and a warning box that is mostly prose is a
-            * warning box people learn to skip.
-            */}
-          <Fact label={t('app.certName')}>{authority.name}</Fact>
-          {authority.validTo ? (
-            <Fact label={t('app.certValidTo')}>{authority.validTo.toLocaleDateString()}</Fact>
-          ) : null}
-          {/*
-            * Long, and deliberately not shortened. Half a fingerprint
-            * compared against half a fingerprint is a habit that reads as
-            * checking without being it.
-            */}
-          <Fact label={t('app.certFingerprint')}>{authority.fingerprint}</Fact>
-
-          <p className="m-0 text-note text-mut">{t('app.certLife')}</p>
-        </SettingRow>
-      )
-      : null,
-  ];
+      {/*
+        * The footer: which panel this is, and a reload. Pull-to-refresh is
+        * off across the panel (the same drag scrolls and opens the menu), so
+        * the reload is offered here, deliberately. Safe at any time: the port
+        * and the job belong to the server, and the page re-attaches to both.
+        */}
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-num text-note text-ink">{t('app.version', { version: VERSION })}</span>
+          <span className="text-note text-mut">{t(isUpdateReady() ? 'app.updateReady' : 'app.refreshWhy')}</span>
+        </div>
+        <Button
+          tone={isUpdateReady() ? 'primary' : 'outline'}
+          onClick={applyUpdate}
+          className="h-ctl w-full @3xl/shell:w-auto"
+        >
+          {t('app.refresh')}
+        </Button>
+      </footer>
+    </>
+  );
 };
 
 export default AppScreen;
