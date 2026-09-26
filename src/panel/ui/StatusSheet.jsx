@@ -190,7 +190,7 @@ const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) 
         * own button and face (a red outline, not the STOP's fill).
         */}
       {machine.connected ? (
-        <Button tone="end" onClick={disconnect} className="mt-1 h-ctl self-start px-6">
+        <Button tone="end" onClick={disconnect} className="mt-1 h-ctl w-full">
           {t('connect.disconnect')}
         </Button>
       ) : null}

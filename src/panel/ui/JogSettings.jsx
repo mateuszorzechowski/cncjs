@@ -25,7 +25,11 @@ import { t } from '../i18n';
 
 const joined = (steps) => (steps ?? []).map(String).join(' · ');
 
-const StepFields = ({ title, values, onChange }) => (
+// The mask: a figure and nothing else — digits and one decimal point, a
+// comma taken as one.
+const figureOnly = (text) => text.replace(/[^0-9.,]/g, '');
+
+const StepFields = ({ title, values, unit, onChange }) => (
   <div className="flex flex-col gap-2">
     <span className="text-cap font-semibold uppercase tracking-[0.08em] text-mut">{title}</span>
     <div className="grid grid-cols-3 gap-2">
@@ -36,8 +40,9 @@ const StepFields = ({ title, values, onChange }) => (
           key={i}
           label={t('jogSettings.stepN', { axes: title, n: i + 1 })}
           inputMode="decimal"
+          unit={unit}
           value={value}
-          onChange={(event) => onChange(values.map((v, j) => (j === i ? event.target.value : v)))}
+          onChange={(event) => onChange(values.map((v, j) => (j === i ? figureOnly(event.target.value) : v)))}
         />
       ))}
     </div>
@@ -47,6 +52,7 @@ const StepFields = ({ title, values, onChange }) => (
 const padded = (steps) => [...steps.map(String), ...Array(MOST_STEPS - steps.length).fill('')];
 
 const StepsSheet = ({ jog, onClose }) => {
+  const units = useUnits();
   const [xy, setXy] = useState(() => padded(jog.xySteps));
   const [z, setZ] = useState(() => padded(jog.zSteps));
   const [refused, setRefused] = useState(false);
@@ -56,8 +62,8 @@ const StepsSheet = ({ jog, onClose }) => {
   return (
     <Sheet title={t('jogSettings.stepsTitle')} onClose={onClose}>
       <p className="m-0 text-note text-mut">{t('jogSettings.stepsHow', { most: MOST_STEPS })}</p>
-      <StepFields title={t('jogSettings.xy')} values={xy} onChange={setXy} />
-      <StepFields title={t('jogSettings.z')} values={z} onChange={setZ} />
+      <StepFields title={t('jogSettings.xy')} values={xy} unit={units.length} onChange={setXy} />
+      <StepFields title={t('jogSettings.z')} values={z} unit={units.length} onChange={setZ} />
       {refused || !xySteps || !zSteps ? (
         <p className="m-0 text-note text-red">{t('jogSettings.invalid')}</p>
       ) : null}

@@ -138,6 +138,15 @@ const byServer = async (view) => {
  */
 export const assist = (words, size, machine = () => null) => [
   autocompletion({ override: [suggest(words, machine)], activateOnTyping: true }),
+  ...findings(words, size),
+];
+
+/**
+ * The checks alone, for text that is read and not typed — the phone's page
+ * of a file (Mateusz, 2026-09-26: *"na telefonie też chcę widzieć błędy do
+ * wglądu"*): the marks in the gutter and on the scrollbar, no suggestions.
+ */
+export const findings = (words, size) => [
   linter(byLine(words), { delay: 150 }),
   linter(byServer, { delay: size > BIG ? SERVER_DELAY_BIG_MS : SERVER_DELAY_MS }),
   lintGutter(),
