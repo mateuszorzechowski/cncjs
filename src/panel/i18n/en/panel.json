@@ -887,5 +887,19 @@
     "insecure": "Only over HTTPS: this panel is open without encryption, and browsers keep the screen on only for a secure page. See the Install tab.",
     "unsupported": "This browser cannot keep the screen on.",
     "refused": "The browser refused to keep the screen on — a battery saver will do that."
+  },
+  "jogSettings": {
+    "stepsTitle": "Jog steps",
+    "stepsNote": "What the jog card offers, in the units above. The server’s, the same on every device.",
+    "stepsHow": "Up to {{most}} per group, smallest first. Leave a field empty to drop it.",
+    "stepN": "{{axes}} step {{n}}",
+    "ratesTitle": "Jog speeds",
+    "ratesNote": "The speed the jog card starts on, in the units above.",
+    "ratesHow": "Each can still be changed on the jog card; this is where it starts.",
+    "xy": "XY",
+    "z": "Z",
+    "save": "Save",
+    "defaults": "Back to defaults",
+    "invalid": "Steps are numbers above 0, each larger than the one before, one to six in each group."
   }
 }

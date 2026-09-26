@@ -71,21 +71,110 @@ export const toMm = (value, name) => {
   return Math.round((value / UNITS[name].factor) * 1e4) / 1e4;
 };
 
+/** The most steps a list may offer: the jog card lays them out in one row. */
+export const MOST_STEPS = 6;
+
+/**
+ * A list of jog steps as an operator gave it, or null when it is not one:
+ * one to `MOST_STEPS` numbers, each above nought, each larger than the last.
+ */
+const stepList = (list) => {
+  if (!Array.isArray(list) || list.length < 1 || list.length > MOST_STEPS) {
+    return null;
+  }
+  const values = list.map(Number);
+  const ok = values.every((v, i) => Number.isFinite(v) && v > 0 && v < 10000 && (i === 0 || v > values[i - 1]));
+  return ok ? values : null;
+};
+
+/** The step a group starts on: the one asked for if offered, else the offered one nearest the default. */
+const startingStep = (steps, asked, fallback) => {
+  if (steps.includes(asked)) {
+    return asked;
+  }
+  return steps.reduce((best, v) => (Math.abs(v - fallback) < Math.abs(best - fallback) ? v : best), steps[0]);
+};
+
+/**
+ * The jog rule of a unit with the operator's own steps and rates over it
+ * (Mateusz, 2026-09-24: *"w ustawieniach się dorobi"*). Only what was set is
+ * kept, so a default changed here reaches every server that did not.
+ */
+export const jogRule = (name, own = {}) => {
+  const base = UNITS[name].jog;
+  const xySteps = own.xySteps || base.xySteps;
+  const zSteps = own.zSteps || base.zSteps;
+  const group = (key, steps) => ({
+    ...base[key],
+    step: startingStep(steps, own[key]?.step, base[key].step),
+    rate: own[key]?.rate ?? base[key].rate,
+  });
+  return { xySteps, zSteps, xy: group('xy', xySteps), z: group('z', zSteps) };
+};
+
+/**
+ * What of `patch` may be kept for `name`, or a reason it may not: the
+ * steps as `stepList` has them, a starting step among them, a rate within
+ * the unit's own bounds. Null in `patch` is "back to the default".
+ */
+export const jogPatch = (name, patch, current = {}) => {
+  if (patch === null) {
+    return { own: {} };
+  }
+  if (typeof patch !== 'object') {
+    return { error: '`jog` is an object' };
+  }
+  const own = { ...current };
+  for (const key of ['xySteps', 'zSteps']) {
+    if (patch[key] !== undefined) {
+      const steps = stepList(patch[key]);
+      if (!steps) {
+        return { error: `\`${key}\`: 1 to ${MOST_STEPS} rising numbers above 0` };
+      }
+      own[key] = steps;
+    }
+  }
+  for (const key of ['xy', 'z']) {
+    const given = patch[key];
+    if (given !== undefined) {
+      const { min, max } = UNITS[name].jog[key];
+      const rate = given.rate === undefined ? undefined : Number(given.rate);
+      if (rate !== undefined && !(rate >= min && rate <= max)) {
+        return { error: `\`${key}.rate\`: ${min} to ${max}` };
+      }
+      const step = given.step === undefined ? undefined : Number(given.step);
+      own[key] = { ...own[key], ...(rate !== undefined ? { rate } : {}), ...(step !== undefined ? { step } : {}) };
+    }
+  }
+  return { own };
+};
+
 class Units extends events.EventEmitter {
   name = 'mm';
+
+  // The operator's own jog steps and rates, by unit — see `jogRule`.
+  jog = {};
 
   // Whether the machine is put back into these units after a program: M2
   // and M30 leave G20 in force, and the console after it reads inches.
   restore = false;
 
-  open({ name, restore } = {}) {
+  open({ name, restore, jog } = {}) {
     this.name = isUnit(name) ? name : 'mm';
     this.restore = Boolean(restore);
+    // What `.cncrc` holds is trusted no further than a request would be.
+    this.jog = {};
+    for (const unit of unitNames) {
+      const { own } = jogPatch(unit, jog?.[unit] ?? null);
+      if (own && Object.keys(own).length > 0) {
+        this.jog[unit] = own;
+      }
+    }
   }
 
   /** What a panel is sent: the rule, whole, with the choices that made it. */
   rule() {
-    return { name: this.name, restore: this.restore, ...UNITS[this.name] };
+    return { name: this.name, restore: this.restore, ...UNITS[this.name], jog: jogRule(this.name, this.jog[this.name]) };
   }
 
   /** The line that puts the machine into these units. */
@@ -98,6 +187,25 @@ class Units extends events.EventEmitter {
     this.restore = Boolean(restore);
     this.emit('change', this.rule());
     return this.rule();
+  }
+
+  /** The operator's jog steps and rates for the units in force; a reason when refused. */
+  setJog(patch) {
+    const { own, error } = jogPatch(this.name, patch, this.jog[this.name]);
+    if (error) {
+      return { error };
+    }
+    this.jog = { ...this.jog, [this.name]: own };
+    if (Object.keys(own).length === 0) {
+      delete this.jog[this.name];
+    }
+    this.emit('change', this.rule());
+    return { rule: this.rule() };
+  }
+
+  /** What `.cncrc` keeps. */
+  saved() {
+    return { name: this.name, restore: this.restore, ...(Object.keys(this.jog).length ? { jog: this.jog } : {}) };
   }
 }
 

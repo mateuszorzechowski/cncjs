@@ -6,6 +6,7 @@ import LanguageChoice from '../ui/LanguageChoice';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
+import JogSettings from '../ui/JogSettings';
 import KeepAwakeChoice, { keepAwakeNote } from '../ui/KeepAwakeChoice';
 import { useKeepAwakeStatus } from '../ui/keepAwake';
 import { RestoreUnitsChoice, UnitsChoice } from '../ui/UnitsChoice';
@@ -138,6 +139,8 @@ const SettingsScreen = ({ machine }) => {
               >
                 <RestoreUnitsChoice units={machine.units} />
               </SettingRow>
+              {/* The jog card's steps and rates, in the units above. */}
+              <JogSettings />
               <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')} scope="server">
                 <JournalLevelChoice />
               </SettingRow>
