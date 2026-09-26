@@ -78,7 +78,10 @@ const MachineSettings = ({ machine }) => {
           format={(id) => t(VIEWS[id])}
         />
       </SettingRow>
-      {rows.length === 0 ? <p className="m-0 py-4 text-note text-mut">{t('machine.empty')}</p> : null}
+      {/* Connected with no rows yet is a server still reading `$$`, or one older than this panel. */}
+      {rows.length === 0 ? (
+        <p className="m-0 py-4 text-note text-mut">{t(machine.connected ? 'machine.waiting' : 'machine.empty')}</p>
+      ) : null}
       {rows.length > 0 && !machine.canWriteSettings ? <Notice className="my-4">{t('machine.readOnly')}</Notice> : null}
       {rows.length > 0 && raw ? (
         <div className="grid grid-cols-1 gap-2 py-4 @xl/shell:grid-cols-2 @5xl/shell:grid-cols-3">

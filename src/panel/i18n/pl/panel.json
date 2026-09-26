@@ -1094,6 +1094,7 @@
       "save": "Zapisz w sterowniku",
       "noAnswer": "Sterownik nie potwierdził nowej wartości. Sprawdź połączenie i Dziennik.",
       "grblRefused": "Grbl odrzucił zapis ({{code}}): {{meaning}}"
-    }
+    },
+    "waiting": "Sterownik nie podał jeszcze ustawień. Jeśli to się nie zmienia, serwer jest starszy niż ten panel — uruchom go ponownie."
   }
 }

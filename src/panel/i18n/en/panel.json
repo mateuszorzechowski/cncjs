@@ -1094,6 +1094,7 @@
       "save": "Save to controller",
       "noAnswer": "The controller did not confirm the new value. Check the connection and the Journal.",
       "grblRefused": "Grbl refused the write ({{code}}): {{meaning}}"
-    }
+    },
+    "waiting": "The controller has not reported its settings yet. If this does not change, the server is older than this panel — restart it."
   }
 }

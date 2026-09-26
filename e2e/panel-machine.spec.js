@@ -132,6 +132,14 @@ test.describe('the Maszyna tab', () => {
     await expect(cncjs.page.getByRole('button', { name: /^\$13/ })).toBeDisabled();
   });
 
+  test('connected with no rows yet says so, not "connect"', async ({ cncjs }) => {
+    await open(cncjs.page);
+    await cncjs.page.evaluate(() => window.__fire('machine:settings', { rows: [], history: [] }));
+
+    await expect(cncjs.page.getByText(/nie podał jeszcze ustawień/)).toBeVisible();
+    await expect(cncjs.page.getByText(/Połącz się ze sterownikiem/)).toHaveCount(0);
+  });
+
   test('nothing may be written while a program runs', async ({ cncjs }) => {
     await open(cncjs.page);
     await cncjs.page.evaluate((state) => {
