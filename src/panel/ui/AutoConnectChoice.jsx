@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import SegmentedChoice from './SegmentedChoice';
 import { fetchAutoMode, keepConnectOnOpen, readConnectOnOpen, saveAutoMode } from '../machine/autoConnect';
-import { CONNECT_MODES, connectMode, connectPlan } from '../machine/connectMode';
+import { CONNECT_MODES, connectMode, connectPlan, serverBeside } from '../machine/connectMode';
 import { t } from '../i18n';
 
 // Written out, so every key is a literal the resources test can find.
@@ -34,21 +34,36 @@ export const useAutoMode = () => {
     };
   }, []);
   const choose = (mode) => {
-    const plan = connectPlan(mode);
-    keepConnectOnOpen(plan.onOpen);
-    setOnOpen(plan.onOpen);
-    saveAutoMode(plan.server).then(setServerMode).catch(() => {});
+    const plan = connectPlan(mode, onOpen);
+    if (plan.onOpen !== undefined) {
+      keepConnectOnOpen(plan.onOpen);
+      setOnOpen(plan.onOpen);
+    }
+    if (plan.server) {
+      saveAutoMode(plan.server).then(setServerMode).catch(() => {});
+    }
   };
-  return [serverMode === null ? null : connectMode(serverMode, onOpen), choose];
+  const known = serverMode !== null;
+  return {
+    mode: known ? connectMode(serverMode, onOpen) : null,
+    // The server's own mode, beside this device's choice (or null).
+    beside: known ? serverBeside(serverMode, onOpen) : null,
+    choose,
+  };
 };
 
-const AutoConnectChoice = ({ mode, onChoose }) => (
+/**
+ * This device's choice filled; the server's beside it in the lighter mark —
+ * the same `covers` face the jog steps use.
+ */
+const AutoConnectChoice = ({ mode, beside, onChoose }) => (
   <SegmentedChoice
     joined
     fitWide
     label={t('connect.auto.label')}
     options={CONNECT_MODES}
     value={mode}
+    covers={(option) => option === beside}
     disabled={mode === null}
     onChange={onChoose}
     format={(id) => t(NAMES[id])}

@@ -330,10 +330,12 @@
       "panel": "When the panel opens",
       "manual": "Manually",
       "serverNote": "The server opens the last connection by itself when it starts and when the cable is plugged in, with no panel open. A port disconnected by hand stays closed until its cable is taken out.",
-      "panelNote": "The panel connects when you open it in this browser. Other devices keep their own setting.",
+      "panelNote": "The panel connects when you open it in this browser. Other devices keep their own setting. Tap again to turn it off.",
       "manualNote": "Only the Connect button opens a port.",
       "panelNext": "This panel connects the next time it is opened.",
-      "serverNext": "The server connects when it next starts, or when the cable is plugged in again."
+      "serverNext": "The server connects when it next starts, or when the cable is plugged in again.",
+      "serverToo": "The server is set to connect when it starts, too — for every device.",
+      "serverManual": "For every other device the server leaves it to the Connect button."
     },
     "group": {
       "controller": "Controller",

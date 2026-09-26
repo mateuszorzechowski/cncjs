@@ -330,10 +330,12 @@
       "panel": "Przy otwarciu panelu",
       "manual": "Ręcznie",
       "serverNote": "Serwer sam otwiera ostatnie połączenie po starcie i po podłączeniu kabla, bez żadnego otwartego panelu. Port rozłączony ręcznie zostaje zamknięty, dopóki kabel nie zostanie wyjęty.",
-      "panelNote": "Panel łączy się, gdy otworzysz go w tej przeglądarce. Inne urządzenia zachowują własne ustawienie.",
+      "panelNote": "Panel łączy się, gdy otworzysz go w tej przeglądarce. Inne urządzenia zachowują własne ustawienie. Dotknij ponownie, żeby wyłączyć.",
       "manualNote": "Port otwiera tylko przycisk Połącz.",
       "panelNext": "Panel połączy się przy następnym otwarciu.",
-      "serverNext": "Serwer połączy się przy następnym starcie albo po ponownym podłączeniu kabla."
+      "serverNext": "Serwer połączy się przy następnym starcie albo po ponownym podłączeniu kabla.",
+      "serverToo": "Serwer ma też ustawione łączenie przy starcie — dla wszystkich urządzeń.",
+      "serverManual": "Dla pozostałych urządzeń serwer zostawia to przyciskowi Połącz."
     },
     "group": {
       "controller": "Sterownik",

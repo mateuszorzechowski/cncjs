@@ -45,6 +45,12 @@ import { t } from '../i18n';
  * again and it is the one built for a finger.
  */
 
+/** The server's own mode, said after this device's choice (`serverBeside`). */
+const BESIDE_NOTES = {
+  manual: 'connect.auto.serverManual',
+  server: 'connect.auto.serverToo',
+};
+
 /** What each mode will do about a port that is not open — the state row's second sentence. */
 const UNLINKED_NEXT = {
   panel: 'connect.auto.panelNext',
@@ -52,7 +58,7 @@ const UNLINKED_NEXT = {
 };
 
 const ConnectScreen = ({ machine }) => {
-  const [autoMode, chooseAuto] = useAutoMode();
+  const { mode: autoMode, beside, choose: chooseAuto } = useAutoMode();
   const { list, controllers, baudrates, asked, refresh, last } = usePorts(machine.linked);
   const [picked, setPicked] = useState('');
   /*
@@ -250,10 +256,12 @@ const ConnectScreen = ({ machine }) => {
         ) : null}
         <SettingRow
           title={t('connect.auto.label')}
-          note={autoMode ? t(AUTO_NOTES[autoMode]) : null}
+          note={autoMode
+            ? [t(AUTO_NOTES[autoMode]), beside ? t(BESIDE_NOTES[beside]) : null].filter(Boolean).join(' ')
+            : null}
           scope={autoMode ? connectScope(autoMode) : null}
         >
-          <AutoConnectChoice mode={autoMode} onChoose={chooseAuto} />
+          <AutoConnectChoice mode={autoMode} beside={beside} onChoose={chooseAuto} />
         </SettingRow>
       </SettingGroup>
 
