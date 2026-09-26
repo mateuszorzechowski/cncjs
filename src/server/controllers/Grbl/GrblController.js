@@ -83,6 +83,9 @@ import {
 } from './constants';
 
 const log = logger('controller:Grbl');
+
+// How long after the last `$$` line the settings view is sent again.
+const SETTINGS_READ_MS = 300;
 const noop = _.noop;
 
 // A status report answers every `?`, and one is queried at least every few
@@ -1234,6 +1237,17 @@ class GrblController {
       this.runner.on('settings', (res) => {
         machineSettings.observe(res.name, res.value);
 
+        /*
+         * Once a burst of `$$` lines is over, the view again — also when
+         * nothing in it changed. A settings screen that asked to read again
+         * is owed an answer, and "read at" is that answer; the ordinary
+         * path below only speaks when a value differs.
+         */
+        clearTimeout(this.settingsReadTimer);
+        this.settingsReadTimer = setTimeout(() => {
+          this.emit('machine:settings', this.machineSettingsView());
+        }, SETTINGS_READ_MS);
+
         const setting = _.find(GRBL_SETTINGS, { setting: res.name });
 
         if (!res.message && setting) {
@@ -1664,6 +1678,7 @@ class GrblController {
     destroy() {
       this.fileCheck = null;
       this.settingWrite = null;
+      clearTimeout(this.settingsReadTimer);
 
       if (this.queryTimer) {
         clearInterval(this.queryTimer);

@@ -211,6 +211,22 @@ describe('settings:read', () => {
     expect(lines(writes)).toEqual(['$$\n']);
   });
 
+  test('answers with the view even when nothing changed — "read at" is the answer', async () => {
+    const { controller, socketEvents } = setup();
+    await delay(400);
+    socketEvents.length = 0;
+
+    controller.command('settings:read');
+    for (const line of ['$110=500.000', '$20=1', '$13=0']) {
+      controller.runner.parse(line);
+    }
+    await delay(400);
+
+    const sent = socketEvents.filter(({ event }) => event === 'machine:settings');
+    expect(sent).toHaveLength(1);
+    expect(sent[0].args[0].readAt).toEqual(expect.any(String));
+  });
+
   test('not while the machine runs, nor over a write', () => {
     const running = setup({ state: 'Run' });
     running.controller.command('settings:read');
