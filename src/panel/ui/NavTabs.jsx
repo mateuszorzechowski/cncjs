@@ -252,7 +252,11 @@ const NavTabs = ({ items, rest, current, onSelect, className = '' }) => {
          * does not move when the menu opens — the block inside it is what
          * travels, and it hangs out of the bottom rather than being clipped.
          */
-        className={`relative z-30 h-[calc(var(--btnh)+var(--navEdge))] shrink-0 ${className}`}
+        // No touch panning on the bar: it scrolls nothing, and a phone that
+        // took a finger's upward drag for a pan cancelled the pointer, so the
+        // swipe never ended and the menu never opened (2026-09-26, *"otwieranie
+        // i chowanie dolnego menu gestem"*).
+        className={`relative z-30 h-[calc(var(--btnh)+var(--navEdge))] shrink-0 touch-none ${className}`}
         aria-label={t('nav.label')}
       >
         <div

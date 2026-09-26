@@ -17,9 +17,16 @@ const SwipePages = ({ pages, label, className = '' }) => {
   const strip = useRef(null);
   const [at, setAt] = useState(0);
 
+  /*
+   * A page and the gap after it: the pages are apart, not glued edge to
+   * edge while a finger moves them (Mateusz, 2026-09-26: *"między ekranami
+   * wewnątrz sheet jakiś gap?"*). The gap is the strip's own, read back.
+   */
+  const pitch = (node) => node.clientWidth + (parseFloat(getComputedStyle(node).columnGap) || 0);
+
   const turnTo = (index) => {
     const node = strip.current;
-    node?.scrollTo({ left: index * node.clientWidth, behavior: 'smooth' });
+    node?.scrollTo({ left: index * pitch(node), behavior: 'smooth' });
   };
 
   return (
@@ -30,9 +37,9 @@ const SwipePages = ({ pages, label, className = '' }) => {
         aria-label={label}
         onScroll={(event) => {
           const node = event.currentTarget;
-          setAt(Math.round(node.scrollLeft / Math.max(1, node.clientWidth)));
+          setAt(Math.round(node.scrollLeft / Math.max(1, pitch(node))));
         }}
-        className="scroll-quiet flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
+        className="scroll-quiet flex min-h-0 flex-1 snap-x snap-mandatory gap-pad overflow-x-auto overscroll-x-contain"
       >
         {pages.map((page) => (
           <section
