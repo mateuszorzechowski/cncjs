@@ -66,6 +66,7 @@ import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
 import { describeSettings, settingWrite } from './machine-settings';
 import machineSettings from '../../services/machine-settings';
+import devices from '../../services/devices';
 import { deadmanMsFor, isAbandoned } from './deadman';
 import { hostTiming, observeJogTicks } from '../../lib/host-timing';
 import { summarise } from '../../lib/tick-jitter';
@@ -2249,11 +2250,16 @@ class GrblController {
 
     /**
      * Grbl's settings as the panel's Maszyna tab lists them — see
-     * `machine-settings.js` — with the server's history of changes to them.
+     * `machine-settings.js` — with the server's history of changes to them,
+     * each by the name of the device that made it, as the journal has it.
      */
     machineSettingsView() {
       const { history } = machineSettings.saved();
-      return { rows: describeSettings(this.settings?.settings), history };
+      const named = devices.describe(history.map(({ device }) => device));
+      return {
+        rows: describeSettings(this.settings?.settings),
+        history: history.map((entry) => ({ ...entry, deviceName: named[entry.device]?.name ?? null })),
+      };
     }
 
     /**

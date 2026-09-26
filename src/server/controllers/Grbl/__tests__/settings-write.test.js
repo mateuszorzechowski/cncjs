@@ -1,5 +1,6 @@
 import GrblController from '../GrblController';
 import machineSettings from '../../../services/machine-settings';
+import devices from '../../../services/devices';
 import delay from '../../../lib/delay';
 import { createController } from '../../__tests__/helpers/createController';
 
@@ -186,6 +187,19 @@ describe('the copy and the history', () => {
 
     const sent = socketEvents.filter(({ event }) => event === 'machine:settings').pop();
     expect(sent.args[0].rows.map(({ name, value }) => [name, value])).toEqual([['$13', 0], ['$20', 0], ['$110', 500]]);
-    expect(sent.args[0].history).toEqual([expect.objectContaining({ name: '$20', to: '0' })]);
+    expect(sent.args[0].history).toEqual([expect.objectContaining({ name: '$20', to: '0', deviceName: null })]);
+  });
+
+  test('a change in the history carries the name of the device that made it', () => {
+    const { controller } = setup();
+    devices.seen('laptop', { name: 'Laptop w warsztacie' });
+
+    controller.command('settings:write', { name: '$110', value: 800 });
+    controller.runner.parse('ok');
+    controller.runner.parse('$110=800.000');
+
+    expect(controller.machineSettingsView().history).toEqual([
+      expect.objectContaining({ name: '$110', device: 'laptop', deviceName: 'Laptop w warsztacie' }),
+    ]);
   });
 });

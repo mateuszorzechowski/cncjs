@@ -21,7 +21,8 @@
  *
  * `kind` is what may be written: `bool` 0 or 1, `mask` a whole number of
  * bits up to `max`, `int` a whole number within `min`..`max`, `float` a
- * number above `min` (Grbl stores three decimals).
+ * number above `min` (Grbl stores three decimals). `bits` names what a
+ * mask's bits are: `axes` X, Y, Z, or `report` for `$10`.
  */
 
 const axes = (first, group, unit, extra = {}) => ['x', 'y', 'z'].map((axis, i) => ({
@@ -31,12 +32,12 @@ const axes = (first, group, unit, extra = {}) => ['x', 'y', 'z'].map((axis, i) =
 export const SETTINGS = [
   { name: '$0', group: 'motors', kind: 'int', unit: 'us', min: 3, max: 255 },
   { name: '$1', group: 'motors', kind: 'int', unit: 'ms', min: 0, max: 255 },
-  { name: '$2', group: 'motors', kind: 'mask', max: 7 },
-  { name: '$3', group: 'motors', kind: 'mask', max: 7 },
+  { name: '$2', group: 'motors', kind: 'mask', max: 7, bits: 'axes' },
+  { name: '$3', group: 'motors', kind: 'mask', max: 7, bits: 'axes' },
   { name: '$4', group: 'motors', kind: 'bool' },
   { name: '$5', group: 'limits', kind: 'bool' },
   { name: '$6', group: 'limits', kind: 'bool' },
-  { name: '$10', group: 'report', kind: 'mask', max: 3 },
+  { name: '$10', group: 'report', kind: 'mask', max: 3, bits: 'report' },
   { name: '$11', group: 'motion', kind: 'float', unit: 'length', min: 0 },
   { name: '$12', group: 'motion', kind: 'float', unit: 'length', min: 0 },
   /*
@@ -50,7 +51,7 @@ export const SETTINGS = [
   { name: '$20', group: 'limits', kind: 'bool' },
   { name: '$21', group: 'limits', kind: 'bool' },
   { name: '$22', group: 'homing', kind: 'bool' },
-  { name: '$23', group: 'homing', kind: 'mask', max: 7 },
+  { name: '$23', group: 'homing', kind: 'mask', max: 7, bits: 'axes' },
   { name: '$24', group: 'homing', kind: 'float', unit: 'feed', min: 0 },
   { name: '$25', group: 'homing', kind: 'float', unit: 'feed', min: 0 },
   { name: '$26', group: 'homing', kind: 'int', unit: 'ms', min: 0, max: 65535 },
