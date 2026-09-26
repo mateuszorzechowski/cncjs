@@ -4,6 +4,8 @@ import ConfirmSheet from '../ui/ConfirmSheet';
 import GcodeEditor from './GcodeEditor';
 import { assist } from './assist';
 import { fetchWords } from './words';
+import DeclareBar from './DeclareBar';
+import { missingDeclarations } from './declarations';
 import { isLoaded, loadFile, readFile, writeFile } from '../machine/files';
 import { t } from '../i18n';
 
@@ -69,10 +71,20 @@ const FileEditor = ({ file, machine, className = '' }) => {
   // was built: read through a ref, so a new status report rebuilds nothing.
   const settings = useRef(machine.settings);
   settings.current = machine.settings;
-  const help = useMemo(
-    () => (words && text !== null ? assist(words, text.length, () => settings.current) : []),
-    [words, text]
-  );
+  // What the server's check says is left undeclared, for the bar over the
+  // editor; the units offered are the server's own.
+  const units = machine.units?.modal ?? 'G21';
+  const [missing, setMissing] = useState([]);
+  const help = useMemo(() => {
+    if (!words || text === null) {
+      return [];
+    }
+    return assist(words, text.length, {
+      machine: () => settings.current,
+      units,
+      onFindings: (found) => setMissing(missingDeclarations(found, units)),
+    });
+  }, [words, text, units]);
   const loaded = Boolean(name) && isLoaded(machine, name);
   const running = loaded && (machine.workflow || 'idle') !== 'idle';
 
@@ -104,6 +116,9 @@ const FileEditor = ({ file, machine, className = '' }) => {
       {note ? <p className="m-0 text-note text-mut">{note}</p> : null}
       {failed ? <p className="m-0 text-base text-red">{t('files.editor.unreadable')}</p> : null}
       {text === null && !failed ? <p className="m-0 flex-1 text-base text-mut">{t('files.preview.reading')}</p> : null}
+      {missing.length && name && !running ? (
+        <DeclareBar missing={missing} onInsert={(line) => editor.current?.insertAtHead(line)} />
+      ) : null}
       {text === null ? null : (
         <GcodeEditor
           ref={editor}
