@@ -256,8 +256,6 @@
     "notYet": "Ta przeglądarka jeszcze nie zaproponowała instalacji. Zwykle pyta, gdy strona zostanie użyta raz czy dwa.",
     "certWarning": "Ten urząd certyfikacji jest ograniczony do nazw w Twojej własnej sieci — nie może poświadczyć żadnej strony w internecie. Mimo to instaluj go tylko dla maszyny, która jest Twoja, w sieci, która jest Twoja.",
     "certLife": "Urząd ważny rok, certyfikat serwera 30 dni. Serwer wymienia swój sam; urząd po roku przestaje działać i wtedy trzeba zainstalować nowy, a stary usunąć w ustawieniach telefonu — wygasły nie znika sam.",
-    "certTitle": "Certyfikat urzędu",
-    "certWhat": "Ten plik instaluje się na telefonie raz. Bez niego telefon nie uzna połączenia z panelem za bezpieczne i nie pozwoli zainstalować aplikacji.",
     "certName": "Nazwa na telefonie",
     "certValidTo": "Ważny do",
     "certFingerprint": "Odcisk SHA-256",
@@ -265,8 +263,6 @@
     "refresh": "Odśwież panel",
     "refreshWhy": "Pobiera z serwera najnowszą wersję panelu.",
     "updateReady": "Na serwerze czeka nowsza wersja panelu. Odśwież, żeby ją wziąć.",
-    "installTitle": "Instalacja",
-    "refreshTitle": "Odśwież panel",
     "certPlatform": "Twoje urządzenie",
     "certHow": {
       "android": "Android: wybierz „Certyfikat CA”, a nie „certyfikat VPN i aplikacji”, i ustaw najpierw blokadę ekranu, jeśli jej nie masz.",
@@ -274,7 +270,14 @@
       "windows": "Windows: otwórz pobrany plik, „Zainstaluj certyfikat”, wybierz „Bieżący użytkownik” i magazyn „Zaufane główne urzędy certyfikacji”.",
       "macos": "macOS: otwórz pobrany plik w Pęku kluczy, dodaj go do pęku „Logowanie”, a w jego ustawieniach zaufania wybierz „Zawsze ufaj”.",
       "linux": "Linux: w ustawieniach przeglądarki, w Prywatności i bezpieczeństwie → Certyfikaty → Urzędy, zaimportuj pobrany plik i zaznacz zaufanie dla witryn."
-    }
+    },
+    "step1Title": "Zaufaj certyfikatowi panelu",
+    "step1Done": "To urządzenie ufa certyfikatowi panelu: połączenie jest bezpieczne.",
+    "step2Title": "Zainstaluj aplikację",
+    "step2Blocked": "Najpierw krok 1: przeglądarka instaluje aplikację tylko przez połączenie, któremu ufa.",
+    "step2Done": "Zainstalowana na tym urządzeniu.",
+    "stepDone": "gotowe",
+    "version": "Wersja panelu {{version}}"
   },
   "refusal": {
     "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",
