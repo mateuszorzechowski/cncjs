@@ -124,7 +124,7 @@ const Scene = ({
         * Sized to the machine's own travel where that is known, so the
         * squares are the machine's squares. Only when nothing has been
         * reported does it fall back to whatever is being drawn. */}
-      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} />
+      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} ground={colors.ground} />
 
       {/* The machine is context, not content: quiet enough that the program
         * inside it is what the eye lands on. */}
