@@ -452,6 +452,8 @@ const appMain = () => {
 
     // Journal
     app.get(urljoin(settings.route, 'api/journal'), api.journal.fetch);
+    app.get(urljoin(settings.route, 'api/devices'), api.devices.fetch);
+    app.put(urljoin(settings.route, 'api/devices/:id'), api.devices.update);
     app.get(urljoin(settings.route, 'api/journal/settings'), api.journal.readSettings);
     app.put(urljoin(settings.route, 'api/journal/settings'), api.journal.updateSettings);
 

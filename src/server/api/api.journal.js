@@ -1,5 +1,6 @@
 import config from '../services/configstore';
 import journal from '../services/journal';
+import devices from '../services/devices';
 import { isLevel, LEVELS } from '../services/journal/Journal';
 import { ERR_BAD_REQUEST } from '../constants';
 
@@ -31,7 +32,8 @@ export const fetch = (req, res) => {
     { before: number(before), limit: Math.min(number(limit) || 100, MAX_LIMIT) },
   );
 
-  res.send({ ...page, level: journal.threshold });
+  // Who each entry's device is, in words — see `services/devices`.
+  res.send({ ...page, level: journal.threshold, devices: devices.describe(page.records.map((entry) => entry.device)) });
 };
 
 /** `GET /api/journal/settings` — the lowest level kept. */

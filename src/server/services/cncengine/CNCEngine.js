@@ -9,6 +9,7 @@ import logger from '../../lib/logger';
 import settings from '../../config/settings';
 import store from '../../store';
 import config from '../configstore';
+import devices from '../devices';
 import journal from '../journal';
 import library from '../library';
 import units from '../units';
@@ -412,6 +413,12 @@ class CNCEngine {
          * reconnection, which is exactly the behaviour there was before.
          */
         socket.device = socket.handshake.auth?.device || socket.handshake.query?.device || socket.id;
+        // And what it says of itself, with the address it came from — so the
+        // journal names it rather than showing its id (`services/devices`).
+        if (socket.handshake.auth?.device) {
+          const { deviceName, deviceInfo } = socket.handshake.auth;
+          devices.seen(socket.device, { ...(deviceInfo || {}), name: deviceName, ip: address });
+        }
         log.debug(`New connection from ${address}: id=${socket.id}, user.id=${user.id}, user.name=${user.name}`);
 
         // Add to the socket pool

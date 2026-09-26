@@ -74,7 +74,13 @@ const REFUSALS = new Set(['error', 'alarm']);
  * strukture a nie sciane tekstu"* (2026-09-24). The line is a button so the
  * whole of it is the target, and it says whether it is open.
  */
-const JournalRow = ({ entry, open, onToggle }) => {
+/*
+ * `device` is what the server knows of the entry's device (`services/devices`):
+ * its name on the row, and its address, system and browser in the details —
+ * who did it, without an id (Mateusz, 2026-09-26). An id the server has no
+ * name for — a script, an entry older than the names — is shown as it is.
+ */
+const JournalRow = ({ entry, device, open, onToggle }) => {
   const units = useUnits();
   const data = Object.entries(entry.data || {}).filter(([key]) => DETAILS[key]);
   const found = entry.data?.found || [];
@@ -103,13 +109,17 @@ const JournalRow = ({ entry, open, onToggle }) => {
           {entry.code ? <span className="ml-1.5 font-num text-cap text-mut">{entry.code}</span> : null}
         </span>
         <span className="min-w-0 flex-1 basis-60 text-ink">{said(entry)}</span>
+        {device?.name ? <span className="shrink-0 truncate text-mut">{device.name}</span> : null}
       </button>
 
       {open ? (
         <dl className="m-0 flex flex-col gap-1 pb-3 text-note">
           <Detail label={t('journal.detail.time')} value={day.format(new Date(entry.time))} />
           {entry.port ? <Detail label={t('journal.detail.port')} value={entry.port} /> : null}
-          {entry.device ? <Detail label={t('journal.detail.device')} value={entry.device} /> : null}
+          {entry.device ? <Detail label={t('journal.detail.device')} value={device?.name || entry.device} /> : null}
+          {device?.ip ? <Detail label={t('journal.detail.address')} value={device.ip} /> : null}
+          {device?.system ? <Detail label={t('journal.detail.system')} value={[device.system, device.model].filter(Boolean).join(' · ')} /> : null}
+          {device?.browser ? <Detail label={t('journal.detail.browser')} value={device.browser} /> : null}
           {entry.program?.name ? <Detail label={t('journal.detail.program')} value={entry.program.name} /> : null}
           {entry.program?.line ? (
             <Detail

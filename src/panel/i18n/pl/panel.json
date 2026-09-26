@@ -340,7 +340,12 @@
       "server": "Serwer",
       "state": "Stan"
     },
-    "address": "Adres"
+    "address": "Adres",
+    "device": {
+      "title": "Nazwa tego urządzenia",
+      "note": "Tak nazywa je dziennik. Wykryte: {{facts}}. Puste pole = nazwa wykryta.",
+      "noteBare": "Tak nazywa je dziennik. Puste pole = nazwa wykryta."
+    }
   },
   "ports": {
     "state": {
@@ -527,7 +532,10 @@
       "code": "Kod",
       "meaning": "Znaczenie",
       "found": "Serwer widzi",
-      "arcBy": "{{said}}: zaczyna się {{radius}} {{unit}} od środka, a kończy {{reach}} {{unit}} od niego"
+      "arcBy": "{{said}}: zaczyna się {{radius}} {{unit}} od środka, a kończy {{reach}} {{unit}} od niego",
+      "address": "Adres",
+      "system": "System",
+      "browser": "Przeglądarka"
     },
     "range": {
       "m15": "15 min",

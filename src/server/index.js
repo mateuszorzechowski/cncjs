@@ -22,6 +22,7 @@ import app from './app';
 import cncengine from './services/cncengine';
 import journal from './services/journal';
 import library from './services/library';
+import devices from './services/devices';
 import units from './services/units';
 import monitor from './services/monitor';
 import config from './services/configstore';
@@ -71,6 +72,11 @@ const createServer = (options, callback) => {
   // The units every panel shows, and whether the machine is put back into
   // them after a program. See `services/units`.
   units.open(config.get('units', {}));
+
+  // The devices that have talked to this server, by name — see
+  // `services/devices`. Kept in `.cncrc` when what a reader sees changes.
+  devices.open(config.get('devices', {}));
+  devices.on('change', (known) => config.set('devices', known));
 
   // The panel's files, beside the configuration unless `.cncrc` says
   // `library.directory`. Made on first use. See `services/library`.
