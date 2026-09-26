@@ -17,20 +17,19 @@
 const TRAVEL = { x: '$130', y: '$131', z: '$132' };
 
 /**
- * `$23` — the homing direction invert mask, and the setting that decides which
- * side of zero the machine lives on.
+ * The reachable volume is `[-$13x, 0]` on every axis, whichever end it homes
+ * to. That is the source of the "why are my machine coordinates all minus"
+ * question, and an envelope taken as `[0, travel]` comes out mirrored through
+ * the origin — the right size, in the wrong place, plausible enough to ship.
  *
- * Grbl homes toward the positive end by default and puts machine zero there,
- * so the reachable volume is *negative*: `[-$130, 0]`. That is the source of
- * the "why are my machine coordinates all minus" question, and it is also why
- * an envelope taken as `[0, travel]` comes out mirrored through the origin —
- * the right size, in the wrong place, which looks plausible enough to ship.
- *
- * A set bit flips that axis to home at the negative end, putting zero at the
- * minimum and the volume in `[0, $13x]`. One bit per axis, in X, Y, Z order.
+ * **`$23` does not move it.** The homing direction mask only says which end
+ * the switch is at: Grbl 1.1 sets the position after homing to `-pull-off`
+ * at the top or `-travel + pull-off` at the bottom, and checks soft limits
+ * against `[-travel, 0]` either way. Only a firmware built with
+ * `HOMING_FORCE_SET_ORIGIN` puts zero at the bottom. This file used to flip
+ * the axis for a set bit; measured on COM3 (Grbl 1.1h), 2026-09-26: with
+ * `$23=1` a jog of X+1 from MPos 0 is refused with `error:15`, and X-1 goes.
  */
-const INVERT_MASK = '$23';
-const INVERT_BIT = { x: 1, y: 2, z: 4 };
 
 export const AXES = ['x', 'y', 'z'];
 
@@ -52,10 +51,7 @@ export const axisRange = (axis, settings) => {
     return null;
   }
 
-  const mask = setting(settings, INVERT_MASK) || 0;
-  const homesToMinimum = (mask & INVERT_BIT[axis]) !== 0;
-
-  return homesToMinimum ? { min: 0, max: travel } : { min: -travel, max: 0 };
+  return { min: -travel, max: 0 };
 };
 
 /**
