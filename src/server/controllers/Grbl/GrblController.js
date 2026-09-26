@@ -65,6 +65,7 @@ import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
 import { describeSettings, settingWrite } from './machine-settings';
+import { machineGeometry } from './geometry';
 import machineSettings from '../../services/machine-settings';
 import devices from '../../services/devices';
 import { deadmanMsFor, isAbandoned } from './deadman';
@@ -2278,6 +2279,8 @@ class GrblController {
       const named = devices.describe(history.map(({ device }) => device));
       return {
         rows: describeSettings(this.settings?.settings),
+        // The Geometria group's summary, checks and homing table — see `geometry.js`.
+        geometry: machineGeometry(this.settings?.settings),
         history: history.map((entry) => ({ ...entry, deviceName: named[entry.device]?.name ?? null })),
         // When `$$` last said anything: the save bar's "read at".
         readAt: copy.time,
