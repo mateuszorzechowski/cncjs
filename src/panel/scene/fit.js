@@ -73,35 +73,27 @@ export const RULER_FIT_PASSES = 3;
 
 export const fitWithRulers = (camera, box, direction, rulerPixels, rulers = 'zero') => {
   const near = rulers === 'near';
-  const sides = near ? nearSides(box, direction) : rulerSides(box);
-  const { outX, outY } = sides;
-  // Where the unit goes: the far figure of the X ruler, or — along the
-  // nearest edges — the X title, past the end away from the corner.
-  const farX = near
-    ? (sides.axisX === box.max.x ? -1 : 1)
-    : (Math.abs(box.min.x) > Math.abs(box.max.x) ? -1 : 1);
-  // And the Y title, past the far end of the Y ruler.
-  let farY = 0;
-  if (near) {
-    farY = sides.axisY === box.min.y ? 1 : -1;
-  }
+  const { outX, outY } = near ? nearSides(box, direction) : rulerSides(box);
+  // Where the unit goes along zero: the far figure of the X ruler. Along the
+  // nearest edges it is a title outside each row instead, so there is no far
+  // end to make room at — the rows' own sides take twice the room.
+  const farX = near ? 0 : (Math.abs(box.min.x) > Math.abs(box.max.x) ? -1 : 1);
+  const rows = near ? 2 : 1;
   let target = fitCameraToBounds(camera, box, direction);
   // The titles ask for more room, and the fit takes longer to settle on it.
   const passes = near ? 2 * RULER_FIT_PASSES : RULER_FIT_PASSES;
   for (let i = 1; i < passes; i++) {
     const room = rulerPixels / camera.zoom;
     const widen = (side, out) => (side === out ? room : 0);
-    // A title is a word and a unit past the end figure: twice the room.
-    const title = (side, out) => (near && side === out ? 2 * room : widen(side, out));
     const floor = new THREE.Box3(
       new THREE.Vector3(
-        box.min.x - Math.max(widen(-1, outX), title(-1, farX)),
-        box.min.y - Math.max(widen(-1, outY), title(-1, farY)),
+        box.min.x - Math.max(rows * widen(-1, outX), widen(-1, farX)),
+        box.min.y - (rows * widen(-1, outY)),
         box.min.z
       ),
       new THREE.Vector3(
-        box.max.x + Math.max(widen(1, outX), title(1, farX)),
-        box.max.y + Math.max(widen(1, outY), title(1, farY)),
+        box.max.x + Math.max(rows * widen(1, outX), widen(1, farX)),
+        box.max.y + (rows * widen(1, outY)),
         box.min.z
       )
     );

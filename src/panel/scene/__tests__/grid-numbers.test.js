@@ -344,13 +344,12 @@ describe('rulers along the edges nearest the camera (Ścieżka, design 03a)', ()
     expect(labels.filter((l) => l.key.startsWith('y')).every((l) => l.x === 0)).toBe(true);
   });
 
-  test('each title stands on its ruler, past the end away from the corner where they meet', () => {
+  test('each title lies along its axis, at the middle, outside its row of figures', () => {
     const [x, y] = axisTitles(TRAVEL, nearSides(TRAVEL, ISO), 'in');
 
-    expect(x).toMatchObject({ text: 'X [in]', along: 'x', x: -1000, y: -700, push: { x: -1, y: -1 } });
-    expect(y).toMatchObject({ text: 'Y [in]', along: 'y', x: 0, y: 0, push: { x: 1, y: 1 } });
-    expect(x.clear.x).toBeLessThan(0);
-    expect(y.clear.y).toBeGreaterThan(0);
+    // Mateusz, 2026-09-26: `X [mm]` centred under `0 50 100 … 300`.
+    expect(x).toMatchObject({ text: 'X [in]', along: 'x', beyond: 'x', x: -500, y: -700, push: { x: 0, y: -1 } });
+    expect(y).toMatchObject({ text: 'Y [in]', along: 'y', beyond: 'y', x: 0, y: -350, push: { x: 1, y: 0 } });
   });
 
   test('without it, the zero rule and the unit in the far figure, as the file preview has them', () => {
