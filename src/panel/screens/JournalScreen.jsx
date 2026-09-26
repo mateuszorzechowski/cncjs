@@ -35,7 +35,7 @@ const JournalScreen = () => {
   const filters = useJournalFilters();
   const [open, setOpen] = useState(null);
   const [sheet, setSheet] = useState(false);
-  const { entries, counts, matched, kept, more, loading, error, loadMore } = useJournal(filters.query);
+  const { entries, devices, counts, matched, kept, more, loading, error, loadMore } = useJournal(filters.query);
 
   return (
     <Card label={t('journal.title')} className="min-h-0 flex-1" bodyClassName="gap-3">
@@ -81,6 +81,7 @@ const JournalScreen = () => {
             <JournalRow
               key={entry.id}
               entry={entry}
+              device={devices[entry.device]}
               open={open === entry.id}
               onToggle={() => setOpen(open === entry.id ? null : entry.id)}
             />,

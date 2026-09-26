@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import controller from './controller';
-import { fetchJournal, passes } from './journal';
+import { fetchDevices, fetchJournal, passes } from './journal';
 import { codesSaying } from './journalWords';
 import { t } from '../i18n';
 
@@ -28,6 +28,15 @@ export const useJournal = ({ levels: picked, source, since, until, q }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tally, setTally] = useState({ counts: null, matched: 0, kept: 0 });
+  /*
+   * Who each entry's device is, in words: the server hands them with each
+   * page (`services/devices`), and an entry arriving live from a device not
+   * seen before sends for the list again.
+   */
+  const [devices, setDevices] = useState({});
+  const known = useRef(devices);
+  known.current = devices;
+  const meet = (more) => setDevices((had) => ({ ...had, ...more }));
   const filterRef = useRef(filter);
   filterRef.current = filter;
 
@@ -38,6 +47,7 @@ export const useJournal = ({ levels: picked, source, since, until, q }) => {
     fetchJournal({ levels, source, since, until, q, said })
       .then((page) => {
         if (live) {
+          meet(page.devices || {});
           setEntries(page.records);
           setNext(page.next);
           setTally({ counts: page.counts, matched: page.matched, kept: page.kept });
@@ -64,6 +74,9 @@ export const useJournal = ({ levels: picked, source, since, until, q }) => {
       if (shown) {
         setEntries((list) => (list.some((e) => e.id === entry.id) ? list : [entry, ...list]));
       }
+      if (entry.device && !known.current[entry.device]) {
+        fetchDevices().then(meet).catch(() => {});
+      }
     };
     controller.addListener('journal:entry', arrived);
     return () => controller.removeListener('journal:entry', arrived);
@@ -76,6 +89,7 @@ export const useJournal = ({ levels: picked, source, since, until, q }) => {
     setLoading(true);
     fetchJournal({ ...filterRef.current, before: next })
       .then((page) => {
+        meet(page.devices || {});
         setEntries((shown) => [...shown, ...page.records]);
         setNext(page.next);
       })
@@ -83,7 +97,7 @@ export const useJournal = ({ levels: picked, source, since, until, q }) => {
       .finally(() => setLoading(false));
   }, [next]);
 
-  return { entries, ...tally, more: Boolean(next), loading, error, loadMore };
+  return { entries, devices, ...tally, more: Boolean(next), loading, error, loadMore };
 };
 
 export default useJournal;

@@ -340,7 +340,12 @@
       "server": "Server",
       "state": "Status"
     },
-    "address": "Address"
+    "address": "Address",
+    "device": {
+      "title": "This device's name",
+      "note": "What the journal calls it. Detected: {{facts}}. Leave it empty for the detected name.",
+      "noteBare": "What the journal calls it. Leave it empty for the detected name."
+    }
   },
   "ports": {
     "state": {
@@ -527,7 +532,10 @@
       "code": "Code",
       "meaning": "Meaning",
       "found": "The server sees",
-      "arcBy": "{{said}}: starts {{radius}} {{unit}} from its centre and ends {{reach}} {{unit}} from it"
+      "arcBy": "{{said}}: starts {{radius}} {{unit}} from its centre and ends {{reach}} {{unit}} from it",
+      "address": "Address",
+      "system": "System",
+      "browser": "Browser"
     },
     "range": {
       "m15": "15 min",

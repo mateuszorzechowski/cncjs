@@ -82,6 +82,9 @@ export const fetchJournal = ({ level, levels, source, since, until, q, said = []
   return request(`/api/journal?${params}`);
 };
 
+/** Every device the server has seen, by id: `{ name, ip, system, browser, model, seen }`. */
+export const fetchDevices = () => request('/api/devices');
+
 export const fetchJournalLevel = () => request('/api/journal/settings').then(({ level }) => level);
 
 export const saveJournalLevel = (level) => request('/api/journal/settings', {

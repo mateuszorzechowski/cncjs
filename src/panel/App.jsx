@@ -14,6 +14,7 @@ import RefusalNotice from './ui/RefusalNotice';
 import StateHelp from './ui/StateHelp';
 import { applyUpdate, isUpdateReady, watchUpdate } from './machine/update';
 import { useAutoConnect } from './machine/autoConnect';
+import { useDeviceName } from './machine/useDeviceName';
 import { useKeepAwake } from './ui/keepAwake';
 import Dashboard from './screens/Dashboard';
 import JogScreen from './screens/JogScreen';
@@ -424,6 +425,9 @@ const rememberedScreen = () => {
 const App = () => {
   const machine = useMachine();
   useAutoConnect(machine);
+  // This device's full name to the server, the model included, once it can
+  // be reached — for the journal (`useDeviceName`).
+  useDeviceName(machine.linked);
   // The screen kept on while the panel is open, where this device asked.
   useKeepAwake();
   const [screen, setScreen] = useState(rememberedScreen);

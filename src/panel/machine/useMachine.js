@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import controller from './controller';
 import { deviceId } from './device';
+import { describeDevice, ownName } from './deviceName';
 import { worstBeatMs } from './deadman';
 import { signIn } from './session';
 import { fetchOpenController } from './snapshot';
@@ -419,7 +420,12 @@ export const useMachine = () => {
         // The identity the movement lease is held against. Sent at the
         // handshake rather than with each command: it is who this client is,
         // not what it is asking for, and the server reads it once.
-        controller.connect('', { auth: { token, device: deviceId() } }, () => {
+        // With the name it goes by and what the user agent says of it, so
+        // the journal names it from the first entry (`services/devices`);
+        // the model follows once asked for (`useDeviceName`).
+        const { name, system, browser, model } = describeDevice({ userAgent: window.navigator.userAgent });
+        const auth = { token, device: deviceId(), deviceName: ownName() || name, deviceInfo: { system, browser, model } };
+        controller.connect('', { auth }, () => {
           if (live) {
             setSnapshot((previous) => ({ ...previous, connection: 'open' }));
           }
