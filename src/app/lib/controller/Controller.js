@@ -117,6 +117,15 @@ class Controller {
         'controller:envelope': [],
 
         /**
+         * Grbl's `$` settings as the panel's Maszyna tab lists them, with
+         * the server's history of changes to them.
+         *
+         * @event machine:settings
+         * @param {object} view - `{ rows, history }`
+         */
+        'machine:settings': [],
+
+        /**
          * Which device is allowed to move the machine at this moment.
          *
          * The device's own identifier, as it gave it at the handshake, or null

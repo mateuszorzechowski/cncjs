@@ -12,6 +12,7 @@ import { useKeepAwakeStatus } from '../ui/keepAwake';
 import { useSwipe } from '../ui/swipe';
 import { RestoreUnitsChoice, UnitsChoice } from '../ui/UnitsChoice';
 import ConnectScreen from './ConnectScreen';
+import MachineSettings from '../ui/MachineSettings';
 import AppScreen from './AppScreen';
 import { t } from '../i18n';
 
@@ -33,6 +34,7 @@ import { t } from '../i18n';
  * and maintenance in one list; split by how often a thing is touched and by
  * what has to come before what:
  * - connection: which machine;
+ * - machine: the controller's own settings, `$0`-`$132` (2026-09-26);
  * - appearance: what this device's screen looks like;
  * - preferences: how the panel works — the rows marked for the server are
  *   the same on every device;
@@ -49,6 +51,7 @@ import { t } from '../i18n';
  */
 const LABELS = {
   connection: 'settings.connection',
+  machine: 'settings.machine',
   appearance: 'settings.appearance',
   preferences: 'settings.preferences',
   install: 'settings.install',
@@ -123,6 +126,7 @@ const SettingsScreen = ({ machine }) => {
       <FadeScroller>
         <div className="flex min-h-full flex-col">
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
+          {tab === 'machine' ? <MachineSettings machine={machine} /> : null}
           {tab === 'appearance' ? (
             <Card className="flex-1">
               <SettingRow title={t('theme.label')} scope="device">

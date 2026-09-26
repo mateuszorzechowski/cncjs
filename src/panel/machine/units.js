@@ -23,9 +23,12 @@ import i18next, { t } from '../i18n';
  * name, and only because a label is a translation the panel has to carry.
  */
 const LABELS = {
-  mm: { length: 'units.mm', feed: 'units.mmPerMin' },
-  inch: { length: 'units.inch', feed: 'units.inPerMin' },
+  mm: { length: 'units.mm', feed: 'units.mmPerMin', accel: 'units.mmPerS2', perLength: 'units.stepsPerMm' },
+  inch: { length: 'units.inch', feed: 'units.inPerMin', accel: 'units.inPerS2', perLength: 'units.stepsPerInch' },
 };
+
+// Grbl's settings in units that are the same whatever the server says.
+const FIXED_LABELS = { us: 'units.us', ms: 'units.ms', rpm: 'units.rpm' };
 
 const usable = (value) => typeof value === 'number' && Number.isFinite(value);
 
@@ -74,6 +77,28 @@ export const figure = (mm, rule, kind = 'position') => {
  * rule, so nothing is worked out from a unit nobody has named.
  */
 export const inMm = (value, rule) => (usable(value) && rule ? value / rule.factor : null);
+
+/**
+ * One of Grbl's `$` settings as text, with its unit: `{ value, unit }`.
+ *
+ * `unit` is the server's word for how it converts (`machine-settings.js`):
+ * a length, a rate or an acceleration is multiplied by the factor, steps
+ * per length divided by it — 800 steps/mm is 20320 steps/in — and the rest
+ * are what Grbl has. To the digits a position has, so a figure in inches
+ * keeps what Grbl's three decimals of a millimetre say; whole numbers bare.
+ */
+export const settingFigure = (value, unit, rule) => {
+  const converts = Boolean(LABELS.mm[unit]);
+  const labels = rule ? LABELS[rule.name] : null;
+  if (!usable(value) || (converts && !labels)) {
+    return { value: NO_READING, unit: '' };
+  }
+  if (converts) {
+    const shown = unit === 'perLength' ? value / rule.factor : value * rule.factor;
+    return { value: shown.toFixed(rule.digits.position), unit: t(labels[unit]) };
+  }
+  return { value: String(value), unit: FIXED_LABELS[unit] ? t(FIXED_LABELS[unit]) : '' };
+};
 
 /** The unit of a length, `mm` or `in`; a dash before the server has said. */
 export const lengthLabel = (rule) => (rule && LABELS[rule.name] ? t(LABELS[rule.name].length) : NO_READING);

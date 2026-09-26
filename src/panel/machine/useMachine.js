@@ -172,7 +172,7 @@ export const useMachine = () => {
 
     if (!open) {
       setSnapshot((previous) => (previous.port
-        ? { ...previous, port: '', type: '', baudrate: null, state: {}, settings: {}, attached: false }
+        ? { ...previous, port: '', type: '', baudrate: null, state: {}, settings: {}, machineSettings: null, attached: false }
         : previous));
       return;
     }
@@ -298,6 +298,10 @@ export const useMachine = () => {
       'controller:settings': (type, settings) => {
         setSnapshot((previous) => ({ ...previous, type, settings }));
       },
+      // The same settings described, for the Maszyna tab — see `machine/machineSettings`.
+      'machine:settings': (machineSettings) => {
+        setSnapshot((previous) => ({ ...previous, machineSettings }));
+      },
       /**
        * How far through the job the sender is.
        *
@@ -393,6 +397,7 @@ export const useMachine = () => {
           baudrate: null,
           state: {},
           settings: {},
+          machineSettings: null,
           job: null,
           motion: null,
           workflow: 'idle',

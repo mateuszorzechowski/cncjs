@@ -5,6 +5,8 @@ import { t } from '../i18n';
 const SCOPES = {
   device: { key: 'settings.scope.device', face: 'bg-mutS text-mut' },
   server: { key: 'settings.scope.server', face: 'bg-accS text-acc' },
+  // The controller's own memory: amber, because a write there outlives the server.
+  controller: { key: 'settings.scope.controller', face: 'bg-ambS text-amb' },
 };
 
 /**
@@ -18,7 +20,8 @@ const SCOPES = {
  * settings drawing of the same day, *"etykieta i opis nad kontrolką"*.
  *
  * `scope` says whose setting it is: `device`, kept by the browser holding
- * this panel, or `server`, the same on every device. Said on the row rather
+ * this panel, `server`, the same on every device, or `controller`, in the
+ * controller's EEPROM. Said on the row rather
  * than grouped under a heading, because a tab mixes the two and a row that
  * changes every panel in the workshop has to say so where it is changed.
  * Beside the name on a phone, under the note when wide — the drawing's two

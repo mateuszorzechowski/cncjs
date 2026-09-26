@@ -55,7 +55,9 @@ const RefusalNotice = ({ refusal }) => {
     return () => clearTimeout(timer);
   }, [seq]);
 
-  const message = refusalMessage(refusal);
+  // A settings write is answered in the sheet that made it, which stays
+  // open over this notice until it has an answer.
+  const message = refusal?.cmd === 'settings:write' ? null : refusalMessage(refusal);
   if (!message || done >= seq) {
     return null;
   }

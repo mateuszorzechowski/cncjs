@@ -288,7 +288,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
-  envelope, motion, workflow, device, alarm, fileCheck, fits, units,
+  envelope, motion, workflow, device, alarm, fileCheck, fits, units, machineSettings,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -500,6 +500,14 @@ export const readMachine = ({
      */
     fileCheck: connected ? (fileCheck || null) : null,
     fits: connected ? (fits || null) : null,
+    /*
+     * Grbl's settings described — `{ rows, history }` — and whether one may
+     * be written now: Grbl takes a setting standing Idle or in alarm, and
+     * answers `error:8` in any other state; not over a program, running or
+     * paused. The server refuses the same (`setting-not-idle`).
+     */
+    machineSettings: connected ? (machineSettings || null) : null,
+    canWriteSettings: connected && (active?.word === 'Idle' || active?.word === ALARM) && (workflow || 'idle') === 'idle',
     // The server's, not the machine's — see the snapshot.
     units: units || null,
     /*
