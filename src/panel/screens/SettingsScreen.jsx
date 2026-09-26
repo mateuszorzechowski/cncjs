@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
 import JournalLevelChoice from '../ui/JournalLevelChoice';
@@ -9,6 +9,7 @@ import ThemeChoice from '../ui/ThemeChoice';
 import JogSettings from '../ui/JogSettings';
 import KeepAwakeChoice, { keepAwakeNote } from '../ui/KeepAwakeChoice';
 import { useKeepAwakeStatus } from '../ui/keepAwake';
+import { useSwipe } from '../ui/swipe';
 import { RestoreUnitsChoice, UnitsChoice } from '../ui/UnitsChoice';
 import ConnectScreen from './ConnectScreen';
 import AppScreen from './AppScreen';
@@ -65,6 +66,17 @@ let lastTab = 'connection';
 const SettingsScreen = ({ machine }) => {
   const [tab, setTab] = useState(() => lastTab);
   const keepAwake = useKeepAwakeStatus();
+  /*
+   * A finger swiped across the tab's content turns to the tab beside it
+   * (Mateusz, 2026-09-26: *"przełączenia między ekranami opcji powinno
+   * wspierać przesuwanie palcem"*). Clamped at both ends, not round.
+   */
+  const pages = useRef(null);
+  const turn = useCallback((by) => setTab((now) => {
+    const next = TABS.indexOf(now) + by;
+    return next >= 0 && next < TABS.length ? TABS[next] : now;
+  }), []);
+  useSwipe(pages, turn);
   useEffect(() => {
     lastTab = tab;
   }, [tab]);
@@ -107,6 +119,7 @@ const SettingsScreen = ({ machine }) => {
         * section already has one, the same on all four sides, and a second
         * one under it only made the bottom different from the rest.
         */}
+      <div ref={pages} className="flex min-h-0 flex-1 flex-col">
       <FadeScroller>
         <div className="flex min-h-full flex-col">
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
@@ -153,6 +166,7 @@ const SettingsScreen = ({ machine }) => {
           ) : null}
         </div>
       </FadeScroller>
+      </div>
     </div>
   );
 };

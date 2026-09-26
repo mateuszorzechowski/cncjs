@@ -2,8 +2,16 @@ import {
   workOrigins,
 } from '../machine/envelope';
 
-/** Everything the scene draws when the panel has been told nothing at all. */
-const UNIT = { min: { x: -1, y: -1, z: -1 }, max: { x: 1, y: 1, z: 1 } };
+/**
+ * Everything the scene draws when the panel has been told nothing at all:
+ * one unit either way — of the server's units, so in inches the empty floor
+ * reads -1 · 0 · 1 as in millimetres, not a millimetre printed as `0`
+ * (Mateusz, 2026-09-26). `factor` is the rule's: units per millimetre.
+ */
+const unitBox = (factor = 1) => {
+  const r = 1 / factor;
+  return { min: { x: -r, y: -r, z: -r }, max: { x: r, y: r, z: r } };
+};
 
 const shift = (bounds, offset) => ({
   min: {
@@ -109,7 +117,7 @@ export const farCorner = (envelope) => (envelope
   ? { x: farEnd(envelope, 'x'), y: farEnd(envelope, 'y'), z: farEnd(envelope, 'z') }
   : null);
 
-export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers }) => {
+export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers, factor = 1 }) => {
   const program = toolpath ? shift(toolpath.bounds, offset) : null;
 
   /*
@@ -144,7 +152,7 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
     layers.machineArea && envelope,
     layers.machineAxes && { min: MACHINE_ZERO, max: MACHINE_ZERO },
     layers.wcsAxes && origin && pointBox(origin),
-  ].filter(Boolean)) || UNIT;
+  ].filter(Boolean)) || unitBox(factor);
 
   /*
    * **The whole travel, always, on every view button.** *"Kadr na wszystkich
