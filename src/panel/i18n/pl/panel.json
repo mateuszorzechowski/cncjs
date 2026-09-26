@@ -923,8 +923,9 @@
     "markLine": "Linia {{line}}",
     "fix": {
       "add": "Dodaj {{code}} na początku",
-      "missing": "Program bierze je od tego, co było przed nim. Wybierz, co zadeklarować:",
-      "insert": "Wstaw na początku"
+      "missing": "Program nie deklaruje:",
+      "insert": "Wstaw na początku",
+      "hide": "Schowaj"
     }
   }
 }

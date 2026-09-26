@@ -923,8 +923,9 @@
     "markLine": "Line {{line}}",
     "fix": {
       "add": "Add {{code}} at the top",
-      "missing": "The program takes these from whatever ran before it. Choose what to declare:",
-      "insert": "Insert at the top"
+      "missing": "Not declared by the program:",
+      "insert": "Insert at the top",
+      "hide": "Hide"
     }
   }
 }
