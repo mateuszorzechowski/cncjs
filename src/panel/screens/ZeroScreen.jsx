@@ -103,8 +103,6 @@ const ZeroScreen = ({ machine }) => {
     <Card
       label={t('zero.title')}
       aside={<WcsBadge wcs={wcs} />}
-      onHelp={() => setHelp(true)}
-      helpLabel={t('zero.help.open')}
       className="min-h-0 flex-1"
       bodyClassName="gap-4"
     >

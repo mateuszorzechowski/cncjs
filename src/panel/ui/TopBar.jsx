@@ -60,9 +60,12 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpd
     <StateChip tone={status.tone} label={t('topbar.state')} onPress={onStatus}>
       {status.word}
     </StateChip>
-    {/* The open screen's help, beside the chip and as tall as it, on a phone
-      * only — wider, the screen's card has room for its own. `headerSlot`. */}
-    {help ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:hidden" /> : null}
+    {/* The open screen's help, right after the chip and as tall as it, at
+      * every width — the help design's variant 1a (2026-09-26): status, help,
+      * then the machine, and STOP alone at the other end. Last in the group,
+      * so on a screen without help it goes and nothing that can be pressed
+      * moves. `headerSlot`. */}
+    {help ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:h-btnh @3xl/shell:w-14 @3xl/shell:text-lead" /> : null}
 
     {/* Top left, a line each. Which controller and which port are two
       * separate facts and read faster stacked than joined with a dot; kept
