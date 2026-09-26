@@ -14,6 +14,7 @@ import RefusalNotice from './ui/RefusalNotice';
 import StateHelp from './ui/StateHelp';
 import { applyUpdate, isUpdateReady, watchUpdate } from './machine/update';
 import { useAutoConnect } from './machine/autoConnect';
+import { useKeepAwake } from './ui/keepAwake';
 import Dashboard from './screens/Dashboard';
 import JogScreen from './screens/JogScreen';
 import FilesScreen from './screens/FilesScreen';
@@ -423,6 +424,8 @@ const rememberedScreen = () => {
 const App = () => {
   const machine = useMachine();
   useAutoConnect(machine);
+  // The screen kept on while the panel is open, where this device asked.
+  useKeepAwake();
   const [screen, setScreen] = useState(rememberedScreen);
   useEffect(() => {
     try {
