@@ -1,5 +1,6 @@
 import { readAuto, updateAuto } from '../api.connection';
 import journal from '../../services/journal';
+import config from '../../services/configstore';
 
 jest.mock('../../services/configstore', () => {
   const store = {};
@@ -48,5 +49,14 @@ describe('who opens the port unasked', () => {
 
   test('refuses a mode that does not exist', () => {
     expect(call(updateAuto, { body: { mode: 'always' } }).statusCode).toBe(400);
+  });
+
+  test('connecting when a panel opens is the device’s own now, not the server’s', () => {
+    expect(call(updateAuto, { body: { mode: 'panel' } }).statusCode).toBe(400);
+  });
+
+  test('a `panel` left in `.cncrc` from before reads as manual', () => {
+    config.set('connection.auto', 'panel');
+    expect(call(readAuto, {}).body).toEqual({ mode: 'manual' });
   });
 });

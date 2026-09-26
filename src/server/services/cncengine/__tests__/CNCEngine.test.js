@@ -188,7 +188,7 @@ describe('opening the port unasked', () => {
     expect(opened).toEqual([]);
   });
 
-  test('with `panel`, leaves it to the panel', async () => {
+  test('with `panel` left in `.cncrc` from before, leaves it to the panel', async () => {
     config.set('connection.auto', 'panel');
     listing('COM3');
     await engine.autoConnect();

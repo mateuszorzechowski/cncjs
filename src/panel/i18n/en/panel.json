@@ -303,7 +303,6 @@
       "insecure": "This panel is served without encryption, so a phone will not install it as an application. Start the server with a certificate — see scripts/serve-panel.sh.",
       "untrusted": "This device does not trust the panel’s certificate, so it will not install it as an application. Clicking past the warning does not count: the page loads and the connection stays untrusted."
     },
-    "server": "Server",
     "controller": "Controller type",
     "baudrate": "Baud rate",
     "refresh": "Rescan ports",
@@ -323,14 +322,22 @@
     "linked": "Connected to {{port}} at {{baudrate}} baud.",
     "unlinked": "No port is open.",
     "auto": {
-      "label": "Connect automatically",
-      "server": "Server",
-      "panel": "Panel",
+      "label": "Connection mode",
+      "server": "When the server starts",
+      "panel": "When the panel opens",
       "manual": "Manually",
       "serverNote": "The server opens the last connection by itself when it starts and when the cable is plugged in, with no panel open. A port disconnected by hand stays closed until its cable is taken out.",
-      "panelNote": "The first panel opened while no port is open connects to the last connection.",
-      "manualNote": "Only the Connect button opens a port."
-    }
+      "panelNote": "The panel connects when you open it in this browser. Other devices keep their own setting.",
+      "manualNote": "Only the Connect button opens a port.",
+      "panelNext": "This panel connects the next time it is opened.",
+      "serverNext": "The server connects when it next starts, or when the cable is plugged in again."
+    },
+    "group": {
+      "controller": "Controller",
+      "server": "Server",
+      "state": "Status"
+    },
+    "address": "Address"
   },
   "ports": {
     "state": {
@@ -545,7 +552,7 @@
       }
     },
     "settings": {
-      "auto": "Connect automatically: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
+      "auto": "Connection mode: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
     }
   },
   "grbl": {
