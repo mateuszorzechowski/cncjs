@@ -155,6 +155,27 @@ describe('framing with room for the rulers', () => {
     expect(c.zoom).toBeGreaterThan(margin.zoom * 1.15);
   });
 
+  test('along the nearest edges, leaves room for them and twice that past the far ends for the titles', () => {
+    // COM3's travel, seen from the default view: the nearest edges are the
+    // front (min Y) and the right (max X); the X title is past min X, the Y
+    // title past max Y.
+    const TRAVEL = boundsBox({ min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 } });
+    const c = camera(4 / 3, 244);
+    fitWithRulers(c, TRAVEL, ISO, RULERS, 'near');
+    c.updateMatrixWorld(true);
+
+    const room = (RULERS * 0.95) / c.zoom;
+    [
+      [TRAVEL.max.x + room, TRAVEL.min.y - room],
+      [TRAVEL.min.x - (2 * room), TRAVEL.min.y - room],
+      [TRAVEL.max.x + room, TRAVEL.max.y + (2 * room)],
+    ].map(([x, y]) => new THREE.Vector3(x, y, TRAVEL.min.z)).forEach((corner) => {
+      const p = corner.project(c);
+      expect(Math.abs(p.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(p.y)).toBeLessThanOrEqual(1);
+    });
+  });
+
   test('with no rulers, is the plain fit', () => {
     const plain = camera();
     const ruled = camera();

@@ -1,5 +1,5 @@
 import { fineStep } from '../grid-lines';
-import { gridLabels, labelStep } from '../grid-numbers';
+import { axisTitles, gridLabels, labelStep, nearSides } from '../grid-numbers';
 
 /**
  * What the grid says, as opposed to how it is drawn.
@@ -317,3 +317,47 @@ describe('in inches', () => {
     expect(labelStep(25.4, 10 / 25.4, INCH.factor)).toBeCloseTo(254, 6);
   });
 });
+
+describe('rulers along the edges nearest the camera (Ścieżka, design 03a)', () => {
+  const TRAVEL = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 } };
+  const ISO = { x: 1, y: -1, z: 1 };
+
+  test('from the default view: X along the front, Y up the right — not along zero at the back', () => {
+    expect(nearSides(TRAVEL, ISO)).toMatchObject({ axisY: -700, outY: -1, axisX: 0, outX: 1 });
+  });
+
+  test('turned round, they move to the other two edges', () => {
+    expect(nearSides(TRAVEL, { x: -1, y: 1, z: 1 })).toMatchObject({ axisY: 0, outY: 1, axisX: -1000, outX: -1 });
+  });
+
+  test('level with an edge — from above — the front and the right win', () => {
+    expect(nearSides(TRAVEL, { x: 0, y: 0, z: 1 })).toMatchObject({ axisY: -700, axisX: 0 });
+  });
+
+  test('the unit is in a title per axis, not in the far figure', () => {
+    const labels = gridLabels(TRAVEL, 200, { factor: 1, length: 'mm' }, { sides: nearSides(TRAVEL, ISO), titles: true });
+
+    expect(labels.filter((l) => l.title).map((l) => l.text)).toEqual(['X [mm]', 'Y [mm]']);
+    expect(labels.filter((l) => !l.title).every((l) => !l.text.includes('mm'))).toBe(true);
+    // Every X figure on the front edge, every Y figure on the right one.
+    expect(labels.filter((l) => l.key.startsWith('x')).every((l) => l.y === -700)).toBe(true);
+    expect(labels.filter((l) => l.key.startsWith('y')).every((l) => l.x === 0)).toBe(true);
+  });
+
+  test('each title stands on its ruler, past the end away from the corner where they meet', () => {
+    const [x, y] = axisTitles(TRAVEL, nearSides(TRAVEL, ISO), 'in');
+
+    expect(x).toMatchObject({ text: 'X [in]', along: 'x', x: -1000, y: -700, push: { x: -1, y: -1 } });
+    expect(y).toMatchObject({ text: 'Y [in]', along: 'y', x: 0, y: 0, push: { x: 1, y: 1 } });
+    expect(x.clear.x).toBeLessThan(0);
+    expect(y.clear.y).toBeGreaterThan(0);
+  });
+
+  test('without it, the zero rule and the unit in the far figure, as the file preview has them', () => {
+    const labels = gridLabels(TRAVEL, 200);
+
+    expect(labels.some((l) => l.title)).toBe(false);
+    expect(labels.find((l) => l.key === 'x-1000').text).toBe('-1000 mm');
+  });
+});
+

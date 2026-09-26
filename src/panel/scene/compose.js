@@ -108,7 +108,7 @@ export const farCorner = (envelope) => (envelope
   ? { x: farEnd(envelope, 'x'), y: farEnd(envelope, 'y'), z: farEnd(envelope, 'z') }
   : null);
 
-export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers }) => {
+export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers, rulers = 'zero' }) => {
   const program = toolpath ? shift(toolpath.bounds, offset) : null;
 
   /*
@@ -152,6 +152,9 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
   const frame = envelope ? union([drawn, envelope]) : drawn;
 
   return {
+    // Where the floor's figures run: `zero` or `near` — see `grid-numbers`.
+    // The scene's, so the rulers never ask which screen they are on.
+    rulers,
     envelope,
     farCorner: corner,
     program,

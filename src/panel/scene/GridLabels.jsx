@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { gridLabels, labelStep } from './grid-numbers';
+import { gridLabels, labelStep, nearSides } from './grid-numbers';
 import { useUnits } from '../ui/units';
 
 /**
@@ -91,11 +91,37 @@ const paint = (text, color) => {
   return { texture, aspect: canvas.width / canvas.height };
 };
 
-const GridLabels = ({ area, step, z, color }) => {
+// Scratch vectors for the per-frame projection, so a frame allocates nothing.
+const FORWARD = new THREE.Vector3();
+const AT = new THREE.Vector3();
+const ALONG = new THREE.Vector3();
+
+/** Whether a world direction runs leftward on screen — text along it would read backwards. */
+const runsLeft = (camera, dx, dy) => {
+  AT.set(0, 0, 0).project(camera);
+  ALONG.set(dx, dy, 0).project(camera);
+  return ALONG.x - AT.x < -1e-6;
+};
+
+/**
+ * `rulers` is the scene's: `zero` along the zero lines, figures as they
+ * lie (the file preview); `near` along the edges nearest the camera, turned
+ * to read from the left, with a title per axis (the Ścieżka screen, design
+ * 03a). See `grid-numbers`.
+ */
+const GridLabels = ({ area, step, z, color, rulers = 'zero' }) => {
   const units = useUnits();
   const factor = units.rule?.factor ?? 1;
   const length = units.length;
   const groups = useRef([]);
+  const near = rulers === 'near';
+
+  /*
+   * Which edges are nearest, as the signs of the view's direction — state,
+   * like the spacing, because it changes only when the view is turned past
+   * an edge. The default view's until the first frame says otherwise.
+   */
+  const [facing, setFacing] = useState('front-right');
 
   /*
    * Which round number is being counted in. It follows the zoom, so it is
@@ -104,12 +130,16 @@ const GridLabels = ({ area, step, z, color }) => {
    */
   const [spacing, setSpacing] = useState(step);
 
-  const labels = useMemo(() => gridLabels(area, spacing, { factor, length }).map((label) => {
-    const { texture, aspect } = paint(label.text, color);
-    // Built one unit tall; the group is scaled to whatever that has to be on
-    // screen, so the geometry never has to be rebuilt for a zoom.
-    return { ...label, texture, width: aspect, height: 1 };
-  }), [area, spacing, color, factor, length]);
+  const labels = useMemo(() => {
+    const toward = { x: facing.endsWith('left') ? -1 : 1, y: facing.startsWith('back') ? 1 : -1 };
+    const where = near ? { sides: nearSides(area, toward), titles: true } : {};
+    return gridLabels(area, spacing, { factor, length }, where).map((label) => {
+      const { texture, aspect } = paint(label.text, color);
+      // Built one unit tall; the group is scaled to whatever that has to be on
+      // screen, so the geometry never has to be rebuilt for a zoom.
+      return { ...label, texture, width: aspect, height: 1 };
+    });
+  }, [area, spacing, color, factor, length, near, facing]);
 
   useEffect(() => () => labels.forEach(({ texture }) => texture.dispose()), [labels]);
 
@@ -125,12 +155,27 @@ const GridLabels = ({ area, step, z, color }) => {
       setSpacing(next);
     }
 
+    // From the scene towards the camera: the reverse of where it looks.
+    let flipX = false;
+    let flipY = false;
+    let turned = false;
+    if (near) {
+      camera.getWorldDirection(FORWARD);
+      const now = `${-FORWARD.y > 1e-6 ? 'back' : 'front'}-${-FORWARD.x < -1e-6 ? 'left' : 'right'}`;
+      if (now !== facing) {
+        setFacing(now);
+        turned = true;
+      }
+      flipX = runsLeft(camera, 1, 0);
+      flipY = runsLeft(camera, 0, 1);
+    }
+
     const scale = TEXT_PIXELS / camera.zoom;
     const gap = GAP_PIXELS / camera.zoom;
     // Figures counted for another zoom are hidden until the recount arrives,
     // one render later: shown, the first frame of a view printed every
     // millimetre on top of each other.
-    const settled = next === spacing;
+    const settled = next === spacing && !turned;
     for (let i = 0; i < groups.current.length; ++i) {
       const group = groups.current[i];
       const label = labels[i];
@@ -141,16 +186,27 @@ const GridLabels = ({ area, step, z, color }) => {
         // nor the unit drift when the counting coarsens — and measured from
         // the figure's near edge rather than its middle, so a long one keeps
         // the same gap to the axis as a short one instead of running into it.
+        // A title along Y is turned a quarter, so its width runs along Y.
+        const alongY = label.along === 'y';
+        const spanX = (alongY ? label.height : label.width) * scale;
+        const spanY = (alongY ? label.width : label.height) * scale;
         group.position.set(
-          label.x + (label.push.x * (gap + ((label.width * scale) / 2))),
-          label.y + (label.push.y * (gap + ((label.height * scale) / 2))),
+          label.x + (label.push.x * (gap + (spanX / 2))) + ((label.clear?.x ?? 0) * scale),
+          label.y + (label.push.y * (gap + (spanY / 2))) + ((label.clear?.y ?? 0) * scale),
           z
         );
+        // Turned half round when its direction runs leftward on screen, so
+        // it reads from the left whichever side the view is from (design 03a).
+        if (near) {
+          group.rotation.z = alongY
+            ? (flipY ? -Math.PI / 2 : Math.PI / 2)
+            : (flipX ? Math.PI : 0);
+        }
       }
     }
   });
 
-  return labels.map(({ key, x, y, texture, width, height }, index) => (
+  return labels.map(({ key, x, y, texture, width, height, title }, index) => (
     <group
       key={key}
       position={[x, y, z]}
@@ -163,7 +219,7 @@ const GridLabels = ({ area, step, z, color }) => {
         * and `opacity` matching the grid's own weight — these are reference
         * marks, read when looked for and ignorable otherwise.
         */}
-      <meshBasicMaterial map={texture} transparent opacity={0.55} depthWrite={false} />
+      <meshBasicMaterial map={texture} transparent opacity={title ? 0.85 : 0.55} depthWrite={false} />
     </mesh>
     </group>
   ));

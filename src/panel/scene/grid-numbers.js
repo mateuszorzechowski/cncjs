@@ -103,6 +103,31 @@ export const rulerSides = (area) => {
 };
 
 /**
+ * **Or along the edges nearest the camera** — the Ścieżka screen's rulers,
+ * the design's variant 03a (2026-09-26). The machine's travel is the area
+ * there, its zero a corner, and the zero rule put the X figures along the
+ * back edge in the default view, behind everything drawn. Nearest the camera
+ * they are in front of it, and they move to the opposite edge when the view
+ * is turned round, so they are always the side being looked across.
+ *
+ * `toward` points from the scene to the camera (a view's `direction`). Level
+ * with an edge — straight down, or from the side — the front and the right
+ * edge win, the default view's two.
+ */
+export const nearSides = (area, toward) => {
+  const back = toward.y > 0;
+  const left = toward.x < 0;
+  return {
+    rowOnEdge: true,
+    columnOnEdge: true,
+    axisY: back ? area.max.y : area.min.y,
+    outY: back ? 1 : -1,
+    axisX: left ? area.min.x : area.max.x,
+    outX: left ? -1 : 1,
+  };
+};
+
+/**
  * A figure as printed: to a tenth at most. The far end of a program's reach
  * is its exact extent — `-58.1149` — and printed in full it was the widest
  * thing on the ruler and ran into the axis (Mateusz, 2026-09-25). The exact
@@ -137,7 +162,7 @@ const figure = (value, factor) => String(Math.round(value * factor * 10) / 10);
  *   where `push` is in multiples of the caller's gap, out of the machine.
  *   The unit is part of the far X figure.
  */
-export const gridLabels = (area, step, units = { factor: 1, length: 'mm' }) => {
+export const gridLabels = (area, step, units = { factor: 1, length: 'mm' }, { sides = rulerSides(area), titles = false } = {}) => {
   const { factor } = units;
   const first = (min) => snapUp(min, step);
   const last = (max) => snapDown(max, step);
@@ -186,7 +211,7 @@ export const gridLabels = (area, step, units = { factor: 1, length: 'mm' }) => {
 
   const labels = [];
 
-  const { rowOnEdge, columnOnEdge, axisY, axisX, outY, outX } = rulerSides(area);
+  const { rowOnEdge, columnOnEdge, axisY, axisX, outY, outX } = sides;
 
   /*
    * **The origin is written once, for both rulers.**
@@ -232,10 +257,43 @@ export const gridLabels = (area, step, units = { factor: 1, length: 'mm' }) => {
    * end of the X ruler is always the end of the X ruler. Written into that
    * figure rather than beside it, so the two can never overlap or drift.
    */
+  if (titles) {
+    return [...labels, ...axisTitles(area, sides, units.length)];
+  }
+
   const far = labels.find((label) => label.key === `x${farX}`);
   if (far) {
     far.text = `${far.text} ${units.length}`;
   }
 
   return labels;
+};
+
+/**
+ * **The unit once per axis, in a title — `X [mm]`, `Y [mm]`** (design 03a).
+ *
+ * On the line of the figures, past the end of the ruler away from the
+ * corner where the two rulers meet: Mateusz, 2026-09-26, *"tytuł zostaje przy
+ * osi / linii z wartościami liczbowymi"*, where the design had it further
+ * out. `along` is the direction its text runs: the X title along X, the Y
+ * title along Y. `clear` is extra room past the end figure, in figure
+ * heights, so a four-digit end figure and the title do not touch.
+ */
+const TITLE_CLEAR = 1.6;
+
+export const axisTitles = (area, { axisY, outY, axisX, outX }, length) => {
+  const endX = axisX === area.max.x ? area.min.x : area.max.x;
+  const endY = axisY === area.min.y ? area.max.y : area.min.y;
+  const dirX = endX < axisX ? -1 : 1;
+  const dirY = endY < axisY ? -1 : 1;
+  return [
+    {
+      key: 'title-x', text: `X [${length}]`, title: true, along: 'x',
+      x: endX, y: axisY, push: { x: dirX, y: outY }, clear: { x: dirX * TITLE_CLEAR, y: 0 },
+    },
+    {
+      key: 'title-y', text: `Y [${length}]`, title: true, along: 'y',
+      x: axisX, y: endY, push: { x: outX, y: dirY }, clear: { x: 0, y: dirY * TITLE_CLEAR },
+    },
+  ];
 };

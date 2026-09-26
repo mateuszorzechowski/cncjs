@@ -114,6 +114,7 @@ const Scene = ({
         onGrab={onGrab}
         glideMs={glideMs}
         floor={floor}
+        rulers={scene.rulers}
       />
 
       {/* Under everything, and not switchable. The other layers are things
@@ -124,7 +125,7 @@ const Scene = ({
         * Sized to the machine's own travel where that is known, so the
         * squares are the machine's squares. Only when nothing has been
         * reported does it fall back to whatever is being drawn. */}
-      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} />
+      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} rulers={scene.rulers} />
 
       {/* The machine is context, not content: quiet enough that the program
         * inside it is what the eye lands on. */}
