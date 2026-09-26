@@ -77,12 +77,16 @@ const createServer = (options, callback) => {
   {
     const dir = expandTilde(config.get('library.directory', path.join(path.dirname(rcfile), '.cncjs-files')));
 
-    // What the start events send before every program: the check counts
-    // a modal group they set as set. `system` events run a shell, not G-code.
-    const start = () => ensureArray(config.get('events', []))
-      .filter(event => event?.enabled && event.event === 'gcode:start' && event.trigger !== 'system')
-      .map(event => ensureString(event.commands))
-      .join('\n');
+    // What goes out before every program — the server's units when it keeps
+    // the machine in them, then the start events: the check counts a modal
+    // group they set as set. `system` events run a shell, not G-code. The
+    // same order as `startProgram` in the Grbl controller.
+    const start = () => [
+      ...(units.restore ? [units.modal()] : []),
+      ...ensureArray(config.get('events', []))
+        .filter(event => event?.enabled && event.event === 'gcode:start' && event.trigger !== 'system')
+        .map(event => ensureString(event.commands)),
+    ].join('\n');
 
     // The last machine's limits, so a time is there before the port opens.
     library.open({ dir, machine: config.get('library.machine', null), start: start() });
@@ -93,6 +97,7 @@ const createServer = (options, callback) => {
       level: verdict === 'incompatible' ? 'warn' : 'info', source: 'server', event: 'file', code: 'analysed', data: { name, verdict, issues },
     }));
     config.on('change', () => library.setStart(start()));
+    units.on('change', () => library.setStart(start()));
     log.info(`Keeping files in ${chalk.yellow(JSON.stringify(dir))}`);
   }
 

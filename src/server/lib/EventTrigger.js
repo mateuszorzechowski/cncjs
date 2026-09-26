@@ -28,8 +28,11 @@ class EventTrigger {
           return;
         }
 
-        if (typeof this.callback === 'function') {
-          this.callback(event, trigger, commands);
+        // One caller may take the commands itself: `gcode:start` on Grbl
+        // sends them before the program, and has to know when they are done.
+        const handle = callback || this.callback;
+        if (typeof handle === 'function') {
+          handle(event, trigger, commands);
         }
       });
   }

@@ -2327,6 +2327,9 @@ describe('intent commands', () => {
     const runAndEnd = (controller) => {
       controller.command('gcode:load', 'inches.gcode', 'G20\nG0 X1\nM30');
       controller.command('gcode:start');
+      // The units go out ahead of the program when the setting is on, and
+      // the program waits for their answer.
+      acknowledge(controller);
       controller.command('gcode:stop');
       controller.runner.state.status.activeState = 'Idle';
     };
@@ -2376,6 +2379,7 @@ describe('intent commands', () => {
 
       controller.command('gcode:load', 'inches.gcode', 'G20\nG0 X1\nM30');
       controller.command('gcode:start');
+      acknowledge(controller);
       controller.command('gcode:pause');
       controller.command('gcode:stop');
       controller.runner.state.status.activeState = 'Idle';

@@ -288,7 +288,8 @@
     "other": "The server refused {{cmd}}: {{reason}}.",
     "checking": "The controller is already checking a file. Wait until it is done.",
     "notIdle": "The machine is not Idle, so Grbl will not enter check mode.",
-    "notFound": "That file is no longer on the server."
+    "notFound": "That file is no longer on the server.",
+    "startFailed": "Grbl refused a line sent before the program, so the program did not start. The journal says which."
   },
   "notice": {
     "warning": "Warning"

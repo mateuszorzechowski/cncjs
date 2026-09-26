@@ -301,6 +301,13 @@ class GrblController {
       // Feeder
       this.feeder = new Feeder({
         dataFilter: (line, context) => {
+          // The mark `gcode:start` leaves behind its lines: reached only once
+          // the line before it has been answered. See `startProgram`.
+          if (context && context === this.starting) {
+            this.beginProgram();
+            return '';
+          }
+
           const originalLine = line;
           line = line.trim();
           context = this.populateContext(context);
@@ -1010,6 +1017,13 @@ class GrblController {
           code: error ? `error:${code}` : res.raw,
           ...(fed ? { data: { sent: fed } } : {}),
         }, { sent: fed });
+
+        // A line sent before a program was refused: the program does not start
+        // on a machine that did not take what was meant to come first.
+        if (this.isStarting()) {
+          this.cancelStart('start-failed');
+          return;
+        }
 
         // Feeder
         this.feeder.next();
@@ -2099,8 +2113,9 @@ class GrblController {
       const asked = (cmd === 'write' && isRealtimeCommand(data)) ? 'realtime' : cmd;
 
       return programRefusal(asked, {
-        // A file going through `$C` holds the machine as a program does.
-        workflow: this.fileCheck ? 'running' : this.workflow.state,
+        // A file going through `$C` holds the machine as a program does, and
+        // so do the lines sent before one.
+        workflow: (this.fileCheck || this.isStarting()) ? 'running' : this.workflow.state,
         firmware: this.runner?.state?.status?.activeState,
       });
     }
@@ -2233,6 +2248,7 @@ class GrblController {
     command(cmd, ...args) {
       const handler = {
         'gcode:load': () => {
+          this.cancelStart();
           let [name, gcode, context = {}, callback = noop] = args;
           if (typeof context === 'function') {
             callback = context;
@@ -2260,6 +2276,7 @@ class GrblController {
           callback(null, this.sender.toJSON());
         },
         'gcode:unload': () => {
+          this.cancelStart();
           this.workflow.stop();
 
           // Sender
@@ -2321,18 +2338,14 @@ class GrblController {
             return;
           }
 
+          if (this.isStarting()) {
+            return;
+          }
+
           // A program of its own now; whatever the last one owed is moot.
           this.unitsOwed = false;
 
-          this.event.trigger('gcode:start');
-
-          this.workflow.start();
-
-          // Feeder
-          this.feeder.reset();
-
-          // Sender
-          this.sender.next();
+          this.startProgram(cmd);
         },
         'stop': () => {
           log.warn(`Warning: The "${cmd}" command is deprecated and will be removed in a future release.`);
@@ -2341,6 +2354,7 @@ class GrblController {
         // @param {object} options The options object.
         // @param {boolean} [options.force] Whether to force stop a G-code program. Defaults to false.
         'gcode:stop': async () => {
+          this.cancelStart();
           this.event.trigger('gcode:stop');
 
           this.workflow.stop();
@@ -3932,6 +3946,86 @@ class GrblController {
       this.noteOffsetChange(cmd);
       this.connection.write(data);
       log.silly(`> ${data}`);
+    }
+
+    /**
+     * Start the loaded program, after the lines that come before every one:
+     * the server's units, when it keeps the machine in them, and the G-code
+     * of the `gcode:start` events. `system` events run their shell as before.
+     *
+     * **Those lines go through the feeder and are each answered before the
+     * program's first line leaves.** They used to be fed and then thrown
+     * away: the feeder sent the first, `feeder.reset()` dropped the rest, and
+     * that first line's `ok` came back while the workflow was running — so the
+     * sender counted it as one of its own, and every line after sat one place
+     * off in a character-counted buffer (found 2026-09-25).
+     *
+     * A mark goes into the feeder behind them. The feeder reaches it only on
+     * the `ok` of the line before it, and the mark starts the program; a reset
+     * or a stop that empties the feeder takes the mark with it, and nothing
+     * starts. A refused line cancels the start — see the `error` handler.
+     */
+    startProgram(cmd) {
+      const lines = units.restore ? [units.modal()] : [];
+      this.event.trigger('gcode:start', (event, trigger, commands) => {
+        if (trigger === 'system') {
+          taskRunner.run(commands);
+        } else {
+          lines.push(commands);
+        }
+      });
+
+      const data = lines.join('\n').split(/\r?\n/).filter(line => line.trim().length > 0);
+      if (data.length === 0) {
+        this.beginProgram();
+        return;
+      }
+      // The feeder drops every line in alarm, and the mark with them.
+      if (this.runner.isAlarm()) {
+        this.refuse(cmd, 'alarm');
+        return;
+      }
+
+      // Who asked, for a refusal that comes back after this call has returned.
+      this.starting = { socket: this.commandSocket, cmd };
+      this.feeder.feed(data);
+      this.feeder.feed(['%'], this.starting);
+      if (!this.feeder.isPending()) {
+        this.feeder.next();
+      }
+    }
+
+    beginProgram() {
+      this.starting = null;
+
+      this.workflow.start();
+
+      // Feeder
+      this.feeder.reset();
+
+      // Sender
+      this.sender.next();
+    }
+
+    /** Whether lines sent before a program are still on their way. */
+    isStarting() {
+      return Boolean(this.starting) && this.feeder.state.queue.some(({ context }) => context === this.starting);
+    }
+
+    /**
+     * Give up a start still sending its lines — a stop, a new file, or one of
+     * them refused, which is said to whoever pressed Start.
+     */
+    cancelStart(reason) {
+      if (!this.isStarting()) {
+        return;
+      }
+      const { socket, cmd } = this.starting;
+      this.starting = null;
+      this.feeder.reset();
+      if (reason) {
+        this.refuse(cmd, reason, socket);
+      }
     }
 
     /**

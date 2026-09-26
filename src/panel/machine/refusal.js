@@ -60,6 +60,9 @@ const KEYS = {
   checking: 'refusal.checking',
   'not-idle': 'refusal.notIdle',
   'not-found': 'refusal.notFound',
+  // A line the start events or the server's units send before a program was
+  // refused by Grbl, so the program was not started. Which line is in the journal.
+  'start-failed': 'refusal.startFailed',
 };
 
 /**
