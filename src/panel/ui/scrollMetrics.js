@@ -74,3 +74,9 @@ export const thumbOf = (el, min = MIN_THUMB, inset = 0) => {
 
   return { height, top: inset + Math.round(at * travel) };
 };
+
+/** The same for a row that scrolls sideways: is there more to the left, to the right. */
+export const sideEdgesOf = (el) => (el ? {
+  left: el.scrollLeft > 1,
+  right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+} : { left: false, right: false });

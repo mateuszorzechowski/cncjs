@@ -150,10 +150,16 @@ const SettingsScreen = ({ machine }) => {
         * one under it only made the bottom different from the rest.
         */}
       <div ref={pages} className="flex min-h-0 flex-1 flex-col">
+      {/*
+        * The controller's settings scroll inside their card: the group tabs,
+        * the description and the save bar stay where they are and only the
+        * settings move — *"scroll ma byc na cala wysokosc kardy ale
+        * scrolowac maja sie tylko ustawienia w srodku"* (2026-09-26).
+        */}
+      {tab === 'controller' ? <ControllerSettings machine={machine} raw={raw} /> : (
       <FadeScroller>
         <div className="flex min-h-full flex-col">
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
-          {tab === 'controller' ? <ControllerSettings machine={machine} raw={raw} /> : null}
           {tab === 'appearance' ? (
             <Card className="flex-1">
               <SettingRow title={t('theme.label')} scope="device">
@@ -197,6 +203,7 @@ const SettingsScreen = ({ machine }) => {
           ) : null}
         </div>
       </FadeScroller>
+      )}
       </div>
     </div>
   );

@@ -1181,14 +1181,7 @@
       "side": "$H",
       "range": "Obszar MPos",
       "after": "Po $H",
-      "span": "{{min}} … {{max}}",
-      "legend": {
-        "home": "HOME",
-        "zero": "◇ MPos 0 — osie",
-        "switches": "krańcówki",
-        "soft": "— limity progr.",
-        "softOff": "— limity progr. wył."
-      }
+      "span": "{{min}} … {{max}}"
     }
   }
 }

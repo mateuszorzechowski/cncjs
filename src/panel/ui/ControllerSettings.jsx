@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import AxesSettings from './AxesSettings';
 import Card from './Card';
+import FadeScroller from './FadeScroller';
 import GeometrySettings from './GeometrySettings';
 import Notice from './Notice';
 import RawSettings from './RawSettings';
@@ -153,21 +154,27 @@ const ControllerSettings = ({ machine, raw }) => {
     />
   );
 
+  /*
+   * The card fills the screen and keeps its head and foot: the group tabs,
+   * what the group is about, and the save bar stand still; only the settings
+   * between them scroll (Mateusz, 2026-09-26).
+   */
   return (
-    <Card className="flex-1">
-      <div className="flex flex-col gap-4">
-        {!machine.canWriteSettings ? <Notice>{t('machine.readOnly')}</Notice> : null}
-        {raw ? (
-          <RawSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} canRead={machine.canWriteSettings} />
-        ) : (
-          <div className="flex flex-col gap-4">
-            {menu}
+    <Card className="min-h-0 flex-1" bodyClassName="gap-4">
+      {!machine.canWriteSettings ? <Notice>{t('machine.readOnly')}</Notice> : null}
+      {raw ? (
+        <RawSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} canRead={machine.canWriteSettings} />
+      ) : (
+        <>
+          {menu}
+          {/*
+            * Only what the group is about: its name is the tab lit above
+            * (*"czy potrzebujemy duplikowac tytul skoro tab jest zaznaczony?"*,
+            * 2026-09-26).
+            */}
+          {about ? <p className="m-0 shrink-0 text-note text-mut">{t(about.noteKey)}</p> : null}
+          <FadeScroller>
             <div className="flex min-w-0 max-w-[1180px] flex-col gap-4">
-              {/* The group's name and what it is about, on one line — panel v2. */}
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line pb-3">
-                <h2 className="m-0 text-lead font-semibold text-ink">{t(about ? about.titleKey : 'machine.history.title')}</h2>
-                {about ? <p className="m-0 text-note text-mut">{t(about.noteKey)}</p> : null}
-              </div>
               {shownGroup === 'axes' ? (
                 <AxesSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} flash={flash} />
               ) : null}
@@ -183,28 +190,27 @@ const ControllerSettings = ({ machine, raw }) => {
                 </div>
               ) : null}
             </div>
-          </div>
-        )}
-        {/* Above the joined choices, whose chosen button is drawn at z-10. */}
-        <div className="sticky bottom-0 z-30">
-          <SettingsSaveBar
-            pending={pending}
-            drafts={drafts}
-            raw={raw}
-            rule={rule}
-            readAt={machine.machineSettings?.readAt}
-            count={rows.length}
-            bad={bad}
-            saving={Boolean(saving)}
-            error={error}
-            canWrite={machine.canWriteSettings}
-            onDiscard={() => {
-              setDrafts({});
-              setError(null);
-            }}
-            onSave={save}
-          />
-        </div>
+          </FadeScroller>
+        </>
+      )}
+      <div className="shrink-0">
+        <SettingsSaveBar
+          pending={pending}
+          drafts={drafts}
+          raw={raw}
+          rule={rule}
+          readAt={machine.machineSettings?.readAt}
+          count={rows.length}
+          bad={bad}
+          saving={Boolean(saving)}
+          error={error}
+          canWrite={machine.canWriteSettings}
+          onDiscard={() => {
+            setDrafts({});
+            setError(null);
+          }}
+          onSave={save}
+        />
       </div>
     </Card>
   );

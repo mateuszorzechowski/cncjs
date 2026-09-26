@@ -10,7 +10,7 @@ import { t } from '../i18n';
  * (the controller settings design, panel v2, 2026-09-26).
  *
  * Left, a summary and the checks the settings fail together; right, the
- * travel in 3D with HOME and the switches, and where homing leaves each axis.
+ * travel in 3D with HOME, and where homing leaves each axis.
  * All of it the server's (`geometry.js`); here only words and units.
  */
 
@@ -127,18 +127,8 @@ const HomingTable = ({ homing, units }) => (
   </table>
 );
 
-const Legend = ({ soft }) => (
-  <div className="flex flex-wrap gap-x-4 gap-y-1 text-cap text-mut">
-    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amb" />{t('machine.geo.legend.home')}</span>
-    <span>{t('machine.geo.legend.zero')}</span>
-    <span className="flex items-center gap-1.5"><span className="h-0.5 w-3 bg-red" />{t('machine.geo.legend.switches')}</span>
-    <span>{t(soft === 'on' ? 'machine.geo.legend.soft' : 'machine.geo.legend.softOff')}</span>
-  </div>
-);
-
 const GeometrySettings = ({ geometry, envelope, pending, onJump }) => {
   const units = useUnits();
-  const summary = Object.fromEntries(geometry.summary.map((row) => [row.id, row.value]));
   return (
     <div className="grid grid-cols-1 gap-6 @3xl/shell:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
       <div className="flex min-w-0 flex-col gap-4">
@@ -146,14 +136,7 @@ const GeometrySettings = ({ geometry, envelope, pending, onJump }) => {
         <Checks checks={geometry.checks} units={units} onJump={onJump} />
       </div>
       <div className="flex min-w-0 flex-col gap-2">
-        <MachinePreview
-          className="h-60"
-          envelope={envelope}
-          homing={geometry.homing}
-          homingOn={Boolean(summary.homing?.on)}
-          hardLimits={Boolean(summary.hardLimits)}
-        />
-        <Legend soft={summary.softLimits} />
+        <MachinePreview className="h-60" envelope={envelope} homing={geometry.homing} />
         <HomingTable homing={geometry.homing} units={units} />
       </div>
     </div>

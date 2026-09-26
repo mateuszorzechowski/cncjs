@@ -1181,14 +1181,7 @@
       "side": "$H",
       "range": "MPos range",
       "after": "After $H",
-      "span": "{{min}} … {{max}}",
-      "legend": {
-        "home": "HOME",
-        "zero": "◇ MPos 0 — axes",
-        "switches": "limit switches",
-        "soft": "— soft limits",
-        "softOff": "— soft limits off"
-      }
+      "span": "{{min}} … {{max}}"
     }
   }
 }
