@@ -6,6 +6,8 @@ import LanguageChoice from '../ui/LanguageChoice';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
+import KeepAwakeChoice, { keepAwakeNote } from '../ui/KeepAwakeChoice';
+import { useKeepAwakeStatus } from '../ui/keepAwake';
 import { RestoreUnitsChoice, UnitsChoice } from '../ui/UnitsChoice';
 import ConnectScreen from './ConnectScreen';
 import AppScreen from './AppScreen';
@@ -61,6 +63,7 @@ let lastTab = 'connection';
 
 const SettingsScreen = ({ machine }) => {
   const [tab, setTab] = useState(() => lastTab);
+  const keepAwake = useKeepAwakeStatus();
   useEffect(() => {
     lastTab = tab;
   }, [tab]);
@@ -110,6 +113,9 @@ const SettingsScreen = ({ machine }) => {
             <Card className="flex-1">
               <SettingRow title={t('theme.label')} scope="device">
                 <ThemeChoice />
+              </SettingRow>
+              <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} scope="device">
+                <KeepAwakeChoice status={keepAwake} />
               </SettingRow>
             </Card>
           ) : null}

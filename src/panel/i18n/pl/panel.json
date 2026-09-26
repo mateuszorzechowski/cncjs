@@ -875,5 +875,14 @@
       "wait": "cncjs: czekaj, aż maszyna się zatrzyma",
       "msg": "cncjs: pokaż komunikat"
     }
+  },
+  "keepAwake": {
+    "label": "Ekran bez blokady",
+    "off": "Wyłączone",
+    "on": "Włączone",
+    "note": "Urządzenie nie zablokuje się, dopóki panel jest otwarty.",
+    "insecure": "Tylko po HTTPS: ten panel jest otwarty bez szyfrowania, a przeglądarki trzymają ekran włączony tylko dla bezpiecznej strony. Patrz zakładka Instalacja.",
+    "unsupported": "Ta przeglądarka nie umie trzymać ekranu włączonego.",
+    "refused": "Przeglądarka odmówiła trzymania ekranu — tak robi np. oszczędzanie baterii."
   }
 }
