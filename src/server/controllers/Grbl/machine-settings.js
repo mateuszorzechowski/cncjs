@@ -65,7 +65,9 @@ export const SETTINGS = [
   ...axes(130, 'axes', 'length'),
 ];
 
-const BY_NAME = Object.fromEntries(SETTINGS.map((s) => [s.name, s]));
+// Lower case: `react-refresh/babel` takes a capitalised name set by a call
+// for a component, and the server then dies on `$RefreshReg$` at start.
+const byName = Object.fromEntries(SETTINGS.map((s) => [s.name, s]));
 
 /** One inch in millimetres — the only factor there is between the two. */
 const INCH = 25.4;
@@ -101,7 +103,7 @@ export const describeSettings = (reported = {}) => {
     .filter((s) => reported[s.name] !== undefined)
     .map((s) => ({ ...s, value: Number(reported[s.name]), raw: reported[s.name] }));
   const unknown = Object.keys(reported)
-    .filter((name) => !BY_NAME[name])
+    .filter((name) => !byName[name])
     .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))
     .map((name) => ({ name, group: 'other', kind: 'float', value: Number(reported[name]), raw: reported[name] }));
   return [...known, ...unknown];
@@ -121,7 +123,7 @@ export const settingWrite = ({ name, value, units } = {}, reported = {}) => {
   if (reported[name] === undefined) {
     return { refusal: 'unknown-setting' };
   }
-  const setting = BY_NAME[name] || { kind: 'float' };
+  const setting = byName[name] || { kind: 'float' };
   if (setting.locked) {
     return { refusal: 'setting-locked' };
   }
