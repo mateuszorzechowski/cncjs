@@ -80,3 +80,18 @@ export const sideEdgesOf = (el) => (el ? {
   left: el.scrollLeft > 1,
   right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
 } : { left: false, right: false });
+
+/** A sideways thumb: its width and where it starts along a track as wide as the row. */
+export const sideThumbOf = (el, min = MIN_THUMB) => {
+  if (!el) {
+    return null;
+  }
+  const { scrollLeft, clientWidth, scrollWidth } = el;
+  const hidden = scrollWidth - clientWidth;
+  if (hidden <= 1 || clientWidth <= 0) {
+    return null;
+  }
+  const width = Math.min(clientWidth, Math.max(min, Math.round((clientWidth / scrollWidth) * clientWidth)));
+  const at = Math.min(1, Math.max(0, scrollLeft / hidden));
+  return { width, left: Math.round(at * (clientWidth - width)) };
+};

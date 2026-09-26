@@ -102,7 +102,7 @@ const Checks = ({ checks, units, onJump }) => (
   </div>
 );
 
-const HomingTable = ({ homing, units }) => (
+export const HomingTable = ({ homing, units }) => (
   <table className="w-full border-collapse text-note">
     <thead>
       <tr className="text-cap uppercase tracking-[0.08em] text-mut">

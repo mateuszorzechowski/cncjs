@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { sideEdgesOf } from './scrollMetrics';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { sideEdgesOf, sideThumbOf } from './scrollMetrics';
 
 /**
  * A second row of tabs inside a card: the groups of one settings tab, the
@@ -13,13 +13,23 @@ import { sideEdgesOf } from './scrollMetrics';
  * Where it does not fit it scrolls sideways and only sideways, with no bar,
  * and fades out at the edge that has more behind it — Mateusz, 2026-09-26:
  * *"scroll ma byc nie widoczny, ale ma byc widac ze cos jest schowane"*.
+ * And a thumb of the panel's own on the divider under the row, as the
+ * screens' scrollers have down their side (*"poziomy scroll customowy? pod
+ * deviderem"*): how much is hidden, and where along it you are.
  *
  * `counts[id]`, when above nought, is shown in the badge.
  */
 const GroupTabs = ({ options, value, onChange, format, counts = {}, label }) => {
   const [row, setRow] = useState(null);
   const [edges, setEdges] = useState({ left: false, right: false });
-  const measure = useCallback(() => setEdges(sideEdgesOf(row)), [row]);
+  const thumb = useRef(null);
+  const measure = useCallback(() => {
+    setEdges(sideEdgesOf(row));
+    const bar = sideThumbOf(row);
+    // Set on the node rather than rendered, so a scroll does not re-render the row.
+    thumb.current?.style.setProperty('--thumbW', `${bar ? bar.width : 0}px`);
+    thumb.current?.style.setProperty('--thumbX', `${bar ? bar.left : 0}px`);
+  }, [row]);
 
   useEffect(() => {
     if (!row) {
@@ -32,7 +42,7 @@ const GroupTabs = ({ options, value, onChange, format, counts = {}, label }) => 
   }, [row, measure]);
 
   return (
-    <div className="shrink-0 border-b border-line">
+    <div className="relative shrink-0 border-b border-line">
       <div
         ref={setRow}
         role="tablist"
@@ -68,6 +78,11 @@ const GroupTabs = ({ options, value, onChange, format, counts = {}, label }) => 
           );
         })}
       </div>
+      <span
+        ref={thumb}
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-px left-0 h-[3px] w-[var(--thumbW,0px)] translate-x-[var(--thumbX,0px)] rounded-full bg-mut"
+      />
     </div>
   );
 };

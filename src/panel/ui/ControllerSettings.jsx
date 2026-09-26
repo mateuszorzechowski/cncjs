@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import AxesSettings from './AxesSettings';
 import Card from './Card';
 import FadeScroller from './FadeScroller';
-import GeometrySettings from './GeometrySettings';
+import GeometrySettings, { HomingTable } from './GeometrySettings';
+import MachinePreview from './MachinePreview';
 import Notice from './Notice';
 import RawSettings from './RawSettings';
 import ReportUnitsFix from './ReportUnitsFix';
@@ -11,6 +12,7 @@ import SettingControl from './SettingControl';
 import SettingRow from './SettingRow';
 import SettingsHistory from './SettingsHistory';
 import SettingsSaveBar from './SettingsSaveBar';
+import { useIsWide } from './shell';
 import { useUnits } from './units';
 import {
   changesOf, GROUPS, groupRows, groupsIn, isBad, isInactive, pendingCounts, pendingRows, settingText,
@@ -71,7 +73,9 @@ const Row = ({ row, rows, drafts, onDraft, rule, disabled, flash }) => {
 };
 
 const ControllerSettings = ({ machine, raw }) => {
-  const { rule } = useUnits();
+  const units = useUnits();
+  const { rule } = units;
+  const wide = useIsWide();
   const [group, setGroup] = useState(() => lastGroup);
   const [drafts, setDrafts] = useState({});
   const [saving, setSaving] = useState(null);
@@ -82,7 +86,14 @@ const ControllerSettings = ({ machine, raw }) => {
   const counts = pendingCounts(pending);
   const bad = pending.some((row) => isBad(row, drafts[row.name], rule));
   const geometry = machine.machineSettings?.geometry;
-  const groups = [...groupsIn(rows).map(({ id }) => id), ...(geometry ? [GEOMETRY] : []), HISTORY];
+  /*
+   * On a PC the geometry is the axes' own view: the travel in 3D and the
+   * homing table beside the table of X, Y and Z — the design's PC layout
+   * (Mateusz, 2026-09-26: *"dla pc to jest na widoku osi"*). Narrower, where
+   * there is no room beside it, it is a tab of its own (panel v2).
+   */
+  const geometryTab = geometry && !wide;
+  const groups = [...groupsIn(rows).map(({ id }) => id), ...(geometryTab ? [GEOMETRY] : []), HISTORY];
   const [flash, setFlash] = useState(null);
   const flashTimer = useRef(null);
   // From a Geometria line to the setting behind it, lit for a moment.
@@ -176,7 +187,17 @@ const ControllerSettings = ({ machine, raw }) => {
           <FadeScroller>
             <div className="flex min-w-0 max-w-[1180px] flex-col gap-4">
               {shownGroup === 'axes' ? (
-                <AxesSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} flash={flash} />
+                <div className="flex flex-col gap-6 @3xl/shell:flex-row @3xl/shell:items-start">
+                  <div className="min-w-0 flex-1">
+                    <AxesSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} flash={flash} />
+                  </div>
+                  {geometry && wide ? (
+                    <div className="flex w-[360px] shrink-0 flex-col gap-2">
+                      <MachinePreview className="h-[340px]" envelope={machine.envelope} homing={geometry.homing} />
+                      <HomingTable homing={geometry.homing} units={units} />
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
               {shownGroup === HISTORY ? <SettingsHistory history={machine.machineSettings?.history ?? []} /> : null}
               {shownGroup === GEOMETRY ? (
