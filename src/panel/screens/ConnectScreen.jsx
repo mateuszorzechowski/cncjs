@@ -260,6 +260,7 @@ const ConnectScreen = ({ machine }) => {
             ? [t(AUTO_NOTES[autoMode]), beside ? t(BESIDE_NOTES[beside]) : null].filter(Boolean).join(' ')
             : null}
           scope={autoMode ? connectScope(autoMode) : null}
+          noteBelow
         >
           <AutoConnectChoice mode={autoMode} beside={beside} onChoose={chooseAuto} />
         </SettingRow>

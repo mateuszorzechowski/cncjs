@@ -1,5 +1,6 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
+import { forceLinting } from '@codemirror/lint';
 import { EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
@@ -91,8 +92,14 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
 
   // The help can arrive after the file — the server's words are asked for
   // separately — and is put in without touching what has been typed.
+  // The checks then run at once: their delay is for waiting out typing, and
+  // a file just opened is not being typed in.
   useEffect(() => {
-    view.current?.dispatch({ effects: helping.current.reconfigure(extensions) });
+    if (!view.current) {
+      return;
+    }
+    view.current.dispatch({ effects: helping.current.reconfigure(extensions) });
+    forceLinting(view.current);
   }, [extensions, initial]);
 
   useImperativeHandle(ref, () => ({
