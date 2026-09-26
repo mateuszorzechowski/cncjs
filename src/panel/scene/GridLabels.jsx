@@ -59,7 +59,27 @@ export const RULER_PIXELS = GAP_PIXELS + (2 * TEXT_PIXELS);
 // drawn on screen, so it stays sharp when the view is zoomed into a corner.
 const RESOLUTION = 64;
 
-const paint = (text, color) => {
+// The text's own box, in texture pixels: a figure's height is this.
+const BOX = Math.ceil(RESOLUTION * 1.4);
+
+/*
+ * **A cut in the lines under each figure, fading at its edge.** Where a
+ * figure sat on a grid line or an axis the line ran straight through the
+ * digits — a `0` with a stroke in it (Mateusz, 2026-09-26: *"to nie ma być
+ * poświata, tylko wycięcie na napis z fadem"*). So each figure carries a
+ * patch of the ground's own colour, solid over the text's box — the lines
+ * stop there — and blurred at its border, so they fade out rather than end
+ * at an edge. `HALO_PAD` is the room round the text for that fade.
+ */
+const HALO_PAD = Math.round(RESOLUTION * 0.75);
+
+/** The pad around the text, in figure heights, for the plane that carries it. */
+const PAD = HALO_PAD / BOX;
+
+// Between the floor's lines (the default, 0) and the path (1 and up).
+const FIGURES_ORDER = 0.5;
+
+const paint = (text, color, halo, alpha) => {
   const canvas = document.createElement('canvas');
   // Not a sentence: a CSS font shorthand, which happens to have two words in
   // it because a typeface has a name.
@@ -70,17 +90,45 @@ const paint = (text, color) => {
   // and resets the font with it.
   const probe = canvas.getContext('2d');
   probe.font = font;
-  const width = Math.ceil(probe.measureText(text).width);
+  const width = Math.max(1, Math.ceil(probe.measureText(text).width));
 
-  canvas.width = Math.max(1, width);
-  canvas.height = Math.ceil(RESOLUTION * 1.4);
+  canvas.width = width + (2 * HALO_PAD);
+  canvas.height = BOX + (2 * HALO_PAD);
 
   const context = canvas.getContext('2d');
   context.font = font;
-  context.fillStyle = color;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(text, canvas.width / 2, canvas.height / 2);
+  const middle = [canvas.width / 2, canvas.height / 2];
+
+  // The cut: in the ground's colour, a little smaller than the letters —
+  // the box a line is dropped by is the digits, not the space above and
+  // below them — and blurred wide into the pad, so the lines fade out
+  // rather than stop at an edge (*"mniejszy ten box, albo większe
+  // rozmycie"*, 2026-09-26).
+  // Two layers: the fade, blurred wide from the letters' box, and over it
+  // a solid core a little inside that box, so the middle is fully cut
+  // however wide the blur — a small box blurred alone lets the line through.
+  const blur = Math.round(RESOLUTION * 0.3);
+  // The core is the digits' box and a little air round it — a sixth of a
+  // figure either side (*"może jeszcze trochę powiększyć box"*).
+  const insetX = HALO_PAD - (RESOLUTION * 0.15);
+  const insetY = HALO_PAD + (BOX * 0.04);
+  const box = (grow) => context.fillRect(
+    insetX - grow, insetY - grow, canvas.width - (2 * (insetX - grow)), canvas.height - (2 * (insetY - grow))
+  );
+  context.fillStyle = halo;
+  context.filter = `blur(${blur}px)`;
+  box(blur * 0.5);
+  context.filter = 'none';
+  box(0);
+
+  // The figure over it, at its own strength: the material is opaque now, so
+  // the faintness a reference mark wants is painted in.
+  context.filter = 'none';
+  context.globalAlpha = alpha;
+  context.fillStyle = color;
+  context.fillText(text, ...middle);
 
   const texture = new THREE.CanvasTexture(canvas);
   // The canvas was painted in sRGB; saying so is what stops the figures
@@ -88,14 +136,38 @@ const paint = (text, color) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
 
-  return { texture, aspect: canvas.width / canvas.height };
+  // The text's own proportions, for placing it; the pad goes on the plane.
+  return { texture, aspect: width / BOX };
 };
 
-const GridLabels = ({ area, step, z, color }) => {
+// Scratch vectors for the per-frame projection, so a frame allocates nothing.
+const FORWARD = new THREE.Vector3();
+const AT = new THREE.Vector3();
+const ALONG = new THREE.Vector3();
+
+/** Whether a world direction runs leftward on screen — text along it would read backwards. */
+const runsLeft = (camera, dx, dy) => {
+  AT.set(0, 0, 0).project(camera);
+  ALONG.set(dx, dy, 0).project(camera);
+  return ALONG.x - AT.x < -1e-6;
+};
+
+/**
+ * Along the edges nearest the camera, turned to read from the left, with a
+ * title per axis — design 03a, on every scene. See `grid-numbers`.
+ */
+const GridLabels = ({ area, step, z, color, halo }) => {
   const units = useUnits();
   const factor = units.rule?.factor ?? 1;
   const length = units.length;
   const groups = useRef([]);
+
+  /*
+   * Which edges are nearest, as the signs of the view's direction — state,
+   * like the spacing, because it changes only when the view is turned past
+   * an edge. The default view's until the first frame says otherwise.
+   */
+  const [facing, setFacing] = useState('front-right');
 
   /*
    * Which round number is being counted in. It follows the zoom, so it is
@@ -104,12 +176,15 @@ const GridLabels = ({ area, step, z, color }) => {
    */
   const [spacing, setSpacing] = useState(step);
 
-  const labels = useMemo(() => gridLabels(area, spacing, { factor, length }).map((label) => {
-    const { texture, aspect } = paint(label.text, color);
-    // Built one unit tall; the group is scaled to whatever that has to be on
-    // screen, so the geometry never has to be rebuilt for a zoom.
-    return { ...label, texture, width: aspect, height: 1 };
-  }), [area, spacing, color, factor, length]);
+  const labels = useMemo(() => {
+    const toward = { x: facing.endsWith('left') ? -1 : 1, y: facing.startsWith('back') ? 1 : -1 };
+    return gridLabels(area, spacing, { factor, length }, toward).map((label) => {
+      const { texture, aspect } = paint(label.text, color, halo, label.title ? 0.85 : 0.55);
+      // Built one unit tall; the group is scaled to whatever that has to be on
+      // screen, so the geometry never has to be rebuilt for a zoom.
+      return { ...label, texture, width: aspect, height: 1 };
+    });
+  }, [area, spacing, color, halo, factor, length, facing]);
 
   useEffect(() => () => labels.forEach(({ texture }) => texture.dispose()), [labels]);
 
@@ -125,12 +200,29 @@ const GridLabels = ({ area, step, z, color }) => {
       setSpacing(next);
     }
 
+    // From the scene towards the camera: the reverse of where it looks.
+    camera.getWorldDirection(FORWARD);
+    const now = `${-FORWARD.y > 1e-6 ? 'back' : 'front'}-${-FORWARD.x < -1e-6 ? 'left' : 'right'}`;
+    const turned = now !== facing;
+    if (turned) {
+      setFacing(now);
+    }
+    const flipX = runsLeft(camera, 1, 0);
+    const flipY = runsLeft(camera, 0, 1);
+
     const scale = TEXT_PIXELS / camera.zoom;
     const gap = GAP_PIXELS / camera.zoom;
     // Figures counted for another zoom are hidden until the recount arrives,
     // one render later: shown, the first frame of a view printed every
     // millimetre on top of each other.
-    const settled = next === spacing;
+    const settled = next === spacing && !turned;
+    // How deep each row of figures is, in figure heights, for the title that
+    // stands outside it: the X row is a figure tall, the Y column as wide as
+    // its widest figure (the figures lie along X either way).
+    const depth = {
+      x: 1,
+      y: Math.max(0, ...labels.filter((l) => !l.title && l.key.startsWith('y')).map((l) => l.width)),
+    };
     for (let i = 0; i < groups.current.length; ++i) {
       const group = groups.current[i];
       const label = labels[i];
@@ -141,11 +233,23 @@ const GridLabels = ({ area, step, z, color }) => {
         // nor the unit drift when the counting coarsens — and measured from
         // the figure's near edge rather than its middle, so a long one keeps
         // the same gap to the axis as a short one instead of running into it.
+        // A title along Y is turned a quarter, so its width runs along Y.
+        const alongY = label.along === 'y';
+        const spanX = (alongY ? label.height : label.width) * scale;
+        const spanY = (alongY ? label.width : label.height) * scale;
+        // A title stands outside its row of figures: the row's depth and a
+        // third of a figure of air past where a figure would stand.
+        const past = label.beyond ? (depth[label.beyond] + 0.35) * scale : 0;
         group.position.set(
-          label.x + (label.push.x * (gap + ((label.width * scale) / 2))),
-          label.y + (label.push.y * (gap + ((label.height * scale) / 2))),
+          label.x + (label.push.x * (gap + past + (spanX / 2))),
+          label.y + (label.push.y * (gap + past + (spanY / 2))),
           z
         );
+        // Turned half round when its direction runs leftward on screen, so
+        // it reads from the left whichever side the view is from (design 03a).
+        group.rotation.z = alongY
+          ? (flipY ? -Math.PI / 2 : Math.PI / 2)
+          : (flipX ? Math.PI : 0);
       }
     }
   });
@@ -156,15 +260,22 @@ const GridLabels = ({ area, step, z, color }) => {
       position={[x, y, z]}
       ref={(node) => { groups.current[index] = node; }}
     >
-    <mesh>
-      <planeGeometry args={[width, height]} />
       {/*
-        * `depthWrite` off so a figure never hides the grid line behind it,
-        * and `opacity` matching the grid's own weight — these are reference
-        * marks, read when looked for and ignorable otherwise.
+        * The plane is the text and the halo's pad round it; placing goes by
+        * the text alone (`width`, `height`), so the pad changes no gap.
+        *
+        * After the floor's lines and before the path, and over them whatever
+        * the depth: the outline's top edge is nearer the camera than the
+        * floor, and with the depth test it ran through the cut. So the cut
+        * takes out the grid, the outline and the guides under a figure,
+        * never the program, which is drawn after it.
         */}
-      <meshBasicMaterial map={texture} transparent opacity={0.55} depthWrite={false} />
-    </mesh>
+      <mesh renderOrder={FIGURES_ORDER}>
+        <planeGeometry args={[width + (2 * PAD), height + (2 * PAD)]} />
+        {/* Not tone-mapped: the cut has to be the ground's exact colour, and
+          * R3F's default tone mapping turned it into a grey box. */}
+        <meshBasicMaterial map={texture} transparent depthTest={false} depthWrite={false} toneMapped={false} />
+      </mesh>
     </group>
   ));
 };

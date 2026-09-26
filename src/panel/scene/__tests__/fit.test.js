@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { boundsBox, currentDirection, fitToBounds, fitWithRulers } from '../fit';
+import { TITLED_RULER, boundsBox, currentDirection, fitToBounds, fitWithRulers } from '../fit';
 import fitCameraToBounds from '../../../lib/toolpath/camera-fit';
 
 // The frustum is fixed and framing is done with `zoom`, which is how the
@@ -122,22 +122,27 @@ describe('framing with room for the rulers', () => {
   const TALL = boundsBox({ min: { x: 0, y: 0, z: 0.2 }, max: { x: 100, y: 100, z: 37.4 } });
   const RULERS = 62;
 
-  // Where the octocat's figures stand: zero is its corner, so the X ruler
-  // runs along the front (min Y), the Y ruler up the left (min X), and the
-  // unit is at the far, right-hand end of the X ruler (max X). Not behind.
+  /*
+   * Where the figures stand from the default view: along the two edges
+   * nearest the camera, the front (min Y) and the right (max X), each with a
+   * row of figures and its axis title outside it.
+   */
   const rulerCorners = (box, room) => [
-    [box.min.x - room, box.min.y - room], [box.max.x + room, box.min.y - room],
-    [box.min.x - room, box.max.y], [box.max.x + room, box.max.y],
+    [box.max.x + (TITLED_RULER * room), box.min.y - (TITLED_RULER * room)],
+    [box.min.x, box.min.y - (TITLED_RULER * room)],
+    [box.max.x + (TITLED_RULER * room), box.max.y],
   ].map(([x, y]) => new THREE.Vector3(x, y, box.min.z));
 
-  test('leaves room on the floor where the rulers stand, inside the frame', () => {
+  test.each([
+    ['a tall part', TALL],
+    ["COM3's travel", boundsBox({ min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 } })],
+  ])('leaves room on the floor where the rulers stand, inside the frame: %s', (_, box) => {
     const c = camera(4 / 3, 244);
-    fitWithRulers(c, TALL, ISO, RULERS);
+    fitWithRulers(c, box, ISO, RULERS);
     c.updateMatrixWorld(true);
 
-    // The figures stand this far out from the floor's edge, on screen.
     const room = (RULERS * 0.95) / c.zoom;
-    rulerCorners(TALL, room).forEach((corner) => {
+    rulerCorners(box, room).forEach((corner) => {
       const p = corner.project(c);
       expect(Math.abs(p.x)).toBeLessThanOrEqual(1);
       expect(Math.abs(p.y)).toBeLessThanOrEqual(1);
@@ -145,11 +150,12 @@ describe('framing with room for the rulers', () => {
   });
 
   test('frames a tall part larger than a margin all round would', () => {
-    const c = camera(4 / 3, 244);
+    const c = camera(4 / 3, 600);
     fitWithRulers(c, TALL, ISO, RULERS);
 
-    // A margin of screen pixels on every side, as it was first done.
-    const margin = camera(4 / 3, 244 - (2 * RULERS));
+    // The same room as a margin of screen pixels on every side, as it was
+    // first done.
+    const margin = camera(4 / 3, 600 - (2 * TITLED_RULER * RULERS));
     fitCameraToBounds(margin, TALL, ISO);
 
     expect(c.zoom).toBeGreaterThan(margin.zoom * 1.15);
