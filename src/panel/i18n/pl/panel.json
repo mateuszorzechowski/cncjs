@@ -887,5 +887,19 @@
     "insecure": "Tylko po HTTPS: ten panel jest otwarty bez szyfrowania, a przeglądarki trzymają ekran włączony tylko dla bezpiecznej strony. Patrz zakładka Instalacja.",
     "unsupported": "Ta przeglądarka nie umie trzymać ekranu włączonego.",
     "refused": "Przeglądarka odmówiła trzymania ekranu — tak robi np. oszczędzanie baterii."
+  },
+  "jogSettings": {
+    "stepsTitle": "Kroki jogu",
+    "stepsNote": "Co proponuje karta jogu, w jednostkach powyżej. Ustawienie serwera, takie samo na każdym urządzeniu.",
+    "stepsHow": "Do {{most}} w grupie, od najmniejszego. Puste pole znika.",
+    "stepN": "{{axes}} krok {{n}}",
+    "ratesTitle": "Posuwy jogu",
+    "ratesNote": "Posuw, od którego zaczyna karta jogu, w jednostkach powyżej.",
+    "ratesHow": "Na karcie jogu dalej można go zmienić; tu jest punkt startu.",
+    "xy": "XY",
+    "z": "Z",
+    "save": "Zapisz",
+    "defaults": "Przywróć domyślne",
+    "invalid": "Kroki to liczby powyżej 0, każda większa od poprzedniej, od jednej do sześciu w grupie."
   }
 }

@@ -50,3 +50,20 @@ describe('the units, over the API', () => {
     expect(config.set).not.toHaveBeenCalled();
   });
 });
+
+describe('the jog steps, over the API', () => {
+  test('are set for the units in force and written down', () => {
+    const res = call(update, { body: { jog: { xySteps: [0.5, 5, 50] } } });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.jog.xySteps).toEqual([0.5, 5, 50]);
+    expect(config.set).toHaveBeenLastCalledWith('units', expect.objectContaining({ jog: { mm: { xySteps: [0.5, 5, 50] } } }));
+  });
+
+  test('refuse steps that are not rising numbers above nought, and change nothing', () => {
+    const res = call(update, { body: { jog: { xySteps: [5, 1] } } });
+
+    expect(res.statusCode).toBe(400);
+    expect(units.rule().jog.xySteps).toEqual([0.1, 1, 10, 50]);
+  });
+});
