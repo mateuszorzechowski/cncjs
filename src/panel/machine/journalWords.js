@@ -148,6 +148,7 @@ export const EVENT_KEYS = {
   motion: 'journal.event.motion',
   'file-check': 'journal.event.fileCheck',
   file: 'journal.event.file',
+  setting: 'journal.event.setting',
 };
 
 export const LEVEL_KEYS = {
@@ -190,6 +191,8 @@ const BY_EVENT = {
   settings: ({ code, data }) => (code === 'connection.auto'
     ? keyed('journal.settings.auto', { was: data?.was ?? 'manual', mode: data?.mode ?? 'manual' })
     : null),
+  // One of Grbl's `$` settings changed, as the server's copy saw it.
+  setting: ({ code, data }) => keyed('journal.setting.changed', { name: code ?? '', from: data?.from ?? '', to: data?.to ?? '' }),
   'file-check': ({ code, data }) => {
     const params = { name: data?.name ?? '', errors: data?.errors ?? 0, code: code ?? '' };
     return keyed(FILE_CHECK[code] || 'journal.fileCheck.stopped', params);

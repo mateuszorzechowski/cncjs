@@ -54,7 +54,13 @@
     },
     "inch": "in",
     "inPerMin": "in/min",
-    "quantity": "{{value}} {{unit}}"
+    "quantity": "{{value}} {{unit}}",
+    "mmPerS2": "mm/s²",
+    "inPerS2": "in/s²",
+    "stepsPerMm": "steps/mm",
+    "stepsPerInch": "steps/in",
+    "us": "µs",
+    "ms": "ms"
   },
   "axis": {
     "x": "X",
@@ -240,8 +246,10 @@
     "locked": "Locked",
     "scope": {
       "device": "This device",
-      "server": "Server · all devices"
-    }
+      "server": "Server · all devices",
+      "controller": "Controller · EEPROM"
+    },
+    "machine": "Machine"
   },
   "theme": {
     "label": "Theme",
@@ -295,7 +303,12 @@
     "checking": "The controller is already checking a file. Wait until it is done.",
     "notIdle": "The machine is not Idle, so Grbl will not enter check mode.",
     "notFound": "That file is no longer on the server.",
-    "startFailed": "Grbl refused a line sent before the program, so the program did not start. The journal says which."
+    "startFailed": "Grbl refused a line sent before the program, so the program did not start. The journal says which.",
+    "settingNotIdle": "Grbl takes settings only while the machine stands Idle or is in alarm.",
+    "settingPending": "The previous settings write is still waiting for the controller's answer.",
+    "unknownSetting": "The controller has not reported such a setting.",
+    "settingLocked": "This setting is not changed from the panel.",
+    "badValue": "This value is outside the setting's range."
   },
   "notice": {
     "warning": "Warning"
@@ -473,7 +486,8 @@
       "motion": "Motion",
       "fileCheck": "Check",
       "file": "File",
-      "settings": "Settings"
+      "settings": "Settings",
+      "setting": "Setting"
     },
     "program": {
       "start": "Started {{name}}",
@@ -566,6 +580,9 @@
     },
     "settings": {
       "auto": "Connection mode: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
+    },
+    "setting": {
+      "changed": "{{name}}: {{from}} → {{to}}"
     }
   },
   "grbl": {
@@ -928,6 +945,155 @@
       "missing": "Not declared by the program:",
       "insert": "Insert at the top",
       "hide": "Hide"
+    }
+  },
+  "machine": {
+    "view": {
+      "label": "Controller settings",
+      "note": "Kept in the controller's EEPROM. Every change asks for confirmation; the server keeps a copy and a history of changes.",
+      "described": "Described",
+      "raw": "Raw $x"
+    },
+    "empty": "Connect to the controller to see its settings.",
+    "readOnly": "Grbl takes changes only while the machine stands Idle or is in alarm, and not during a program.",
+    "on": "On",
+    "off": "Off",
+    "none": "None",
+    "axisCode": "{{axis}} · {{name}}",
+    "group": {
+      "axes": "Axes",
+      "motion": "Motion",
+      "limits": "Limits and switches",
+      "homing": "Homing",
+      "spindle": "Spindle and laser",
+      "report": "Status report",
+      "motors": "Motors and signals",
+      "other": "Other"
+    },
+    "bits": {
+      "mpos": "Machine position",
+      "buffer": "Planner buffer"
+    },
+    "axes": {
+      "steps": {
+        "title": "Motor steps",
+        "note": "How many motor steps move the axis one unit. Whether the machine travels as far as it was told depends on it."
+      },
+      "rate": {
+        "title": "Maximum rate",
+        "note": "The fastest the axis moves, G0 included. Too high and the motor loses steps."
+      },
+      "accel": {
+        "title": "Acceleration",
+        "note": "How quickly the axis gains and sheds speed. The stopping distance after STOP depends on it too."
+      },
+      "travel": {
+        "title": "Travel",
+        "note": "The axis length from the homing point. The server works out the table's envelope from it, and Grbl its soft limits."
+      }
+    },
+    "s0": {
+      "title": "Step pulse",
+      "note": "How long a step pulse lasts for the motor drivers — the shortest one they reliably see. Grbl takes 3 µs and up."
+    },
+    "s1": {
+      "title": "Motor hold after motion",
+      "note": "How long the motors hold position after stopping. 255 keeps them on."
+    },
+    "s2": {
+      "title": "Inverted step pulse",
+      "note": "Axes whose step signal is inverted. Only when a motor driver needs it."
+    },
+    "s3": {
+      "title": "Inverted direction",
+      "note": "Axes that move opposite to the command. The way to reverse an axis without rewiring its motor."
+    },
+    "s4": {
+      "title": "Inverted enable signal",
+      "note": "For motor drivers that enable on a high signal."
+    },
+    "s5": {
+      "title": "Inverted limit switches",
+      "note": "For normally closed (NC) limit switches."
+    },
+    "s6": {
+      "title": "Inverted probe",
+      "note": "For a normally closed probe."
+    },
+    "s10": {
+      "title": "Report contents",
+      "note": "What Grbl puts in the status report: the machine position rather than the work one, and the planner buffer's use. With the buffer the server knows more exactly which program line is running."
+    },
+    "s11": {
+      "title": "Junction deviation",
+      "note": "How much the machine slows at corners of the path. Less is slower and more exact in corners."
+    },
+    "s12": {
+      "title": "Arc tolerance",
+      "note": "How exactly G2/G3 arcs are divided into segments."
+    },
+    "s13": {
+      "title": "Report in inches",
+      "note": "Locked: the server reads every report as millimetres. The panel's units are changed in Preferences."
+    },
+    "s20": {
+      "title": "Soft limits",
+      "note": "Grbl refuses motion beyond the axis travel and goes into alarm. Needs homing enabled."
+    },
+    "s21": {
+      "title": "Hard limits",
+      "note": "A limit switch stops the machine at once, with an alarm."
+    },
+    "s22": {
+      "title": "Homing",
+      "note": "Enables the homing cycle on the limit switches. Once on, Grbl starts in alarm until the machine is homed."
+    },
+    "s23": {
+      "title": "Home towards minus",
+      "note": "Axes that look for their switch towards minus rather than plus."
+    },
+    "s24": {
+      "title": "Locate feed rate",
+      "note": "The slow second approach to the switch that sets the homing point."
+    },
+    "s25": {
+      "title": "Seek rate",
+      "note": "The fast first approach to the switch."
+    },
+    "s26": {
+      "title": "Switch debounce",
+      "note": "How long Grbl waits for a limit switch contact to settle."
+    },
+    "s27": {
+      "title": "Pull-off distance",
+      "note": "How far an axis backs off its switch after homing, so it does not rest on it."
+    },
+    "s30": {
+      "title": "Maximum spindle speed",
+      "note": "Spindle speed at full PWM — S equal to this value."
+    },
+    "s31": {
+      "title": "Minimum spindle speed",
+      "note": "Speed at the lowest PWM. A smaller S turns the spindle off."
+    },
+    "s32": {
+      "title": "Laser mode",
+      "note": "Motion does not wait for a power change on M3/M4. Only for a laser — a spindle needs time to spin up."
+    },
+    "history": {
+      "title": "History of changes",
+      "none": "The server has not seen a change yet.",
+      "change": "{{name}}: {{from}} → {{to}}",
+      "elsewhere": "outside the panel",
+      "unnamed": "unnamed device"
+    },
+    "sheet": {
+      "title": "{{title}} ({{name}})",
+      "now": "Now: {{value}} {{unit}}",
+      "eeprom": "Written to the controller's EEPROM. The change takes effect at once and survives a power-off.",
+      "save": "Save to controller",
+      "noAnswer": "The controller did not confirm the new value. Check the connection and the Journal.",
+      "grblRefused": "Grbl refused the write ({{code}}): {{meaning}}"
     }
   }
 }

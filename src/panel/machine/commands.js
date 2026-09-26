@@ -93,6 +93,16 @@ export const checkFile = (name, { firstError = false } = {}) => {
   controller.command('file:check', { name, firstError });
 };
 
+/**
+ * One of Grbl's `$` settings, into its EEPROM, through the server:
+ * `{ name, value, units }`, `units` the server's unit the value was shown in.
+ * The server converts, checks, writes and reads `$$` back; the answer is the
+ * new value in `machine:settings`, or a refusal.
+ */
+export const writeSetting = ({ name, value, units }) => {
+  controller.command('settings:write', { name, value, units });
+};
+
 /** Take the loaded program off the controller — the Pliki screen's way back out of LOAD. */
 export const unloadProgram = () => {
   controller.command('gcode:unload');

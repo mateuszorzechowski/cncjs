@@ -63,6 +63,13 @@ const KEYS = {
   // A line the start events or the server's units send before a program was
   // refused by Grbl, so the program was not started. Which line is in the journal.
   'start-failed': 'refusal.startFailed',
+  // A write to one of Grbl's `$` settings — see `ui/MachineSettingSheet`,
+  // which says these in the sheet that asked.
+  'setting-not-idle': 'refusal.settingNotIdle',
+  'setting-pending': 'refusal.settingPending',
+  'unknown-setting': 'refusal.unknownSetting',
+  'setting-locked': 'refusal.settingLocked',
+  'bad-value': 'refusal.badValue',
 };
 
 /**
