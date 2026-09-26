@@ -94,16 +94,16 @@ const written = (value, kind) => (kind === 'float' ? (Math.round(value * 1000) /
  * Every setting the controller reported, in the table's order, then any it
  * reported that the table does not know (grblHAL has hundreds) as raw ones.
  * `value` is a number — Grbl's, in millimetres; the panel converts it with
- * the units rule.
+ * the units rule. `raw` is the text `$$` said, for the panel's `$x` view.
  */
 export const describeSettings = (reported = {}) => {
   const known = SETTINGS
     .filter((s) => reported[s.name] !== undefined)
-    .map((s) => ({ ...s, value: Number(reported[s.name]) }));
+    .map((s) => ({ ...s, value: Number(reported[s.name]), raw: reported[s.name] }));
   const unknown = Object.keys(reported)
     .filter((name) => !BY_NAME[name])
     .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))
-    .map((name) => ({ name, group: 'other', kind: 'float', value: Number(reported[name]) }));
+    .map((name) => ({ name, group: 'other', kind: 'float', value: Number(reported[name]), raw: reported[name] }));
   return [...known, ...unknown];
 };
 

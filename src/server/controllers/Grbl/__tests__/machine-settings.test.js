@@ -12,7 +12,7 @@ describe('describeSettings', () => {
 
     expect(rows.map((row) => row.name)).toEqual(['$0', '$2', '$10', '$13', '$20', '$24', '$30', '$100', '$110', '$120', '$130']);
     expect(rows.find((row) => row.name === '$110')).toEqual({
-      name: '$110', group: 'axes', kind: 'float', unit: 'feed', min: 0, axis: 'x', value: 500,
+      name: '$110', group: 'axes', kind: 'float', unit: 'feed', min: 0, axis: 'x', value: 500, raw: '500.000',
     });
   });
 
