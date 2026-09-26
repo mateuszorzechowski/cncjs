@@ -351,6 +351,18 @@ export const readMachine = ({
     tone = active ? active.tone : 'inactive';
   }
 
+  /*
+   * A controller setting the server cannot work with — `$13=1`, positions
+   * reported in inches under a server that reads millimetres. The state chip
+   * turns red whatever the state, so the one thing that makes every reading
+   * wrong is not a detail inside Settings (Mateusz, 2026-09-26: a red warning
+   * that demands action). The server marks it; see `machine-settings.js`.
+   */
+  const settingsWrong = connected && (machineSettings?.rows ?? []).some((row) => row.wrong);
+  if (settingsWrong) {
+    tone = 'stopped';
+  }
+
   return {
     connected,
     /**
@@ -508,6 +520,7 @@ export const readMachine = ({
      */
     machineSettings: connected ? (machineSettings || null) : null,
     canWriteSettings: connected && (active?.word === 'Idle' || active?.word === ALARM) && (workflow || 'idle') === 'idle',
+    settingsWrong,
     // The server's, not the machine's — see the snapshot.
     units: units || null,
     /*

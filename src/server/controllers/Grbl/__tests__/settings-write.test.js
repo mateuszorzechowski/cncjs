@@ -133,12 +133,12 @@ describe('settings:write', () => {
     controller.commandSocket = null;
     controller.runner.parse('error:8');
 
-    expect(lines(writes)).toEqual(['$110=800.000\n']);
-    expect(refusals).toEqual([{ event: 'command:refused', payload: { cmd: 'settings:write', reason: 'error:8' } }]);
+    expect(refusals).toEqual([{ event: 'command:refused', payload: { cmd: 'settings:write', reason: 'error:8', name: '$110', written: [] } }]);
     expect(asker).toBeTruthy();
-    // And the next `ok` is nobody's write: it goes to the feeder as before.
+    // `$$` again, and the next `ok` after it is nobody's write: it goes to the feeder as before.
+    expect(lines(writes)).toEqual(['$110=800.000\n', '$$\n']);
     controller.runner.parse('ok');
-    expect(lines(writes)).toEqual(['$110=800.000\n']);
+    expect(lines(writes)).toEqual(['$110=800.000\n', '$$\n']);
   });
 
   test('a reset in between drops the answer it was waiting for', () => {
@@ -151,6 +151,93 @@ describe('settings:write', () => {
     controller.runner.parse('ok');
 
     expect(lines(writes).filter((line) => line === '$$\n')).toEqual([]);
+  });
+});
+
+describe('many changes at once — the save bar', () => {
+  test('one line at a time, each after the last one\'s `ok`, and `$$` once at the end', () => {
+    const { controller, writes } = setup();
+
+    controller.command('settings:write', { changes: [{ name: '$110', value: 800 }, { name: '$20', value: 0 }] });
+    expect(lines(writes)).toEqual(['$110=800.000\n']);
+
+    controller.runner.parse('ok');
+    expect(lines(writes)).toEqual(['$110=800.000\n', '$20=0\n']);
+
+    controller.runner.parse('ok');
+    expect(lines(writes)).toEqual(['$110=800.000\n', '$20=0\n', '$$\n']);
+  });
+
+  test('a bad value anywhere writes nothing, and the refusal names it', () => {
+    const { controller, writes, refusals } = setup();
+
+    controller.command('settings:write', { changes: [{ name: '$110', value: 800 }, { name: '$20', value: 7 }] });
+
+    expect(writes).toEqual([]);
+    expect(refusals.map(({ payload }) => payload)).toEqual([{ cmd: 'settings:write', reason: 'bad-value', name: '$20' }]);
+  });
+
+  test('Grbl refusing one stops the rest; the refusal says which, and what went before', () => {
+    const { controller, writes, refusals } = setup();
+
+    controller.command('settings:write', {
+      changes: [{ name: '$110', value: 800 }, { name: '$20', value: 0 }, { name: '$13', value: 0 }],
+    });
+    controller.runner.parse('ok');
+    controller.runner.parse('error:10');
+
+    expect(lines(writes)).toEqual(['$110=800.000\n', '$20=0\n', '$$\n']);
+    expect(refusals.map(({ payload }) => payload)).toEqual([
+      { cmd: 'settings:write', reason: 'error:10', name: '$20', written: ['$110'] },
+    ]);
+  });
+
+  test('an empty list is not a write', () => {
+    const { controller, writes, refusals } = setup();
+
+    controller.command('settings:write', { changes: [] });
+
+    expect(writes).toEqual([]);
+    expect(refusals.map(({ payload }) => payload.reason)).toEqual(['bad-value']);
+  });
+});
+
+describe('settings:read', () => {
+  test('asks `$$` again, in alarm too', () => {
+    const { controller, writes } = setup({ state: 'Alarm' });
+
+    controller.command('settings:read');
+
+    expect(lines(writes)).toEqual(['$$\n']);
+  });
+
+  test('answers with the view even when nothing changed — "read at" is the answer', async () => {
+    const { controller, socketEvents } = setup();
+    await delay(400);
+    socketEvents.length = 0;
+
+    controller.command('settings:read');
+    for (const line of ['$110=500.000', '$20=1', '$13=0']) {
+      controller.runner.parse(line);
+    }
+    await delay(400);
+
+    const sent = socketEvents.filter(({ event }) => event === 'machine:settings');
+    expect(sent).toHaveLength(1);
+    expect(sent[0].args[0].readAt).toEqual(expect.any(String));
+  });
+
+  test('not while the machine runs, nor over a write', () => {
+    const running = setup({ state: 'Run' });
+    running.controller.command('settings:read');
+    expect(running.writes).toEqual([]);
+    expect(running.refusals.map(({ payload }) => payload.reason)).toEqual(['setting-not-idle']);
+
+    const writing = setup();
+    writing.controller.command('settings:write', { name: '$110', value: 800 });
+    writing.controller.command('settings:read');
+    expect(lines(writing.writes)).toEqual(['$110=800.000\n']);
+    expect(writing.refusals.map(({ payload }) => payload.reason)).toEqual(['setting-pending']);
   });
 });
 
@@ -186,7 +273,8 @@ describe('the copy and the history', () => {
     await delay(250);
 
     const sent = socketEvents.filter(({ event }) => event === 'machine:settings').pop();
-    expect(sent.args[0].rows.map(({ name, value }) => [name, value])).toEqual([['$13', 0], ['$20', 0], ['$110', 500]]);
+    expect(sent.args[0].rows.map(({ name, value }) => [name, value])).toEqual([['$110', 500], ['$20', 0], ['$13', 0]]);
+    expect(sent.args[0].readAt).toEqual(expect.any(String));
     expect(sent.args[0].history).toEqual([expect.objectContaining({ name: '$20', to: '0', deviceName: null })]);
   });
 

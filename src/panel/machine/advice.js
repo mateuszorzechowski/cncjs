@@ -17,7 +17,7 @@
  */
 
 /** Which advice, and whether the connection screen is where it is acted on. */
-export const adviceFor = ({ linked, connected, port, canSendGcode, workflow } = {}) => {
+export const adviceFor = ({ linked, connected, port, canSendGcode, workflow, settingsWrong } = {}) => {
   // No server at all. The connection screen still helps — it is the one place
   // that shows which host the panel is pointed at, which is usually the
   // answer when a pendant cannot find its machine.
@@ -43,6 +43,12 @@ export const adviceFor = ({ linked, connected, port, canSendGcode, workflow } = 
    * No `go`: the connection screen cannot clear an alarm, and the panel does
    * not clear it either. Homing or unlocking is the operator's to do.
    */
+  // Before the alarm: a controller reporting in inches makes every reading
+  // wrong, alarm or not. `fix` puts the sheet's button to it.
+  if (settingsWrong) {
+    return { key: 'advice.reportInches', go: false, fix: 'report-units' };
+  }
+
   if (!canSendGcode) {
     // An alarm that stopped a program: the server takes neither homing nor
     // unlocking until the program is stopped, so that is the advice.

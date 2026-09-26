@@ -100,6 +100,29 @@ export const settingFigure = (value, unit, rule) => {
   return { value: String(value), unit: FIXED_LABELS[unit] ? t(FIXED_LABELS[unit]) : '' };
 };
 
+/**
+ * The other way: a figure typed in the server's units, as the number Grbl
+ * keeps — to tell a change from a retyped value and to carry a draft between
+ * the described view and the raw one. What is written is still the server's
+ * conversion; this only compares. NaN for anything that is not a number.
+ */
+export const settingInGrbl = (text, unit, rule) => {
+  const value = Number(String(text).trim().replace(',', '.'));
+  if (String(text).trim() === '' || !Number.isFinite(value)) {
+    return NaN;
+  }
+  if (!LABELS.mm[unit] || !rule) {
+    return value;
+  }
+  return unit === 'perLength' ? value * rule.factor : value / rule.factor;
+};
+
+/** The unit Grbl itself keeps a setting in — the raw view's, whatever the server shows. */
+export const grblUnit = (unit) => {
+  const key = LABELS.mm[unit] || FIXED_LABELS[unit];
+  return key ? t(key) : '';
+};
+
 /** The unit of a length, `mm` or `in`; a dash before the server has said. */
 export const lengthLabel = (rule) => (rule && LABELS[rule.name] ? t(LABELS[rule.name].length) : NO_READING);
 

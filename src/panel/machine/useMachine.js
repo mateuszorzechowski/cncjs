@@ -340,10 +340,11 @@ export const useMachine = () => {
        * number that changes, the second one is the same object as the first
        * and nothing downstream can tell it happened at all.
        */
-      'command:refused': ({ cmd, reason }) => {
+      // Whole: a settings write says which setting was refused, and what went before it.
+      'command:refused': (refused) => {
         setSnapshot((previous) => ({
           ...previous,
-          refusal: { cmd, reason, seq: (previous.refusal?.seq ?? 0) + 1 },
+          refusal: { ...refused, seq: (previous.refusal?.seq ?? 0) + 1 },
         }));
       },
 

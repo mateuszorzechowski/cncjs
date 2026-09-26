@@ -4,6 +4,7 @@ import Button from './Button';
 import AlarmAdvice from './AlarmAdvice';
 import { NO_READING } from '../machine/readings';
 import { useLastConnection } from '../machine/usePorts';
+import ReportUnitsFix from './ReportUnitsFix';
 import { t } from '../i18n';
 
 /**
@@ -197,6 +198,7 @@ const StatusSheet = ({ machine, status, advice, error, onGo, onHelp, onClose }) 
     </div>
 
     {failed ? <p className="m-0 text-note text-red">{t(failed)}</p> : null}
+    {advice?.fix === 'report-units' ? <ReportUnitsFix disabled={!machine.canWriteSettings} /> : null}
     {advice && advice.go ? (
       <div className="flex gap-2">
         <Button tone={again ? 'outline' : 'primary'} onClick={onGo} className="h-ctl flex-1">
