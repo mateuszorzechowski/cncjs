@@ -1,9 +1,10 @@
-import { useEffect, useImperativeHandle, useRef } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
 import { gcodeEditing } from './gcode';
+import EditorScrollbar from './EditorScrollbar';
 
 /**
  * A G-code file, to read and to change — CodeMirror, in the panel's colours.
@@ -33,6 +34,9 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
   const dirty = useRef(false);
   const heard = useRef(onDirty);
   heard.current = onDirty;
+  // The view once built, and a count of its changes, for the scrollbar.
+  const [built, setBuilt] = useState(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     const state = EditorState.create({
@@ -50,6 +54,11 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
         locking.current.of(locked(readOnly)),
         EditorView.contentAttributes.of({ 'aria-label': label }),
         EditorView.updateListener.of((update) => {
+          // The text, its findings or its height changed: the scrollbar's
+          // marks are counted again.
+          if (update.docChanged || update.geometryChanged || update.transactions.some((tr) => tr.effects.length)) {
+            setTick((n) => n + 1);
+          }
           if (!update.docChanged) {
             return;
           }
@@ -64,10 +73,12 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
       ],
     });
     view.current = new EditorView({ state, parent: host.current });
+    setBuilt(view.current);
     dirty.current = false;
     return () => {
       view.current.destroy();
       view.current = null;
+      setBuilt(null);
     };
     // Built again only for another file; `readOnly` and `extensions` are
     // reconfigured in place below.
@@ -102,7 +113,12 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
     },
   }), [initial]);
 
-  return <div ref={host} className="min-h-0 flex-1 overflow-hidden rounded-ctl border border-line" />;
+  return (
+    <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-ctl border border-line">
+      <div ref={host} className="min-h-0 min-w-0 flex-1" />
+      {built ? <EditorScrollbar view={built} tick={tick} /> : null}
+    </div>
+  );
 };
 
 export default GcodeEditor;

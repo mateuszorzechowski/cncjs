@@ -911,6 +911,7 @@
       "retract": "Retract Z to the top",
       "toolChange": "Tool change",
       "end": "Program end"
-    }
+    },
+    "markLine": "Line {{line}}"
   }
 }

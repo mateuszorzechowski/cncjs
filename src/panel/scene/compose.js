@@ -96,7 +96,8 @@ const farEnd = (envelope, axis) => (
 );
 
 /**
- * The corner of the travel opposite machine zero, or null without a travel.
+ * The corner of a box opposite zero — the machine's travel, or a program's
+ * reach — or null without one.
  *
  * Where the floor's second pair of guide lines runs, always — *"przez osie
  * miałem na myśli prowadnice/linie"*, *"mają być zawsze"* (Mateusz,
@@ -130,7 +131,13 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
    */
   const origin = workOrigins(settings).find((system) => system.name === wcs) || null;
 
-  const corner = farCorner(envelope);
+  /*
+   * The travel's far corner, or — with no machine to report one, as in the
+   * file preview — the program's: faint lines at the far end of each axis it
+   * reaches (*"czy tutaj możemy dać delikatne linie w maksymalnych
+   * wartościach osi?"*, 2026-09-26). The same lines, the same rule.
+   */
+  const corner = farCorner(envelope || program);
 
   const drawn = union([
     (layers.path || layers.programArea) && program,
