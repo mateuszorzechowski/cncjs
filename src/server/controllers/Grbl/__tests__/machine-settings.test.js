@@ -1,4 +1,4 @@
-import { SETTINGS, describeSettings, groupSummaries, settingWrite } from '../machine-settings';
+import { SETTINGS, describeSettings, groupSummaries, settingsAfter, settingWrite } from '../machine-settings';
 
 // What `$$` says on this bench's Grbl 1.1h, trimmed to the ones used here.
 const REPORTED = {
@@ -138,5 +138,17 @@ describe('settingWrite', () => {
 
   test('one the table does not know is written as a number', () => {
     expect(settingWrite({ name: '$400', value: 2 }, { '$400': '1' }).line).toBe('$400=2.000');
+  });
+});
+
+describe('settingsAfter', () => {
+  test('the settings as `$$` would say them after the write, converted as it would be', () => {
+    const after = settingsAfter([{ name: '$130', value: '10', units: 'inch' }, { name: '$20', value: 0 }], REPORTED);
+
+    expect(after).toEqual({ ...REPORTED, $130: '254.000', $20: '0' });
+  });
+
+  test('a change the write would refuse is left out', () => {
+    expect(settingsAfter([{ name: '$110', value: -1 }, { name: '$999', value: 1 }], REPORTED)).toEqual(REPORTED);
   });
 });

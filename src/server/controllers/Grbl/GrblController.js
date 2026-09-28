@@ -64,8 +64,8 @@ import { Progress } from './progress';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
-import { describeSettings, groupSummaries, settingWrite } from './machine-settings';
-import { machineGeometry } from './geometry';
+import { describeSettings, groupSummaries, settingsAfter, settingWrite } from './machine-settings';
+import { changedLines, machineGeometry } from './geometry';
 import machineSettings from '../../services/machine-settings';
 import devices from '../../services/devices';
 import { deadmanMsFor, isAbandoned } from './deadman';
@@ -2858,6 +2858,25 @@ class GrblController {
           if (this.settingsMayChange(cmd)) {
             this.writeln('$$');
           }
+        },
+        /*
+         * What a write of these changes would do to the geometry, before it
+         * is made: Geometria and its checks for the settings after it, which
+         * lines change, and the box — to the device that asked, as
+         * `machine:preview`, numbered by its `seq` so an old answer can be
+         * told from the latest. Nothing reaches the controller.
+         */
+        'settings:preview': () => {
+          const [asked] = args;
+          // The runner's, as a write reads them: this.settings follows it only on the next status.
+          const reported = this.runner.settings?.settings;
+          const after = settingsAfter(Array.isArray(asked?.changes) ? asked.changes : [], reported);
+          this.commandSocket?.emit('machine:preview', {
+            seq: asked?.seq ?? null,
+            geometry: machineGeometry(after),
+            envelope: machineEnvelope(after),
+            changed: changedLines(reported, after),
+          });
         },
         'unlock': () => {
           this.writeln('$X');

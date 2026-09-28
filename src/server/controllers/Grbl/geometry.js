@@ -95,3 +95,14 @@ export const machineGeometry = (settings) => {
     homing: homingTable(settings),
   };
 };
+
+/**
+ * Which summary lines a write would change, by `id` — for the review, which
+ * shows those lines as before and after (2026-09-28).
+ */
+export const changedLines = (before, after) => {
+  const was = geometrySummary(before);
+  return geometrySummary(after)
+    .filter((row, i) => JSON.stringify(row.value) !== JSON.stringify(was[i].value))
+    .map(({ id }) => id);
+};

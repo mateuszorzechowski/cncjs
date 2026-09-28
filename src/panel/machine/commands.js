@@ -104,6 +104,11 @@ export const writeSettings = (changes) => {
   controller.command('settings:write', { changes });
 };
 
+/** Geometria after these changes, not written — answered as `machine:preview`, by `seq`. */
+export const previewSettings = (changes, seq) => {
+  controller.command('settings:preview', { changes, seq });
+};
+
 /** `$$` again — the settings screen's "read again". */
 export const readSettings = () => {
   controller.command('settings:read');

@@ -204,3 +204,21 @@ export const settingWrite = ({ name, value, units } = {}, reported = {}) => {
   const text = written(grbl, setting.kind);
   return { line: `${name}=${text}`, value: text };
 };
+
+/**
+ * The settings as they would be after a write of `changes` — what `$$`
+ * would say — for the preview of what the write does to the geometry
+ * (Mateusz, 2026-09-28: the review shows Geometria after the changes). Each
+ * change converted and checked as `settingWrite` does it; one it would
+ * refuse is left out, as the write would stop on it anyway.
+ */
+export const settingsAfter = (changes = [], reported = {}) => {
+  const after = { ...reported };
+  for (const change of changes) {
+    const { value, refusal } = settingWrite(change, reported);
+    if (!refusal) {
+      after[change.name] = value;
+    }
+  }
+  return after;
+};

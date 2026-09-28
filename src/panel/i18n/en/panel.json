@@ -1162,7 +1162,8 @@
       "side": "$H",
       "range": "MPos range",
       "after": "After $H",
-      "span": "{{min}} … {{max}}"
+      "span": "{{min}} … {{max}}",
+      "afterWrite": "Geometry after the write"
     },
     "summary": {
       "hard": "hard"

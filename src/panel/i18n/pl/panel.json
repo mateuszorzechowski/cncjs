@@ -1162,7 +1162,8 @@
       "side": "$H",
       "range": "Obszar MPos",
       "after": "Po $H",
-      "span": "{{min}} … {{max}}"
+      "span": "{{min}} … {{max}}",
+      "afterWrite": "Geometria po zapisie"
     },
     "summary": {
       "hard": "twarde"

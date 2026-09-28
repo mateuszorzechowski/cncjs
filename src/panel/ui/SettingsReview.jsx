@@ -1,5 +1,6 @@
 import Button from './Button';
 import ConfirmSheet from './ConfirmSheet';
+import { GeometryChanges } from './GeometrySettings';
 import Icon from './Icon';
 import { rowTitle, valueText } from '../machine/machineSettings';
 import { settingFigure } from '../machine/units';
@@ -18,6 +19,12 @@ import { t } from '../i18n';
  *
  * Written in the list's order; the first one Grbl refuses stops the rest,
  * and says so under the list.
+ *
+ * `geometry`, when a change moves it: the Geometria lines that would change,
+ * before and after, and the checks as they would stand — the server's, for
+ * the settings after the write (Mateusz, 2026-09-28). A red check is read
+ * above the button, and does not stop it: the same as a file's check does
+ * not stop WCZYTAJ.
  */
 
 const Change = ({ row, draft, rule, onUndo, disabled }) => {
@@ -46,7 +53,7 @@ const Change = ({ row, draft, rule, onUndo, disabled }) => {
 };
 
 const SettingsReview = ({
-  pending, drafts, rule, bad, saving, error, canWrite, onUndo, onDiscard, onSave, onClose,
+  pending, drafts, rule, bad, saving, error, canWrite, geometry, onJump, onUndo, onDiscard, onSave, onClose,
 }) => (
   <ConfirmSheet
     title={t('machine.review.title', { count: pending.length })}
@@ -63,6 +70,7 @@ const SettingsReview = ({
         <Change key={row.name} row={row} draft={drafts[row.name]} rule={rule} disabled={saving} onUndo={() => onUndo(row.name)} />
       ))}
     </ul>
+    {geometry ? <GeometryChanges geometry={geometry.after} was={geometry.was} changed={geometry.changed} onJump={onJump} /> : null}
     {bad ? <p className="m-0 text-note text-red">{t('machine.review.bad')}</p> : null}
     {error ? <p className="m-0 text-note text-red">{error}</p> : null}
     <p className="m-0 text-note text-mut">{t('machine.review.note')}</p>

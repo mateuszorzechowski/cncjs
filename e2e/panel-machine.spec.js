@@ -271,6 +271,37 @@ test.describe('the Sterownik tab', () => {
     cncjs.expectNoPageErrors();
   });
 
+  test('the review and Geometria show the geometry after the write, as the server previews it', async ({ cncjs }) => {
+    const line = (value) => ({ id: 'softLimits', names: ['$20'], group: 'limits', value });
+    const homing = ['x', 'y', 'z'].map((axis) => ({ axis, side: '+', range: { min: -100, max: 0 }, after: -1, switchAt: 0 }));
+    await open(cncjs.page, { ...VIEW, geometry: { summary: [line('on')], checks: [], homing } });
+
+    await openGroup(cncjs.page, 'Limity');
+    await sheet(cncjs.page).getByRole('group', { name: 'Limity programowe' }).getByRole('button', { name: 'Wył.' }).click();
+    await done(cncjs.page);
+
+    // The panel asks; nothing is written.
+    await expect.poll(() => cncjs.page.evaluate(() => window.__sent.filter(([cmd]) => cmd === 'settings:preview').length)).toBeGreaterThan(0);
+    const asked = await cncjs.page.evaluate(() => window.__sent.filter(([cmd]) => cmd === 'settings:preview').pop()[1]);
+    expect(asked.changes).toEqual([{ name: '$20', value: '0', units: undefined }]);
+    expect(await sent(cncjs.page)).toEqual([]);
+
+    await cncjs.page.evaluate(({ seq, geometry }) => window.__fire('machine:preview', { seq, geometry, envelope: null, changed: ['softLimits'] }), {
+      seq: asked.seq,
+      geometry: { summary: [line('off')], checks: [{ level: 'info', code: 'hard-off', name: '$21', group: 'limits' }], homing },
+    });
+
+    await cncjs.page.getByRole('button', { name: 'Przejrzyj' }).click();
+    await expect(sheet(cncjs.page)).toContainText('Geometria po zapisie');
+    await expect(sheet(cncjs.page).locator('s', { hasText: 'włączone' })).toBeVisible();
+    await expect(sheet(cncjs.page)).toContainText('Krańcówki wyłączone');
+    await done(cncjs.page);
+
+    await openGroup(cncjs.page, 'Geometria');
+    await expect(sheet(cncjs.page).locator('s', { hasText: 'włączone' })).toBeVisible();
+    cncjs.expectNoPageErrors();
+  });
+
   test('connected with no rows yet says so, not "connect"', async ({ cncjs }) => {
     await open(cncjs.page, { rows: [], history: [] });
 

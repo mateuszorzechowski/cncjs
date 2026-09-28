@@ -15,14 +15,14 @@ import SettingsReview from './SettingsReview';
 import Sheet from './Sheet';
 import UndoNotice from './UndoNotice';
 import { useIsPhone } from './shell';
+import useSettingsPreview from './useSettingsPreview';
+import useSettingsWrite from './useSettingsWrite';
 import { useUnits } from './units';
 import {
-  changesOf, GROUPS, groupLine, groupsIn, isBad, pendingGroups, pendingRows, restoreDrafts,
+  GROUPS, groupLine, groupsIn, isBad, pendingGroups, pendingRows, restoreDrafts,
 } from '../machine/machineSettings';
 import { figure, lengthLabel } from '../machine/units';
-import { readSettings, writeSettings } from '../machine/commands';
-import { GRBL_ERROR_KEYS } from '../machine/journalWords';
-import { REFUSAL_KEYS } from '../machine/refusal';
+import { readSettings } from '../machine/commands';
 import { t } from '../i18n';
 
 /**
@@ -43,9 +43,6 @@ import { t } from '../i18n';
  * only what was typed.
  */
 
-// How long a write may take to come back before the review says nothing did.
-const ANSWER_MS = 10000;
-
 // How long a setting reached from the Geometria summary stays lit.
 const FLASH_MS = 1800;
 
@@ -54,13 +51,6 @@ const RAW = 'raw';
 const GEOMETRY = 'geo';
 const REVIEW = 'review';
 const REREAD = 'reread';
-
-const refusalText = ({ reason, name }) => {
-  if (GRBL_ERROR_KEYS[reason]) {
-    return t('machine.bar.grblRefused', { name: name ?? '', code: reason, meaning: t(GRBL_ERROR_KEYS[reason]) });
-  }
-  return REFUSAL_KEYS[reason] ? t(REFUSAL_KEYS[reason]) : t('refusal.other', { cmd: 'settings:write', reason });
-};
 
 const groupTitle = (id) => t(GROUPS.find((g) => g.id === id).titleKey);
 
@@ -71,13 +61,16 @@ const ControllerSettings = ({ machine }) => {
   const [drafts, setDrafts] = useState({});
   // What is open over the list: a group, Geometria, the history, `$$`, the review, or "read over the changes?".
   const [open, setOpen] = useState(null);
-  const [saving, setSaving] = useState(null);
-  const [error, setError] = useState(null);
   const [discarded, setDiscarded] = useState(null);
   const view = machine.machineSettings;
   const rows = view?.rows ?? [];
-  const disabled = !machine.canWriteSettings || Boolean(saving);
   const pending = pendingRows(rows, drafts, rule);
+  // Written and read back: every draft now matches the controller.
+  const { saving, error, setError, save } = useSettingsWrite(machine, pending, drafts, rule, () => {
+    setDrafts({});
+    setOpen(null);
+  });
+  const disabled = !machine.canWriteSettings || saving;
   const bad = pending.some((row) => isBad(row, drafts[row.name], rule));
   const geometry = view?.geometry;
   const [flash, setFlash] = useState(null);
@@ -91,14 +84,9 @@ const ControllerSettings = ({ machine }) => {
   };
   useEffect(() => () => clearTimeout(flashTimer.current), []);
 
-  // Written and read back: every draft now matches the controller.
-  useEffect(() => {
-    if (saving && pending.length === 0) {
-      setSaving(null);
-      setDrafts({});
-      setOpen(null);
-    }
-  }, [saving, pending.length]);
+  const preview = useSettingsPreview(machine, pending, drafts, rule);
+  const geometryAfter = preview?.geometry ?? geometry;
+  const changedLines = preview?.changed ?? [];
 
   // The review with nothing left in it has nothing to say.
   useEffect(() => {
@@ -107,33 +95,8 @@ const ControllerSettings = ({ machine }) => {
     }
   }, [open, pending.length, saving]);
 
-  // Refused by the server or by Grbl: said in the review and the bar, the drafts kept.
-  const refusal = machine.refusal;
-  useEffect(() => {
-    if (saving && refusal?.cmd === 'settings:write' && refusal.seq > saving.seq) {
-      setError(refusalText(refusal));
-      setSaving(null);
-    }
-  }, [saving, refusal]);
-
-  useEffect(() => {
-    if (!saving) {
-      return undefined;
-    }
-    const timer = setTimeout(() => {
-      setError(t('machine.bar.noAnswer'));
-      setSaving(null);
-    }, ANSWER_MS);
-    return () => clearTimeout(timer);
-  }, [saving]);
-
   const onDraft = (name, draft) => setDrafts((now) => ({ ...now, [name]: draft }));
   const close = () => setOpen(null);
-  const save = () => {
-    setError(null);
-    setSaving({ seq: refusal?.seq ?? 0 });
-    writeSettings(changesOf(pending, drafts, rule));
-  };
   // No "are you sure": they are only this panel's edits, and "Cofnij" brings them back (frame E3).
   const discard = () => {
     setDiscarded({ seq: (discarded?.seq ?? 0) + 1, text: t('machine.discarded', { count: pending.length }), drafts });
@@ -235,7 +198,13 @@ const ControllerSettings = ({ machine }) => {
       ) : null}
       {open === GEOMETRY && geometry ? (
         <Sheet title={groupTitle(GEOMETRY)} onClose={close}>
-          <GeometrySettings geometry={geometry} envelope={machine.envelope} pending={new Set(pending.map(({ name }) => name))} onJump={jump} />
+          <GeometrySettings
+            geometry={geometryAfter}
+            was={geometry.summary}
+            changed={changedLines}
+            envelope={preview?.envelope ?? machine.envelope}
+            onJump={jump}
+          />
         </Sheet>
       ) : null}
       {open === HISTORY ? (
@@ -257,11 +226,13 @@ const ControllerSettings = ({ machine }) => {
       ) : null}
       {open === REVIEW ? (
         <SettingsReview
+          geometry={changedLines.length > 0 ? { after: geometryAfter, was: geometry.summary, changed: changedLines } : null}
+          onJump={jump}
           pending={pending}
           drafts={drafts}
           rule={rule}
           bad={bad}
-          saving={Boolean(saving)}
+          saving={saving}
           error={error}
           canWrite={machine.canWriteSettings}
           onUndo={(name) => setDrafts((now) => {

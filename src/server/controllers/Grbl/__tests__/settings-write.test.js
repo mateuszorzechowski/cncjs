@@ -304,3 +304,18 @@ describe('the copy and the history', () => {
     ]);
   });
 });
+
+describe('settings:preview', () => {
+  test('answers the device that asked with the geometry after the changes, and writes nothing', () => {
+    const { controller, writes, refusals } = setup();
+
+    controller.command('settings:preview', { seq: 3, changes: [{ name: '$20', value: 0 }] });
+
+    expect(lines(writes)).toEqual([]);
+    const [answer] = refusals;
+    expect(answer.event).toBe('machine:preview');
+    expect(answer.payload.seq).toBe(3);
+    expect(answer.payload.changed).toEqual(['softLimits']);
+    expect(answer.payload.geometry.summary.find(({ id }) => id === 'softLimits').value).toBe('off');
+  });
+});
