@@ -381,6 +381,17 @@ test.describe('panel, disconnected', () => {
     cncjs.expectNoPageErrors();
   });
 
+  test('the MDI screen will not take a line with no machine, and says why', async ({ cncjs }) => {
+    await openPanel(cncjs.page);
+    await rail(cncjs.page).getByRole('button', { name: 'MDI' }).click();
+
+    await expect(cncjs.page.getByRole('textbox', { name: 'Linia do wysłania' })).toBeDisabled();
+    await expect(cncjs.page.getByRole('button', { name: 'Wyślij', exact: true })).toBeDisabled();
+    await expect(cncjs.page.getByText('Brak połączenia ze sterownikiem.')).toBeVisible();
+
+    cncjs.expectNoPageErrors();
+  });
+
   test('can be installed as an application, and every icon it names exists', async ({ cncjs }) => {
     /*
      * The pendant is meant to live on a phone's home screen, which means the

@@ -235,10 +235,23 @@ urządzeniach, zrzuty.
   rail i StatusBar. Telefon: pod zakładkami przewija się cała karta razem z
   nagłówkiem. Tablet i PC: nagłówek karty stoi, przewija się jej środek.
 
-### Niegotowe: Sonda, Diagnostyka, Bazowanie, MDI
+### MDI (`mdi`)
+- **Cel:** wpisać linię G-code albo polecenie `$` i przeczytać odpowiedź maszyny.
+- **Układ:** jeden na każdej szerokości. Karta: konsola maszyny (wszystko, co
+  klienci i kolejka wysłali, i wszystko, co sterownik odpowiedział; bez `?`,
+  bajtów czasu rzeczywistego i odcinków jogu), u dołu pole + Wyślij.
+  „Wyczyść” w nagłówku.
+- **Zasady:**
+  - Linia idzie kolejką serwera (`gcode`): liczona, potwierdzana, w dzienniku
+    jako linia z konsoli. Bez potwierdzenia — MDI to decyzja operatora.
+  - W trakcie programu pole wygaszone. W alarmie przechodzą tylko polecenia
+    `$` (`$X`, `$H`, `$$`); inna linia jest odrzucana głośno i zostaje w
+    konsoli przekreślona, z powodem.
+  - `error:N` / `ALARM:N` w kolorze czerwonym, z opisem po polsku obok.
+  - Enter wysyła, ↑/↓ przewija historię tego urządzenia (do przeładowania).
+
+### Niegotowe: Sonda, Diagnostyka, Bazowanie
 - Są w nawigacji wyszarzone. Ekranów nie ma.
-- Kolejność prac według Mateusza: chipy G54–G57 → wygląd (gęstość, font
-  cyfr) → MDI (zakres do uzgodnienia).
 - Bazowanie per oś na Grblu będzie wyszarzone (Grbl nie ma `$HX`); aktywne
   tylko dla sterowników, które to umieją.
 
