@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import ConfirmSheet from '../ui/ConfirmSheet';
-import FadeScroller from '../ui/FadeScroller';
 import FileDetails from '../ui/FileDetails';
 import FileEditor from '../editor/FileEditor';
 import FileText from '../editor/FileText';
@@ -55,7 +54,7 @@ const DiskRoom = ({ disk }) => {
   }
   const low = diskLow(disk);
   return (
-    <div className="flex shrink-0 flex-col gap-2 border-t border-line pt-3">
+    <div className="flex shrink-0 flex-col gap-2">
       {/*
         * What the rest of the computer uses in grey, cncjs's own files in the
         * accent at the end of it — *"czy tutaj mozemy pokazac tez zajete
@@ -144,56 +143,68 @@ const FilesScreen = ({ machine }) => {
     ? <FileDetails file={file} machine={machine} phone={phone} busy={busy} onLoad={load} onUnload={unloadProgram} onDelete={remove} onEdit={edit} />
     : null;
 
+  const empty = !loading && !error && files.length === 0;
+
+  /*
+   * The list's card follows the rule for a card whose head is always in
+   * sight (review notes, 2026-09-28): the head — the caption, UPLOAD, a
+   * refusal, the columns' heading — stands, and the rest of the card
+   * scrolls under it, its frame too, fading out above the disk's card,
+   * which stands at the foot on its own like the settings' bar of changes.
+   */
+  const heading = (
+    <div className="flex flex-col gap-3">
+      {problem ? <p role="alert" className="m-0 text-note text-red">{problem}</p> : null}
+      {error ? <p className="m-0 text-note text-red">{t('files.refusal.failed')}</p> : null}
+      {phone || empty ? null : <div className="mb-0 overflow-hidden rounded-ctl"><FileColumns /></div>}
+    </div>
+  );
+
   return (
     <div className="flex min-h-0 flex-1 gap-gap">
-      <Card
-        label={t('files.title')}
-        aside={(
-          <Button className="h-chiph px-4" disabled={busy} onClick={() => picker.current?.click()}>
-            {t('files.upload')}
-          </Button>
-        )}
-        className="min-h-0 flex-1"
-        bodyClassName="gap-3"
-      >
-        <input
-          ref={picker}
-          type="file"
-          accept={PROGRAMS}
-          aria-label={t('files.upload')}
-          className="hidden"
-          onChange={(e) => {
-            upload(e.target.files?.[0]);
-            e.target.value = '';
-          }}
-        />
-        {problem ? <p role="alert" className="m-0 text-note text-red">{problem}</p> : null}
-        {error ? <p className="m-0 text-note text-red">{t('files.refusal.failed')}</p> : null}
-
-        {!loading && !error && files.length === 0 ? (
-          <p className="m-0 flex-1 py-3 text-note text-mut">{t('files.empty')}</p>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-ctl border border-line">
-            {phone ? null : (
-              <FileColumns />
-            )}
-            <FadeScroller className="min-h-0 flex-1">
-              {files.map((f) => (
-                <FileRow
-                  key={f.name}
-                  file={f}
-                  phone={phone}
-                  chosen={f.name === chosen}
-                  loaded={isLoaded(machine, f.name)}
-                  onChoose={setChosen}
-                />
-              ))}
-            </FadeScroller>
-          </div>
-        )}
-
-        <DiskRoom disk={disk} />
-      </Card>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <Card
+          label={t('files.title')}
+          aside={(
+            <Button className="h-chiph px-4" disabled={busy} onClick={() => picker.current?.click()}>
+              {t('files.upload')}
+            </Button>
+          )}
+          scrolls
+          gapBelow={Boolean(disk)}
+          standing={problem || error || !(phone || empty) ? <div className="mb-1">{heading}</div> : null}
+          className="min-h-0 flex-1"
+        >
+          <input
+            ref={picker}
+            type="file"
+            accept={PROGRAMS}
+            aria-label={t('files.upload')}
+            className="hidden"
+            onChange={(e) => {
+              upload(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+          {empty ? (
+            <p className="m-0 py-3 text-note text-mut">{t('files.empty')}</p>
+          ) : files.map((f) => (
+            <FileRow
+              key={f.name}
+              file={f}
+              phone={phone}
+              chosen={f.name === chosen}
+              loaded={isLoaded(machine, f.name)}
+              onChoose={setChosen}
+            />
+          ))}
+        </Card>
+        {disk ? (
+          <Card className="shrink-0">
+            <DiskRoom disk={disk} />
+          </Card>
+        ) : null}
+      </div>
 
       {phone ? null : (
         <Card label={t('files.selected')} className="min-h-0 w-side shrink-0" bodyClassName="gap-3">

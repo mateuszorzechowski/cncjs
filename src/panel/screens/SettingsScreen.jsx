@@ -85,7 +85,7 @@ const SettingsScreen = ({ machine }) => {
   }, [tab]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2.5">
+    <div className="flex min-h-0 flex-1 flex-col gap-gap">
       <div className="flex flex-col gap-2 @3xl/shell:flex-row @3xl/shell:items-center @3xl/shell:justify-between">
         <SegmentedChoice
           joined

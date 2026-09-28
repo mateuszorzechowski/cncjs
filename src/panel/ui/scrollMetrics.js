@@ -54,15 +54,19 @@ export const TRACK_INSET = 6;
  * scroll. And once the thumb has been lengthened to `MIN_THUMB`, the travel
  * has to be measured from the lengthened one or the last screenful arrives
  * before `scrollTop` does.
+ *
+ * `tail`: more room kept at the bottom — a card's frame that scrolls ends a
+ * gap before the foot of its scroller, and the track stops where the card
+ * does (review note, 2026-09-28: *"scroll ma się mieścić wewnątrz karty"*).
  */
-export const thumbOf = (el, min = MIN_THUMB, inset = 0) => {
+export const thumbOf = (el, min = MIN_THUMB, inset = 0, tail = 0) => {
   if (!el) {
     return null;
   }
 
   const { scrollTop, clientHeight, scrollHeight } = el;
   const hidden = scrollHeight - clientHeight;
-  const track = clientHeight - (2 * inset);
+  const track = clientHeight - (2 * inset) - tail;
 
   if (hidden <= 1 || track <= 0) {
     return null;

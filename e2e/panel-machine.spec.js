@@ -375,6 +375,22 @@ test.describe('the Sterownik tab on a tablet', () => {
     await expect(cncjs.page.getByRole('button', { name: /^Osie/ })).toBeVisible();
     cncjs.expectNoPageErrors();
   });
+
+  test('the history and $$ open where a group does, not in a sheet', async ({ cncjs }) => {
+    await open(cncjs.page);
+
+    await cncjs.page.getByRole('button', { name: /^Historia zmian/ }).click();
+    await expect(sheet(cncjs.page)).toHaveCount(0);
+    await expect(cncjs.page.getByText('Serwer nie widział jeszcze żadnej zmiany.')).toBeVisible();
+    await cncjs.page.getByRole('button', { name: 'Wróć' }).click();
+
+    await cncjs.page.getByRole('button', { name: /^Widok surowy/ }).click();
+    await expect(sheet(cncjs.page)).toHaveCount(0);
+    await expect(field(cncjs.page, '$100')).toHaveValue('800.000');
+    await cncjs.page.getByRole('button', { name: 'Wróć' }).click();
+    await expect(cncjs.page.getByRole('button', { name: /^Osie/ })).toBeVisible();
+    cncjs.expectNoPageErrors();
+  });
 });
 
 test.describe('the Sterownik tab on a PC', () => {
@@ -392,6 +408,17 @@ test.describe('the Sterownik tab on a PC', () => {
     await list.getByRole('button', { name: /^Limity/ }).click();
     await expect(list.getByRole('button', { name: /^Limity/ })).toHaveAttribute('aria-current', 'true');
     await expect(cncjs.page.getByRole('group', { name: 'Limity programowe' })).toBeVisible();
+    cncjs.expectNoPageErrors();
+  });
+
+  test('the history is chosen beside the list like a group', async ({ cncjs }) => {
+    await open(cncjs.page);
+
+    const list = cncjs.page.locator('section', { hasText: 'Pamięć sterownika' });
+    await list.getByRole('button', { name: /^Historia zmian/ }).click();
+    await expect(list.getByRole('button', { name: /^Historia zmian/ })).toHaveAttribute('aria-current', 'true');
+    await expect(sheet(cncjs.page)).toHaveCount(0);
+    await expect(cncjs.page.getByText('Serwer nie widział jeszcze żadnej zmiany.')).toBeVisible();
     cncjs.expectNoPageErrors();
   });
 });

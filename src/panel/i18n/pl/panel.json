@@ -284,8 +284,7 @@
     "step2Blocked": "Najpierw krok 1: przeglądarka instaluje aplikację tylko przez połączenie, któremu ufa.",
     "step2Done": "Zainstalowana na tym urządzeniu.",
     "stepDone": "gotowe",
-    "version": "Wersja panelu {{version}}",
-    "certHelp": "O certyfikacie"
+    "version": "Wersja panelu {{version}}"
   },
   "refusal": {
     "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import Button from './Button';
-import Sheet from './Sheet';
+import SettingsPlace from './SettingsPlace';
 import { exportSettings, importDrafts, importSettings } from '../machine/settingsFile';
 import { t } from '../i18n';
 
@@ -44,12 +44,12 @@ export const historyLine = (history) => {
 };
 
 /**
- * The sheet itself: the writes, and under them, standing, the settings to a
- * file and back (frame E4). An import is read by the server and becomes
- * changes waiting to be saved, like a restore; what it could not use is said
- * here before the sheet goes.
+ * The writes, and under them the settings to a file and back (frame E4);
+ * where it opens is `place` (see `SettingsPlace`). An import is read by the
+ * server and becomes changes waiting to be saved, like a restore; what it
+ * could not use is said here before it closes.
  */
-const SettingsHistory = ({ history, disabled, onRestore, onImport, onClose }) => {
+const SettingsHistory = ({ history, disabled, onRestore, onImport, place }) => {
   const picker = useRef(null);
   const [said, setSaid] = useState(null);
   const pick = async (event) => {
@@ -62,7 +62,7 @@ const SettingsHistory = ({ history, disabled, onRestore, onImport, onClose }) =>
       const result = await importSettings(await file.text());
       onImport(importDrafts(result));
       if (result.unknown.length === 0 && result.changes.length > 0) {
-        onClose();
+        place.onClose();
         return;
       }
       setSaid([
@@ -76,9 +76,9 @@ const SettingsHistory = ({ history, disabled, onRestore, onImport, onClose }) =>
   const save = () => exportSettings().catch(() => setSaid(t('machine.history.fileFailed')));
 
   return (
-    <Sheet
+    <SettingsPlace
       title={t('machine.history.title')}
-      onClose={onClose}
+      {...place}
       footer={(
         <div className="flex flex-col gap-2">
           {said ? <p className="m-0 text-note text-ink">{said}</p> : null}
@@ -105,7 +105,7 @@ const SettingsHistory = ({ history, disabled, onRestore, onImport, onClose }) =>
         ))}
       </ul>
       {history.length > 0 ? <p className="m-0 text-note text-mut">{t('machine.history.restoreNote')}</p> : null}
-    </Sheet>
+    </SettingsPlace>
   );
 };
 

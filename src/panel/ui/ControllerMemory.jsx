@@ -1,6 +1,5 @@
 import Button from './Button';
 import Card from './Card';
-import FadeScroller from './FadeScroller';
 import Icon from './Icon';
 import Notice from './Notice';
 import SettingSummary from './SettingSummary';
@@ -22,8 +21,8 @@ import { t } from '../i18n';
  * Geometria is a line only on a phone; wider it is a column of its own.
  *
  * On a phone the whole card scrolls with its head, as the other tabs do;
- * wider the head stands and the list scrolls under it (handoff,
- * "Przewijanie").
+ * wider the head stands and the rest of the card scrolls under it, going
+ * under the bar of changes below (`Card scrolls`).
  *
  * `aboveBar`: on a phone the shell gives its last card room for the menu's
  * mound, and this card is last inside its scroller — but with the bar of
@@ -36,12 +35,14 @@ import { t } from '../i18n';
 const title = (id) => t(GROUPS.find((g) => g.id === id).titleKey);
 
 const ControllerMemory = ({
-  view, groups, chosen, rule, canWrite, aboveBar = false, onRead, onGroup, onGeometry, onHistory, onRaw,
+  view, groups, chosen, changedGroups = [], rule, canWrite, aboveBar = false, onRead, onGroup, onGeometry, onHistory, onRaw,
 }) => {
   const phone = useIsPhone();
   const wide = useIsWide();
   const { firmware, geometry } = view;
   const travel = geometry?.summary.find(({ id }) => id === 'travel')?.value;
+  // The groups, the history and `$$` all open in the same place.
+  const opens = (phone && 'sheet') || (wide ? null : 'view');
 
   const list = (
     <div className="flex flex-col gap-2">
@@ -51,8 +52,9 @@ const ControllerMemory = ({
           key={id}
           title={title(id)}
           values={groupLine((view.groups ?? []).find(({ group }) => group === id), rule)}
-          opens={(phone && 'sheet') || (wide ? null : 'view')}
+          opens={opens}
           selected={wide && id === chosen}
+          changed={changedGroups.includes(id)}
           onOpen={() => onGroup(id)}
         />
       ))}
@@ -64,8 +66,20 @@ const ControllerMemory = ({
         />
       ) : null}
       <div className="mt-1 flex flex-col gap-2 border-t border-line pt-3">
-        <SettingSummary title={t('machine.history.title')} values={[{ value: historyLine(view.history ?? []) }]} onOpen={onHistory} />
-        <SettingSummary title={t('machine.raw.title')} values={[{ value: t('machine.raw.count', { count: view.rows.length }) }]} onOpen={onRaw} />
+        <SettingSummary
+          title={t('machine.history.title')}
+          values={[{ value: historyLine(view.history ?? []) }]}
+          opens={opens}
+          selected={wide && chosen === 'history'}
+          onOpen={onHistory}
+        />
+        <SettingSummary
+          title={t('machine.raw.title')}
+          values={[{ value: t('machine.raw.count', { count: view.rows.length }) }]}
+          opens={opens}
+          selected={wide && chosen === 'raw'}
+          onOpen={onRaw}
+        />
       </div>
     </div>
   );
@@ -79,9 +93,11 @@ const ControllerMemory = ({
           <Icon name="refresh" className="size-5" weight={2} />
         </Button>
       )}
+      scrolls={!phone}
+      gapBelow={aboveBar}
       className={(phone && (aboveBar ? 'flex-1 !pb-pad' : 'flex-1')) || 'min-h-0 flex-1'}
     >
-      {phone ? list : <FadeScroller>{list}</FadeScroller>}
+      {list}
     </Card>
   );
 };

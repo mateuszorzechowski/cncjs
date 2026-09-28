@@ -37,16 +37,25 @@ export const Triangle = ({ className = 'size-4' }) => (
  * live region that announced itself every time a settings tab was opened
  * would be the panel shouting at somebody who came to read.
  */
-const Notice = ({ children, className = '' }) => (
+/*
+ * `action`, a button at the end of the line — the undo of a discard. Then
+ * the triangle, the words and the button stand on one line, centred on it:
+ * with the triangle at the top of a first line of text, a button taller than
+ * the text left it hanging above the rest (review note, 2026-09-28:
+ * *"wyrównać wertykalnie treść"*). Without one, the triangle stays with the
+ * first line of a paragraph.
+ */
+const Notice = ({ children, action, className = '' }) => (
   <div
     role="note"
     aria-label={t('notice.warning')}
-    className={`flex shrink-0 items-start gap-3 rounded-ctl border border-amb bg-ambS px-4 py-3 ${className}`}
+    className={`flex shrink-0 gap-3 rounded-ctl border border-amb bg-ambS px-4 py-3 ${action ? 'items-center' : 'items-start'} ${className}`}
   >
-    <span className="pt-0.5 text-amb">
+    <span className={`text-amb ${action ? '' : 'pt-0.5'}`}>
       <Triangle className="size-5" />
     </span>
     <div className="flex min-w-0 flex-1 flex-col gap-2 text-base text-ambT">{children}</div>
+    {action}
   </div>
 );
 

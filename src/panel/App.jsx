@@ -226,7 +226,13 @@ const Panel = ({ machine, screen, onScreen }) => {
           *
           * The last card by selector rather than by a prop threaded through
           * five screens and their widgets: which card is last is a fact about
-          * the layout, and the layout is what this element owns.
+          * the layout, and the layout is what this element owns. A card, not
+          * a section inside one: the settings' last group of rows is a
+          * section too, and took the room a second time (review note,
+          * 2026-09-28: *"treść karty ma niepotrzebnie taki duży odstęp na
+          * dole"*). A card whose frame scrolls under its head (`Card
+          * scrolls`) takes it at the foot of that frame instead, so the
+          * frame itself runs under the mound and the glow can follow it.
           */}
         <main
           /*
@@ -238,7 +244,10 @@ const Panel = ({ machine, screen, onScreen }) => {
             * settings tab that scrolled showed nothing that said it did.
             */
           className={`relative flex min-h-0 min-w-0 flex-1 flex-col p-shellPad [--thumbGutter:var(--shellPad)] ${phone
-            ? 'pb-0 [&_section:last-child]:pb-[calc(var(--pad)+var(--navBite))]'
+            ? 'pb-0 [&_section:last-child:not(section_section):not([data-scrolls])]:pb-[calc(var(--pad)+var(--navBite))] '
+              + '[&_section[data-scrolls]:last-child_[data-card-foot]]:pb-[calc(var(--pad)+var(--navBite))] '
+              // …and its scroll track ends above the mound, where the card is seen to end.
+              + '[&_section[data-scrolls]:last-child>div:last-child]:[--trackTail:var(--navBite)]'
             : ''}`}
         >
           {/*

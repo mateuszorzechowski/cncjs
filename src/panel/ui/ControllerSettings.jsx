@@ -6,6 +6,7 @@ import RawSettings from './RawSettings';
 import ControllerGroup from './ControllerGroup';
 import ControllerMemory from './ControllerMemory';
 import SettingsHistory from './SettingsHistory';
+import SettingsPlace from './SettingsPlace';
 import SettingsPendingBar from './SettingsPendingBar';
 import SettingsReview from './SettingsReview';
 import Sheet from './Sheet';
@@ -56,9 +57,9 @@ const ControllerSettings = ({ machine }) => {
   const wide = useIsWide();
   // The changes waiting to be written: the server's, the same on every panel.
   const [drafts, changeDrafts] = useSharedDrafts(machine);
-  // The group being edited: a sheet on a phone, the list's place wider.
+  // What a line of the list opened — a group, the history or `$$`: a sheet on a phone, the list's place wider.
   const [group, setGroup] = useState(null);
-  // What is over the screen: Geometria (a phone's), the history, `$$`, or the review.
+  // What is over the screen: Geometria (a phone's) or the review.
   const [open, setOpen] = useState(null);
   const [discarded, setDiscarded] = useState(null);
   const view = machine.machineSettings;
@@ -128,8 +129,10 @@ const ControllerSettings = ({ machine }) => {
   }
 
   const groups = groupsIn(rows);
-  // On a PC one group is always chosen, the first until another is.
-  const shownGroup = groups.find(({ id }) => id === group)?.id ?? (wide ? groups[0]?.id : undefined);
+  // On a PC one line is always chosen, the first group until another is.
+  const shownGroup = [HISTORY, RAW].includes(group)
+    ? group
+    : groups.find(({ id }) => id === group)?.id ?? (wide ? groups[0]?.id : undefined);
   const card = (
     <ControllerMemory
       view={view}
@@ -138,29 +141,54 @@ const ControllerSettings = ({ machine }) => {
       rule={rule}
       canWrite={machine.canWriteSettings}
       aboveBar={pending.length > 0}
+      changedGroups={pendingGroups(pending).map(({ id }) => id)}
       onRead={read}
       onGroup={setGroup}
       onGeometry={() => setOpen(GEOMETRY)}
-      onHistory={() => setOpen(HISTORY)}
-      onRaw={() => setOpen(RAW)}
+      onHistory={() => setGroup(HISTORY)}
+      onRaw={() => setGroup(RAW)}
     />
   );
 
-  const groupView = shownGroup ? (
-    <ControllerGroup
-      group={shownGroup}
-      rows={rows}
-      drafts={drafts}
-      onDraft={onDraft}
-      rule={rule}
-      disabled={disabled}
-      readOnly={!machine.canWriteSettings}
-      flash={flash}
-      inline={!phone}
-      onClose={() => setGroup(null)}
-      onBack={phone || wide ? undefined : () => setGroup(null)}
-    />
-  ) : null;
+  const back = () => setGroup(null);
+  const place = {
+    inline: !phone, aboveBar: pending.length > 0, onClose: back, onBack: phone || wide ? undefined : back,
+  };
+  let groupView = null;
+  if (shownGroup === HISTORY) {
+    groupView = (
+      <SettingsHistory
+        history={view.history ?? []}
+        disabled={disabled}
+        onRestore={(entry) => {
+          changeDrafts(restoreDrafts(entry, rows));
+          back();
+        }}
+        onImport={(imported) => changeDrafts(imported)}
+        place={place}
+      />
+    );
+  } else if (shownGroup === RAW) {
+    groupView = (
+      <SettingsPlace title={t('machine.raw.title')} {...place}>
+        <RawSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} />
+      </SettingsPlace>
+    );
+  } else if (shownGroup) {
+    groupView = (
+      <ControllerGroup
+        group={shownGroup}
+        rows={rows}
+        drafts={drafts}
+        onDraft={onDraft}
+        rule={rule}
+        disabled={disabled}
+        readOnly={!machine.canWriteSettings}
+        flash={flash}
+        place={place}
+      />
+    );
+  }
   const geometryView = geometry ? (
     <GeometrySettings
       geometry={geometryAfter}
@@ -194,7 +222,8 @@ const ControllerSettings = ({ machine }) => {
         </>
       ) : (
         <>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-gap">
+          {/* No gap: the cards above go under the bar of changes rather than stopping short of it. */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {wide ? (
               <div className="flex min-h-0 flex-1 gap-gap">
                 <div className="flex min-h-0 w-setcol shrink-0 flex-col">{card}</div>
@@ -204,30 +233,13 @@ const ControllerSettings = ({ machine }) => {
             {bar}
           </div>
           {geometryView ? (
-            <Card label={groupTitle(GEOMETRY)} aside={GEOMETRY_CODES} className="min-h-0 w-setcol shrink-0">
-              <FadeScroller>{geometryView}</FadeScroller>
+            <Card label={groupTitle(GEOMETRY)} aside={GEOMETRY_CODES} scrolls className="min-h-0 w-setcol shrink-0">
+              {geometryView}
             </Card>
           ) : null}
         </>
       )}
 
-      {open === HISTORY ? (
-        <SettingsHistory
-          history={view.history ?? []}
-          disabled={disabled}
-          onRestore={(entry) => {
-            changeDrafts(restoreDrafts(entry, rows));
-            close();
-          }}
-          onImport={(imported) => changeDrafts(imported)}
-          onClose={close}
-        />
-      ) : null}
-      {open === RAW ? (
-        <Sheet title={t('machine.raw.title')} onClose={close}>
-          <RawSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} />
-        </Sheet>
-      ) : null}
       {open === REVIEW ? (
         <SettingsReview
           geometry={changedLines.length > 0 ? { after: geometryAfter, was: geometry.summary, changed: changedLines, envelope: preview?.envelope ?? machine.envelope } : null}
