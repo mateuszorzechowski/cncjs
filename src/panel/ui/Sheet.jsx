@@ -45,6 +45,27 @@ const stack = [];
 const listeners = new Set();
 const told = () => listeners.forEach((listener) => listener());
 
+/*
+ * Back closes the sheet on top (Mateusz, 2026-09-28: *"zamykanie arkuszy
+ * gestem też fajnie byłoby mieć"*). Each open sheet puts one entry in the
+ * browser's history at the address it opened over; the browser's back — the
+ * button, or a phone's back gesture — takes that entry away, and the sheet
+ * on top closes. Closed any other way, a sheet takes its own entry back, and
+ * the step back that costs is not a back anybody asked for: `skipping` lets
+ * it pass without closing the sheet under it.
+ */
+const closers = new Map();
+let skipping = 0;
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => {
+    if (skipping > 0) {
+      skipping -= 1;
+      return;
+    }
+    closers.get(stack[stack.length - 1])?.();
+  });
+}
+
 // Written out, because Tailwind reads the source: two layers per sheet.
 const LAYERS = [
   { scrim: 'z-40', panel: 'z-50' },
@@ -70,11 +91,35 @@ const useLayer = () => {
   }, []);
 
   const index = Math.max(0, stack.indexOf(id.current));
-  return { layer: LAYERS[Math.min(index, LAYERS.length - 1)], active: index === stack.length - 1 };
+  return { id: id.current, layer: LAYERS[Math.min(index, LAYERS.length - 1)], active: index === stack.length - 1 };
+};
+
+/** This sheet's entry in the history while it is open — see `closers`. */
+const useBackCloses = (id, onClose) => {
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const entry = { panelSheet: Math.random() };
+    window.history.pushState(entry, '');
+    let popped = false;
+    closers.set(id, () => {
+      popped = true;
+      close.current();
+    });
+    return () => {
+      closers.delete(id);
+      // Closed by its own button, a tap away or a drag: take its entry back, unless a new screen has been put on top of it.
+      if (!popped && window.history.state?.panelSheet === entry.panelSheet) {
+        skipping += 1;
+        window.history.back();
+      }
+    };
+  }, [id]);
 };
 
 const Sheet = ({ title, onHelp, onClose, footer, children }) => {
-  const { layer, active } = useLayer();
+  const { id, layer, active } = useLayer();
+  useBackCloses(id, onClose);
   /*
    * Dragged down, it closes — the top sheet only, and told apart from a
    * scroll (`useDragToClose`): Mateusz, 2026-09-26, *"chowanie sheetów

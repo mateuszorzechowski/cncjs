@@ -16,6 +16,7 @@ import { RestoreUnitsChoice, UnitsChoice } from '../ui/UnitsChoice';
 import ConnectScreen from './ConnectScreen';
 import ControllerSettings from '../ui/ControllerSettings';
 import AppScreen from './AppScreen';
+import { pathOf } from '../machine/route';
 import { t } from '../i18n';
 
 /**
@@ -70,6 +71,10 @@ const tabWatchers = new Set();
 
 /** Open this tab: now, if the screen is showing, or when it next is. The top bar's update goes to `install`. */
 export const showSettingsTab = (id) => {
+  // Only a tab there is: an address typed or kept by an older panel opens the one last open.
+  if (!TABS.includes(id)) {
+    return;
+  }
   lastTab = id;
   tabWatchers.forEach((show) => show(id));
 };
@@ -90,6 +95,8 @@ const SettingsScreen = ({ machine }) => {
   useSwipe(pages, turn);
   useEffect(() => {
     lastTab = tab;
+    // The tab in the address, in the same step of history as the screen: back goes back a screen, not a tab.
+    window.history.replaceState(window.history.state, '', pathOf('settings', tab, window.location.search));
   }, [tab]);
   useEffect(() => {
     tabWatchers.add(setTab);
