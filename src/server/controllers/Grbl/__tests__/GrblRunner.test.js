@@ -654,6 +654,19 @@ describe('GrblRunner', () => {
         runner.parse(line);
       });
     });
+
+    test('the firmware\'s name is kept beside its version, and a new one is a change', () => {
+      const runner = new GrblRunner();
+      runner.parse('Grbl 1.1h [\'$\' for help]');
+      const first = runner.settings;
+      expect(first).toEqual(expect.objectContaining({ firmware: 'Grbl', version: '1.1h' }));
+
+      runner.parse('Grbl 1.1h [\'$\' for help]');
+      expect(runner.settings).toBe(first);
+
+      runner.parse('vCarvin 1.1h [\'$\' for help]');
+      expect(runner.settings).toEqual(expect.objectContaining({ firmware: 'vCarvin', version: '1.1h' }));
+    });
   });
 
   test('Not supported output format', () => {
