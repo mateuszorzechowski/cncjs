@@ -187,6 +187,8 @@ const JogWidget = ({ machine, className = '' }) => {
     canJog: machine.canMove,
     canHome: machine.canHome,
     canGoZero: canGoToWorkZero(machine.envelope),
+    // Not homed: nothing guards the ends of the axes, and the keys say so.
+    caution: machine.envelope?.placed === false,
   };
 
   // The two axis groups, one description each. Both arrangements show the same

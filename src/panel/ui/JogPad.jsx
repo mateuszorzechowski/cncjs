@@ -1,3 +1,4 @@
+import CautionGlow from './CautionGlow';
 import Icon from './Icon';
 import { t } from '../i18n';
 import { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT } from './jogCorners';
@@ -73,11 +74,12 @@ const Corner = ({ corner, onJog, disabled }) => (
  * there and the server drops a step before the cable, while homing is the one
  * thing that clears an alarm and has to stay live inside it.
  */
-const JogPad = ({ onJog, onHome, onGoZero, disabled, canJog, canHome, canGoZero }) => {
+const JogPad = ({ onJog, onHome, onGoZero, disabled, canJog, canHome, canGoZero, caution = false }) => {
   const stuck = disabled || !canJog;
 
   return (
-    <div className="flex items-start gap-2" role="group" aria-label={t('jog.pad')}>
+    <div className="relative isolate flex items-start gap-2" role="group" aria-label={t('jog.pad')}>
+      {caution ? <CautionGlow /> : null}
       <div className="grid min-w-0 flex-[3] grid-cols-3 grid-rows-[repeat(3,var(--jbtnh))] gap-2">
         <Corner corner={UP_LEFT} onJog={onJog} disabled={stuck} />
         <Key hold={onJog({ y: 1 })} disabled={stuck} label={t('jog.yPlus')}>{t('jog.yPlus')}</Key>
