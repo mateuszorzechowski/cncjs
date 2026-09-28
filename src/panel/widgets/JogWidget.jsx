@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AxisControls from '../ui/AxisControls';
 import SettingSummary from '../ui/SettingSummary';
 import Card from '../ui/Card';
+import CautionTape from '../ui/CautionTape';
 import NoHomingNotice from '../ui/NoHomingNotice';
 import FadeScroller from '../ui/FadeScroller';
 import JogPad from '../ui/JogPad';
@@ -187,8 +188,6 @@ const JogWidget = ({ machine, className = '' }) => {
     canJog: machine.canMove,
     canHome: machine.canHome,
     canGoZero: canGoToWorkZero(machine.envelope),
-    // Not homed: nothing guards the ends of the axes, and the keys say so.
-    caution: machine.envelope?.placed === false,
   };
 
   // The two axis groups, one description each. Both arrangements show the same
@@ -226,7 +225,9 @@ const JogWidget = ({ machine, className = '' }) => {
   const unguarded = <NoHomingNotice placed={machine.envelope?.placed} />;
 
   return (
-    <Card className={`group relative min-h-0 overflow-hidden ${className}`} bodyClassName="gap-0">
+    <Card className={`group relative isolate min-h-0 overflow-hidden ${className}`} bodyClassName="gap-0">
+      {/* Not homed: nothing guards the ends of the axes, and the whole card says so. */}
+      {machine.envelope?.placed === false ? <CautionTape /> : null}
       {/* At the panel: the keys at their drawn size, both groups open below
         * them, nothing folded away. */}
       {phone ? null : (
@@ -237,7 +238,8 @@ const JogWidget = ({ machine, className = '' }) => {
         </div>
         {/* XY and Z are the same decision asked twice, so they stay together:
           * split across a fold, the second one is easy to miss. */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-gap">
+          {/* Its own height, not squeezed: the column scrolls instead (it overlapped once the pad grew). */}
+          <div className="flex min-w-0 flex-none flex-col gap-gap">
             <AxisControls {...xy} />
             <AxisControls {...z} />
           </div>
