@@ -65,7 +65,7 @@ export const themeFor = (preference, prefersDark) => {
  * null, and a pendant that will not boot because it could not remember a
  * colour is a worse panel than one that forgets.
  */
-const storage = () => {
+export const storage = () => {
   try {
     return typeof window === 'undefined' ? null : window.localStorage;
   } catch (e) {

@@ -7,6 +7,7 @@ import SegmentedChoice from '../ui/SegmentedChoice';
 import SettingGroup from '../ui/SettingGroup';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
+import LookSettings from '../ui/LookSettings';
 import JogSettings from '../ui/JogSettings';
 import DeviceNameRow from '../ui/DeviceNameRow';
 import KeepAwakeChoice, { keepAwakeNote } from '../ui/KeepAwakeChoice';
@@ -162,6 +163,7 @@ const SettingsScreen = ({ machine }) => {
                 <SettingRow title={t('theme.label')}>
                   <ThemeChoice />
                 </SettingRow>
+                <LookSettings />
                 <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} noteBelow>
                   <KeepAwakeChoice status={keepAwake} />
                 </SettingRow>

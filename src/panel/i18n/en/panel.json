@@ -259,6 +259,20 @@
     "light": "Light",
     "dark": "Dark"
   },
+  "density": {
+    "label": "Density",
+    "comfortable": "Comfortable",
+    "compact": "Compact",
+    "note": "Compact has smaller gaps and lower readouts, so more fits on the screen."
+  },
+  "numFont": {
+    "label": "Number face",
+    "azeret": "Azeret",
+    "jetbrains": "JetBrains",
+    "plex": "Plex",
+    "segment": "Segment",
+    "note": "The face of the readouts, the step and feed values and the G-code editor."
+  },
   "app": {
     "install": "Install on this device",
     "installed": "Installed",

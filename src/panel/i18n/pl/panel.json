@@ -259,6 +259,20 @@
     "light": "Jasny",
     "dark": "Ciemny"
   },
+  "density": {
+    "label": "Gęstość",
+    "comfortable": "Wygodna",
+    "compact": "Zwarta",
+    "note": "Zwarta ma mniejsze odstępy i niższe odczyty, więc więcej mieści się na ekranie."
+  },
+  "numFont": {
+    "label": "Krój cyfr",
+    "azeret": "Azeret",
+    "jetbrains": "JetBrains",
+    "plex": "Plex",
+    "segment": "Segment",
+    "note": "Krój odczytów, wartości kroków i posuwów oraz edytora G-code."
+  },
   "app": {
     "install": "Zainstaluj na tym urządzeniu",
     "installed": "Zainstalowano",

@@ -292,3 +292,15 @@
   --gap: 9px;
   --dro: 60px;
 }
+
+/*
+ * The compact density at full HD. The panel's own: the drawing's compact
+ * block was drawn at 1024 and, applied as it is, took a 1920 screen's DRO row
+ * from 132px to 60 — smaller than at 1024. The same proportions as the
+ * drawing's step from `:root` to compact, on the full-HD values.
+ */
+[data-target='fullhd'][data-density='compact'] {
+  --pad: 18px;
+  --gap: 12px;
+  --dro: 100px;
+}

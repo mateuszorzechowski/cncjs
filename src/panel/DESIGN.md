@@ -223,7 +223,9 @@ urządzeniach, zrzuty.
     w Idle/Alarm, trwa program).
 - **Preferencje:** dwie sekcje według zakresu zamiast etykiety przy każdym
   wierszu:
-  - **To urządzenie:** Język, Motyw, Ekran bez blokady.
+  - **To urządzenie:** Język, Motyw, Gęstość (Wygodna/Zwarta), Krój cyfr
+    (Azeret/JetBrains/Plex/Segment — fonty dołączone do panelu), Ekran bez
+    blokady.
   - **Serwer · wszystkie urządzenia:** Jednostki mm/cale, Pilnuj jednostek
     maszyny, Kroki i Posuwy jogu, Próg dziennika.
 - **Instalacja:** krok 1 certyfikat, krok 2 instalacja aplikacji, stopka z
