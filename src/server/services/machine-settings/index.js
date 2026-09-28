@@ -89,6 +89,16 @@ class MachineSettings extends events.EventEmitter {
   // The changes of the reading under way, put down when it is over.
   burst = [];
 
+  /*
+   * The changes typed on some panel and not yet written, by setting:
+   * `{ text, raw }`, as a panel typed them — `raw` for Grbl's own figure,
+   * otherwise in the server's units. One set for every panel, kept in
+   * `.cncrc`: a reload or another device sees the same bar of changes
+   * (Mateusz, 2026-09-28: *"odświeżenie nie usuwa wprowadzonych zmian,
+   * zmiany pending są współdzielone"*).
+   */
+  drafts = {};
+
   writes = 0;
 
   timer = null;
@@ -103,6 +113,46 @@ class MachineSettings extends events.EventEmitter {
     this.history = (isOld(history[0]) ? regroup(history.filter(isOld)) : history).slice(-MOST);
     this.expected = {};
     this.burst = [];
+    this.drafts = {};
+    this.draft({ set: saved?.drafts });
+    clearTimeout(this.timer);
+    this.timer = null;
+  }
+
+  /**
+   * Change the waiting changes: `set` is `{ name: draft | null }`, null
+   * taking one back; `clear` empties them first. Anything that is not a `$`
+   * setting with a text is left out. Kept with the next `change`.
+   */
+  draft({ set, clear = false } = {}) {
+    const next = clear ? {} : { ...this.drafts };
+    for (const [name, value] of Object.entries(set && typeof set === 'object' ? set : {})) {
+      if (/^\$\d+$/.test(name) && value && typeof value.text === 'string') {
+        next[name] = { text: value.text, raw: Boolean(value.raw) };
+      } else {
+        delete next[name];
+      }
+    }
+    this.drafts = next;
+    this.settle();
+    return this.drafts;
+  }
+
+  /**
+   * Drop the waiting changes `keep(name, draft)` says no longer change
+   * anything — written, or a setting the controller no longer reports.
+   * Returns whether any went.
+   */
+  prune(keep) {
+    const names = Object.keys(this.drafts).filter((name) => !keep(name, this.drafts[name]));
+    if (names.length === 0) {
+      return false;
+    }
+    const next = { ...this.drafts };
+    names.forEach((name) => delete next[name]);
+    this.drafts = next;
+    this.settle();
+    return true;
   }
 
   /** A write of `names` is on its way from `device`. */
@@ -182,7 +232,7 @@ class MachineSettings extends events.EventEmitter {
 
   /** What `.cncrc` keeps, and what a client is sent. */
   saved() {
-    return { copy: this.copy, history: this.history };
+    return { copy: this.copy, history: this.history, drafts: this.drafts };
   }
 }
 

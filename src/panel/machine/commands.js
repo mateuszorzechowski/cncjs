@@ -104,6 +104,15 @@ export const writeSettings = (changes) => {
   controller.command('settings:write', { changes });
 };
 
+/**
+ * The settings changes waiting to be written, which the server keeps for
+ * every panel: `set` is `{ name: draft | null }`, `clear` empties them
+ * first; `seq` numbers this panel's requests. Answered as `machine:pending`.
+ */
+export const draftSettings = ({ set, clear = false, seq }) => {
+  controller.command('settings:drafts', { set, clear, seq });
+};
+
 /** Geometria after these changes, not written — answered as `machine:preview`, by `seq`. */
 export const previewSettings = (changes, seq) => {
   controller.command('settings:preview', { changes, seq });

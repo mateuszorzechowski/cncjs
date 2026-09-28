@@ -1246,7 +1246,17 @@ class GrblController {
          */
         clearTimeout(this.settingsReadTimer);
         this.settingsReadTimer = setTimeout(() => {
+          // The waiting changes that this reading already holds, or names a
+          // setting it no longer reports, go — for every panel at once.
+          const reported = this.runner.settings?.settings ?? {};
+          const pruned = machineSettings.prune((name, draft) => {
+            const { value, refusal } = settingWrite({ name, value: draft.text, units: draft.raw ? undefined : units.rule().name }, reported);
+            return refusal !== 'unknown-setting' && (Boolean(refusal) || Number(value) !== Number(reported[name]));
+          });
           this.emit('machine:settings', this.machineSettingsView());
+          if (pruned) {
+            this.emit('machine:pending', { drafts: machineSettings.saved().drafts, device: null, seq: null });
+          }
         }, SETTINGS_READ_MS);
 
         const setting = _.find(GRBL_SETTINGS, { setting: res.name });
@@ -2275,7 +2285,7 @@ class GrblController {
      * each by the name of the device that made it, as the journal has it.
      */
     machineSettingsView() {
-      const { copy, history } = machineSettings.saved();
+      const { copy, history, drafts } = machineSettings.saved();
       const named = devices.describe(history.map(({ device }) => device));
       return {
         // What the settings card says it is reading: `Grbl 1.1h`.
@@ -2288,6 +2298,8 @@ class GrblController {
         history: history.map((entry) => ({ ...entry, deviceName: named[entry.device]?.name ?? null })),
         // When `$$` last said anything: the save bar's "read at".
         readAt: copy.time,
+        // The changes waiting to be written, the same on every panel.
+        drafts,
       };
     }
 
@@ -2866,6 +2878,19 @@ class GrblController {
          * `machine:preview`, numbered by its `seq` so an old answer can be
          * told from the latest. Nothing reaches the controller.
          */
+        /*
+         * The changes waiting to be written are the server's, shared by
+         * every panel (Mateusz, 2026-09-28): `{ set: { name: draft | null },
+         * clear?, seq? }` changes them, and every panel is told the result as
+         * `machine:pending` — with the device and its `seq`, so the panel
+         * that is still typing can tell its own older echo from news.
+         * Allowed whatever the machine does: nothing reaches the controller.
+         */
+        'settings:drafts': () => {
+          const [asked] = args;
+          const drafts = machineSettings.draft({ set: asked?.set, clear: Boolean(asked?.clear) });
+          this.emit('machine:pending', { drafts, device: this.commandSocket?.device ?? null, seq: asked?.seq ?? null });
+        },
         'settings:preview': () => {
           const [asked] = args;
           // The runner's, as a write reads them: this.settings follows it only on the next status.

@@ -36,8 +36,9 @@ describe('the copy', () => {
   });
 
   test('what `.cncrc` holds is not trusted to be the right shape', () => {
-    expect(opened({ copy: 'x', history: 'y' }).saved()).toEqual({ copy: { values: {}, time: null }, history: [] });
-    expect(opened(undefined).saved()).toEqual({ copy: { values: {}, time: null }, history: [] });
+    const empty = { copy: { values: {}, time: null }, history: [], drafts: {} };
+    expect(opened({ copy: 'x', history: 'y', drafts: 'z' }).saved()).toEqual(empty);
+    expect(opened(undefined).saved()).toEqual(empty);
   });
 });
 
@@ -189,6 +190,45 @@ describe('the history', () => {
     const { history } = service.saved();
     expect(history).toHaveLength(MOST);
     expect(history[history.length - 1]).toEqual(expect.objectContaining({ id: MOST + 5, changes: [{ name: '$0', from: String(MOST + 4), to: String(MOST + 5) }] }));
+  });
+});
+
+describe('the changes waiting to be written', () => {
+  test('are set, taken back one by one, and cleared, and kept in `.cncrc`', () => {
+    jest.useFakeTimers();
+    const service = opened();
+    const said = [];
+    service.on('change', (saved) => said.push(saved.drafts));
+
+    service.draft({ set: { $110: { text: '3500', raw: false }, $22: { text: '0', raw: true } } });
+    service.draft({ set: { $22: null } });
+    jest.advanceTimersByTime(300);
+
+    expect(service.saved().drafts).toEqual({ $110: { text: '3500', raw: false } });
+    expect(said).toEqual([{ $110: { text: '3500', raw: false } }]);
+    expect(service.draft({ clear: true, set: { $0: { text: '12' } } })).toEqual({ $0: { text: '12', raw: false } });
+  });
+
+  test('only a `$` setting with a text is taken', () => {
+    const service = opened();
+
+    service.draft({ set: { $110: { text: 3500 }, foo: { text: '1' }, $0: 'x', $1: { text: '26' } } });
+
+    expect(service.saved().drafts).toEqual({ $1: { text: '26', raw: false } });
+  });
+
+  test('come back from `.cncrc`, checked the same way', () => {
+    const service = opened({ drafts: { $110: { text: '3500', raw: false }, bad: { text: '1' } } });
+
+    expect(service.saved().drafts).toEqual({ $110: { text: '3500', raw: false } });
+  });
+
+  test('pruned by the rule the caller gives, saying whether any went', () => {
+    const service = opened({ drafts: { $110: { text: '3500' }, $111: { text: '5000' } } });
+
+    expect(service.prune((name) => name !== '$111')).toBe(true);
+    expect(service.saved().drafts).toEqual({ $110: { text: '3500', raw: false } });
+    expect(service.prune(() => true)).toBe(false);
   });
 });
 

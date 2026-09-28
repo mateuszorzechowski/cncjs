@@ -135,6 +135,15 @@ class Controller {
         'machine:preview': [],
 
         /**
+         * The settings changes waiting to be written, shared by every panel,
+         * after a panel changed them with `settings:drafts`.
+         *
+         * @event machine:pending
+         * @param {object} pending - `{ drafts, device, seq }`
+         */
+        'machine:pending': [],
+
+        /**
          * Which device is allowed to move the machine at this moment.
          *
          * The device's own identifier, as it gave it at the handshake, or null
