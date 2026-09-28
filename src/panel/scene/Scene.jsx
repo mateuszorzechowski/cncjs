@@ -54,8 +54,9 @@ const Scene = ({
    * 2026-09-28): solid where it is and the firmware stops a move at its edge
    * (`envelope.fenced`), long dashes where it is and nothing stops a move
    * there (soft limits off), dots where only its size is known — not homed,
-   * `envelope.placed` false — and then no figures on the floor either, since
-   * every coordinate there would be made up.
+   * `envelope.placed` false. The figures on the floor stay in every case: they
+   * are the scale, and the scale is true whether or not the place is (Mateusz,
+   * 2026-09-28: *"wymiary można podawać zawsze, są znane"*).
    */
   const unplaced = envelope?.placed === false;
   let pattern = 'solid';
@@ -139,7 +140,7 @@ const Scene = ({
         * Sized to the machine's own travel where that is known, so the
         * squares are the machine's squares. Only when nothing has been
         * reported does it fall back to whatever is being drawn. */}
-      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} ground={colors.ground} figures={!unplaced} />
+      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} ground={colors.ground} />
 
       {/* The machine is context, not content: quiet enough that the program
         * inside it is what the eye lands on. */}
