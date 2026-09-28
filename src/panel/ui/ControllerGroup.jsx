@@ -45,7 +45,7 @@ const Row = ({ row, rows, drafts, onDraft, rule, disabled, flash }) => {
 };
 
 const ControllerGroup = ({
-  group, rows, drafts, onDraft, rule, disabled, readOnly, flash, inline = false, onClose,
+  group, rows, drafts, onDraft, rule, disabled, readOnly, flash, inline = false, onClose, onBack,
 }) => {
   const about = GROUPS.find((g) => g.id === group);
   const title = group === 'axes' ? t('machine.axesSheet') : t(about.titleKey);
@@ -67,11 +67,15 @@ const ControllerGroup = ({
   if (!inline) {
     return <Sheet title={title} onClose={onClose}>{body}</Sheet>;
   }
-  // In the list's place: the head stands, "Wróć" goes back to the list, and only the settings scroll.
+  /*
+   * In a column: the head stands and only the settings scroll. On a tablet
+   * in the list's place, and "Wróć" goes back to it; on a PC beside the
+   * list, which stays, so there is nothing to go back to (frame PC1).
+   */
   return (
     <Card
       label={title}
-      aside={<Button className="h-chiph px-4" onClick={onClose}>{t('machine.back')}</Button>}
+      aside={onBack ? <Button className="h-chiph px-4" onClick={onBack}>{t('machine.back')}</Button> : null}
       className="min-h-0 flex-1"
     >
       <FadeScroller className="flex flex-col gap-3">{body}</FadeScroller>

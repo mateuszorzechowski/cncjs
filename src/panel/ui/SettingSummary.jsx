@@ -38,6 +38,8 @@ import { t } from '../i18n';
  * place, in the same column. `selected`: the line is the choice in a list
  * that stands beside what it chose — the controller's groups on a PC — so
  * it is lit and has no chevron, because tapping it again goes nowhere.
+ * `opens={null}`: a line in that same list that is not the one chosen —
+ * no chevron either, since it opens nothing, it chooses.
  */
 const FACES = {
   locked: 'border-line bg-bg',
@@ -82,7 +84,7 @@ const SettingSummary = ({ title, label, values, onOpen, disabled, locked = false
       </span>
     ) : null}
     {/* The icon's path points down; a view beside is the same mark turned. */}
-    {locked || selected ? null : (
+    {locked || selected || !opens ? null : (
       <Icon name="chevron" className={`size-4 shrink-0 text-mut ${opens === 'view' ? '-rotate-90' : ''}`} weight={2} />
     )}
   </button>

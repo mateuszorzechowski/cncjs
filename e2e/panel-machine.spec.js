@@ -333,3 +333,22 @@ test.describe('the Sterownik tab on a tablet', () => {
     cncjs.expectNoPageErrors();
   });
 });
+
+test.describe('the Sterownik tab on a PC', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  test('Full HD tokens, one group always chosen beside the list, no "Wróć"', async ({ cncjs }) => {
+    await open(cncjs.page);
+
+    await expect.poll(() => cncjs.page.evaluate(() => document.documentElement.dataset.target)).toBe('fullhd');
+    const list = cncjs.page.locator('section', { hasText: 'Pamięć sterownika' });
+    await expect(list.getByRole('button', { name: /^Osie/ })).toHaveAttribute('aria-current', 'true');
+    await expect(field(cncjs.page, 'Kroki silnika X')).toHaveValue('800.000');
+    await expect(cncjs.page.getByRole('button', { name: 'Wróć' })).toHaveCount(0);
+
+    await list.getByRole('button', { name: /^Limity/ }).click();
+    await expect(list.getByRole('button', { name: /^Limity/ })).toHaveAttribute('aria-current', 'true');
+    await expect(cncjs.page.getByRole('group', { name: 'Limity programowe' })).toBeVisible();
+    cncjs.expectNoPageErrors();
+  });
+});

@@ -111,6 +111,15 @@
   --val: 31px;
   --side: 400px;
   --side2: 212px;
+  /*
+   * A column of the controller's settings: the list of groups on a PC, and
+   * Geometria beside the list on a tablet and a PC (settings handoff,
+   * 2026-09-28). The panel's own, not the drawing's — the handoff typed 400
+   * into its frames and asked for a token. Not `--side`, which is 560 on a
+   * PC: Geometria that wide left the fields beside it 60px. The same at
+   * every target, since 400 is what keeps a group's values uncut.
+   */
+  --setcol: 400px;
 
   /* Controls. Nothing on a touch screen goes below 40px. */
   --btn: 76px;

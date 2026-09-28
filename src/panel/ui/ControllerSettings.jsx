@@ -1,27 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import Button from './Button';
 import Card from './Card';
 import ConfirmSheet from './ConfirmSheet';
 import FadeScroller from './FadeScroller';
 import GeometrySettings from './GeometrySettings';
-import Icon from './Icon';
-import Notice from './Notice';
 import RawSettings from './RawSettings';
-import SettingSummary from './SettingSummary';
 import ControllerGroup from './ControllerGroup';
-import SettingsHistory, { historyLine } from './SettingsHistory';
+import ControllerMemory from './ControllerMemory';
+import SettingsHistory from './SettingsHistory';
 import SettingsPendingBar from './SettingsPendingBar';
 import SettingsReview from './SettingsReview';
 import Sheet from './Sheet';
 import UndoNotice from './UndoNotice';
-import { useIsPhone } from './shell';
+import { useIsPhone, useIsWide } from './shell';
 import useSettingsPreview from './useSettingsPreview';
 import useSettingsWrite from './useSettingsWrite';
 import { useUnits } from './units';
 import {
-  GROUPS, groupLine, groupsIn, isBad, pendingGroups, pendingRows, restoreDrafts,
+  GROUPS, groupsIn, isBad, pendingGroups, pendingRows, restoreDrafts,
 } from '../machine/machineSettings';
-import { figure, lengthLabel } from '../machine/units';
 import { readSettings } from '../machine/commands';
 import { t } from '../i18n';
 
@@ -30,14 +26,10 @@ import { t } from '../i18n';
  * 2026-09-28 — a list of groups that opens a group, one bar for the changes
  * not yet written, and one review that writes them.
  *
- * The card says what it is reading — PAMIĘĆ STEROWNIKA and the firmware —
- * and reads it again with ↻. Each group's line shows its values, from the
- * server; under a rule, the two things that are not groups: the history of
- * writes, and Grbl's own `$$`. A group opens in a sheet (frame D2); nothing
- * reaches the controller before the review's "Zapisz w sterowniku".
- *
- * The same on every width for now. The tablet's and the PC's columns — a
- * group beside the list, Geometria beside both — are the next two steps.
+ * The list is `ControllerMemory`. A group opens in a sheet on a phone, in
+ * the list's place on a tablet, beside the list on a PC; Geometria is a
+ * sheet on a phone and a column wider. Nothing reaches the controller
+ * before the review's "Zapisz w sterowniku".
  *
  * The server lists, converts, checks, writes and reads back; the panel keeps
  * only what was typed.
@@ -61,6 +53,8 @@ const ControllerSettings = ({ machine }) => {
   const units = useUnits();
   const { rule } = units;
   const phone = useIsPhone();
+  // A PC's three columns: the list, the group chosen in it, Geometria (frames PC).
+  const wide = useIsWide();
   const [drafts, setDrafts] = useState({});
   // The group being edited: a sheet on a phone, the list's place wider.
   const [group, setGroup] = useState(null);
@@ -125,60 +119,24 @@ const ControllerSettings = ({ machine }) => {
     );
   }
 
-  const firmware = view.firmware;
-  const summaries = view.groups ?? [];
   const groups = groupsIn(rows);
-  const travel = geometry?.summary.find(({ id }) => id === 'travel')?.value;
-
-  const list = (
-    <div className="flex flex-col gap-2">
-      {!machine.canWriteSettings ? <Notice>{t('machine.readOnly')}</Notice> : null}
-      {groups.map(({ id }) => (
-        <SettingSummary
-          key={id}
-          title={groupTitle(id)}
-          values={groupLine(summaries.find(({ group }) => group === id), rule)}
-          opens={phone ? 'sheet' : 'view'}
-          onOpen={() => setGroup(id)}
-        />
-      ))}
-      {/* A phone's only: wider, Geometria is a column of its own beside the list. */}
-      {geometry && phone ? (
-        <SettingSummary
-          title={groupTitle(GEOMETRY)}
-          values={travel ? [{ value: ['x', 'y', 'z'].map((axis) => figure(travel[axis], rule, 'extent')).join(' × '), unit: lengthLabel(rule) }] : []}
-          onOpen={() => setOpen(GEOMETRY)}
-        />
-      ) : null}
-      {/* Not groups: what was written, and Grbl's own list. */}
-      <div className="mt-1 flex flex-col gap-2 border-t border-line pt-3">
-        <SettingSummary title={t('machine.history.title')} values={[{ value: historyLine(view.history ?? []) }]} onOpen={() => setOpen(HISTORY)} />
-        <SettingSummary title={t('machine.raw.title')} values={[{ value: t('machine.raw.count', { count: rows.length }) }]} onOpen={() => setOpen(RAW)} />
-      </div>
-    </div>
-  );
-
-  /*
-   * The card's head reads what it is and has the one action; on a phone the
-   * whole card scrolls with it, as the other tabs do, and wider the head
-   * stands and the list scrolls under it (handoff, "Przewijanie").
-   */
+  // On a PC one group is always chosen, the first until another is.
+  const shownGroup = groups.find(({ id }) => id === group)?.id ?? (wide ? groups[0]?.id : undefined);
   const card = (
-    <Card
-      label={t('machine.card.title')}
-      sublabel={firmware?.version ? `${firmware.name} ${firmware.version}` : firmware?.name}
-      aside={(
-        <Button compact className="size-chiph" aria-label={t('machine.card.read')} title={t('machine.card.read')} disabled={!machine.canWriteSettings} onClick={read}>
-          <Icon name="refresh" className="size-5" weight={2} />
-        </Button>
-      )}
-      className={phone ? 'flex-1' : 'min-h-0 flex-1'}
-    >
-      {phone ? list : <FadeScroller>{list}</FadeScroller>}
-    </Card>
+    <ControllerMemory
+      view={view}
+      groups={groups}
+      chosen={shownGroup}
+      rule={rule}
+      canWrite={machine.canWriteSettings}
+      onRead={read}
+      onGroup={setGroup}
+      onGeometry={() => setOpen(GEOMETRY)}
+      onHistory={() => setOpen(HISTORY)}
+      onRaw={() => setOpen(RAW)}
+    />
   );
 
-  const shownGroup = groups.find(({ id }) => id === group)?.id;
   const groupView = shownGroup ? (
     <ControllerGroup
       group={shownGroup}
@@ -191,6 +149,7 @@ const ControllerSettings = ({ machine }) => {
       flash={flash}
       inline={!phone}
       onClose={() => setGroup(null)}
+      onBack={phone || wide ? undefined : () => setGroup(null)}
     />
   ) : null;
   const geometryView = geometry ? (
@@ -227,11 +186,16 @@ const ControllerSettings = ({ machine }) => {
       ) : (
         <>
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-gap">
-            {groupView || card}
+            {wide ? (
+              <div className="flex min-h-0 flex-1 gap-gap">
+                <div className="flex min-h-0 w-setcol shrink-0 flex-col">{card}</div>
+                {groupView}
+              </div>
+            ) : groupView || card}
             {bar}
           </div>
           {geometryView ? (
-            <Card label={groupTitle(GEOMETRY)} aside={GEOMETRY_CODES} className="min-h-0 w-side shrink-0">
+            <Card label={groupTitle(GEOMETRY)} aside={GEOMETRY_CODES} className="min-h-0 w-setcol shrink-0">
               <FadeScroller>{geometryView}</FadeScroller>
             </Card>
           ) : null}
