@@ -1177,11 +1177,6 @@
       "title": "Pamięć sterownika",
       "read": "Odczytaj ze sterownika"
     },
-    "readOver": {
-      "title": "Odczytać ze sterownika?",
-      "note": "Niezapisane zmiany ({{count}}) przepadną, a na ekranie będzie to, co trzyma sterownik.",
-      "confirm": "Odczytaj"
-    },
     "raw": {
       "title": "Widok surowy $$",
       "count": "ustawień: {{count}}"

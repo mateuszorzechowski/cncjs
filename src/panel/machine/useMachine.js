@@ -172,7 +172,7 @@ export const useMachine = () => {
 
     if (!open) {
       setSnapshot((previous) => (previous.port
-        ? { ...previous, port: '', type: '', baudrate: null, state: {}, settings: {}, machineSettings: null, settingsPreview: null, attached: false }
+        ? { ...previous, port: '', type: '', baudrate: null, state: {}, settings: {}, machineSettings: null, settingsPreview: null, settingsPending: null, attached: false }
         : previous));
       return;
     }
@@ -302,6 +302,10 @@ export const useMachine = () => {
       'machine:settings': (machineSettings) => {
         setSnapshot((previous) => ({ ...previous, machineSettings }));
       },
+      // The settings changes waiting to be written, as the server now holds them for every panel.
+      'machine:pending': (settingsPending) => {
+        setSnapshot((previous) => ({ ...previous, settingsPending }));
+      },
       // Geometria after the changes being edited, answering `settings:preview`.
       'machine:preview': (settingsPreview) => {
         setSnapshot((previous) => ({ ...previous, settingsPreview }));
@@ -404,6 +408,7 @@ export const useMachine = () => {
           settings: {},
           machineSettings: null,
           settingsPreview: null,
+          settingsPending: null,
           job: null,
           motion: null,
           workflow: 'idle',

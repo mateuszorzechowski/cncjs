@@ -288,7 +288,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
-  envelope, motion, workflow, device, alarm, fileCheck, fits, units, machineSettings, settingsPreview,
+  envelope, motion, workflow, device, alarm, fileCheck, fits, units, machineSettings, settingsPreview, settingsPending,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -521,6 +521,8 @@ export const readMachine = ({
     machineSettings: connected ? (machineSettings || null) : null,
     // Geometria after the changes being edited, by the `seq` that asked (`settings:preview`).
     settingsPreview: connected ? (settingsPreview || null) : null,
+    // The settings changes waiting to be written, shared by every panel (`machine:pending`).
+    settingsPending: connected ? (settingsPending || null) : null,
     canWriteSettings: connected && (active?.word === 'Idle' || active?.word === ALARM) && (workflow || 'idle') === 'idle',
     settingsWrong,
     // The server's, not the machine's — see the snapshot.

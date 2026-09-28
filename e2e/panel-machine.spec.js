@@ -172,16 +172,39 @@ test.describe('the Sterownik tab', () => {
     expect(await sent(cncjs.page)).toEqual([]);
   });
 
-  test('reading again over waiting changes asks first', async ({ cncjs }) => {
+  test('reading again only refreshes the comparison: the changes stay, and nothing asks', async ({ cncjs }) => {
     await open(cncjs.page);
 
     await openGroup(cncjs.page, 'Osie');
     await field(cncjs.page, 'Maks. prędkość X').fill('3500');
     await done(cncjs.page);
     await cncjs.page.getByRole('button', { name: 'Odczytaj ze sterownika' }).click();
-    await expect(sheet(cncjs.page)).toContainText('Niezapisane zmiany (1) przepadną');
-    await sheet(cncjs.page).getByRole('button', { name: 'Odczytaj', exact: true }).click();
 
+    await expect(sheet(cncjs.page)).toHaveCount(0);
+    expect(await cncjs.page.evaluate(() => window.__sent.filter(([cmd]) => cmd === 'settings:read').length)).toBe(1);
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+  });
+
+  test('the changes belong to the server: typed ones go to it, and what it holds is shown after a reload', async ({ cncjs }) => {
+    await open(cncjs.page, { ...VIEW, drafts: { $110: { text: '3500', raw: false } } });
+
+    // Held by the server before this page was opened.
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+
+    await openGroup(cncjs.page, 'Osie');
+    await field(cncjs.page, 'Kroki silnika Z').fill('500');
+    const asked = await cncjs.page.evaluate(() => window.__sent.filter(([cmd]) => cmd === 'settings:drafts').pop()[1]);
+    expect(asked.set).toEqual({ $102: { text: '500', raw: false } });
+    expect(await sent(cncjs.page)).toEqual([]);
+  });
+
+  test('a change another panel made shows here, and a discard there empties the bar here', async ({ cncjs }) => {
+    await open(cncjs.page);
+
+    await cncjs.page.evaluate(() => window.__fire('machine:pending', { drafts: { $110: { text: '3500', raw: false } }, device: 'phone-elsewhere', seq: 4 }));
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+
+    await cncjs.page.evaluate(() => window.__fire('machine:pending', { drafts: {}, device: 'phone-elsewhere', seq: 5 }));
     await expect(cncjs.page.getByRole('button', { name: 'Przejrzyj' })).toHaveCount(0);
   });
 

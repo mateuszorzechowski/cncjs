@@ -39,6 +39,10 @@ const CONTROL = new Set([
   'feedOverride', 'spindleOverride', 'rapidOverride',
   'gcode:pause', 'gcode:resume', 'gcode:stop', 'pause', 'resume', 'stop',
   'feeder:start', 'feeder:stop', 'lasertest:off', 'realtime',
+  // Not control, but nothing that reaches the controller either: the
+  // settings changes waiting to be written, shared by the panels, and what
+  // they would do to the geometry. Discarding them mid-job is harmless.
+  'settings:drafts', 'settings:preview',
 ]);
 
 /** Grbl's states in which a paused program has nothing left in the firmware. */

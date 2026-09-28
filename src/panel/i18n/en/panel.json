@@ -1177,11 +1177,6 @@
       "title": "Controller memory",
       "read": "Read from the controller"
     },
-    "readOver": {
-      "title": "Read from the controller?",
-      "note": "The unsaved changes ({{count}}) will be lost, and the screen will show what the controller holds.",
-      "confirm": "Read"
-    },
     "raw": {
       "title": "Raw view $$",
       "count": "settings: {{count}}"

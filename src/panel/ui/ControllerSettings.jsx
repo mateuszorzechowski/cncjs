@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import Card from './Card';
-import ConfirmSheet from './ConfirmSheet';
 import FadeScroller from './FadeScroller';
 import GeometrySettings from './GeometrySettings';
 import RawSettings from './RawSettings';
@@ -14,6 +13,7 @@ import UndoNotice from './UndoNotice';
 import { useIsPhone, useIsWide } from './shell';
 import useSettingsPreview from './useSettingsPreview';
 import useSettingsWrite from './useSettingsWrite';
+import useSharedDrafts from './useSharedDrafts';
 import { useUnits } from './units';
 import {
   GROUPS, groupsIn, isBad, pendingGroups, pendingRows, restoreDrafts,
@@ -42,7 +42,6 @@ const HISTORY = 'history';
 const RAW = 'raw';
 const GEOMETRY = 'geo';
 const REVIEW = 'review';
-const REREAD = 'reread';
 
 // The settings Geometria is drawn from, as the tablet's column names them.
 const GEOMETRY_CODES = '$130–132 · $23';
@@ -55,18 +54,19 @@ const ControllerSettings = ({ machine }) => {
   const phone = useIsPhone();
   // A PC's three columns: the list, the group chosen in it, Geometria (frames PC).
   const wide = useIsWide();
-  const [drafts, setDrafts] = useState({});
+  // The changes waiting to be written: the server's, the same on every panel.
+  const [drafts, changeDrafts] = useSharedDrafts(machine);
   // The group being edited: a sheet on a phone, the list's place wider.
   const [group, setGroup] = useState(null);
-  // What is over the screen: Geometria (a phone's), the history, `$$`, the review, or "read over the changes?".
+  // What is over the screen: Geometria (a phone's), the history, `$$`, or the review.
   const [open, setOpen] = useState(null);
   const [discarded, setDiscarded] = useState(null);
   const view = machine.machineSettings;
   const rows = view?.rows ?? [];
   const pending = pendingRows(rows, drafts, rule);
   // Written and read back: every draft now matches the controller.
+  // Written and read back: the server drops what the controller now holds, for every panel.
   const { saving, error, setError, save } = useSettingsWrite(machine, pending, drafts, rule, () => {
-    setDrafts({});
     setOpen(null);
   });
   const disabled = !machine.canWriteSettings || saving;
@@ -95,21 +95,29 @@ const ControllerSettings = ({ machine }) => {
     }
   }, [open, pending.length, saving]);
 
-  const onDraft = (name, draft) => setDrafts((now) => ({ ...now, [name]: draft }));
+  const onDraft = (name, draft) => changeDrafts({ [name]: draft });
   const close = () => setOpen(null);
-  // No "are you sure": they are only this panel's edits, and "Cofnij" brings them back (frame E3).
+  /*
+   * No "are you sure" (frame E3): "Cofnij" brings them back — offered on this
+   * panel only, though the discard is every panel's.
+   */
   const discard = () => {
     setDiscarded({ seq: (discarded?.seq ?? 0) + 1, text: t('machine.discarded', { count: pending.length }), drafts });
-    setDrafts({});
+    changeDrafts({}, { clear: true });
     setError(null);
     setOpen(null);
   };
   const undo = () => {
-    setDrafts(discarded.drafts);
+    changeDrafts(discarded.drafts);
     setDiscarded(null);
   };
-  // Reading again replaces what is on screen, so with changes waiting it asks first.
-  const read = () => (pending.length > 0 ? setOpen(REREAD) : readSettings());
+  /*
+   * Reading again only refreshes what the changes are compared with: they
+   * are every panel's, and one tap here must not throw away what somebody is
+   * typing on another (Mateusz, 2026-09-28). A change the controller now
+   * holds goes by itself, at the server.
+   */
+  const read = () => readSettings();
 
   if (rows.length === 0) {
     return (
@@ -208,10 +216,10 @@ const ControllerSettings = ({ machine }) => {
           history={view.history ?? []}
           disabled={disabled}
           onRestore={(entry) => {
-            setDrafts((now) => ({ ...now, ...restoreDrafts(entry, rows) }));
+            changeDrafts(restoreDrafts(entry, rows));
             close();
           }}
-          onImport={(imported) => setDrafts((now) => ({ ...now, ...imported }))}
+          onImport={(imported) => changeDrafts(imported)}
           onClose={close}
         />
       ) : null}
@@ -231,27 +239,9 @@ const ControllerSettings = ({ machine }) => {
           saving={saving}
           error={error}
           canWrite={machine.canWriteSettings}
-          onUndo={(name) => setDrafts((now) => {
-            const next = { ...now };
-            delete next[name];
-            return next;
-          })}
+          onUndo={(name) => changeDrafts({ [name]: null })}
           onDiscard={discard}
           onSave={save}
-          onClose={close}
-        />
-      ) : null}
-      {open === REREAD ? (
-        <ConfirmSheet
-          title={t('machine.readOver.title')}
-          note={t('machine.readOver.note', { count: pending.length })}
-          confirmLabel={t('machine.readOver.confirm')}
-          tone="primary"
-          onConfirm={() => {
-            setDrafts({});
-            close();
-            readSettings();
-          }}
           onClose={close}
         />
       ) : null}

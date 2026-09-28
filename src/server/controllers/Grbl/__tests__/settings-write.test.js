@@ -1,4 +1,5 @@
 import GrblController from '../GrblController';
+import { programRefusal } from '../program-gate';
 import machineSettings from '../../../services/machine-settings';
 import devices from '../../../services/devices';
 import delay from '../../../lib/delay';
@@ -317,5 +318,37 @@ describe('settings:preview', () => {
     expect(answer.payload.seq).toBe(3);
     expect(answer.payload.changed).toEqual(['softLimits']);
     expect(answer.payload.geometry.summary.find(({ id }) => id === 'softLimits').value).toBe('off');
+  });
+});
+
+describe('settings:drafts — the changes waiting, shared by every panel', () => {
+  test('are changed and told to every panel, with the device and its number', () => {
+    const { controller, writes, socketEvents } = setup();
+
+    controller.command('settings:drafts', { set: { $110: { text: '800', raw: false } }, seq: 2 });
+
+    expect(lines(writes)).toEqual([]);
+    const told = socketEvents.filter(({ event }) => event === 'machine:pending').pop();
+    expect(told.args[0]).toEqual({ drafts: { $110: { text: '800', raw: false } }, device: 'laptop', seq: 2 });
+    expect(controller.machineSettingsView().drafts).toEqual({ $110: { text: '800', raw: false } });
+  });
+
+  test('a reading of `$$` drops the ones the controller now holds, or no longer reports, and says so', async () => {
+    const { controller, socketEvents } = setup();
+    controller.command('settings:drafts', {
+      set: { $110: { text: '800', raw: false }, $20: { text: '0', raw: true }, $400: { text: '2', raw: true } },
+    });
+
+    controller.runner.parse('$110=800.000');
+    await delay(400);
+
+    expect(machineSettings.saved().drafts).toEqual({ $20: { text: '0', raw: true } });
+    const told = socketEvents.filter(({ event }) => event === 'machine:pending').pop();
+    expect(told.args[0]).toEqual({ drafts: { $20: { text: '0', raw: true } }, device: null, seq: null });
+  });
+
+  test('allowed while a program runs: nothing of it reaches the controller', () => {
+    expect(programRefusal('settings:drafts', { workflow: 'running', firmware: 'Run' })).toBe(null);
+    expect(programRefusal('settings:preview', { workflow: 'running', firmware: 'Run' })).toBe(null);
   });
 });
