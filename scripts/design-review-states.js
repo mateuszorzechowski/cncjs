@@ -61,6 +61,7 @@
   const REFUSALS = ['alarm', 'no-wcs', 'no-travel', 'out-of-envelope', 'no-room', 'program-running',
     'jogging', 'machine-moving', 'held-elsewhere', 'not-confirmed', 'unknown-command'];
   const WCS = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59'];
+  const AVAILABLE = { label: 'panel-2099.12.31', tag: 'panel-2099.12.31', commit: 'review0', dirty: false, id: 'review-available' };
 
   const defaults = () => ({
     on: false,
@@ -81,6 +82,7 @@
     workflow: 'idle',
     percent: 0,
     motion: false,
+    update: 'none',
   });
 
   let sim = defaults();
@@ -218,9 +220,23 @@
         fail: () => reject(new TypeError('Failed to fetch')),
       }));
     }
+    if (sim.update === 'available' && url.includes('/panel/version.json')) {
+      return Promise.resolve(new Response(JSON.stringify(AVAILABLE), { headers: { 'Content-Type': 'application/json' } }));
+    }
     return realFetch(input, init);
   };
   const release = () => waiting.splice(0).forEach((request) => request.go());
+
+  /*
+   * A newer panel on the server, for the update's look: the top bar's arrow
+   * and the version row in Instalacja (2026-09-28). Only the panel's question
+   * "which build does the server have" is answered here — nothing reaches the
+   * machine, so it works with the simulation off too. The panel asks every
+   * two minutes and whenever it comes back to the front; told it came back,
+   * it asks now. With "Aktualizuj automatycznie" on, the panel takes it by
+   * itself after half a minute untouched — once, as it would a real one.
+   */
+  const recheckUpdate = () => document.dispatchEvent(new Event('visibilitychange'));
   const refuse = () => waiting.splice(0).forEach((request) => request.fail());
 
   // ---- what is shown -------------------------------------------------------
@@ -465,6 +481,10 @@
       <label class="row"><input type="checkbox" id="rv-motion"> Ruch trzyma inny panel</label>
       <div class="row"><select id="rv-refusal">${REFUSALS.map((r) => `<option>${r}</option>`).join('')}</select><button id="rv-refuse">Odmów</button></div>
     </fieldset>
+    <fieldset>
+      <legend>Aktualizacja</legend>
+      <div class="chips" data-group="update"><button data-v="none">Aktualna</button><button data-v="available" title="Serwer ma nowszy panel: panel-2099.12.31. Działa też bez symulacji.">Dostępna</button></div>
+    </fieldset>
     <fieldset data-sim>
       <legend>Panel wysłał — zatrzymane</legend>
       <div class="sent" id="rv-sent"></div>
@@ -484,7 +504,7 @@
     $('#rv-sim').textContent = sim.on ? 'Symulacja' : 'Maszyna';
     $('#rv-sim').classList.toggle('on', sim.on);
     $$('fieldset[data-sim]').forEach((f) => { f.disabled = !sim.on; });
-    const chosen = { server: sim.server, port: sim.port, state: sim.state, workflow: sim.workflow };
+    const chosen = { server: sim.server, port: sim.port, state: sim.state, workflow: sim.workflow, update: sim.update };
     $$('[data-group]').forEach((group) => {
       group.querySelectorAll('button').forEach((b) => b.classList.toggle('pick', b.dataset.v === chosen[group.dataset.group]));
     });
@@ -527,6 +547,7 @@
       if (group.dataset.group === 'port') { sim.port = v; portTo(v); }
       if (group.dataset.group === 'state') { sim.state = v; }
       if (group.dataset.group === 'workflow') { sim.workflow = v; }
+      if (group.dataset.group === 'update') { sim.update = v; recheckUpdate(); }
     });
   }));
   $('#rv-alarm').addEventListener('change', (e) => change(() => { sim.alarm = e.target.value; }));
@@ -556,6 +577,8 @@
   }).catch(() => {});
 
   draw();
+  // The panel asked before this file was here; with a newer one chosen, it asks again.
+  if (sim.update === 'available') { setTimeout(recheckUpdate, 300); }
 
   /*
    * After a reload the panel asks the server over HTTP what is open, and that
