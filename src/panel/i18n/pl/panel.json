@@ -21,7 +21,7 @@
     "port": "port",
     "state": "Stan maszyny",
     "stop": "Stop",
-    "update": "Nowsza wersja panelu — dotknij, żeby odświeżyć"
+    "update": "Dostępna nowa wersja panelu: {{version}}. Przejdź do Instalacji."
   },
   "status": {
     "noServer": "Brak serwera",
@@ -268,8 +268,7 @@
     "certFingerprint": "Odcisk SHA-256",
     "certDownload": "Pobierz certyfikat",
     "refresh": "Odśwież panel",
-    "refreshWhy": "Pobiera z serwera najnowszą wersję panelu.",
-    "updateReady": "Na serwerze czeka nowsza wersja panelu. Odśwież, żeby ją wziąć.",
+    "updateReady": "Dostępna {{version}}. Aktualizuj, żeby ją wziąć.",
     "certPlatform": "Twoje urządzenie",
     "certHow": {
       "android": "Android: wybierz „Certyfikat CA”, a nie „certyfikat VPN i aplikacji”, i ustaw najpierw blokadę ekranu, jeśli jej nie masz.",
@@ -284,7 +283,17 @@
     "step2Blocked": "Najpierw krok 1: przeglądarka instaluje aplikację tylko przez połączenie, któremu ufa.",
     "step2Done": "Zainstalowana na tym urządzeniu.",
     "stepDone": "gotowe",
-    "version": "Wersja panelu {{version}}"
+    "upToDate": "To najnowsza dostępna wersja.",
+    "update": "Aktualizuj",
+    "dirty": "{{version}} (zmiany lokalne)",
+    "auto": {
+      "label": "Aktualizuj automatycznie",
+      "off": "Wyłączone",
+      "on": "Włączone",
+      "note": "Na tym urządzeniu. Panel przeładuje się sam, gdy nikt go nie używa: w tle albo po 30 s bez dotyku."
+    },
+    "versionLabel": "Wersja panelu",
+    "checking": "Sprawdzam dostępną wersję…"
   },
   "refusal": {
     "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",

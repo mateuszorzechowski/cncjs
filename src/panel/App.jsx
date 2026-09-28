@@ -14,7 +14,7 @@ import TopBar from './ui/TopBar';
 import StatusSheet from './ui/StatusSheet';
 import RefusalNotice from './ui/RefusalNotice';
 import StateHelp from './ui/StateHelp';
-import { applyUpdate, isUpdateReady, watchUpdate } from './machine/update';
+import { buildName, isUpdateReady, servedBuild, watchUpdate } from './machine/update';
 import { useAutoConnect } from './machine/autoConnect';
 import { useDeviceName } from './machine/useDeviceName';
 import { useKeepAwake } from './ui/keepAwake';
@@ -23,7 +23,7 @@ import JogScreen from './screens/JogScreen';
 import FilesScreen from './screens/FilesScreen';
 import JournalScreen from './screens/JournalScreen';
 import PathScreen from './screens/PathScreen';
-import SettingsScreen from './screens/SettingsScreen';
+import SettingsScreen, { showSettingsTab } from './screens/SettingsScreen';
 import ZeroScreen from './screens/ZeroScreen';
 import { useMachine } from './machine/useMachine';
 import { adviceFor } from './machine/advice';
@@ -185,8 +185,11 @@ const Panel = ({ machine, screen, onScreen }) => {
         onStatus={() => setAlerting(true)}
         canStop={machine.connected}
         onStop={stop}
-        updateReady={updateReady}
-        onUpdate={applyUpdate}
+        updateTo={updateReady ? buildName(servedBuild()) : null}
+        onUpdate={() => {
+          showSettingsTab('install');
+          onScreen('settings');
+        }}
         help={screenHelp}
       />
 

@@ -11,38 +11,48 @@
  * pull-to-refresh was switched off — deliberately, because the same gesture
  * scrolls the settings and opens the menu. That trade is only honest if the
  * panel says when a reload is worth making, which is what this is for.
- */
-
-/*
- * The decision, kept away from the browser so it can be tested.
  *
- * `controllerchange` fires twice in the life of a page for two quite
- * different reasons: once when the very first worker takes over a page that
- * had none, and again whenever a *new* worker replaces it. Only the second is
- * an update. Treating the first as one would show the badge to everybody on
- * their first ever visit, which is the fastest way to teach somebody to
- * ignore it.
- */
-export const isUpdate = ({ hadController }) => Boolean(hadController);
-
-/*
- * How often to ask the server whether it has a newer worker.
+ * The build writes its version beside the panel (`version.json`, see
+ * `scripts/panel-version.js`), and the panel on screen compares it with its
+ * own. It used to wait for a new service worker instead, which only arrives
+ * when `sw.js` itself changes — most rebuilds went unnoticed (Mateusz,
+ * 2026-09-28: *"chcę widzieć, do jakiej wersji mogę zaktualizować panel"*).
  *
- * The browser checks on navigation, and a pendant does not navigate. Ten
- * minutes is frequent enough that a rebuild is noticed within one coffee and
- * rare enough to be invisible next to the status reports already flowing.
+ * And it updates itself, unless this device says not to: when nobody is
+ * using it. A reload under a finger holding a jog key would drop the key
+ * mid-move, so it waits for the page to go to the background or for
+ * `IDLE_MS` without a touch or a key.
  */
-const CHECK_MS = 10 * 60 * 1000;
 
-let ready = false;
+import { t } from '../i18n';
+
+/** This panel's own build: `{ label, tag, commit, dirty, builtAt, id }`. */
+export const THIS_BUILD = process.env.BUILD_VERSION ?? null;
+
+/** A build as it is named: its tag or commit, and whether it was built with local changes. */
+export const buildName = (build) => (build?.dirty ? t('app.dirty', { version: build.label }) : build?.label ?? '');
+
+/** Whether the server serves another build than the one running here. */
+export const isNewer = (mine, served) => Boolean(mine && served?.id && served.id !== mine.id);
+
+// How often to ask: a small file, and a rebuild is seen within a couple of minutes.
+const CHECK_MS = 2 * 60 * 1000;
+// How long without a touch or a key before an update may reload the page by itself.
+export const IDLE_MS = 30 * 1000;
+const KEY = 'panel.autoUpdate';
+
+let served = null;
 const watchers = new Set();
 
 const tell = () => watchers.forEach((notify) => notify());
 
-/** A newer panel is waiting on the server. Reload to take it. */
-export const isUpdateReady = () => ready;
+/** The build the server has now, once asked; `null` before that. */
+export const servedBuild = () => served;
 
-/** Called when that changes. Returns the unsubscribe. */
+/** A newer panel is waiting on the server. Reload to take it. */
+export const isUpdateReady = () => isNewer(THIS_BUILD, served);
+
+/** Called when either of the above, or the setting, changes. Returns the unsubscribe. */
 export const watchUpdate = (notify) => {
   watchers.add(notify);
   return () => watchers.delete(notify);
@@ -51,37 +61,92 @@ export const watchUpdate = (notify) => {
 /** Take it. Nothing is lost: the job and the port belong to the server. */
 export const applyUpdate = () => window.location.reload();
 
+/** This device updating by itself: on unless it was switched off here. */
+export const readAutoUpdate = () => {
+  try {
+    return window.localStorage.getItem(KEY) !== 'off';
+  } catch (e) {
+    return true;
+  }
+};
+
+export const setAutoUpdate = (on) => {
+  try {
+    if (on) {
+      window.localStorage.removeItem(KEY);
+    } else {
+      window.localStorage.setItem(KEY, 'off');
+    }
+  } catch (e) {
+    // A browser that keeps nothing updates by itself, which is the default.
+  }
+  tell();
+};
+
 /*
  * Guarded, because this module is imported by the Jest tier too, where there
- * is no navigator at all — and by a panel served over plain HTTP, where a
- * service worker is not allowed and this is simply a feature that is off.
+ * is no window at all.
  */
-if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  let lastInput = Date.now();
+  const touched = () => {
+    lastInput = Date.now();
+  };
+  window.addEventListener('pointerdown', touched, { capture: true, passive: true });
+  window.addEventListener('keydown', touched, { capture: true, passive: true });
+
   /*
-   * Whether a worker is in charge *right now*, kept up to date rather than
-   * captured once.
-   *
-   * Captured once it would be wrong for the ordinary case: a first visit
-   * loads uncontrolled, the worker claims the page, and every later swap
-   * would still be compared against "there was none at load" and go
-   * unreported. So the first claim moves this to true and is not an update;
-   * everything after it is.
+   * Once per build on the server. Should the reload bring back the same old
+   * panel — a bundle kept by the browser's cache — it would otherwise reload
+   * again every half a minute; the button stays for that case.
    */
-  let controlled = Boolean(navigator.serviceWorker.controller);
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (isUpdate({ hadController: controlled })) {
-      ready = true;
-      tell();
+  const TRIED = 'panel.autoUpdateTried';
+  const tried = () => {
+    try {
+      return window.sessionStorage.getItem(TRIED);
+    } catch (e) {
+      return null;
     }
-    controlled = true;
-  });
+  };
+  const maybeApply = () => {
+    if (!isUpdateReady() || !readAutoUpdate() || tried() === served.id) {
+      return;
+    }
+    if (document.hidden || Date.now() - lastInput >= IDLE_MS) {
+      try {
+        window.sessionStorage.setItem(TRIED, served.id);
+      } catch (e) {
+        // Without it the next reload may try again; the button is still there.
+      }
+      applyUpdate();
+    }
+  };
 
-  navigator.serviceWorker.ready
-    .then((registration) => {
-      setInterval(() => registration.update().catch(() => undefined), CHECK_MS);
+  const check = () => fetch('/panel/version.json', { cache: 'no-store' })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((build) => {
+      if (build?.id && build.id !== served?.id) {
+        served = build;
+        tell();
+      }
     })
-    .catch(() => undefined);
+    .catch(() => undefined)
+    .then(maybeApply);
+
+  check();
+  setInterval(check, CHECK_MS);
+  // Waiting for a quiet moment: checked often, it costs nothing.
+  setInterval(maybeApply, 5000);
+  document.addEventListener('visibilitychange', () => (document.hidden ? maybeApply() : check()));
+
+  // The worker itself, still asked for now and then, so a change to `sw.js` reaches the browser.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        setInterval(() => registration.update().catch(() => undefined), CHECK_MS * 5);
+      })
+      .catch(() => undefined);
+  }
 }
 
 export default isUpdateReady;

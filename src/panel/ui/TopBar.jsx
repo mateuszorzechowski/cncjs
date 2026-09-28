@@ -1,5 +1,6 @@
 import Button from './Button';
 import HelpButton from './HelpButton';
+import Icon from './Icon';
 import StateChip from './StateChip';
 import { t } from '../i18n';
 
@@ -45,7 +46,7 @@ import { t } from '../i18n';
  * rail's own width. On a phone there is no rail to line up with and the chip
  * has no box, so it keeps the bar's ordinary margin instead.
  */
-const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpdate, help }) => (
+const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate, help }) => (
   /*
     * The safe area is padded here rather than on the body.
     *
@@ -66,6 +67,27 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpd
       * so on a screen without help it goes and nothing that can be pressed
       * moves. `headerSlot`. */}
     {help ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:h-btnh @3xl/shell:w-14 @3xl/shell:text-lead" /> : null}
+
+    {/*
+      * A newer panel is available: the arrow into the tray, and nothing more,
+      * right after the help and as tall as it (Mateusz, 2026-09-28: *"po
+      * lewej, koło statusu i pomocy"*, *"sama ikona bez tekstu"*). Last in
+      * the group, so when it appears nothing that can be pressed moves.
+      * Quiet, because nothing is wrong. It takes you to the settings'
+      * Instalacja, where the version is named and "Aktualizuj" takes it — a
+      * proposal, not a reload under the finger (*"ma przenosić"*).
+      */}
+    {updateTo ? (
+      <button
+        type="button"
+        onClick={onUpdate}
+        aria-label={t('topbar.update', { version: updateTo })}
+        title={t('topbar.update', { version: updateTo })}
+        className="flex size-chiph shrink-0 items-center justify-center rounded-ctl border border-acc bg-accS text-acc @3xl/shell:h-btnh @3xl/shell:w-14"
+      >
+        <Icon name="update" className="size-5 @3xl/shell:size-6" weight={2} />
+      </button>
+    ) : null}
 
     {/* Top left, a line each. Which controller and which port are two
       * separate facts and read faster stacked than joined with a dot; kept
@@ -89,33 +111,6 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpd
           </span>
         ))}
     </div>
-
-    {/*
-      * A newer panel is on the server.
-      *
-      * Beside the stop because that is the corner the eye already goes to,
-      * and small because it is not urgent: nothing is wrong, there is simply
-      * a better version a tap away. It exists at all because pull-to-refresh
-      * was switched off — the gesture that used to reload the panel now
-      * scrolls the settings and opens the menu, so the panel has to offer the
-      * reload itself. The other half of the offer is a button in the
-      * application settings, for anyone who reaches for one there.
-      *
-      * Reloading costs nothing on this panel: the port and the running job
-      * belong to the server, and the page re-attaches to both on the way back
-      * up. That is what makes it safe to put next to a stop button.
-      */}
-    {updateReady ? (
-      <button
-        type="button"
-        onClick={onUpdate}
-        aria-label={t('topbar.update')}
-        title={t('topbar.update')}
-        className="mr-1 size-chiph shrink-0 rounded-ctl border border-acc bg-accS text-lead font-semibold leading-none text-acc"
-      >
-        &#8635;
-      </button>
-    ) : null}
 
     <Button
       tone="stop"

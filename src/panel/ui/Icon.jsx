@@ -164,6 +164,8 @@ const GLYPHS = {
   cross: <path d="M7 7 17 17M17 7 7 17" />,
   // Read again from the controller: an arc that comes back round to itself.
   refresh: <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15" />,
+  // A newer panel is available: an arrow down into a tray, the way an update is fetched.
+  update: <path d="M12 4v11M7 10.5l5 5 5-5M5.5 19.5h13" />,
 
   /*
    * The machine's zero: the same arms, **in the corner**.
