@@ -1,0 +1,126 @@
+{
+  "projectId": "cea9e13b-c98d-4bd8-8103-16df4fbd45f8",
+  "shape": "package",
+  "pkg": "cncjs",
+  "globalName": "CncPanel",
+  "entry": ".design-sync/entry.jsx",
+  "srcDir": "src/panel/ui",
+  "buildCmd": "npx tailwindcss -c tailwind.panel.config.js -i src/panel/styles/base.css -o .design-sync/.cache/panel.css",
+  "cssEntry": ".design-sync/.cache/panel.css",
+  "provider": {
+    "component": "PanelRoot"
+  },
+  "componentSrcMap": {
+    "Button": "src/panel/ui/Button.jsx",
+    "Card": "src/panel/ui/Card.jsx",
+    "ConfirmSheet": "src/panel/ui/ConfirmSheet.jsx",
+    "DateTimeField": "src/panel/ui/DateTimeField.jsx",
+    "DroStack": "src/panel/ui/DroStack.jsx",
+    "DroStrip": "src/panel/ui/DroStrip.jsx",
+    "FadeScroller": "src/panel/ui/FadeScroller.jsx",
+    "GroupTabs": "src/panel/ui/GroupTabs.jsx",
+    "HelpButton": "src/panel/ui/HelpButton.jsx",
+    "Icon": "src/panel/ui/Icon.jsx",
+    "IconBar": "src/panel/ui/IconBar.jsx",
+    "Meter": "src/panel/ui/Meter.jsx",
+    "NavRail": "src/panel/ui/NavRail.jsx",
+    "NavTabs": "src/panel/ui/NavTabs.jsx",
+    "Notice": "src/panel/ui/Notice.jsx",
+    "SegmentedChoice": "src/panel/ui/SegmentedChoice.jsx",
+    "SettingGroup": "src/panel/ui/SettingGroup.jsx",
+    "SettingRow": "src/panel/ui/SettingRow.jsx",
+    "SettingSummary": "src/panel/ui/SettingSummary.jsx",
+    "Sheet": "src/panel/ui/Sheet.jsx",
+    "StateChip": "src/panel/ui/StateChip.jsx",
+    "StatTile": "src/panel/ui/StatTile.jsx",
+    "Stepper": "src/panel/ui/Stepper.jsx",
+    "StepRow": "src/panel/ui/StepRow.jsx",
+    "TextField": "src/panel/ui/TextField.jsx",
+    "ToggleChips": "src/panel/ui/ToggleChips.jsx",
+    "WcsBadge": "src/panel/ui/WcsBadge.jsx"
+  },
+  "overrides": {
+    "ConfirmSheet": {
+      "cardMode": "single",
+      "primaryStory": "EepromWrite",
+      "viewport": "900x620"
+    },
+    "SettingRow": {
+      "cardMode": "column"
+    },
+    "Sheet": {
+      "cardMode": "single",
+      "viewport": "900x620"
+    },
+    "SettingGroup": {
+      "cardMode": "column"
+    },
+    "GroupTabs": {
+      "cardMode": "column"
+    },
+    "Button": {
+      "cardMode": "column"
+    },
+    "Card": {
+      "cardMode": "column"
+    },
+    "DateTimeField": {
+      "cardMode": "column"
+    },
+    "DroStack": {
+      "cardMode": "column"
+    },
+    "DroStrip": {
+      "cardMode": "column"
+    },
+    "FadeScroller": {
+      "cardMode": "column"
+    },
+    "HelpButton": {
+      "cardMode": "column"
+    },
+    "Icon": {
+      "cardMode": "column"
+    },
+    "IconBar": {
+      "cardMode": "column"
+    },
+    "Meter": {
+      "cardMode": "column"
+    },
+    "NavTabs": {
+      "cardMode": "column"
+    },
+    "Notice": {
+      "cardMode": "column"
+    },
+    "SegmentedChoice": {
+      "cardMode": "column"
+    },
+    "SettingSummary": {
+      "cardMode": "column"
+    },
+    "StatTile": {
+      "cardMode": "column"
+    },
+    "StateChip": {
+      "cardMode": "column"
+    },
+    "Stepper": {
+      "cardMode": "column"
+    },
+    "TextField": {
+      "cardMode": "column"
+    },
+    "WcsBadge": {
+      "cardMode": "column"
+    },
+    "StepRow": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "guidelinesGlob": [
+    "src/panel/DESIGN.md"
+  ]
+}
