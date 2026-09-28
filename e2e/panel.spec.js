@@ -267,6 +267,36 @@ test.describe('panel, disconnected', () => {
     cncjs.expectNoPageErrors();
   });
 
+  test('when the port opens unasked is two settings, the server\'s and this device\'s, a row each', async ({ cncjs }) => {
+    // The server's answered here, so the case changes nothing on the server it runs against.
+    let saved = null;
+    await cncjs.page.route('**/api/connection/auto', (route) => {
+      if (route.request().method() === 'PUT') {
+        saved = route.request().postDataJSON().mode;
+        return route.fulfill({ json: { mode: saved } });
+      }
+      return route.fulfill({ json: { mode: 'manual' } });
+    });
+    await openPanel(cncjs.page);
+    await rail(cncjs.page).getByRole('button', { name: 'Ustawienia' }).click();
+
+    const server = cncjs.page.getByRole('group', { name: 'Łączenie przez serwer' });
+    const device = cncjs.page.getByRole('group', { name: 'Łącz przy otwarciu panelu' });
+    await expect(server.getByRole('button', { name: 'Ręcznie' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(device.getByRole('button', { name: 'Wyłączone' })).toHaveAttribute('aria-pressed', 'true');
+
+    // Each on its own: this device's does not touch the server's.
+    await device.getByRole('button', { name: 'Włączone' }).click();
+    await expect(device.getByRole('button', { name: 'Włączone' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await cncjs.page.evaluate(() => window.localStorage.getItem('panel.connectOnOpen'))).toBeTruthy();
+    expect(saved).toBe(null);
+
+    await server.getByRole('button', { name: 'Przy starcie serwera' }).click();
+    await expect.poll(() => saved).toBe('server');
+    await expect(device.getByRole('button', { name: 'Włączone' })).toHaveAttribute('aria-pressed', 'true');
+    cncjs.expectNoPageErrors();
+  });
+
   test('names a port the way the driver does, and everything round it in the language', async ({ cncjs }) => {
     // Rule 8 has an edge, and this is it. `COM3` and `Arduino LLC` come from
     // the operating system; a panel that translated them would be inventing a

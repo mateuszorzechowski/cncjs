@@ -3,8 +3,8 @@ import { currentToken } from './session';
 import { useLastConnection } from './usePorts';
 
 /**
- * When the port opens unasked: this device's half of it, and the server's.
- * The rule that joins the two is `connectMode.js`.
+ * When the port opens unasked: this device's half of it, and the server's —
+ * two settings, a row each (`ui/AutoConnectChoice`).
  */
 const DEVICE_KEY = 'panel.connectOnOpen';
 

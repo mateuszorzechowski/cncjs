@@ -1,28 +1,39 @@
 import { useEffect, useState } from 'react';
 import SegmentedChoice from './SegmentedChoice';
 import { fetchAutoMode, keepConnectOnOpen, readConnectOnOpen, saveAutoMode } from '../machine/autoConnect';
-import { CONNECT_MODES, connectMode, connectPlan, serverBeside } from '../machine/connectMode';
 import { t } from '../i18n';
 
+/*
+ * When the port opens unasked: two settings, two rows (review note,
+ * 2026-09-28: *"czy w ramach tej sekcji możemy rozdzielić te akcje, manual i
+ * auto dla serwera i osobno połączenie po włączeniu panelu?"*). They were one
+ * control of three choices, where this device's choice hid the server's and
+ * a lighter mark had to show it underneath; apart, each says its own scope.
+ *
+ * - the server's, `connection.auto`: `manual` or `server`, the same on every
+ *   device;
+ * - this device's: whether it connects when the panel is opened, kept in the
+ *   browser, because every device keeps its own.
+ */
+const SERVER_MODES = ['manual', 'server'];
+const ON_OPEN = ['off', 'on'];
+
 // Written out, so every key is a literal the resources test can find.
-const NAMES = {
+const SERVER_NAMES = {
   manual: 'connect.auto.manual',
-  panel: 'connect.auto.panel',
   server: 'connect.auto.server',
 };
+const ON_OPEN_NAMES = {
+  off: 'connect.open.off',
+  on: 'connect.open.on',
+};
 
-export const AUTO_NOTES = {
+export const SERVER_NOTES = {
   manual: 'connect.auto.manualNote',
-  panel: 'connect.auto.panelNote',
   server: 'connect.auto.serverNote',
 };
 
-/**
- * When the port opens unasked — the mode shown and the way to choose one,
- * handed to the row so its note and its scope can follow the choice. See
- * `machine/connectMode` for the two settings behind the one control. Shown
- * only once the server has said its part.
- */
+/** Both settings, and the way to change each. The server's is `null` until it has said. */
 export const useAutoMode = () => {
   const [serverMode, setServerMode] = useState(null);
   const [onOpen, setOnOpen] = useState(readConnectOnOpen);
@@ -33,41 +44,39 @@ export const useAutoMode = () => {
       live = false;
     };
   }, []);
-  const choose = (mode) => {
-    const plan = connectPlan(mode, onOpen);
-    if (plan.onOpen !== undefined) {
-      keepConnectOnOpen(plan.onOpen);
-      setOnOpen(plan.onOpen);
-    }
-    if (plan.server) {
-      saveAutoMode(plan.server).then(setServerMode).catch(() => {});
-    }
+  const chooseServer = (mode) => {
+    saveAutoMode(mode).then(setServerMode).catch(() => {});
   };
-  const known = serverMode !== null;
-  return {
-    mode: known ? connectMode(serverMode, onOpen) : null,
-    // The server's own mode, beside this device's choice (or null).
-    beside: known ? serverBeside(serverMode, onOpen) : null,
-    choose,
+  const chooseOnOpen = (on) => {
+    keepConnectOnOpen(on);
+    setOnOpen(on);
   };
+  return { serverMode, onOpen, chooseServer, chooseOnOpen };
 };
 
-/**
- * This device's choice filled; the server's beside it in the lighter mark —
- * the same `covers` face the jog steps use.
- */
-const AutoConnectChoice = ({ mode, beside, onChoose }) => (
+/** Manually / when the server starts — the server's, for every device. */
+export const ServerConnectChoice = ({ mode, onChoose }) => (
   <SegmentedChoice
     joined
     fitWide
     label={t('connect.auto.label')}
-    options={CONNECT_MODES}
-    value={mode}
-    covers={(option) => option === beside}
+    options={SERVER_MODES}
+    value={mode === 'server' ? SERVER_MODES[1] : SERVER_MODES[0]}
     disabled={mode === null}
     onChange={onChoose}
-    format={(id) => t(NAMES[id])}
+    format={(id) => t(SERVER_NAMES[id])}
   />
 );
 
-export default AutoConnectChoice;
+/** Off / on — this device connecting when the panel is opened. */
+export const OnOpenConnectChoice = ({ on, onChoose }) => (
+  <SegmentedChoice
+    joined
+    fitWide
+    label={t('connect.open.label')}
+    options={ON_OPEN}
+    value={ON_OPEN[Number(on)]}
+    onChange={(id) => onChoose(id === ON_OPEN[1])}
+    format={(id) => t(ON_OPEN_NAMES[id])}
+  />
+);
