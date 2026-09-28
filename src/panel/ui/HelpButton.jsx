@@ -20,7 +20,7 @@ const HelpButton = ({ label, onPress, className = '' }) => (
     type="button"
     aria-label={label}
     onClick={onPress}
-    className={`shrink-0 rounded-ctl border border-line font-semibold leading-none text-mut transition-colors hover:border-acc hover:text-acc ${className}`}
+    className={`shrink-0 rounded-ctl border border-outline font-semibold leading-none text-mut transition-colors hover:border-acc hover:text-acc ${className}`}
   >
     ?
   </button>
