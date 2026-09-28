@@ -3,6 +3,7 @@ const ESLintPlugin = require('eslint-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 const pkg = require('./src/package.json');
+const { readVersion } = require('./scripts/panel-version');
 
 /**
  * The panel: a second application in the same repository, built from the
@@ -26,6 +27,9 @@ const alias = {
   'react-dom$': require.resolve('react-dom19'),
   'react-dom/client': require.resolve('react-dom19/client'),
 };
+
+// This fork's build, from git: a `panel-…` tag, or the tag and the commit (`scripts/panel-version.js`).
+const version = readVersion(__dirname, pkg.version);
 
 module.exports = ({ mode, outputPath }) => ({
   mode,
@@ -212,8 +216,22 @@ module.exports = ({ mode, outputPath }) => ({
   plugins: [
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify(mode),
-      'process.env.BUILD_VERSION': JSON.stringify(pkg.version),
+      'process.env.BUILD_VERSION': JSON.stringify(version),
     }),
+    /*
+     * The same version beside the panel, for the panels already open: they
+     * read it to learn that the server now serves another build — any
+     * rebuild, not only one that changes the service worker.
+     */
+    {
+      apply: (compiler) => {
+        compiler.hooks.thisCompilation.tap('PanelVersion', (compilation) => {
+          compilation.hooks.processAssets.tap({ name: 'PanelVersion', stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL }, () => {
+            compilation.emitAsset('version.json', new webpack.sources.RawSource(JSON.stringify(version)));
+          });
+        });
+      },
+    },
     new ESLintPlugin({
       extensions: ['js', 'jsx'],
       context: path.resolve(__dirname, 'src/panel'),

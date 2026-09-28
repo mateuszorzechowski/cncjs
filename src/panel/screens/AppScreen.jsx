@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Notice from '../ui/Notice';
 import SegmentedChoice from '../ui/SegmentedChoice';
+import SettingRow from '../ui/SettingRow';
 import StepRow from '../ui/StepRow';
 import { PLATFORMS, platformOf } from '../machine/platform';
 import { trustState } from '../machine/trust';
 import { installSteps } from '../machine/installSteps';
 import { AUTHORITY_URL, fetchAuthority } from '../machine/authority';
 import { canInstall, isInstalled, promptInstall, watchInstall } from '../machine/install';
-import { applyUpdate, isUpdateReady, watchUpdate } from '../machine/update';
+import {
+  THIS_BUILD, applyUpdate, isUpdateReady, readAutoUpdate, servedBuild, setAutoUpdate, watchUpdate,
+} from '../machine/update';
 import { t } from '../i18n';
 
 /**
@@ -68,8 +71,15 @@ const STEP_FACE = {
   done: 'done',
 };
 
-// The panel's own version, from the build (`webpack.config.panel.js`).
-const VERSION = process.env.BUILD_VERSION;
+// A build as it is named: its tag or commit, and whether it was built with local changes.
+const buildName = (build) => (build?.dirty ? t('app.dirty', { version: build.label }) : build?.label ?? '');
+
+const AUTO = ['off', 'on'];
+// Written out, so every key is a literal the resources test can find.
+const AUTO_LABELS = {
+  off: 'app.auto.off',
+  on: 'app.auto.on',
+};
 
 const PLATFORM_NAMES = {
   android: 'platform.android',
@@ -98,6 +108,14 @@ const AppScreen = () => {
   useEffect(() => watchInstall(() => bump((n) => n + 1)), []);
 
   useEffect(() => watchUpdate(() => bump((n) => n + 1)), []);
+  const updateReady = isUpdateReady();
+  const served = servedBuild();
+  let versionNote = t('app.refreshWhy');
+  if (updateReady) {
+    versionNote = t('app.updateReady', { version: buildName(served) });
+  } else if (served) {
+    versionNote = t('app.upToDate');
+  }
 
   const [authority, setAuthority] = useState(null);
   useEffect(() => {
@@ -224,18 +242,31 @@ const AppScreen = () => {
         * the reload is offered here, deliberately. Safe at any time: the port
         * and the job belong to the server, and the page re-attaches to both.
         */}
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="font-num text-note text-ink">{t('app.version', { version: VERSION })}</span>
-          <span className="text-note text-mut">{t(isUpdateReady() ? 'app.updateReady' : 'app.refreshWhy')}</span>
+      <footer className="flex flex-col border-t border-line pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="font-num text-note text-ink">{t('app.version', { version: buildName(THIS_BUILD) })}</span>
+            <span className="text-note text-mut">{versionNote}</span>
+          </div>
+          <Button
+            tone={updateReady ? 'primary' : 'outline'}
+            onClick={applyUpdate}
+            className="h-ctl w-full @3xl/shell:w-auto"
+          >
+            {t(updateReady ? 'app.update' : 'app.refresh')}
+          </Button>
         </div>
-        <Button
-          tone={isUpdateReady() ? 'primary' : 'outline'}
-          onClick={applyUpdate}
-          className="h-ctl w-full @3xl/shell:w-auto"
-        >
-          {t('app.refresh')}
-        </Button>
+        <SettingRow title={t('app.auto.label')} note={t('app.auto.note')} noteBelow>
+          <SegmentedChoice
+            joined
+            fitWide
+            label={t('app.auto.label')}
+            options={AUTO}
+            value={AUTO[Number(readAutoUpdate())]}
+            onChange={(id) => setAutoUpdate(id === AUTO[1])}
+            format={(id) => t(AUTO_LABELS[id])}
+          />
+        </SettingRow>
       </footer>
     </>
   );
