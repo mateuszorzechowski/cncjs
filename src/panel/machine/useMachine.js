@@ -172,7 +172,7 @@ export const useMachine = () => {
 
     if (!open) {
       setSnapshot((previous) => (previous.port
-        ? { ...previous, port: '', type: '', baudrate: null, state: {}, settings: {}, machineSettings: null, attached: false }
+        ? { ...previous, port: '', type: '', baudrate: null, state: {}, settings: {}, machineSettings: null, settingsPreview: null, attached: false }
         : previous));
       return;
     }
@@ -302,6 +302,10 @@ export const useMachine = () => {
       'machine:settings': (machineSettings) => {
         setSnapshot((previous) => ({ ...previous, machineSettings }));
       },
+      // Geometria after the changes being edited, answering `settings:preview`.
+      'machine:preview': (settingsPreview) => {
+        setSnapshot((previous) => ({ ...previous, settingsPreview }));
+      },
       /**
        * How far through the job the sender is.
        *
@@ -399,6 +403,7 @@ export const useMachine = () => {
           state: {},
           settings: {},
           machineSettings: null,
+          settingsPreview: null,
           job: null,
           motion: null,
           workflow: 'idle',

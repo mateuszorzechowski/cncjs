@@ -210,6 +210,46 @@ export const rowTitle = (row) => {
   return quantity ? t('machine.axisTitle', { title: t(quantity.titleKey), axis: t(AXIS_KEYS[AXES.indexOf(row.axis)]) }) : settingText(row).title;
 };
 
+// A switch in a group's line that needs saying which one it is.
+const PART_LABELS = { $21: 'machine.summary.hard' };
+
+/**
+ * A group's line in the list, from the server's summary of it (`groups` in
+ * `machine:settings`): `{ value, unit }`s for `SettingSummary`. A switch
+ * says on or off, figures stand side by side, a range from–to.
+ */
+export const groupLine = (summary, rule) => (summary?.parts ?? []).map((part) => {
+  if (part.values === undefined) {
+    const state = t(part.on ? 'machine.on' : 'machine.off');
+    const label = PART_LABELS[part.names[0]];
+    return { value: label ? `${t(label)} ${state}` : state };
+  }
+  const figures = part.values.map((value) => settingFigure(value, part.unit, rule, { brief: true }));
+  return { value: figures.map(({ value }) => value).join(part.range ? '–' : ' · '), unit: figures[0]?.unit };
+});
+
+/** The groups the pending changes are in, in the list's order: `[{ id, count }]`. */
+export const pendingGroups = (pending) => {
+  const counts = pendingCounts(pending);
+  return GROUPS.filter(({ id }) => counts[id]).map(({ id }) => ({ id, count: counts[id] }));
+};
+
+/**
+ * "Restore the state before" a write: each setting it changed back to the
+ * value it had, as drafts — Grbl's own figures, so typed as the raw view
+ * types them. The first `from` of a setting is the one before the write.
+ * A setting the controller no longer reports is left out.
+ */
+export const restoreDrafts = (entry, rows) => {
+  const drafts = {};
+  for (const { name, from } of entry.changes) {
+    if (!(name in drafts) && rows.some((row) => row.name === name)) {
+      drafts[name] = { text: from, raw: true };
+    }
+  }
+  return drafts;
+};
+
 /** A value as a list of changes shows it: a switch or a mask by what it means, a figure as the field has it. */
 export const valueText = (row, draft, raw, rule) => (plain(row)
   ? decoded({ ...row, value: grblOf(row, draft, rule) })

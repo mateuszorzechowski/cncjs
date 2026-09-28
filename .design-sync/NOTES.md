@@ -54,7 +54,7 @@ JavaScript only), so:
   goes full width; wrap it in `<div className="flex">`.
 - **The default cell's shell is wide (≥768px)**, so components show their
   wide form; a nested `<PanelRoot className="w-[360px]">` gives the phone
-  form (StateChip, GroupTabs overflow).
+  form (StateChip).
 - **NavTabs** previews closed only — whether it is open is internal state.
 
 - **Device cells**: a capture is the viewport only (~600px usable), so a

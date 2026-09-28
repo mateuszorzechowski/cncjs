@@ -61,24 +61,36 @@ const valueText = ({ id, value }, units) => {
   }
 };
 
-const Summary = ({ rows, pending, units, onJump }) => (
+/*
+ * A line a write would change says what it will be, and under it, struck
+ * through, what it is — the same pair a field with a change in it shows
+ * (Mateusz, 2026-09-28: Geometria while the changes are being looked at).
+ * `was` is the summary as the controller holds it; `changed` the server's
+ * list of the lines that differ.
+ */
+const Summary = ({ rows, was = [], changed = [], units, onJump }) => (
   <div className="flex flex-col rounded-ctl border border-line">
-    {rows.map((row) => (
-      <button
-        key={row.id}
-        type="button"
-        onClick={() => onJump(row.group, row.names[0])}
-        className="flex items-center gap-3 border-b border-line px-3 py-1.5 text-left last:border-b-0 hover:bg-accS"
-      >
-        <span className="flex w-36 shrink-0 flex-col items-start">
-          <span className="text-note font-semibold text-ink">{t(SUMMARY_KEYS[row.id])}</span>
-          <span className="font-num text-cap text-mut">{row.names.join(' ')}</span>
-        </span>
-        <span className="min-w-0 flex-1 font-num text-note text-ink">{valueText(row, units)}</span>
-        {row.names.some((name) => pending.has(name)) ? <span aria-hidden="true" className="size-1.5 rounded-full bg-amb" /> : null}
-        <Icon name="chevron" className="size-4 shrink-0 -rotate-90 text-acc" weight={2} />
-      </button>
-    ))}
+    {rows.map((row) => {
+      const before = changed.includes(row.id) ? was.find(({ id }) => id === row.id) : null;
+      return (
+        <button
+          key={row.id}
+          type="button"
+          onClick={() => onJump(row.group, row.names[0])}
+          className={`flex items-center gap-3 border-b border-line px-3 py-1.5 text-left last:border-b-0 hover:bg-accS ${before ? 'bg-ambS' : ''}`}
+        >
+          <span className="flex w-36 shrink-0 flex-col items-start">
+            <span className="text-note font-semibold text-ink">{t(SUMMARY_KEYS[row.id])}</span>
+            <span className="font-num text-cap text-mut">{row.names.join(' ')}</span>
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="font-num text-note text-ink">{valueText(row, units)}</span>
+            {before ? <s className="font-num text-cap text-ambT">{valueText(before, units)}</s> : null}
+          </span>
+          <Icon name="chevron" className="size-4 shrink-0 -rotate-90 text-acc" weight={2} />
+        </button>
+      );
+    })}
   </div>
 );
 
@@ -127,17 +139,40 @@ export const HomingTable = ({ homing, units }) => (
   </table>
 );
 
-const GeometrySettings = ({ geometry, envelope, pending, onJump }) => {
+/**
+ * Only what a write would change, for the review: those lines before and
+ * after, the box in 3D as it would be, and the checks as they would stand
+ * after it (Mateusz, 2026-09-28: the 3D view in the review, on a phone too).
+ */
+export const GeometryChanges = ({ geometry, was, changed, envelope, onJump }) => {
   const units = useUnits();
   return (
-    <div className="grid grid-cols-1 gap-6 @3xl/shell:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <Summary rows={geometry.summary} pending={pending} units={units} onJump={onJump} />
-        <Checks checks={geometry.checks} units={units} onJump={onJump} />
-      </div>
-      <div className="flex min-w-0 flex-col gap-2">
-        <MachinePreview className="h-60" envelope={envelope} homing={geometry.homing} />
-        <HomingTable homing={geometry.homing} units={units} />
+    <div className="flex flex-col gap-3">
+      <span className="text-cap font-semibold uppercase tracking-[0.1em] text-mut">{t('machine.geo.afterWrite')}</span>
+      <Summary rows={geometry.summary.filter(({ id }) => changed.includes(id))} was={was} changed={changed} units={units} onJump={onJump} />
+      <MachinePreview className="h-52 shrink-0" envelope={envelope} homing={geometry.homing} />
+      <Checks checks={geometry.checks} units={units} onJump={onJump} />
+    </div>
+  );
+};
+
+/*
+ * By its own width, not the shell's: in the tablet's and the PC's column,
+ * or a sheet's 520px, the summary and the 3D view stack.
+ */
+const GeometrySettings = ({ geometry, was, changed, envelope, onJump }) => {
+  const units = useUnits();
+  return (
+    <div className="@container/geo">
+      <div className="grid grid-cols-1 gap-6 @3xl/geo:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Summary rows={geometry.summary} was={was} changed={changed} units={units} onJump={onJump} />
+          <Checks checks={geometry.checks} units={units} onJump={onJump} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-2">
+          <MachinePreview className="h-60" envelope={envelope} homing={geometry.homing} />
+          <HomingTable homing={geometry.homing} units={units} />
+        </div>
       </div>
     </div>
   );

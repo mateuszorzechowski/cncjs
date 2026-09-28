@@ -1,4 +1,4 @@
-import { geometryChecks, geometrySummary, homingTable, machineGeometry } from '../geometry';
+import { changedLines, geometryChecks, geometrySummary, homingTable, machineGeometry } from '../geometry';
 
 // The bench's Grbl: 1000 × 700 × 150, homing on, soft and hard limits on.
 const BENCH = {
@@ -78,5 +78,15 @@ describe('the summary', () => {
     expect(machineGeometry(undefined)).toBeNull();
     expect(machineGeometry({})).toBeNull();
     expect(machineGeometry(BENCH)).toEqual(expect.objectContaining({ checks: [] }));
+  });
+});
+
+describe('the lines a write would change', () => {
+  test('only those whose value differs, by id', () => {
+    expect(changedLines(BENCH, { ...BENCH, $130: '800.000', $22: '0' })).toEqual(['travel', 'homing', 'softLimits']);
+  });
+
+  test('none for a write that changes nothing the summary shows', () => {
+    expect(changedLines(BENCH, { ...BENCH, $24: '50.000' })).toEqual([]);
   });
 });

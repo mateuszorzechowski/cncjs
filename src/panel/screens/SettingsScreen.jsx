@@ -67,15 +67,8 @@ const TABS = Object.keys(LABELS);
  */
 let lastTab = 'connection';
 
-// The controller tab's view — described or Grbl's `$$` — the same way.
-let lastRaw = false;
-
-const VIEWS = { described: 'machine.view.described', raw: 'machine.view.raw' };
-
 const SettingsScreen = ({ machine }) => {
   const [tab, setTab] = useState(() => lastTab);
-  const [raw, setRaw] = useState(() => lastRaw);
-  const view = raw ? 'raw' : 'described';
   const keepAwake = useKeepAwakeStatus();
   /*
    * A finger swiped across the tab's content turns to the tab beside it
@@ -90,8 +83,7 @@ const SettingsScreen = ({ machine }) => {
   useSwipe(pages, turn);
   useEffect(() => {
     lastTab = tab;
-    lastRaw = raw;
-  }, [tab, raw]);
+  }, [tab]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2.5">
@@ -105,22 +97,6 @@ const SettingsScreen = ({ machine }) => {
           onChange={setTab}
           format={(id) => t(LABELS[id])}
         />
-        {tab === 'controller' ? (
-          <div className="flex items-center gap-3">
-            <span className="hidden text-cap font-semibold uppercase tracking-[0.1em] text-mut @3xl/shell:inline">{t('machine.view.label')}</span>
-            <div className="flex-1">
-              <SegmentedChoice
-                joined
-                fitWide
-                label={t('machine.view.label')}
-                options={Object.keys(VIEWS)}
-                value={view}
-                onChange={(id) => setRaw(id === 'raw')}
-                format={(id) => t(VIEWS[id])}
-              />
-            </div>
-          </div>
-        ) : null}
       </div>
 
       {/*
@@ -151,12 +127,11 @@ const SettingsScreen = ({ machine }) => {
         */}
       <div ref={pages} className="flex min-h-0 flex-1 flex-col">
       {/*
-        * The controller's settings scroll inside their card: the group tabs,
-        * the description and the save bar stay where they are and only the
-        * settings move — *"scroll ma byc na cala wysokosc kardy ale
-        * scrolowac maja sie tylko ustawienia w srodku"* (2026-09-26).
+        * The controller's settings scroll by themselves: the bar of changes
+        * waiting to be written stands under whatever scrolls, so the tab
+        * owns its scroller (settings handoff, 2026-09-28, "Przewijanie").
         */}
-      {tab === 'controller' ? <ControllerSettings machine={machine} raw={raw} /> : (
+      {tab === 'controller' ? <ControllerSettings machine={machine} /> : (
       <FadeScroller>
         <div className="flex min-h-full flex-col">
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}

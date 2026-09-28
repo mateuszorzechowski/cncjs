@@ -126,6 +126,15 @@ class Controller {
         'machine:settings': [],
 
         /**
+         * What a write of the settings being edited would do to the
+         * geometry, to the device that asked with `settings:preview`.
+         *
+         * @event machine:preview
+         * @param {object} preview - `{ seq, geometry, envelope, changed }`
+         */
+        'machine:preview': [],
+
+        /**
          * Which device is allowed to move the machine at this moment.
          *
          * The device's own identifier, as it gave it at the handshake, or null

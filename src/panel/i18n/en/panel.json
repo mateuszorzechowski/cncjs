@@ -950,15 +950,9 @@
     }
   },
   "machine": {
-    "view": {
-      "label": "View",
-      "described": "Described",
-      "raw": "GRBL $$"
-    },
     "empty": "Connect to the controller to see its settings.",
     "waiting": "The controller has not reported its settings yet. If this does not change, the server is older than this panel — restart it.",
     "readOnly": "The machine is working or a write is under way. GRBL takes changes only in Idle or Alarm, outside a program.",
-    "groups": "Setting groups",
     "group": {
       "axes": {
         "title": "Axes",
@@ -1000,8 +994,6 @@
       "travel": "Travel"
     },
     "axisTitle": "{{title}} {{axis}}",
-    "axisPick": "Axis",
-    "bitCode": "{{name}} · bit {{bit}}",
     "dir": {
       "normal": "Norm.",
       "inverted": "Inv."
@@ -1030,28 +1022,10 @@
       "placeholder": "$11, homing, mm/min",
       "count": "{{shown}} / {{all}}"
     },
-    "readRaw": "$$ Read",
     "bar": {
-      "pending": "Not saved in the controller: {{count}}",
-      "pendingBad": "Not saved in the controller: {{count}} · fix the bad values",
-      "line": "{{name}}={{value}}",
-      "discard": "Discard",
-      "save": "Save to controller ({{count}})",
       "saving": "Saving…",
-      "clean": "Matches the controller",
-      "readAt": "Read {{time}} · settings: {{count}}",
-      "reload": "Read again",
       "noAnswer": "The controller did not confirm the write. Check the connection and the Journal.",
-      "grblRefused": "Grbl refused {{name}} ({{code}}): {{meaning}} The changes before it are already saved.",
-      "saveShort": "Save ({{count}})",
-      "reloadShort": "Read",
-      "pendingShort": "To save: {{count}}"
-    },
-    "confirm": {
-      "title": "Save to the controller: {{count}}?",
-      "note": "These values go to the controller in this order. The first one refused stops the rest.",
-      "eeprom": "Written to the controller's EEPROM. The change takes effect at once and survives a power-off.",
-      "save": "Save to controller"
+      "grblRefused": "Grbl refused {{name}} ({{code}}): {{meaning}} The changes before it are already saved."
     },
     "reportFix": {
       "wrong": "The controller reports in inches ($13=1). The server reads every position as millimetres, so positions, limits and moves are wrong now. Put $13 back to 0.",
@@ -1063,9 +1037,15 @@
     "history": {
       "title": "History of changes",
       "none": "The server has not seen a change yet.",
-      "change": "{{name}}: {{from}} → {{to}}",
-      "elsewhere": "outside the panel",
-      "unnamed": "unnamed device"
+      "empty": "no writes",
+      "last": "last write {{time}}",
+      "lastExternal": "changed outside the panel {{time}}",
+      "entry": "{{when}} · {{who}}",
+      "fromPanel": "from the panel",
+      "external": "outside the panel",
+      "changes": "{{names}} · changes: {{count}}",
+      "restore": "Restore the state before",
+      "restoreNote": "Restoring adds changes to save. They are written through the review."
     },
     "s0": {
       "title": "Step pulse",
@@ -1182,7 +1162,42 @@
       "side": "$H",
       "range": "MPos range",
       "after": "After $H",
-      "span": "{{min}} … {{max}}"
+      "span": "{{min}} … {{max}}",
+      "afterWrite": "Geometry after the write"
+    },
+    "summary": {
+      "hard": "hard"
+    },
+    "card": {
+      "title": "Controller memory",
+      "read": "Read from the controller"
+    },
+    "readOver": {
+      "title": "Read from the controller?",
+      "note": "The unsaved changes ({{count}}) will be lost, and the screen will show what the controller holds.",
+      "confirm": "Read"
+    },
+    "raw": {
+      "title": "Raw view $$",
+      "count": "settings: {{count}}"
+    },
+    "axesSheet": "Axes · X Y Z",
+    "pending": {
+      "count": "Unsaved changes: {{count}}",
+      "group": "{{group}} {{count}}",
+      "review": "Review"
+    },
+    "review": {
+      "title": "Changes to save ({{count}})",
+      "undo": "Undo the change to {{name}}",
+      "note": "An EEPROM write takes effect at once and stays after power-off. Values go in this order; the first refused stops the rest. The previous values stay in the change history.",
+      "bad": "Correct the invalid values before saving.",
+      "discard": "Discard all",
+      "save": "Save to controller"
+    },
+    "discarded": "Changes discarded: {{count}}",
+    "confirm": {
+      "eeprom": "Written to the controller's EEPROM. The change takes effect at once and survives a power-off."
     }
   }
 }

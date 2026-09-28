@@ -86,8 +86,14 @@ export const inMm = (value, rule) => (usable(value) && rule ? value / rule.facto
  * per length divided by it — 800 steps/mm is 20320 steps/in — and the rest
  * are what Grbl has. To the digits a position has, so a figure in inches
  * keeps what Grbl's three decimals of a millimetre say; whole numbers bare.
+ *
+ * `brief`, for a group's line in the settings list (handoff, 2026-09-28:
+ * `3500 · 3500 · 600 mm/min`): a rate or an acceleration to the digits a
+ * feed has, since three of them in a row to a thousandth no longer fit.
  */
-export const settingFigure = (value, unit, rule) => {
+const RATES = ['feed', 'accel'];
+
+export const settingFigure = (value, unit, rule, { brief = false } = {}) => {
   const converts = Boolean(LABELS.mm[unit]);
   const labels = rule ? LABELS[rule.name] : null;
   if (!usable(value) || (converts && !labels)) {
@@ -95,7 +101,8 @@ export const settingFigure = (value, unit, rule) => {
   }
   if (converts) {
     const shown = unit === 'perLength' ? value / rule.factor : value * rule.factor;
-    return { value: shown.toFixed(rule.digits.position), unit: t(labels[unit]) };
+    const digits = brief && RATES.includes(unit) ? rule.digits.feed : rule.digits.position;
+    return { value: shown.toFixed(digits), unit: t(labels[unit]) };
   }
   return { value: String(value), unit: FIXED_LABELS[unit] ? t(FIXED_LABELS[unit]) : '' };
 };
