@@ -85,7 +85,8 @@
     "stepFor": "Step {{axes}}",
     "speedFor": "Speed {{axes}}",
     "sheet": "Jog {{axes}}",
-    "noHoming": "Homing is off: nothing guards the ends of the axes."
+    "noHoming": "Homing is off: nothing guards the ends of the axes.",
+    "noHomingHide": "Hide the warning"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",

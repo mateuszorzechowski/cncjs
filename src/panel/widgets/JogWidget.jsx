@@ -2,7 +2,7 @@ import { useState } from 'react';
 import AxisControls from '../ui/AxisControls';
 import SettingSummary from '../ui/SettingSummary';
 import Card from '../ui/Card';
-import Notice from '../ui/Notice';
+import NoHomingNotice from '../ui/NoHomingNotice';
 import FadeScroller from '../ui/FadeScroller';
 import JogPad from '../ui/JogPad';
 import JogPadTall from '../ui/JogPadTall';
@@ -220,12 +220,8 @@ const JogWidget = ({ machine, className = '' }) => {
 
   const open = editing === 'xy' ? xy : (editing === 'z' ? z : null);
 
-  /*
-   * Not homed: the travel has no place, so the server fences nothing and
-   * Grbl has no soft limits — said where the keys are (COM3, 2026-09-28:
-   * with `$22=0` MDI drove 100 mm past the travel).
-   */
-  const unguarded = machine.envelope?.placed === false ? <Notice>{t('jog.noHoming')}</Notice> : null;
+  // Not homed: nothing guards the ends of the axes — said where the keys are.
+  const unguarded = <NoHomingNotice placed={machine.envelope?.placed} />;
 
   return (
     <Card className={`group relative min-h-0 overflow-hidden ${className}`} bodyClassName="gap-0">

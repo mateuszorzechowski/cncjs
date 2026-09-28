@@ -85,7 +85,8 @@
     "stepFor": "Krok {{axes}}",
     "speedFor": "Prędkość {{axes}}",
     "sheet": "Jog {{axes}}",
-    "noHoming": "Bazowanie wyłączone: nic nie pilnuje końców osi."
+    "noHoming": "Bazowanie wyłączone: nic nie pilnuje końców osi.",
+    "noHomingHide": "Ukryj ostrzeżenie"
   },
   "shortcuts": {
     "title": "Skróty klawiszowe",
