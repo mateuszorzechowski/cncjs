@@ -118,7 +118,7 @@ urządzeniach, zrzuty.
 ### Zerowanie (`zero`) — zrzuty `zero-*`
 - **Cel:** ustawić zero robocze (`G10 L20`) dla osi lub ich zestawu.
 - **Główna akcja:** X / Y / Z (wypełnione), XY / XYZ (obrys).
-- **Układ:** jeden na każdej szerokości. Karta z DRO, znaczkiem układu (G54),
+- **Układ:** jeden na każdej szerokości. Karta z DRO, chipami układu G54–G57,
   notą „ustawia zero układu G54…” i rzędem 5 przycisków.
 - **Na PC** cyfry lądują ~1700 px od etykiet osi, a środek ekranu jest pusty
   (patrz §6).
@@ -126,7 +126,9 @@ urządzeniach, zrzuty.
   - Nic tu nie rusza maszyną, więc nie ma potwierdzenia.
   - Wyjaśnienie jest pod `?`, nie w tekście na ekranie („czułbym się jak
     debil”).
-- **Zaplanowane:** chipy G54–G57 w nagłówku karty.
+  - Chip układu wysyła sam `G55` (intencja `wcs`): nic nie jedzie i nic nie
+    trafia do EEPROM, więc bez potwierdzenia; wygaszony jak zerowanie (alarm,
+    program). Zapala się odpowiedź maszyny (`$G`), nie naciśnięcie.
 
 ### Pliki (`files`) — zrzuty `files-*`, `files-selected-*`
 - **Cel:** biblioteka programów na serwerze i wybór następnego zadania.

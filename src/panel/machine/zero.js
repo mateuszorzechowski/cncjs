@@ -28,6 +28,34 @@ const WCS_TO_P = {
 export const activeWcsNumber = (modal = {}) => WCS_TO_P[modal.wcs] || 0;
 
 /**
+ * The systems the zeroing card offers, plus the one the machine is in.
+ *
+ * G54–G57 as decided on 2026-09-21: four is what a hobby table uses, and six
+ * chips do not fit beside the card's title on a phone. G58 or G59 set from a
+ * console still shows, chosen, so the row never claims a system the machine
+ * is not in.
+ */
+const OFFERED = ['G54', 'G55', 'G56', 'G57'];
+
+export const wcsChoices = (modal = {}) => (
+  WCS_TO_P[modal.wcs] && !OFFERED.includes(modal.wcs) ? [...OFFERED, modal.wcs] : OFFERED
+);
+
+/**
+ * Work in another coordinate system from here on.
+ *
+ * On Grbl the intention, which the server refuses in alarm and during a
+ * program; elsewhere the word itself, which is the whole line.
+ */
+export const selectWcs = ({ type, wcs }) => {
+  if (type === GRBL) {
+    controller.command('wcs', { wcs });
+    return;
+  }
+  controller.command('gcode', wcs);
+};
+
+/**
  * The line that sets the current position as the work zero for some axes.
  *
  * **Only for a controller whose server side cannot do this itself.** On Grbl

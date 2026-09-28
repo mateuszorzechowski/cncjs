@@ -18,6 +18,7 @@ const LEVEL = {
   cyclestart: 'info',
   sleep: 'info',
   zero: 'info',
+  wcs: 'info',
   goToWorkZero: 'info',
   goToPoint: 'info',
   'file:check': 'info',
@@ -36,7 +37,7 @@ const LEVEL = {
  * The entry for a command a client sent, or null when it is not kept.
  *
  * `detail` is what the command carried that is worth reading back: the line
- * for a console write, the axes for a zero.
+ * for a console write, the system for a change of coordinate system.
  */
 export const commandEntry = (cmd, detail) => {
   const level = LEVEL[cmd];

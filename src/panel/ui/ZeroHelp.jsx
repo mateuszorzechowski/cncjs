@@ -19,6 +19,7 @@ const ZeroHelp = ({ onClose }) => (
     <p className="m-0 text-base text-ink">{t('zero.help.what')}</p>
     <p className="m-0 text-base text-ink">{t('zero.help.moves')}</p>
     <p className="m-0 text-base text-ink">{t('zero.help.system')}</p>
+    <p className="m-0 text-base text-ink">{t('zero.help.choose')}</p>
     <p className="m-0 text-base text-ink">{t('zero.help.dead')}</p>
   </Sheet>
 );

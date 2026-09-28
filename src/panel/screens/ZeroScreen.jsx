@@ -2,10 +2,10 @@ import { useState } from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import DroStack from '../ui/DroStack';
-import WcsBadge from '../ui/WcsBadge';
+import SegmentedChoice from '../ui/SegmentedChoice';
 import ZeroHelp from '../ui/ZeroHelp';
 import { useHeaderHelp } from '../ui/headerSlot';
-import { zero, activeWcsNumber } from '../machine/zero';
+import { zero, activeWcsNumber, wcsChoices, selectWcs } from '../machine/zero';
 import { t } from '../i18n';
 
 /**
@@ -99,10 +99,30 @@ const ZeroScreen = ({ machine }) => {
 
   const zeroing = (...axes) => () => zero({ type, modal, axes });
 
+  /*
+   * Which system, as chips where the marker stood (DESIGN.md, planned since
+   * 2026-09-21). A press sends `G55` and nothing else: no offset is written
+   * and nothing moves, so no confirmation — but every move after it lands
+   * somewhere else, so it answers to alarm and to a running program exactly
+   * as the zero buttons do. The chip that lights is the machine's reply, not
+   * the press: the server asks `$G` again within half a second.
+   */
+  const choosing = (
+    <SegmentedChoice
+      options={wcsChoices(modal)}
+      value={wcs}
+      onChange={(next) => selectWcs({ type, wcs: next })}
+      label={t('zero.wcs')}
+      disabled={!(connected && mayZero && status.known)}
+      compact
+      joined
+    />
+  );
+
   return (
     <Card
       label={t('zero.title')}
-      aside={<WcsBadge wcs={wcs} />}
+      aside={choosing}
       className="min-h-0 flex-1"
       bodyClassName="gap-4"
     >

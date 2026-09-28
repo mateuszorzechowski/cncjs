@@ -68,6 +68,17 @@ const journalCommand = (socket, port, cmd, detail) => {
   }
 };
 
+// What a command carried that is worth reading back in the journal.
+const commandDetail = (cmd, args) => {
+  if (cmd === 'gcode') {
+    return { line: args[0] };
+  }
+  if (cmd === 'wcs') {
+    return { wcs: args[0]?.wcs };
+  }
+  return undefined;
+};
+
 export const admits = (controller, cmd, data) => {
   const reason = controller.clientRefusal?.(cmd, data);
   if (reason) {
@@ -707,7 +718,7 @@ class CNCEngine {
           controller.commandSocket = socket;
           try {
             if (admits(controller, cmd)) {
-              journalCommand(socket, port, cmd, cmd === 'gcode' ? { line: args[0] } : undefined);
+              journalCommand(socket, port, cmd, commandDetail(cmd, args));
               controller.command.apply(controller, [cmd].concat(args));
             }
           } finally {

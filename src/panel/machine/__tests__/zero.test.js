@@ -1,5 +1,5 @@
 import controller from '../controller';
-import { zeroLine, zero, activeWcsNumber } from '../zero';
+import { zeroLine, zero, activeWcsNumber, wcsChoices, selectWcs } from '../zero';
 
 jest.mock('../controller', () => ({ command: jest.fn() }));
 
@@ -70,5 +70,29 @@ describe('zero on a controller whose server side cannot compose it', () => {
     // The trap: a command that quietly falls back to P1 looks like it worked.
     zero({ type: 'Marlin', modal: {}, axes: ['z'] });
     expect(controller.command).not.toHaveBeenCalled();
+  });
+});
+
+describe('choosing a coordinate system', () => {
+  beforeEach(() => controller.command.mockClear());
+
+  test('offers G54 to G57', () => {
+    expect(wcsChoices({ wcs: 'G55' })).toEqual(['G54', 'G55', 'G56', 'G57']);
+    expect(wcsChoices({})).toEqual(['G54', 'G55', 'G56', 'G57']);
+  });
+
+  test('adds the one the machine is in when a console put it outside them', () => {
+    // A row with nothing chosen would say the machine is in no system at all.
+    expect(wcsChoices({ wcs: 'G59' })).toEqual(['G54', 'G55', 'G56', 'G57', 'G59']);
+  });
+
+  test('sends the intention on Grbl', () => {
+    selectWcs({ type: 'Grbl', wcs: 'G56' });
+    expect(controller.command).toHaveBeenCalledWith('wcs', { wcs: 'G56' });
+  });
+
+  test.each(['Marlin', 'Smoothie', 'TinyG'])('%s gets the word as a line', (type) => {
+    selectWcs({ type, wcs: 'G55' });
+    expect(controller.command).toHaveBeenCalledWith('gcode', 'G55');
   });
 });
