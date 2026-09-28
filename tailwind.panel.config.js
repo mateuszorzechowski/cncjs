@@ -123,6 +123,7 @@ module.exports = {
         dro: 'var(--dro)',
         side: 'var(--side)',
         side2: 'var(--side2)',
+        setcol: 'var(--setcol)',
         btn: 'var(--btn)',
         btnh: 'var(--btnh)',
         chip: 'var(--chip)',
