@@ -64,7 +64,9 @@ const TONES = {
  */
 const Button = ({ tone = 'outline', compact = false, href, className = '', children, ...rest }) => {
   const face = [
-    'flex shrink-0 items-center justify-center rounded-ctl text-center',
+    // The text face always: a button in a card's header would otherwise
+    // take the number face the header's reading is set in.
+    'flex shrink-0 items-center justify-center rounded-ctl text-center font-sans',
     'text-base font-semibold uppercase tracking-[0.1em]',
     compact ? 'px-1' : 'px-6',
     TONES[tone],
