@@ -8,7 +8,7 @@ import Icon from './Icon';
 import Notice from './Notice';
 import RawSettings from './RawSettings';
 import SettingSummary from './SettingSummary';
-import SettingsGroupSheet from './SettingsGroupSheet';
+import ControllerGroup from './ControllerGroup';
 import SettingsHistory, { historyLine } from './SettingsHistory';
 import SettingsPendingBar from './SettingsPendingBar';
 import SettingsReview from './SettingsReview';
@@ -52,6 +52,9 @@ const GEOMETRY = 'geo';
 const REVIEW = 'review';
 const REREAD = 'reread';
 
+// The settings Geometria is drawn from, as the tablet's column names them.
+const GEOMETRY_CODES = '$130–132 · $23';
+
 const groupTitle = (id) => t(GROUPS.find((g) => g.id === id).titleKey);
 
 const ControllerSettings = ({ machine }) => {
@@ -59,7 +62,9 @@ const ControllerSettings = ({ machine }) => {
   const { rule } = units;
   const phone = useIsPhone();
   const [drafts, setDrafts] = useState({});
-  // What is open over the list: a group, Geometria, the history, `$$`, the review, or "read over the changes?".
+  // The group being edited: a sheet on a phone, the list's place wider.
+  const [group, setGroup] = useState(null);
+  // What is over the screen: Geometria (a phone's), the history, `$$`, the review, or "read over the changes?".
   const [open, setOpen] = useState(null);
   const [discarded, setDiscarded] = useState(null);
   const view = machine.machineSettings;
@@ -77,7 +82,8 @@ const ControllerSettings = ({ machine }) => {
   const flashTimer = useRef(null);
   // From a Geometria line to the setting behind it, lit for a moment.
   const jump = (to, name) => {
-    setOpen(to);
+    setOpen(null);
+    setGroup(to);
     setFlash(name);
     clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
@@ -132,10 +138,12 @@ const ControllerSettings = ({ machine }) => {
           key={id}
           title={groupTitle(id)}
           values={groupLine(summaries.find(({ group }) => group === id), rule)}
-          onOpen={() => setOpen(id)}
+          opens={phone ? 'sheet' : 'view'}
+          onOpen={() => setGroup(id)}
         />
       ))}
-      {geometry ? (
+      {/* A phone's only: wider, Geometria is a column of its own beside the list. */}
+      {geometry && phone ? (
         <SettingSummary
           title={groupTitle(GEOMETRY)}
           values={travel ? [{ value: ['x', 'y', 'z'].map((axis) => figure(travel[axis], rule, 'extent')).join(' × '), unit: lengthLabel(rule) }] : []}
@@ -170,43 +178,66 @@ const ControllerSettings = ({ machine }) => {
     </Card>
   );
 
-  const shownGroup = groups.find(({ id }) => id === open)?.id;
+  const shownGroup = groups.find(({ id }) => id === group)?.id;
+  const groupView = shownGroup ? (
+    <ControllerGroup
+      group={shownGroup}
+      rows={rows}
+      drafts={drafts}
+      onDraft={onDraft}
+      rule={rule}
+      disabled={disabled}
+      readOnly={!machine.canWriteSettings}
+      flash={flash}
+      inline={!phone}
+      onClose={() => setGroup(null)}
+    />
+  ) : null;
+  const geometryView = geometry ? (
+    <GeometrySettings
+      geometry={geometryAfter}
+      was={geometry.summary}
+      changed={changedLines}
+      envelope={preview?.envelope ?? machine.envelope}
+      onJump={jump}
+    />
+  ) : null;
+  const bar = pending.length > 0 ? (
+    <SettingsPendingBar pending={pending} groups={pendingGroups(pending)} error={error} onReview={() => setOpen(REVIEW)} />
+  ) : null;
 
+  /*
+   * A phone: the card scrolls whole, the bar under it, a group and
+   * Geometria in sheets (frames E). Wider: the list — or the group opened
+   * in its place — with the bar under it, and beside them Geometria, always
+   * there and down to the status bar, so what a change does to the box is in
+   * sight while it is typed (frames GT).
+   */
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-gap">
+    <div className={`flex min-h-0 flex-1 gap-gap ${phone ? 'flex-col' : 'flex-row'}`}>
       {phone ? (
-        <FadeScroller>
-          <div className="flex min-h-full flex-col">{card}</div>
-        </FadeScroller>
-      ) : card}
-      {pending.length > 0 ? (
-        <SettingsPendingBar pending={pending} groups={pendingGroups(pending)} error={error} onReview={() => setOpen(REVIEW)} />
-      ) : null}
+        <>
+          <FadeScroller>
+            <div className="flex min-h-full flex-col">{card}</div>
+          </FadeScroller>
+          {bar}
+          {groupView}
+          {open === GEOMETRY && geometryView ? <Sheet title={groupTitle(GEOMETRY)} onClose={close}>{geometryView}</Sheet> : null}
+        </>
+      ) : (
+        <>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-gap">
+            {groupView || card}
+            {bar}
+          </div>
+          {geometryView ? (
+            <Card label={groupTitle(GEOMETRY)} aside={GEOMETRY_CODES} className="min-h-0 w-side shrink-0">
+              <FadeScroller>{geometryView}</FadeScroller>
+            </Card>
+          ) : null}
+        </>
+      )}
 
-      {shownGroup ? (
-        <SettingsGroupSheet
-          group={shownGroup}
-          rows={rows}
-          drafts={drafts}
-          onDraft={onDraft}
-          rule={rule}
-          disabled={disabled}
-          readOnly={!machine.canWriteSettings}
-          flash={flash}
-          onClose={close}
-        />
-      ) : null}
-      {open === GEOMETRY && geometry ? (
-        <Sheet title={groupTitle(GEOMETRY)} onClose={close}>
-          <GeometrySettings
-            geometry={geometryAfter}
-            was={geometry.summary}
-            changed={changedLines}
-            envelope={preview?.envelope ?? machine.envelope}
-            onJump={jump}
-          />
-        </Sheet>
-      ) : null}
       {open === HISTORY ? (
         <Sheet title={t('machine.history.title')} onClose={close}>
           <SettingsHistory

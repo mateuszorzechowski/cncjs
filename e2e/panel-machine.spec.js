@@ -308,3 +308,28 @@ test.describe('the Sterownik tab', () => {
     await expect(cncjs.page.getByText(/nie podał jeszcze ustawień/)).toBeVisible();
   });
 });
+
+test.describe('the Sterownik tab on a tablet', () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test('a group opens in the list\'s place with "Wróć", Geometria stands beside it', async ({ cncjs }) => {
+    const homing = ['x', 'y', 'z'].map((axis) => ({ axis, side: '+', range: { min: -100, max: 0 }, after: -1, switchAt: 0 }));
+    const geometry = { summary: [{ id: 'softLimits', names: ['$20'], group: 'limits', value: 'on' }], checks: [], homing };
+    await open(cncjs.page, { ...VIEW, geometry });
+
+    // Geometria is a column here, not an item in the list.
+    const column = cncjs.page.locator('section', { hasText: '$130–132 · $23' });
+    await expect(column).toContainText('Limity programowe');
+    await expect(cncjs.page.getByRole('button', { name: /^Geometria/ })).toHaveCount(0);
+
+    await openGroup(cncjs.page, 'Osie');
+    await expect(sheet(cncjs.page)).toHaveCount(0);
+    await field(cncjs.page, 'Maks. prędkość X').fill('3500');
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+    await expect(column).toBeVisible();
+
+    await cncjs.page.getByRole('button', { name: 'Wróć' }).click();
+    await expect(cncjs.page.getByRole('button', { name: /^Osie/ })).toBeVisible();
+    cncjs.expectNoPageErrors();
+  });
+});

@@ -1198,6 +1198,7 @@
     "discarded": "Changes discarded: {{count}}",
     "confirm": {
       "eeprom": "Written to the controller's EEPROM. The change takes effect at once and survives a power-off."
-    }
+    },
+    "back": "Back"
   }
 }
