@@ -88,8 +88,10 @@ const SettingSummary = ({
       </span>
     ) : null}
     {title ? <span className="flex-1" /> : null}
-    {values.map(({ value, unit }) => (
-      <span key={`${value}${unit || ''}`} className={`truncate font-num text-mut ${title ? 'text-note' : 'text-base'}`}>
+    {values.map(({ value, unit }, index) => (
+      // By place: the values of a line are positional, and two of them can read the same — both unknown with no machine.
+      // eslint-disable-next-line react/no-array-index-key
+      <span key={index} className={`truncate font-num text-mut ${title ? 'text-note' : 'text-base'}`}>
         <span className="text-ink">{value}</span>
         {unit ? ` ${unit}` : null}
       </span>

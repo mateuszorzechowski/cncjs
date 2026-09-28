@@ -1,3 +1,4 @@
+import useBackCloses from './backStack';
 import { useEffect, useRef, useState } from 'react';
 import { dimPanel } from './themeColor';
 import { EDGE } from './navEdge';
@@ -145,6 +146,22 @@ const NavTabs = ({ items, rest, current, onSelect, className = '' }) => {
    */
   const bar = useRef(null);
   const drag = useRef({ y: null, swiped: false });
+  // The scrim of the raised menu: a drag down on it ends at the window's `up` below and closes the menu.
+  const scrim = useRef(null);
+  useEffect(() => {
+    const node = scrim.current;
+    if (!open || !node) {
+      return undefined;
+    }
+    const down = (event) => {
+      drag.current = { y: event.clientY, swiped: false };
+    };
+    node.addEventListener('pointerdown', down);
+    return () => node.removeEventListener('pointerdown', down);
+  }, [open]);
+
+  // Back lowers it, as it closes a sheet: the last thing opened goes first (`backStack`).
+  useBackCloses(open, () => setOpen(false));
 
   // The raised menu puts up the same scrim a sheet does, so the status bar
   // above it dims with everything else. See `ui/themeColor`.
@@ -227,12 +244,14 @@ const NavTabs = ({ items, rest, current, onSelect, className = '' }) => {
     <>
       {/* Tapping away closes it — the usual gesture, and it means the raised
         * menu can be got rid of without aiming at anything. */}
+      {/* …and so does a drag down anywhere on it, not only on the menu (Mateusz, 2026-09-28). */}
       {open ? (
         <button
           type="button"
           aria-label={t('sheet.close')}
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-20 cursor-default bg-scrim"
+          ref={scrim}
+          className="fixed inset-0 z-20 cursor-default touch-none bg-scrim"
         />
       ) : null}
 

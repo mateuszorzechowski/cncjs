@@ -125,8 +125,12 @@ const scrollerOf = (node, top) => {
  * row, or on content already at its top. Not on a 3D view (a drag there
  * turns the scene) nor across (a page swipe). The sheet follows the finger;
  * let go far or fast enough and it closes, else it springs back.
+ *
+ * `around`: the scrim, where a drag down closes the sheet too — anywhere on
+ * the screen, not only on the sheet (Mateusz, 2026-09-28: *"gest zamknięcia
+ * arkusza w każdym miejscu ekranu"*). The sheet still follows the finger.
  */
-export const useDragToClose = (ref, onClose, enabled = true) => {
+export const useDragToClose = (ref, onClose, enabled = true, around = null) => {
   // Read through a ref: a screen redrawn by a status report every 100 ms
   // hands a new `onClose` each time, and rebinding would drop the drag.
   const closing = useRef(onClose);
@@ -190,15 +194,20 @@ export const useDragToClose = (ref, onClose, enabled = true) => {
         place(0, true);
       }
     };
-    node.addEventListener('touchstart', start, { passive: true });
-    node.addEventListener('touchmove', move, { passive: false });
-    node.addEventListener('touchend', end);
-    node.addEventListener('touchcancel', end);
+    const surfaces = [node, around?.current].filter(Boolean);
+    surfaces.forEach((surface) => {
+      surface.addEventListener('touchstart', start, { passive: true });
+      surface.addEventListener('touchmove', move, { passive: false });
+      surface.addEventListener('touchend', end);
+      surface.addEventListener('touchcancel', end);
+    });
     return () => {
-      node.removeEventListener('touchstart', start);
-      node.removeEventListener('touchmove', move);
-      node.removeEventListener('touchend', end);
-      node.removeEventListener('touchcancel', end);
+      surfaces.forEach((surface) => {
+        surface.removeEventListener('touchstart', start);
+        surface.removeEventListener('touchmove', move);
+        surface.removeEventListener('touchend', end);
+        surface.removeEventListener('touchcancel', end);
+      });
     };
-  }, [ref, enabled]);
+  }, [ref, enabled, around]);
 };
