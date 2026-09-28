@@ -226,7 +226,7 @@ const ControllerSettings = ({ machine }) => {
       ) : null}
       {open === REVIEW ? (
         <SettingsReview
-          geometry={changedLines.length > 0 ? { after: geometryAfter, was: geometry.summary, changed: changedLines } : null}
+          geometry={changedLines.length > 0 ? { after: geometryAfter, was: geometry.summary, changed: changedLines, envelope: preview?.envelope ?? machine.envelope } : null}
           onJump={jump}
           pending={pending}
           drafts={drafts}

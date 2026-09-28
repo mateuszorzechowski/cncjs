@@ -211,6 +211,11 @@ export const settingWrite = ({ name, value, units } = {}, reported = {}) => {
  * (Mateusz, 2026-09-28: the review shows Geometria after the changes). Each
  * change converted and checked as `settingWrite` does it; one it would
  * refuse is left out, as the write would stop on it anyway.
+ *
+ * And what Grbl does by itself on top: homing turned off takes the soft
+ * limits with it (`$22=0` sets `$20=0`, measured on COM3, 2026-09-26) —
+ * otherwise the preview warns of soft limits without homing, a state the
+ * write never leaves behind.
  */
 export const settingsAfter = (changes = [], reported = {}) => {
   const after = { ...reported };
@@ -219,6 +224,9 @@ export const settingsAfter = (changes = [], reported = {}) => {
     if (!refusal) {
       after[change.name] = value;
     }
+  }
+  if (reported.$22 !== undefined && Number(after.$22) === 0 && Number(reported.$22) !== 0 && after.$20 !== undefined) {
+    after.$20 = '0';
   }
   return after;
 };

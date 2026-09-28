@@ -141,14 +141,16 @@ export const HomingTable = ({ homing, units }) => (
 
 /**
  * Only what a write would change, for the review: those lines before and
- * after, and the checks as they would stand after it.
+ * after, the box in 3D as it would be, and the checks as they would stand
+ * after it (Mateusz, 2026-09-28: the 3D view in the review, on a phone too).
  */
-export const GeometryChanges = ({ geometry, was, changed, onJump }) => {
+export const GeometryChanges = ({ geometry, was, changed, envelope, onJump }) => {
   const units = useUnits();
   return (
     <div className="flex flex-col gap-3">
       <span className="text-cap font-semibold uppercase tracking-[0.1em] text-mut">{t('machine.geo.afterWrite')}</span>
       <Summary rows={geometry.summary.filter(({ id }) => changed.includes(id))} was={was} changed={changed} units={units} onJump={onJump} />
+      <MachinePreview className="h-52 shrink-0" envelope={envelope} homing={geometry.homing} />
       <Checks checks={geometry.checks} units={units} onJump={onJump} />
     </div>
   );

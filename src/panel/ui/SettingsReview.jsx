@@ -70,7 +70,7 @@ const SettingsReview = ({
         <Change key={row.name} row={row} draft={drafts[row.name]} rule={rule} disabled={saving} onUndo={() => onUndo(row.name)} />
       ))}
     </ul>
-    {geometry ? <GeometryChanges geometry={geometry.after} was={geometry.was} changed={geometry.changed} onJump={onJump} /> : null}
+    {geometry ? <GeometryChanges geometry={geometry.after} was={geometry.was} changed={geometry.changed} envelope={geometry.envelope} onJump={onJump} /> : null}
     {bad ? <p className="m-0 text-note text-red">{t('machine.review.bad')}</p> : null}
     {error ? <p className="m-0 text-note text-red">{error}</p> : null}
     <p className="m-0 text-note text-mut">{t('machine.review.note')}</p>
