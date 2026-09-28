@@ -286,12 +286,9 @@ does it stay behind in the old application, or does it go?
   all — width decides them, so there is nothing to set wrongly. The
   `G54`–`G57` chips will show the active system before they switch it.
 
-  **Half of that is now true.** `Zerowanie` was built on 2026-09-23 and it
-  *shows* the active system, in the card's corner — it does not switch it.
-  The chips are the missing half, and they are missing deliberately rather
-  than forgotten: switching the coordinate system is a modal G-code that
-  changes where every later move goes, and it wanted deciding with Mateusz
-  in front of it rather than on the way past. Nothing guesses in the
-  meantime: on Grbl the server refuses a `zero` it cannot name a system for
-  and says so, and `machine/zero.js` refuses to compose the line for the
+  **Built.** `Zerowanie` (2026-09-23) showed the active system in the
+  card's corner; since 2026-09-29 the chips there switch it too, through
+  the server's `wcs` intent, which refuses in alarm and during a program
+  as `zero` does. On Grbl the server also refuses a `zero` it cannot name
+  a system for, and `machine/zero.js` refuses to compose the line for the
   firmwares that still need it composed here.
