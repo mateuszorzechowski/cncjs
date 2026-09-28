@@ -34,6 +34,9 @@ const KEYS = {
   // outright rather than clipping it, so this used to be a button that simply
   // did nothing.
   'out-of-envelope': 'refusal.outOfEnvelope',
+  // Not homed: the travel has no place, so there is no known top to retract to
+  // and no telling where a point on the drawing is (COM3, 2026-09-28).
+  'no-homing': 'refusal.noHoming',
   // Nothing left in that direction. Not the same as a step being shortened —
   // a shortened step still moves and is nobody's business.
   'no-room': 'refusal.noRoom',

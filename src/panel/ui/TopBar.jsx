@@ -1,6 +1,7 @@
 import Button from './Button';
 import HelpButton from './HelpButton';
 import Icon from './Icon';
+import { Triangle } from './Notice';
 import StateChip from './StateChip';
 import { t } from '../i18n';
 
@@ -46,7 +47,7 @@ import { t } from '../i18n';
  * rail's own width. On a phone there is no rail to line up with and the chip
  * has no box, so it keeps the bar's ordinary margin instead.
  */
-const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate, help }) => (
+const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate, caution = false, onCaution, help }) => (
   /*
     * The safe area is padded here rather than on the body.
     *
@@ -86,6 +87,27 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate
         className="flex size-chiph shrink-0 items-center justify-center rounded-ctl border border-acc bg-accS text-acc @3xl/shell:h-btnh @3xl/shell:w-14"
       >
         <Icon name="update" className="size-5 @3xl/shell:size-6" weight={2} />
+      </button>
+    ) : null}
+
+    {/*
+      * A machine that is not homed: nothing guards the ends of its axes.
+      * Beside the state, amber like every warning here — red is the stop,
+      * the alarm and what has gone wrong, and this is a setting to take care
+      * with rather than a failure. One mark for every screen instead of one
+      * per card (Mateusz, 2026-09-28: *"w sumie to nie dotyczy tylko jog"*).
+      * Last in the group, so when it appears nothing that can be pressed
+      * moves; a tap says what it means and where to change it.
+      */}
+    {caution ? (
+      <button
+        type="button"
+        onClick={onCaution}
+        aria-label={t('topbar.noHoming')}
+        title={t('topbar.noHoming')}
+        className="flex size-chiph shrink-0 items-center justify-center rounded-ctl border border-amb bg-ambS text-amb @3xl/shell:h-btnh @3xl/shell:w-14"
+      >
+        <Triangle className="size-5 @3xl/shell:size-6" />
       </button>
     ) : null}
 

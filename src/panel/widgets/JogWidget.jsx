@@ -231,7 +231,8 @@ const JogWidget = ({ machine, className = '' }) => {
         </div>
         {/* XY and Z are the same decision asked twice, so they stay together:
           * split across a fold, the second one is easy to miss. */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-gap">
+          {/* Its own height, not squeezed: the column scrolls instead (it overlapped once the pad grew). */}
+          <div className="flex min-w-0 flex-none flex-col gap-gap">
             <AxisControls {...xy} />
             <AxisControls {...z} />
           </div>

@@ -29,7 +29,7 @@ import controller from './controller';
  * disabled rather than as a `G0 X0 Y0` that looks the same and behaves like
  * the old application.
  */
-export const canGoToWorkZero = (envelope) => Boolean(envelope);
+export const canGoToWorkZero = (envelope) => Boolean(envelope?.placed);
 
 /**
  * Whether the point under the cursor is somewhere the machine could go.
@@ -38,13 +38,16 @@ export const canGoToWorkZero = (envelope) => Boolean(envelope);
  * definition. The point comes from a cursor over the grid and is in machine
  * coordinates, which is the frame everything on that grid is drawn in.
  *
+ * Not at all on a machine that is not homed: the drawing's machine
+ * coordinates are then a guess, and so is the point (`envelope.placed`).
+ *
  * The same question the server asks before it composes the line, asked here so
  * the button is dark rather than refused — with `$20=1` the firmware rejects a
  * move outside the travel outright rather than clipping it, so pointing
  * slightly wide of the bed used to do nothing at all and say nothing.
  */
 export const canGoToPoint = (envelope, point) => Boolean(
-  envelope &&
+  envelope?.placed &&
   Number.isFinite(point?.x) &&
   Number.isFinite(point?.y) &&
   point.x >= envelope.min.x && point.x <= envelope.max.x &&

@@ -14,6 +14,7 @@ import TopBar from './ui/TopBar';
 import StatusSheet from './ui/StatusSheet';
 import RefusalNotice from './ui/RefusalNotice';
 import StateHelp from './ui/StateHelp';
+import NoHomingSheet from './ui/NoHomingSheet';
 import { buildName, isUpdateReady, servedBuild, watchUpdate } from './machine/update';
 import { useAutoConnect } from './machine/autoConnect';
 import { useDeviceName } from './machine/useDeviceName';
@@ -149,6 +150,9 @@ const Panel = ({ machine, screen, onScreen }) => {
 
   const [alerting, setAlerting] = useState(false);
   const [helping, setHelping] = useState(false);
+  // Not homed: the amber mark in the top bar and what it says (`NoHomingSheet`).
+  const unhomed = machine.envelope?.placed === false;
+  const [cautioning, setCautioning] = useState(false);
   const Screen = SCREENS[screen];
 
   /*
@@ -190,6 +194,8 @@ const Panel = ({ machine, screen, onScreen }) => {
           showSettingsTab('install');
           onScreen('settings');
         }}
+        caution={unhomed}
+        onCaution={() => setCautioning(true)}
         help={screenHelp}
       />
 
@@ -380,6 +386,17 @@ const Panel = ({ machine, screen, onScreen }) => {
       ) : null}
 
       {helping ? <StateHelp machine={machine} onClose={() => setHelping(false)} /> : null}
+
+      {cautioning && unhomed ? (
+        <NoHomingSheet
+          onSettings={() => {
+            setCautioning(false);
+            showSettingsTab('controller');
+            onScreen('settings');
+          }}
+          onClose={() => setCautioning(false)}
+        />
+      ) : null}
 
       {/* One or the other, never both: on a phone the tab bar is the bottom of
         * the screen and there is no room for a status line as well. */}

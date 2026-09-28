@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import Card from '../ui/Card';
 import PathStage from '../ui/PathStage';
 import { cancelTravel, canGoToPoint, goToPoint } from '../machine/goto';
-import { machineZeroIsGuess, softLimitsEnabled, workOffset } from '../machine/envelope';
+import { workOffset } from '../machine/envelope';
 import { readToolpath } from '../machine/toolpath';
 import { pathProgress } from '../machine/pathProgress';
 import { composeScene, toolPoint } from '../scene/compose';
@@ -318,8 +318,9 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
   };
 
   const notes = [
-    machineZeroIsGuess(machine.settings) && t('path.note.noHoming'),
-    scene.envelope && !softLimitsEnabled(machine.settings) && t('path.note.noSoftLimits'),
+    machine.envelope?.placed === false && t('path.note.noHoming'),
+    // Placed and not fenced: soft limits off. Unhomed, the note above says it already.
+    machine.envelope?.placed && !machine.envelope.fenced && t('path.note.noSoftLimits'),
   ].filter(Boolean);
 
   return (

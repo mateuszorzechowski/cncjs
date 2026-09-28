@@ -14,53 +14,13 @@
  * reach used to be derived here out of `$130`-`$132` and the mask in `$23` —
  * the same four registers the server reads to bound a jog. Two readings of
  * the numbers somebody else enforces is a drawing that can disagree with the
- * machine, so the server works it out and says so on `controller:envelope`.
+ * machine, so the server works it out and says so on `controller:envelope` —
+ * with whether it has a place (`placed`, homing) and whether the firmware
+ * stops a move at its edge (`fenced`, soft limits) beside it.
  * What is left here is what only a drawing needs.
  */
 
-// `$20` — whether the firmware enforces the travel as a limit rather than
-// merely reporting it.
-const SOFT_LIMITS = '$20';
-
-// `$22` — whether this machine can be homed at all. See `machineZeroIsGuess`.
-const HOMING_ENABLED = '$22';
-
 const AXES = ['x', 'y', 'z'];
-
-/** One `$`-setting as a number, or null when the firmware has not said. */
-const setting = (settings, name) => {
-  const value = Number.parseFloat(settings?.settings?.[name]);
-  return Number.isFinite(value) ? value : null;
-};
-
-/**
- * Whether the firmware treats the envelope as a fence or as a description.
- *
- * The same numbers either way, which is why this is a separate reading rather
- * than a second box: with `$20=0` the outline says how far the axes can go,
- * and nothing stops a move going further.
- */
-export const softLimitsEnabled = (settings) => setting(settings, SOFT_LIMITS) === 1;
-
-/**
- * Whether machine zero — and therefore every outline drawn from it — is a
- * guess.
- *
- * With `$22=0` homing is off, which means machine zero is wherever the
- * controller happened to be powered on. The envelope is then the right *size*
- * and in an unknown *place*, and a screen that draws it as a confident frame
- * is claiming to know something it cannot.
- *
- * With `$22=1` this returns false, and that is the weaker half of the answer:
- * the machine *can* be homed, not that it *has* been. An operator who clears
- * the startup alarm with `$X` instead of `$H` has an unhomed machine that
- * reports exactly like a homed one, and the firmware offers nothing that
- * separates them. Known gap, written down rather than papered over.
- */
-export const machineZeroIsGuess = (settings) => {
-  const flag = settings?.settings?.[HOMING_ENABLED];
-  return flag !== undefined && String(flag).trim() === '0';
-};
 
 /**
  * The work coordinate systems the firmware has reported, in machine

@@ -49,6 +49,22 @@ const Scene = ({
    * controller that has not said how far it goes.
    */
   const floor = (envelope || frame).min.z;
+  /*
+   * How much is known of the machine's box, said by its line (Mateusz,
+   * 2026-09-28): solid where it is and the firmware stops a move at its edge
+   * (`envelope.fenced`), long dashes where it is and nothing stops a move
+   * there (soft limits off), dots where only its size is known — not homed,
+   * `envelope.placed` false. The figures on the floor stay in every case: they
+   * are the scale, and the scale is true whether or not the place is (Mateusz,
+   * 2026-09-28: *"wymiary można podawać zawsze, są znane"*).
+   */
+  const unplaced = envelope?.placed === false;
+  let pattern = 'solid';
+  if (unplaced) {
+    pattern = 'dotted';
+  } else if (envelope?.fenced === false) {
+    pattern = 'dashed';
+  }
   // What the datum lines span, and what the grid is the ground for.
   const area = envelope || frame;
 
@@ -129,7 +145,7 @@ const Scene = ({
       {/* The machine is context, not content: quiet enough that the program
         * inside it is what the eye lands on. */}
       {layers.machineArea && envelope ? (
-        <Outline bounds={envelope} color={colors.edge} opacity={0.45} />
+        <Outline bounds={envelope} color={colors.edge} opacity={pattern === 'solid' ? 0.45 : 0.8} pattern={pattern} />
       ) : null}
 
       {layers.machineAxes ? (

@@ -21,7 +21,8 @@
     "port": "port",
     "state": "Stan maszyny",
     "stop": "Stop",
-    "update": "Dostępna nowa wersja panelu: {{version}}. Przejdź do Instalacji."
+    "update": "Dostępna nowa wersja panelu: {{version}}. Przejdź do Instalacji.",
+    "noHoming": "Bazowanie wyłączone: nic nie pilnuje końców osi"
   },
   "status": {
     "noServer": "Brak serwera",
@@ -316,7 +317,8 @@
     "settingPending": "Poprzedni zapis ustawienia czeka jeszcze na odpowiedź sterownika.",
     "unknownSetting": "Sterownik nie podał takiego ustawienia.",
     "settingLocked": "Tego ustawienia nie zmienia się z panelu.",
-    "badValue": "Ta wartość jest poza zakresem tego ustawienia."
+    "badValue": "Ta wartość jest poza zakresem tego ustawienia.",
+    "noHoming": "Bazowanie jest wyłączone, więc nie wiadomo, gdzie jest obszar maszyny: ani gdzie jest góra osi Z, ani gdzie leży punkt z rysunku."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -1178,7 +1180,8 @@
       "range": "Obszar MPos",
       "after": "Po $H",
       "span": "{{min}} … {{max}}",
-      "afterWrite": "Geometria po zapisie"
+      "afterWrite": "Geometria po zapisie",
+      "unplaced": "Bazowanie wyłączone: znany jest rozmiar obszaru, ale nie jego położenie. Zero maszyny to miejsce, w którym stała przy włączeniu."
     },
     "summary": {
       "hard": "twarde"
@@ -1210,5 +1213,13 @@
       "eeprom": "Zapis do EEPROM sterownika. Zmiana działa od razu i zostaje po wyłączeniu zasilania."
     },
     "back": "Wróć"
+  },
+  "caution": {
+    "title": "Bazowanie wyłączone",
+    "where": "Zero maszyny to miejsce, w którym stała przy włączeniu, więc nie wiadomo, gdzie leży jej obszar roboczy. Znany jest tylko jego rozmiar.",
+    "guards": "Nic nie pilnuje końców osi: Grbl nie ma wtedy limitów programowych, a panel nie przycina joga. Ruch z MDI albo z programu pojedzie tak daleko, jak mu każesz.",
+    "moves": "„Do zera” i „jedź do punktu” są wyłączone: nie ma pewnej góry osi Z, do której można się podnieść, ani pewnego punktu na rysunku.",
+    "fix": "Bazowanie włącza się w Ustawienia → Sterownik → Bazowanie ($22). Wymaga krańcówek.",
+    "settings": "Przejdź do ustawień sterownika"
   }
 }

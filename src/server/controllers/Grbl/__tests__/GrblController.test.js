@@ -1611,7 +1611,7 @@ describe('intent commands', () => {
       controller.runner.settings = {
         ...controller.runner.settings,
         settings: {
-          $130: '1000', $131: '700', $132: '150', $23: '0', $110: '5000', $112: '4000',
+          $130: '1000', $131: '700', $132: '150', $23: '0', $22: '1', $110: '5000', $112: '4000',
           ...settings,
         },
       };
@@ -1641,6 +1641,22 @@ describe('intent commands', () => {
 
       expect(writes).toEqual([]);
       expect(refusals).toEqual([{ cmd: 'goToWorkZero', reason: 'no-travel' }]);
+    });
+
+    // COM3, 2026-09-28: unhomed, the "retract" to machine Z0 went 20 mm down.
+    test('goToWorkZero and goToPoint are refused unhomed, and nothing is written', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      reports(controller, { $22: '0' });
+
+      controller.command('goToWorkZero');
+      controller.command('goToPoint', { x: -500, y: -300 });
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([
+        { cmd: 'goToWorkZero', reason: 'no-homing' },
+        { cmd: 'goToPoint', reason: 'no-homing' },
+      ]);
     });
 
     test('goToPoint goes where it was pointed, in machine coordinates', () => {
@@ -1696,7 +1712,7 @@ describe('intent commands', () => {
     const reports = (controller, mpos) => {
       controller.runner.settings = {
         ...controller.runner.settings,
-        settings: { $130: '1000', $131: '700', $132: '150', $23: '0' },
+        settings: { $130: '1000', $131: '700', $132: '150', $23: '0', $22: '1' },
       };
       controller.runner.state.status.mpos = mpos;
     };
@@ -1951,7 +1967,7 @@ describe('intent commands', () => {
     const reports = (controller) => {
       controller.runner.settings = {
         ...controller.runner.settings,
-        settings: { $130: '1000', $131: '700', $132: '150', $23: '0' },
+        settings: { $130: '1000', $131: '700', $132: '150', $23: '0', $22: '1' },
       };
       controller.runner.state.status.mpos = { x: '-500', y: '-350', z: '-75' };
     };
@@ -2287,7 +2303,7 @@ describe('intent commands', () => {
     const reports = (controller, mpos) => {
       controller.runner.settings = {
         ...controller.runner.settings,
-        settings: { $130: '1000', $131: '700', $132: '150', $23: '0' },
+        settings: { $130: '1000', $131: '700', $132: '150', $23: '0', $22: '1' },
       };
       controller.runner.state.status.mpos = mpos;
     };

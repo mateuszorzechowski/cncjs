@@ -1,53 +1,7 @@
 import {
-  machineZeroIsGuess,
-  softLimitsEnabled,
   workOffset,
   workOrigins,
 } from '../envelope';
-
-// What COM3 actually reports: 200mm of travel on each axis, homing off,
-// no direction inverted. Measured 2026-09-21 against Grbl 1.1h.
-const COM3 = {
-  settings: {
-    $20: '0',
-    $22: '0',
-    $23: '0',
-    $130: '200.000',
-    $131: '200.000',
-    $132: '200.000',
-  },
-};
-
-const withSettings = (overrides) => ({
-  settings: { ...COM3.settings, ...overrides },
-});
-
-describe('softLimitsEnabled', () => {
-  test.each([
-    ['0', false],
-    ['1', true],
-    [undefined, false],
-  ])('$20=%s', (flag, expected) => {
-    expect(softLimitsEnabled(withSettings({ $20: flag }))).toBe(expected);
-  });
-});
-
-describe('machineZeroIsGuess', () => {
-  test('is true with homing disabled, which is COM3', () => {
-    expect(machineZeroIsGuess(COM3)).toBe(true);
-  });
-
-  test('is false once homing is enabled', () => {
-    expect(machineZeroIsGuess(withSettings({ $22: '1' }))).toBe(false);
-  });
-
-  test('is false when the firmware has no such setting', () => {
-    // Marlin and TinyG never report `$22`. Claiming their zero is a guess
-    // would be inventing a reading, which is worse than not having one.
-    expect(machineZeroIsGuess({ settings: {} })).toBe(false);
-    expect(machineZeroIsGuess(undefined)).toBe(false);
-  });
-});
 
 describe('workOrigins', () => {
   test('is empty when the machine has not answered', () => {

@@ -25,7 +25,8 @@ const sides = (settings) => Object.fromEntries(AXES.map((axis) => [axis, bit(set
 
 /**
  * Where each axis stands after `$H`, or null with homing off or the travel
- * unknown; and where its switch is.
+ * unknown; and where its switch is. With homing off neither the range nor the
+ * switch has a place (`placedBy`), so both are null too — only the side.
  */
 export const homingTable = (settings) => {
   const pullOff = setting(settings, '$27') || 0;
@@ -33,12 +34,12 @@ export const homingTable = (settings) => {
   return AXES.map((axis) => {
     const range = axisRange(axis, settings);
     const side = bit(settings, '$23', axis) ? '-' : '+';
-    if (!range) {
+    if (!range || !homing) {
       return { axis, side, range: null, after: null, switchAt: null };
     }
     const switchAt = side === '-' ? range.min : range.max;
     const after = side === '-' ? range.min + pullOff : range.max - pullOff;
-    return { axis, side, range, after: homing ? after : null, switchAt };
+    return { axis, side, range, after, switchAt };
   });
 };
 

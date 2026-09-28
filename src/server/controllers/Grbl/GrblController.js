@@ -2194,7 +2194,8 @@ class GrblController {
     updateFits() {
       const wco = this.runner.state?.status?.wco;
       let fits = null;
-      if (this.envelope && wco) {
+      // Unhomed, where the table is is not known, so neither is whether a program leaves it.
+      if (this.envelope?.placed && wco) {
         fits = {
           softLimits: this.runner.settings?.settings?.$20 === '1',
           files: _.mapValues(library.bounds(), (bounds) => programOverrun(this.envelope, wco, bounds)),
@@ -2729,6 +2730,11 @@ class GrblController {
             this.refuse(cmd, 'alarm');
             return;
           }
+          // Unhomed there is no known top to retract to: machine Z0 is the power-on height.
+          if (machineEnvelope(this.runner.settings?.settings)?.placed === false) {
+            this.refuse(cmd, 'no-homing');
+            return;
+          }
           const lines = goToWorkZeroLines(this.runner.settings?.settings);
           if (!lines) {
             this.refuse(cmd, 'no-travel');
@@ -2798,8 +2804,14 @@ class GrblController {
           }
 
           const settings = this.runner.settings?.settings;
-          if (!machineEnvelope(settings)) {
+          const envelope = machineEnvelope(settings);
+          if (!envelope) {
             this.refuse(cmd, 'no-travel');
+            return;
+          }
+          // Unhomed, the drawing's machine coordinates are a guess, and so is the point picked on it.
+          if (!envelope.placed) {
+            this.refuse(cmd, 'no-homing');
             return;
           }
           const lines = goToPointLines(settings, point);

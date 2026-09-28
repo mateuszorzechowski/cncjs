@@ -16,6 +16,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const ENVELOPE = {
   min: { x: -200, y: -200, z: -80 },
   max: { x: 0, y: 0, z: 0 },
+  placed: true,
 };
 
 // With a port, because a jog only happens against one — and the beat that
@@ -192,6 +193,8 @@ describe('holding a jog key', () => {
     // Travel is [-200, 0] and the tool is halfway, so either way is 100.
     expect(jogRoom('x', 1, ENVELOPE, middle)).toBe(100);
     expect(jogRoom('x', -1, ENVELOPE, middle)).toBe(100);
+    // Not homed, the travel has no place: no end to measure to (COM3, 2026-09-28).
+    expect(jogRoom('x', 1, { ...ENVELOPE, placed: false }, middle)).toBeNull();
     // Z is [-80, 0] at -40.
     expect(jogRoom('z', 1, ENVELOPE, middle)).toBe(40);
     // And nothing to measure against is nothing to say.

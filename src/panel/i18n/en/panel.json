@@ -21,7 +21,8 @@
     "port": "port",
     "state": "Machine state",
     "stop": "Stop",
-    "update": "A new panel version is available: {{version}}. Go to Install."
+    "update": "A new panel version is available: {{version}}. Go to Install.",
+    "noHoming": "Homing is off: nothing guards the ends of the axes"
   },
   "status": {
     "noServer": "No server",
@@ -316,7 +317,8 @@
     "settingPending": "The previous settings write is still waiting for the controller's answer.",
     "unknownSetting": "The controller has not reported such a setting.",
     "settingLocked": "This setting is not changed from the panel.",
-    "badValue": "This value is outside the setting's range."
+    "badValue": "This value is outside the setting's range.",
+    "noHoming": "Homing is off, so where the machine's travel is is not known: neither where the top of Z is, nor where a point on the drawing lies."
   },
   "notice": {
     "warning": "Warning",
@@ -1178,7 +1180,8 @@
       "range": "MPos range",
       "after": "After $H",
       "span": "{{min}} … {{max}}",
-      "afterWrite": "Geometry after the write"
+      "afterWrite": "Geometry after the write",
+      "unplaced": "Homing is off: the size of the travel is known, its place is not. Machine zero is wherever the machine stood at power-on."
     },
     "summary": {
       "hard": "hard"
@@ -1210,5 +1213,13 @@
       "eeprom": "Written to the controller's EEPROM. The change takes effect at once and survives a power-off."
     },
     "back": "Back"
+  },
+  "caution": {
+    "title": "Homing is off",
+    "where": "Machine zero is wherever the machine stood at power-on, so where its travel lies is not known. Only its size is.",
+    "guards": "Nothing guards the ends of the axes: Grbl has no soft limits then, and the panel does not clip jogging. A move from MDI or a program goes as far as it is told.",
+    "moves": "\"Go to zero\" and go-to-point are off: there is no known top of Z to lift to, and no certain point on the drawing.",
+    "fix": "Homing is switched on in Settings → Controller → Homing ($22). It needs limit switches.",
+    "settings": "Go to the controller settings"
   }
 }
