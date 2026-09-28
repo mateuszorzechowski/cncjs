@@ -554,7 +554,7 @@
       "line": "Line",
       "text": "Text",
       "cmd": "Command",
-      "controller": "Controller",
+      "controller": "In the controller",
       "baudrate": "Baud rate",
       "message": "Message",
       "name": "File",
@@ -596,7 +596,8 @@
       "auto": "Connection mode: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
     },
     "setting": {
-      "changed": "{{name}}: {{from}} → {{to}}"
+      "changed": "{{name}}: {{from}} → {{to}}",
+      "described": "{{title}}: {{from}} → {{to}}"
     }
   },
   "grbl": {

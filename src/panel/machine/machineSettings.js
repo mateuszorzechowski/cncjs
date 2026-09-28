@@ -203,6 +203,26 @@ export const decoded = (row) => {
   return '';
 };
 
+/**
+ * A value this setting once had, as the settings screen would show it: a
+ * switch as on or off, a mask as its axes, a figure in the panel's units with
+ * its unit. For the journal's line about a change (review note, 2026-09-28:
+ * *"napisz co to za ustawienie i wartość"*); the controller's own text is its
+ * details. `raw` is what Grbl said; anything that is not a number stays as it
+ * came.
+ */
+export const settingValueText = (row, raw, rule) => {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    return String(raw ?? '');
+  }
+  if (row.kind === 'bool' || row.bits) {
+    return decoded({ ...row, value }) || String(raw);
+  }
+  const figure = settingFigure(value, row.unit, rule);
+  return figure.unit ? `${figure.value} ${figure.unit}` : String(figure.value);
+};
+
 /** A setting's name as a list of changes gives it — an axis' quantity with its axis. */
 export const rowTitle = (row) => {
   const n = Number(row.name.slice(1));

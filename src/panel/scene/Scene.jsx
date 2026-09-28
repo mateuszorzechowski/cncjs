@@ -122,6 +122,7 @@ const Scene = ({
       <Controls
         view={view}
         bounds={frame}
+        machineKnown={Boolean(envelope)}
         revision={revision}
         memory={memory}
         object={program}

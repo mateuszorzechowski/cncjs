@@ -1,4 +1,5 @@
 import { EVENT_KEYS, LEVEL_KEYS, SOURCE_KEYS, describeEntry } from '../machine/journalWords';
+import { rowTitle, settingValueText } from '../machine/machineSettings';
 import { issueText } from './fileWords';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -34,6 +35,24 @@ const day = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle:
 const said = (entry) => {
   const words = describeEntry(entry);
   return words.key ? t(words.key, words.params) : words.text;
+};
+
+/*
+ * A change to one of Grbl's `$` settings, in the settings screen's words —
+ * what it is and what it went from and to — with the controller's own text
+ * in the details (review notes, 2026-09-28). Only for a setting this machine
+ * has; for any other the line stays the code and the figures.
+ */
+const settingLine = (entry, rows, rule) => {
+  const row = entry.event === 'setting' && rows?.find(({ name }) => name === entry.code);
+  if (!row) {
+    return null;
+  }
+  return t('journal.setting.described', {
+    title: rowTitle(row),
+    from: settingValueText(row, entry.data?.from, rule),
+    to: settingValueText(row, entry.data?.to, rule),
+  });
 };
 
 // `prose` for a sentence — a meaning, a finding — which reads in the text
@@ -80,14 +99,14 @@ const REFUSALS = new Set(['error', 'alarm']);
  * who did it, without an id (Mateusz, 2026-09-26). An id the server has no
  * name for — a script, an entry older than the names — is shown as it is.
  */
-const JournalRow = ({ entry, device, open, onToggle }) => {
+const JournalRow = ({ entry, device, settings, open, onToggle }) => {
   const units = useUnits();
   const data = Object.entries(entry.data || {}).filter(([key]) => DETAILS[key]);
   const found = entry.data?.found || [];
   const refusal = REFUSALS.has(entry.event) && entry.code;
 
   return (
-    <li className="border-b border-line last:border-b-0">
+    <li className="@container/row border-b border-line last:border-b-0">
       <button
         type="button"
         aria-expanded={open}
@@ -108,13 +127,25 @@ const JournalRow = ({ entry, device, open, onToggle }) => {
           </span>
           {entry.code ? <span className="ml-1.5 font-num text-cap text-mut">{entry.code}</span> : null}
         </span>
-        <span className="min-w-0 flex-1 basis-60 text-ink">{said(entry)}</span>
-        {device?.name ? <span className="shrink-0 truncate text-mut">{device.name}</span> : null}
+        <span className="min-w-0 flex-1 basis-60 text-ink">{settingLine(entry, settings, units.rule) ?? said(entry)}</span>
+        {/*
+          * Only where the whole line has room for it; on a narrower list it
+          * fell to a line of its own, and the details below already name the
+          * device (review note, 2026-09-28: *"jak się nie mieści, widoczne
+          * tylko w podglądzie"*).
+          */}
+        {device?.name ? <span className="hidden shrink-0 truncate text-mut @[60rem]/row:inline">{device.name}</span> : null}
       </button>
 
       {open ? (
         <dl className="m-0 flex flex-col gap-1 pb-3 text-note">
           <Detail label={t('journal.detail.time')} value={day.format(new Date(entry.time))} />
+          {entry.event === 'setting' ? (
+            <Detail
+              label={t('journal.detail.controller')}
+              value={`${entry.code}=${entry.data?.from ?? ''} → ${entry.code}=${entry.data?.to ?? ''}`}
+            />
+          ) : null}
           {entry.port ? <Detail label={t('journal.detail.port')} value={entry.port} /> : null}
           {entry.device ? <Detail label={t('journal.detail.device')} value={device?.name || entry.device} /> : null}
           {device?.ip ? <Detail label={t('journal.detail.address')} value={device.ip} /> : null}

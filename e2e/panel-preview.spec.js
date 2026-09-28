@@ -62,7 +62,7 @@ test.describe('the toolpath, as drawn', () => {
 
   const SCREENSHOT = { maxDiffPixels: 150, threshold: 0.2, animations: 'disabled' };
 
-  const open = async (page) => {
+  const open = async (page, { screen = 'Ścieżka', late = false } = {}) => {
     await page.addInitScript(() => {
       let client = null;
       Object.defineProperty(window, '__panelController', {
@@ -101,12 +101,16 @@ test.describe('the toolpath, as drawn', () => {
     }));
 
     await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Ścieżka' }).click();
+    await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: screen }).click();
 
     // Attached: the chip has stopped saying which rung is missing.
     await expect(page.getByRole('banner')).not.toContainText(/brak portu|przypinanie/i, { timeout: 45000 });
     await expect.poll(() => page.evaluate(() => Boolean(window.__panelController?.port))).toBe(true);
 
+    // The server's travel coming after the screen is up, as it does just after a restart.
+    if (late) {
+      await page.waitForTimeout(1500);
+    }
     await page.evaluate(({ settings, envelope, program }) => {
       window.__fire('controller:settings', 'Grbl', { settings });
       window.__fire('controller:envelope', envelope);
@@ -234,5 +238,12 @@ test.describe('the toolpath, as drawn', () => {
     await settle(cncjs.page);
 
     await expect(stage(cncjs.page)).toHaveScreenshot('preview-passes.png', SCREENSHOT);
+  });
+
+  // Review note, 2026-09-28: the Jog preview opened before the travel was known stayed zoomed into the floor.
+  test('the travel arriving after the Jog screen is up frames the whole machine', async ({ cncjs }) => {
+    await open(cncjs.page, { screen: 'Jog', late: true });
+    await settle(cncjs.page);
+    await expect(stage(cncjs.page)).toHaveScreenshot('preview-jog-late-travel.png', SCREENSHOT);
   });
 });

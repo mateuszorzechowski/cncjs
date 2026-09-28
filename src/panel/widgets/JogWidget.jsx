@@ -231,8 +231,13 @@ const JogWidget = ({ machine, className = '' }) => {
         </div>
         {/* XY and Z are the same decision asked twice, so they stay together:
           * split across a fold, the second one is easy to miss. */}
-          {/* Its own height, not squeezed: the column scrolls instead (it overlapped once the pad grew). */}
-          <div className="flex min-w-0 flex-none flex-col gap-gap">
+          {/*
+            * Takes the room there is, and never less than it needs: no
+            * `min-h-0`, so it cannot be squeezed until its rows overlap (they
+            * did once the pad grew), and `flex-1`, so it still fills the card
+            * rather than leaving the foot empty (review note, 2026-09-28).
+            */}
+          <div className="flex min-w-0 flex-1 flex-col gap-gap">
             <AxisControls {...xy} />
             <AxisControls {...z} />
           </div>

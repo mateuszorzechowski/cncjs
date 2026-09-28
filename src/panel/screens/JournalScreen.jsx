@@ -30,7 +30,7 @@ import { t } from '../i18n';
  * What is kept at all is set in the settings (`debug` when looking for
  * something); a filter here can only narrow what was kept.
  */
-const JournalScreen = () => {
+const JournalScreen = ({ machine }) => {
   const filters = useJournalFilters();
   const [open, setOpen] = useState(null);
   const [sheet, setSheet] = useState(false);
@@ -76,6 +76,7 @@ const JournalScreen = () => {
             key={entry.id}
             entry={entry}
             device={devices[entry.device]}
+            settings={machine?.machineSettings?.rows}
             open={open === entry.id}
             onToggle={() => setOpen(open === entry.id ? null : entry.id)}
           />,
