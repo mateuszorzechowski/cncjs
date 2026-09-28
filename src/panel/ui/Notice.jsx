@@ -45,12 +45,17 @@ export const Triangle = ({ className = 'size-4' }) => (
  * *"wyrównać wertykalnie treść"*). Without one, the triangle stays with the
  * first line of a paragraph.
  */
-const Notice = ({ children, action, className = '' }) => (
+/*
+ * `lapsing`: the notice goes by itself, and a thin bar along its foot runs
+ * out as it does (`animate-lapse`, the same six seconds as `SHOWN_FOR`).
+ */
+const Notice = ({ children, action, lapsing = false, className = '' }) => (
   <div
     role="note"
     aria-label={t('notice.warning')}
-    className={`flex shrink-0 gap-3 rounded-ctl border border-amb bg-ambS px-4 py-3 ${action ? 'items-center' : 'items-start'} ${className}`}
+    className={`relative flex shrink-0 gap-3 overflow-hidden rounded-ctl border border-amb bg-ambS px-4 py-3 ${action ? 'items-center' : 'items-start'} ${className}`}
   >
+    {lapsing ? <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1 origin-left animate-lapse bg-amb opacity-60" /> : null}
     <span className={`text-amb ${action ? '' : 'pt-0.5'}`}>
       <Triangle className="size-5" />
     </span>

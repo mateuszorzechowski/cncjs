@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Notice from './Notice';
+import { SHOWN_FOR } from './shownFor';
 import { refusalMessage } from '../machine/refusal';
 import { t } from '../i18n';
 
@@ -23,17 +24,6 @@ import { t } from '../i18n';
  * and with no pointer events it costs the operator nothing: whatever is under
  * it stays exactly where it was and stays pressable.
  */
-
-/**
- * How long it stays, in milliseconds.
- *
- * Long enough to be read by somebody who was looking at the machine rather
- * than the screen when they pressed, short enough that it is gone before the
- * next attempt. Nothing is lost when it goes: the reason it names is a state
- * the panel is already showing — the alarm chip, the dark buttons — and this
- * is only the answer to "why did nothing happen when I pressed it".
- */
-export const SHOWN_FOR = 6000;
 
 /**
  * Whether the notice numbered `seq` is still having its turn.
@@ -75,7 +65,8 @@ const RefusalNotice = ({ refusal }) => {
       role="status"
       className="pointer-events-none absolute inset-x-shellPad top-shellPad z-20"
     >
-      <Notice>{t(message.key, message.values)}</Notice>
+      {/* Keyed by the refusal, so a new one starts its bar from full. */}
+      <Notice key={refusal.seq} lapsing>{t(message.key, message.values)}</Notice>
     </div>
   );
 };

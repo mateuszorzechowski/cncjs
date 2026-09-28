@@ -182,6 +182,19 @@ module.exports = {
         frame: 'var(--w)',
         frameh: 'var(--h)',
       },
+      /*
+       * A notice that goes by itself shows how long it has left: a bar that
+       * runs out as it does (Mateusz, 2026-09-28: *"dla wyskakujących
+       * warningów i tostów dodaj pasek wskazujący, kiedy zniknie"*). Six
+       * seconds is `SHOWN_FOR` in `ui/RefusalNotice` — the two are checked
+       * against each other by a test.
+       */
+      keyframes: {
+        lapse: { from: { transform: 'scaleX(1)' }, to: { transform: 'scaleX(0)' } },
+      },
+      animation: {
+        lapse: 'lapse 6000ms linear forwards',
+      },
       fontSize: {
         // The panel's type scale. Three sizes carry almost everything: a
         // label, body, and the reading a screen is about.
