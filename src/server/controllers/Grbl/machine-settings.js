@@ -137,6 +137,37 @@ export const describeSettings = (reported = {}) => {
   return [...known, ...unknown];
 };
 
+/*
+ * What each group's line in the list says, from which settings (settings
+ * handoff, 2026-09-28): values rather than a count, since the value is what
+ * somebody opening the list is looking for. `on` is a switch, `range` two
+ * figures from–to, anything else figures side by side.
+ */
+const SUMMARIES = [
+  { group: 'axes', parts: [{ names: ['$110', '$111', '$112'], unit: 'feed' }] },
+  { group: 'homing', parts: [{ names: ['$22'], on: true }, { names: ['$25'], unit: 'feed' }] },
+  { group: 'limits', parts: [{ names: ['$21'], on: true }] },
+  { group: 'spindle', parts: [{ names: ['$31', '$30'], unit: 'rpm', range: true }] },
+  { group: 'signals', parts: [{ names: ['$0'], unit: 'us' }] },
+  { group: 'motion', parts: [{ names: ['$11'], unit: 'length' }] },
+];
+
+/**
+ * Each group's summary: `{ group, parts }`, a part being `{ names, values,
+ * unit?, on?, range? }`. `values` are Grbl's, in millimetres, as the rows'
+ * are — the panel converts them with the same units rule. A part whose
+ * settings the controller did not report is left out.
+ */
+export const groupSummaries = (reported = {}) => SUMMARIES.map(({ group, parts }) => ({
+  group,
+  parts: parts
+    .filter(({ names }) => names.every((name) => reported[name] !== undefined))
+    .map((part) => {
+      const values = part.names.map((name) => Number(reported[name]));
+      return part.on ? { names: part.names, on: values[0] === 1 } : { ...part, values };
+    }),
+}));
+
 /**
  * The line that writes what an operator asked, or the reason it may not.
  *

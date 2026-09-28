@@ -1,4 +1,4 @@
-import { SETTINGS, describeSettings, settingWrite } from '../machine-settings';
+import { SETTINGS, describeSettings, groupSummaries, settingWrite } from '../machine-settings';
 
 // What `$$` says on this bench's Grbl 1.1h, trimmed to the ones used here.
 const REPORTED = {
@@ -31,6 +31,40 @@ describe('describeSettings', () => {
     const names = SETTINGS.map((s) => s.name);
     expect(new Set(names).size).toBe(names.length);
     expect(names.every((name) => /^\$\d{1,3}$/.test(name))).toBe(true);
+  });
+});
+
+describe('groupSummaries', () => {
+  const FULL = {
+    '$0': '10', '$11': '0.010', '$21': '1', '$22': '1', '$25': '500.000', '$30': '24000.000', '$31': '0.000',
+    '$110': '3500.000', '$111': '3500.000', '$112': '600.000',
+  };
+
+  test('each group\'s line: values, in millimetres, with the settings they came from', () => {
+    expect(groupSummaries(FULL)).toEqual([
+      { group: 'axes', parts: [{ names: ['$110', '$111', '$112'], unit: 'feed', values: [3500, 3500, 600] }] },
+      { group: 'homing', parts: [{ names: ['$22'], on: true }, { names: ['$25'], unit: 'feed', values: [500] }] },
+      { group: 'limits', parts: [{ names: ['$21'], on: true }] },
+      { group: 'spindle', parts: [{ names: ['$31', '$30'], unit: 'rpm', range: true, values: [0, 24000] }] },
+      { group: 'signals', parts: [{ names: ['$0'], unit: 'us', values: [10] }] },
+      { group: 'motion', parts: [{ names: ['$11'], unit: 'length', values: [0.01] }] },
+    ]);
+  });
+
+  test('a switch that is off says so', () => {
+    expect(groupSummaries({ ...FULL, '$21': '0' })[2].parts).toEqual([{ names: ['$21'], on: false }]);
+  });
+
+  test('a part the controller did not report all of is left out, the group kept', () => {
+    const some = { ...FULL };
+    delete some.$112;
+    delete some.$25;
+
+    const summaries = groupSummaries(some);
+
+    expect(summaries[0]).toEqual({ group: 'axes', parts: [] });
+    expect(summaries[1].parts).toEqual([{ names: ['$22'], on: true }]);
+    expect(groupSummaries(undefined).every(({ parts }) => parts.length === 0)).toBe(true);
   });
 });
 

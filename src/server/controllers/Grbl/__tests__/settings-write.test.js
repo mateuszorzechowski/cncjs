@@ -242,52 +242,65 @@ describe('settings:read', () => {
 });
 
 describe('the copy and the history', () => {
-  test('the new value `$$` reports is a change, put down to the device that wrote it', () => {
+  test('the changes `$$` reports are one entry, put down to the device that wrote them', () => {
     const { controller } = setup();
 
-    controller.command('settings:write', { name: '$110', value: 800 });
+    controller.command('settings:write', { changes: [{ name: '$110', value: 800 }, { name: '$20', value: 0 }] });
+    controller.runner.parse('ok');
     controller.runner.parse('ok');
     controller.runner.parse('$110=800.000');
+    controller.runner.parse('$20=0');
+    machineSettings.flush();
 
     expect(machineSettings.saved().history).toEqual([
-      expect.objectContaining({ name: '$110', from: '500.000', to: '800.000', device: 'laptop' }),
+      expect.objectContaining({
+        source: 'panel',
+        device: 'laptop',
+        changes: [{ name: '$110', from: '500.000', to: '800.000' }, { name: '$20', from: '1', to: '0' }],
+      }),
     ]);
     expect(machineSettings.saved().copy.values).toEqual(expect.objectContaining({ '$110': '800.000' }));
   });
 
-  test('a change made anywhere else is in the history too, from nobody', () => {
+  test('a change made anywhere else is in the history too, from outside the panel', () => {
     const { controller } = setup();
 
     // Typed into a console, and read back the next time `$$` came round.
     controller.runner.parse('$20=0');
+    machineSettings.flush();
 
     expect(machineSettings.saved().history).toEqual([
-      expect.objectContaining({ name: '$20', from: '1', to: '0', device: null }),
+      expect.objectContaining({ source: 'external', device: null, changes: [{ name: '$20', from: '1', to: '0' }] }),
     ]);
   });
 
-  test('every client is sent the rows and the history beside `controller:settings`', async () => {
+  test('every client is sent the rows, the groups, the firmware and the history — the reading put down first', async () => {
     const { controller, socketEvents } = setup({ ticking: true });
     controller.ready = true;
+    controller.runner.parse('Grbl 1.1h [\'$\' for help]');
     controller.runner.parse('$20=0');
-    await delay(250);
+    await delay(400);
 
     const sent = socketEvents.filter(({ event }) => event === 'machine:settings').pop();
-    expect(sent.args[0].rows.map(({ name, value }) => [name, value])).toEqual([['$110', 500], ['$20', 0], ['$13', 0]]);
-    expect(sent.args[0].readAt).toEqual(expect.any(String));
-    expect(sent.args[0].history).toEqual([expect.objectContaining({ name: '$20', to: '0', deviceName: null })]);
+    const view = sent.args[0];
+    expect(view.rows.map(({ name, value }) => [name, value])).toEqual([['$110', 500], ['$20', 0], ['$13', 0]]);
+    expect(view.firmware).toEqual({ name: 'Grbl', version: '1.1h' });
+    expect(view.groups.find(({ group }) => group === 'axes').parts).toEqual([]);
+    expect(view.readAt).toEqual(expect.any(String));
+    expect(view.history).toEqual([expect.objectContaining({ source: 'external', changes: [{ name: '$20', from: '1', to: '0' }], deviceName: null })]);
   });
 
-  test('a change in the history carries the name of the device that made it', () => {
+  test('an entry carries the name of the device that made it', () => {
     const { controller } = setup();
     devices.seen('laptop', { name: 'Laptop w warsztacie' });
 
     controller.command('settings:write', { name: '$110', value: 800 });
     controller.runner.parse('ok');
     controller.runner.parse('$110=800.000');
+    machineSettings.flush();
 
     expect(controller.machineSettingsView().history).toEqual([
-      expect.objectContaining({ name: '$110', device: 'laptop', deviceName: 'Laptop w warsztacie' }),
+      expect.objectContaining({ device: 'laptop', deviceName: 'Laptop w warsztacie' }),
     ]);
   });
 });

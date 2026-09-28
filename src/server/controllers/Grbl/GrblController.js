@@ -64,7 +64,7 @@ import { Progress } from './progress';
 import { goToPointLines, goToWorkZeroLines } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
-import { describeSettings, settingWrite } from './machine-settings';
+import { describeSettings, groupSummaries, settingWrite } from './machine-settings';
 import { machineGeometry } from './geometry';
 import machineSettings from '../../services/machine-settings';
 import devices from '../../services/devices';
@@ -2278,7 +2278,11 @@ class GrblController {
       const { copy, history } = machineSettings.saved();
       const named = devices.describe(history.map(({ device }) => device));
       return {
+        // What the settings card says it is reading: `Grbl 1.1h`.
+        firmware: { name: this.settings?.firmware || 'Grbl', version: this.settings?.version || null },
         rows: describeSettings(this.settings?.settings),
+        // Each group's line in the list — see `groupSummaries`.
+        groups: groupSummaries(this.settings?.settings),
         // The Geometria group's summary, checks and homing table — see `geometry.js`.
         geometry: machineGeometry(this.settings?.settings),
         history: history.map((entry) => ({ ...entry, deviceName: named[entry.device]?.name ?? null })),
@@ -2845,9 +2849,7 @@ class GrblController {
             }
             lines.push({ name: change.name, line });
           }
-          for (const { name } of lines) {
-            machineSettings.expect(name, this.commandSocket?.device);
-          }
+          machineSettings.expect(lines.map(({ name }) => name), this.commandSocket?.device);
           this.settingWrite = { lines, next: 0, socket: this.commandSocket };
           this.writeNextSetting();
         },

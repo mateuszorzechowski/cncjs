@@ -203,12 +203,14 @@ class GrblRunner extends events.EventEmitter {
         return;
       }
       if (type === GrblLineParserResultStartup) {
-        const { version } = payload;
+        const { firmware, version } = payload;
         const nextSettings = { // enforce change
           ...this.settings,
+          // The name too, for the panel's settings card: a fork says its own.
+          firmware: firmware,
           version: version
         };
-        if (!_.isEqual(this.settings.version, nextSettings.version)) {
+        if (!_.isEqual(this.settings.version, nextSettings.version) || this.settings.firmware !== firmware) {
           this.settings = nextSettings; // enforce change
         }
         this.emit('startup', payload);
