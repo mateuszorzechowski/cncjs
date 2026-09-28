@@ -284,7 +284,6 @@
     "step2Blocked": "Step 1 first: a browser installs the app only over a connection it trusts.",
     "step2Done": "Installed on this device.",
     "stepDone": "done",
-    "version": "Panel version {{version}}",
     "upToDate": "The server has the same version.",
     "update": "Update",
     "dirty": "{{version}} (local changes)",
@@ -293,7 +292,8 @@
       "off": "Off",
       "on": "On",
       "note": "On this device. The panel reloads by itself when nobody is using it: in the background or after 30 s without a touch."
-    }
+    },
+    "versionLabel": "Panel version"
   },
   "refusal": {
     "alarm": "The machine is in alarm, so nothing was sent. Clear the alarm first.",

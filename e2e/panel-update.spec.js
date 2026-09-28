@@ -30,7 +30,7 @@ test.describe('the panel version', () => {
     expect(served.id).toBeTruthy();
     await openInstall(cncjs.page);
 
-    const line = cncjs.page.getByText(/^Wersja panelu /);
+    const line = cncjs.page.getByRole('heading', { name: /^Wersja panelu/ });
     await expect(line).toContainText(served.label);
     await expect(line).not.toContainText('1.11.5');
     await expect(cncjs.page.getByText('Na serwerze ta sama wersja.')).toBeVisible();

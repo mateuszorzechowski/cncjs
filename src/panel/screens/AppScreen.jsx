@@ -243,19 +243,12 @@ const AppScreen = () => {
         * and the job belong to the server, and the page re-attaches to both.
         */}
       <footer className="flex flex-col border-t border-line pt-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-num text-note text-ink">{t('app.version', { version: buildName(THIS_BUILD) })}</span>
-            <span className="text-note text-mut">{versionNote}</span>
-          </div>
-          <Button
-            tone={updateReady ? 'primary' : 'outline'}
-            onClick={applyUpdate}
-            className="h-ctl w-full @3xl/shell:w-auto"
-          >
+        {/* Rows like the auto-update's below, so the button and the switch stand in one column. */}
+        <SettingRow title={t('app.versionLabel')} code={buildName(THIS_BUILD)} note={versionNote} noteBelow>
+          <Button tone={updateReady ? 'primary' : 'outline'} onClick={applyUpdate} className="h-ctl w-full">
             {t(updateReady ? 'app.update' : 'app.refresh')}
           </Button>
-        </div>
+        </SettingRow>
         <SettingRow title={t('app.auto.label')} note={t('app.auto.note')} noteBelow>
           <SegmentedChoice
             joined
