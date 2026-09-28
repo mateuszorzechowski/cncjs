@@ -33,7 +33,11 @@ const Card = ({ label, sublabel, aside, onHelp, helpLabel, row = false, classNam
     {(label || sublabel || aside || onHelp) && (
       // `items-center` only when there is a button to centre against. A
       // baseline is right for two pieces of text and wrong for a square.
-      <header className={`mb-3 flex justify-between gap-3 ${onHelp ? 'items-baseline @3xl/shell:items-center' : 'items-baseline'}`}>
+      // Two lines of caption sit on the bottom of what is beside them: on
+      // the baseline they hung from the top of the ↻ square with a gap under
+      // them (review note, 2026-09-28: *"tekst jest wyrównany do górnej
+      // krawędzi nie do dolnej"*).
+      <header className={`mb-3 flex justify-between gap-3 ${(sublabel && 'items-end') || (onHelp ? 'items-baseline @3xl/shell:items-center' : 'items-baseline')}`}>
         <div className="flex min-w-0 flex-col gap-0.5">
           <h2 className="m-0 truncate text-cap font-semibold uppercase tracking-[0.1em] text-mut">
             {label}
