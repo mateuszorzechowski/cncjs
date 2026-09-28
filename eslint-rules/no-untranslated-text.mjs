@@ -43,6 +43,8 @@ const NOT_DISPLAYED = new Set([
   'opens',
   // Which keyboard a phone raises for a field (`decimal`).
   'inputMode',
+  // Which files a file picker offers (`.txt,text/plain`).
+  'accept',
   // SVG geometry and paint, which are drawing instructions.
   'd', 'viewBox', 'fill', 'stroke', 'strokeWidth', 'strokeLinecap',
   'strokeLinejoin', 'opacity', 'focusable', 'cx', 'cy', 'r', 'x', 'y',

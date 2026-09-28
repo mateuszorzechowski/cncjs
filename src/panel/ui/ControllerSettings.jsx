@@ -203,16 +203,16 @@ const ControllerSettings = ({ machine }) => {
       )}
 
       {open === HISTORY ? (
-        <Sheet title={t('machine.history.title')} onClose={close}>
-          <SettingsHistory
-            history={view.history ?? []}
-            disabled={disabled}
-            onRestore={(entry) => {
-              setDrafts((now) => ({ ...now, ...restoreDrafts(entry, rows) }));
-              close();
-            }}
-          />
-        </Sheet>
+        <SettingsHistory
+          history={view.history ?? []}
+          disabled={disabled}
+          onRestore={(entry) => {
+            setDrafts((now) => ({ ...now, ...restoreDrafts(entry, rows) }));
+            close();
+          }}
+          onImport={(imported) => setDrafts((now) => ({ ...now, ...imported }))}
+          onClose={close}
+        />
       ) : null}
       {open === RAW ? (
         <Sheet title={t('machine.raw.title')} onClose={close}>
