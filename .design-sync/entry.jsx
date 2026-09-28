@@ -21,6 +21,7 @@ export { default as SegmentedChoice } from '../src/panel/ui/SegmentedChoice';
 export { default as SettingGroup } from '../src/panel/ui/SettingGroup';
 export { default as SettingRow } from '../src/panel/ui/SettingRow';
 export { default as SettingSummary } from '../src/panel/ui/SettingSummary';
+export { default as UndoNotice } from '../src/panel/ui/UndoNotice';
 export { default as Sheet } from '../src/panel/ui/Sheet';
 export { default as StateChip } from '../src/panel/ui/StateChip';
 export { default as StatTile } from '../src/panel/ui/StatTile';
@@ -71,14 +72,16 @@ export const PanelRoot = ({ language = 'pl', units = MM, className = '', childre
 
 import { useEffect, useRef } from 'react';
 
+// `target`: the PC's Full HD tokens, on this frame alone — the panel sets
+// them on the document at 1800px, which would reach every cell on the page.
 const DEVICES = {
   phone: { width: 360, scale: 1 },
   tablet: { width: 1024, scale: 0.6 },
-  pc: { width: 1920, scale: 0.4 },
+  pc: { width: 1920, scale: 0.4, target: 'fullhd' },
 };
 
 export const DeviceFrame = ({ device = 'tablet', height, language, units, children }) => {
-  const { width, scale } = DEVICES[device] ?? DEVICES.tablet;
+  const { width, scale, target } = DEVICES[device] ?? DEVICES.tablet;
   const inner = useRef(null);
   const [tall, setTall] = useState(height ?? 0);
   useEffect(() => {
@@ -91,7 +94,7 @@ export const DeviceFrame = ({ device = 'tablet', height, language, units, childr
   }, [height]);
   return (
     <div style={{ width: width * scale, height: tall * scale, overflow: 'hidden', flex: 'none' }}>
-      <div ref={inner} style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+      <div ref={inner} data-target={target} style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
         <PanelRoot language={language} units={units} className="h-full">{children}</PanelRoot>
       </div>
     </div>

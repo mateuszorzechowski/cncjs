@@ -178,33 +178,58 @@ urządzeniach, zrzuty.
 
 ### Ustawienia (`settings`) — zrzuty `settings-*`
 - **Cel:** wszystko, co ustawia się raz i zostawia.
-- **Zakładki:** Połączenie · Sterownik · Wygląd · Preferencje · Instalacja
+- **Zakładki:** Połączenie · Sterownik · Preferencje · Instalacja
   (SegmentedChoice na górze). Przesunięcie palcem po treści zmienia zakładkę.
+  Wygląd dołączył do Preferencji (handoff 2026-09-28).
 - **Połączenie:**
   - Port, sterownik i prędkość jako `SettingSummary` z arkuszem. Przy otwartym
     porcie są ZABLOKOWANE, z jedną notą pod spodem.
   - Tryb łączenia.
   - Serwer.
-  - Połączenie: Połącz/Rozłącz.
-- **Sterownik (Grbl `$$`):**
-  - Widok Opisowy / Grbl `$$`.
-  - Grupy jako zakładki (`GroupTabs`) z liczbą niezapisanych zmian.
-  - Przewija się tylko lista ustawień.
-  - Pasek zapisu: Odrzuć/Zapisz albo Odczytaj ponownie.
-  - **Zapis do EEPROM zawsze przez ConfirmSheet** z listą zmian było → jest.
-  - Na PC obok Osi jest podgląd 3D obszaru i tabela bazowania; poniżej 1800 px
-    to osobna zakładka Geometria.
+  - Połączenie: Połącz/Rozłącz (zostaje na swoim miejscu).
+- **Sterownik (Grbl `$$`)** — handoff „Ustawienia → Sterownik”, 2026-09-28:
+  - Karta **PAMIĘĆ STEROWNIKA**, pod etykietą nazwa i wersja firmware z serwera
+    (`Card sublabel`), w nagłówku ↻ Odczytaj ze sterownika (pyta, gdy są
+    niezapisane zmiany).
+  - **Lista grup** jako `SettingSummary` z **wartościami z serwera**, nie
+    licznikami (`3500 · 3500 · 600 mm/min`, `Wł. · 500 mm/min`…). Pod linią dwie
+    pozycje, które nie są grupami: Historia zmian (stan: „ostatni zapis 01:12”
+    / „zmiana spoza panelu 00:40”) i Widok surowy `$$` („ustawień: 34”).
+  - **Grupa:** telefon — arkusz z „Gotowe”; tablet — karta w miejscu listy ze
+    stałym nagłówkiem i „Wróć”; PC — kolumna obok listy, zawsze jedna grupa
+    wybrana (domyślnie pierwsza), bez „Wróć”. Osie: wiersz na wielkość, pola
+    X Y Z obok siebie.
+  - **Pasek zmian** tylko przy ≥ 1 niezapisanej zmianie, poza przewijaniem:
+    „Niezapisane zmiany: 3 · Osie 2 · Bazowanie 1 · Przejrzyj”. Telefon: pas nad
+    dolnym menu; tablet i PC: karta pod listą (i grupą).
+  - **Przegląd zmian** to jedyna droga do EEPROM i zarazem jej potwierdzenie:
+    lista było → jest, ✕ przy każdej zmianie, „Odrzuć wszystkie” (outline) i
+    „Zapisz w sterowniku”. Telefon: arkusz; tablet/PC: dialog 520 px.
+  - **Odrzuć wszystkie** bez pytania — pływający komunikat (`UndoNotice`) z
+    „Cofnij” przez ~6 s.
+  - **Historia:** jeden wpis = jeden zapis (z panelu / spoza panelu), serwer
+    grupuje. „Przywróć stan sprzed” dodaje zmiany do paska, nic nie zapisuje.
+    Eksport/import `$$` — etap następny.
+  - **Geometria** (3D, tabela bazowania, podsumowanie, sprawdzenia) pokazuje
+    **stan po niezapisanych zmianach** — serwer liczy go na żądanie
+    (`settings:preview`), z tym, co Grbl robi sam (`$22=0` gasi `$20`). Zmieniona
+    linia: nowa wartość, pod nią przekreślona obecna. Telefon: pozycja listy i
+    arkusz; tablet i PC: stała kolumna `w-setcol` do StatusBaru. Przegląd
+    dostaje sekcję „Geometria po zapisie” (linie przed → po, 3D, sprawdzenia),
+    gdy zmiana dotyczy geometrii. Czerwone sprawdzenie ostrzega, nie blokuje.
   - Tylko do odczytu, gdy zapis jest niemożliwy (brak połączenia, maszyna nie
     w Idle/Alarm, trwa program).
-- **Wygląd:** motyw, niewygaszanie ekranu. Zakres: to urządzenie.
-- **Preferencje:**
-  - Język (zakres: urządzenie).
-  - Jednostki mm/cale i „trzymaj maszynę w tych jednostkach” (zakres: serwer).
-  - Jog.
-  - Próg dziennika.
+- **Preferencje:** dwie sekcje według zakresu zamiast etykiety przy każdym
+  wierszu:
+  - **To urządzenie:** Język, Motyw, Ekran bez blokady.
+  - **Serwer · wszystkie urządzenia:** Jednostki mm/cale, Pilnuj jednostek
+    maszyny, Kroki i Posuwy jogu, Próg dziennika.
 - **Instalacja:** krok 1 certyfikat, krok 2 instalacja aplikacji, stopka z
-  wersją i Przeładuj.
-- Na telefonie przewija się cały ekran, nie karta (wyjątek: Sterownik).
+  wersją i Przeładuj. Wykonany krok zwija się do jednej linii z ✓ i rozwija po
+  stuknięciu. Ostrzeżenie o urzędzie certyfikacji pod `?`.
+- **Przewijanie:** stoją górny pasek, zakładki, pasek zmian, dolne menu albo
+  rail i StatusBar. Telefon: pod zakładkami przewija się cała karta razem z
+  nagłówkiem. Tablet i PC: nagłówek karty stoi, przewija się jej środek.
 
 ### Niegotowe: Sonda, Diagnostyka, Bazowanie, MDI
 - Są w nawigacji wyszarzone. Ekranów nie ma.
@@ -251,7 +276,17 @@ urządzeniach, zrzuty.
 13. **Jednostki** to jedno ustawienie serwera (mm/cale). Wszystkie ekrany i
     urządzenia pokazują to samo.
 14. **Kamerę 3D rusza tylko przycisk widoku.**
-15. **Wspólne komponenty, zero stylów ręcznych.**
+15. **Chevron mówi, co zrobi stuknięcie na tym urządzeniu.**
+    - **⌄** (`SettingSummary opens="sheet"`): coś otworzy się nad ekranem.
+    - **›** (`opens="view"`): następny widok zajmie to samo miejsce.
+    - **Bez chevronu, wybrany** (`selected`): wiersz wybiera element w układzie
+      master-detail (lista grup na PC).
+16. **„Gotowe” zamyka arkusz lub dialog; „Wróć” cofa o poziom w tym samym
+    miejscu** (grupa na tablecie). Żadne z nich niczego nie zatwierdza. Nie
+    zamieniać jednego na drugie globalnie.
+17. **Odpowiedzi potwierdzenia stoją w stopce arkusza, poza przewijaniem**
+    (`Sheet footer`) — długa lista nad nimi nie wypycha przycisku.
+18. **Wspólne komponenty, zero stylów ręcznych.**
     - Dwa ekrany rozwiązujące ten sam problem na dwa sposoby to defekt.
     - Makieta daje **układ**. Przyciski zostają panelowe.
     - Gdy czegoś brakuje, rozszerza się komponent o props, zamiast robić
@@ -276,10 +311,9 @@ urządzeniach, zrzuty.
 Niezweryfikowane z Mateuszem. To punkty wyjścia, nie decyzje.
 
 **Wykorzystanie miejsca**
-- **PC nie ma własnych układów** poza Plikami i geometrią w Sterowniku.
+- **PC nie ma własnych układów** poza Plikami i Sterownikiem (trzy kolumny).
   - Zerowanie na 1920 px to trzy wiersze i pusty środek.
   - Pulpit rozciąga karty.
-  - Ustawienia · Sterownik zajmują ~2/3 szerokości.
 - **Pliki na PC:** bez wybranego pliku środkowa karta i edytor są puste
   (~2/3 ekranu).
 - **Telefon, Ścieżka:** nazwa programu, wymiary i układ są tylko w StatusBarze,
@@ -295,8 +329,8 @@ Niezweryfikowane z Mateuszem. To punkty wyjścia, nie decyzje.
   o dwa gesty dalej. Do rozważenia, czy Połączenie powinno być bliżej.
 
 **Niespójności komponentów**
-- **Trzy style zakładek:** rail (wielkie litery), SegmentedChoice w
-  Ustawieniach (zwykłe litery), podkreślone `GroupTabs` w Sterowniku.
+- **Dwa style zakładek:** rail (wielkie litery), SegmentedChoice w
+  Ustawieniach (zwykłe litery). `GroupTabs` usunięty (handoff Sterownika).
 - **Wielkość liter:** przyciski WIELKIMI (ZERUJ Z, WCZYTAJ), segmenty zwykłymi
   (Norm./Odwr., Opisowy, 15 min).
 - **Szary wypełniony przycisk** znaczy raz „neutralna akcja” (Komendy, Pauza),
@@ -305,7 +339,7 @@ Niezweryfikowane z Mateuszem. To punkty wyjścia, nie decyzje.
 - **Trzy odczyty pozycji:**
   - `DroStack` (Pulpit, Zerowanie).
   - `DroStrip` (Jog).
-  - Tabela osi w Ustawieniach.
+  - Wiersze osi X Y Z w Sterowniku.
   - Etykieta karty to raz „Pozycja robocza”, raz „Pozycja”, raz „Zerowanie”.
 - **Dwa sposoby ustawiania liczby:**
   - `Stepper` « ‹ 1500 › » (Jog).
@@ -320,8 +354,8 @@ Niezweryfikowane z Mateuszem. To punkty wyjścia, nie decyzje.
   ma (DZIENNIK, PLIKI…).
 - **Brakujące stany komponentów:**
   - TextField nie ma stylu „disabled”.
-  - Tokeny Full HD (`data-target="fullhd"`: szerszy rail, większe przyciski)
-    działają tylko w ramce recenzji, nie na prawdziwym ekranie 1920.
+  - ~~Tokeny Full HD tylko w ramce recenzji~~ — od 2026-09-28 powłoka sama
+    włącza `data-target="fullhd"` od 1800 px (decyzja D).
 - **Wcześniejsza lista spójności:** projekt Claude Design 7629d30f…,
   `Ustawienia - spójność.dc.html` (12 punktów, wdrożone w wariancie 2b).
 

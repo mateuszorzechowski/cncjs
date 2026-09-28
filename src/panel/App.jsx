@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import i18next, { t } from './i18n';
 import { FooterSlotProvider } from './ui/footerSlot';
 import { HeaderHelpProvider } from './ui/headerSlot';
-import { ShellNodeProvider, ShellWidthProvider, useIsPhone, useMeasuredShell } from './ui/shell';
+import {
+  ShellNodeProvider, ShellWidthProvider, useFullHdTarget, useIsPhone, useMeasuredShell,
+} from './ui/shell';
 import { UnitsProvider } from './ui/units';
 import NavRail from './ui/NavRail';
 import NavTabs from './ui/NavTabs';
@@ -439,6 +441,7 @@ const App = () => {
     }
   }, [screen]);
   const shell = useMeasuredShell();
+  useFullHdTarget(shell.width);
 
   /*
    * The language, as the key the screens are built under.

@@ -29,6 +29,7 @@
     "SettingGroup": "src/panel/ui/SettingGroup.jsx",
     "SettingRow": "src/panel/ui/SettingRow.jsx",
     "SettingSummary": "src/panel/ui/SettingSummary.jsx",
+    "UndoNotice": "src/panel/ui/UndoNotice.jsx",
     "Sheet": "src/panel/ui/Sheet.jsx",
     "StateChip": "src/panel/ui/StateChip.jsx",
     "StatTile": "src/panel/ui/StatTile.jsx",
@@ -94,6 +95,9 @@
       "cardMode": "column"
     },
     "SettingSummary": {
+      "cardMode": "column"
+    },
+    "UndoNotice": {
       "cardMode": "column"
     },
     "StatTile": {

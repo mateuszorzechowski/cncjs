@@ -84,9 +84,17 @@ JavaScript only), so:
 ## Findings about the panel itself (not sync problems)
 
 - The `[data-target='fullhd']` token set (`--val` 46px, `--ctl` 68px,
-  `fullhd:` variants) is applied only by the review frame on :8765 — a real
-  1920px screen never gets it (ui/shell.jsx says so). DeviceFrame's PC cells
-  therefore show what a real PC shows: the default sizes at 1920px.
+  `fullhd:` variants) is applied by the shell itself at a width of 1800px or
+  more since 2026-09-28 (decision D, `useFullHdTarget` in App), not only by
+  the review frame. DeviceFrame's PC cells set it on their own frame
+  (`data-target` is a plain attribute selector), so they show what a real PC
+  shows and the phone cells beside them keep theirs.
+
+- `UndoNotice` goes away after 6 s, as the real one does (`useShowing`): its
+  preview frame is empty after that — reload the card to see it again. Its
+  frame has an inline height, since the notice is absolute and the cell
+  measures nothing, and a Tailwind height the panel does not use is not
+  compiled (the CSS scans `src/panel` only).
 
 - `TextField` has no disabled styling: a disabled field looks enabled (the
   panel never disables one today). Its preview has no Disabled cell.
