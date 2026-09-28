@@ -241,6 +241,18 @@
     "xy": "Zero XY",
     "xyz": "Zero XYZ"
   },
+  "mdi": {
+    "title": "MDI",
+    "log": "Machine console",
+    "empty": "Type a G-code line or a $ command and press Send. What the machine answers appears here.",
+    "line": "Line to send",
+    "placeholder": "e.g. G0 X10 or $$",
+    "send": "Send",
+    "clear": "Clear",
+    "offline": "No controller connected.",
+    "running": "MDI is off while a program runs.",
+    "alarm": "Alarm: the controller takes only $ commands now (e.g. $X to unlock, $H to home)."
+  },
   "settings": {
     "connection": "Connection",
     "preferences": "Preferences",

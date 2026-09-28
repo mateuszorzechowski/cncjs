@@ -241,6 +241,18 @@
     "xy": "Zeruj XY",
     "xyz": "Zeruj XYZ"
   },
+  "mdi": {
+    "title": "MDI",
+    "log": "Konsola maszyny",
+    "empty": "Wpisz linię G-code albo polecenie $ i naciśnij Wyślij. Tu pojawi się odpowiedź maszyny.",
+    "line": "Linia do wysłania",
+    "placeholder": "np. G0 X10 albo $$",
+    "send": "Wyślij",
+    "clear": "Wyczyść",
+    "offline": "Brak połączenia ze sterownikiem.",
+    "running": "W trakcie programu MDI jest wyłączone.",
+    "alarm": "Alarm: sterownik przyjmie teraz tylko polecenia $ (np. $X — odblokuj, $H — bazuj)."
+  },
   "settings": {
     "connection": "Połączenie",
     "preferences": "Preferencje",

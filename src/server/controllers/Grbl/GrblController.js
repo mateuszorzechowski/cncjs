@@ -99,6 +99,9 @@ const isRealtimeCommand = (data) => (
   _.includes(GRBL_REALTIME_COMMANDS, data) || Boolean(String(data).match(/[\x80-\xff]/))
 );
 
+// One of Grbl's own `$` commands, which it answers in alarm too.
+const isSystemLine = (line) => String(line).trim().startsWith('$');
+
 class GrblController {
     type = GRBL;
 
@@ -425,13 +428,16 @@ class GrblController {
           return;
         }
 
-        if (this.runner.isAlarm()) {
+        line = String(line).trim();
+
+        // Grbl takes its own `$` commands in alarm — `$X`, `$H`, `$$` are
+        // how an operator gets out of one — and nothing else.
+        if (this.runner.isAlarm() && !isSystemLine(line)) {
           this.feeder.reset();
           log.warn('Stopped sending G-code commands in Alarm mode');
           return;
         }
 
-        line = String(line).trim();
         if (line.length === 0) {
           return;
         }
@@ -3243,6 +3249,17 @@ class GrblController {
 
               return line.trim().length > 0;
             });
+
+          /*
+           * In alarm the feeder drops every line that is not one of Grbl's own
+           * `$` commands, and it used to do that in silence: a line typed at
+           * an alarmed machine went nowhere and nobody was told. Refused as a
+           * whole, before anything is fed, so a block is never half sent.
+           */
+          if (this.runner.isAlarm() && !data.every(isSystemLine)) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
 
           this.feeder.feed(data, context);
 

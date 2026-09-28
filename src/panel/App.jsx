@@ -24,6 +24,7 @@ import Dashboard from './screens/Dashboard';
 import JogScreen from './screens/JogScreen';
 import FilesScreen from './screens/FilesScreen';
 import JournalScreen from './screens/JournalScreen';
+import MdiScreen from './screens/MdiScreen';
 import PathScreen from './screens/PathScreen';
 import SettingsScreen, { showSettingsTab } from './screens/SettingsScreen';
 import ZeroScreen from './screens/ZeroScreen';
@@ -55,7 +56,7 @@ const DESTINATIONS = [
   // What happened, in place of the alarm list it was drawn as (2026-09-24).
   { id: 'journal', key: 'nav.journal', ready: true },
   { id: 'homing', key: 'nav.homing', ready: false },
-  { id: 'mdi', key: 'nav.mdi', ready: false },
+  { id: 'mdi', key: 'nav.mdi', ready: true },
   /*
    * Settings last, and the connection inside it.
    *
@@ -118,6 +119,7 @@ const SCREENS = {
   files: FilesScreen,
   jog: JogScreen,
   journal: JournalScreen,
+  mdi: MdiScreen,
   path: PathScreen,
   zero: ZeroScreen,
   settings: SettingsScreen,
