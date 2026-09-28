@@ -174,7 +174,7 @@ const Sheet = ({ title, onHelp, onClose, footer, children }) => {
           <button
             type="button"
             onClick={onClose}
-            className="h-chiph rounded-ctl border border-line bg-surf px-4 text-base font-semibold uppercase tracking-[0.1em] text-ink"
+            className="h-chiph rounded-ctl border border-outline bg-surf px-4 text-base font-semibold uppercase tracking-[0.1em] text-ink"
           >
             {t('sheet.done')}
           </button>

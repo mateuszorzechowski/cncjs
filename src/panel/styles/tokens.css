@@ -18,6 +18,15 @@
   --panel: #ffffff;
   --line: #dde2e9;
   --field: #f7f8fa;
+  /*
+   * The edge of a button that has no fill — outline. It was `--line`, and at
+   * 1.3:1 on the panel's white the button was hardly there: "Zeruj XY"
+   * read as a word on the card. Decision A of the settings handoff
+   * (Mateusz, 2026-09-28): O2, between the hairline and the muted text, so
+   * the button is seen and still stays quieter than a filled one. The
+   * panel's own token; the drawing only named the light value.
+   */
+  --outline: #8f9aa8;
 
   /*
    * How much of the ink a scrim lays over what it dims.
@@ -256,6 +265,7 @@
   --surf: #171d25;
   --panel: #141a21;
   --line: #2a323d;
+  --outline: #5b6675;
   --ink: #e6ecf3;
   --mut: #8b97a6;
   --acc: #4b90ea;

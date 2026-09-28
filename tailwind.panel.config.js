@@ -29,6 +29,7 @@ module.exports = {
       surf: 'var(--surf)',
       panel: 'var(--panel)',
       line: 'var(--line)',
+      outline: 'var(--outline)',
       field: 'var(--field)',
       ink: 'var(--ink)',
       mut: 'var(--mut)',

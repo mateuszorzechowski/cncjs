@@ -18,8 +18,8 @@ const OFF = 'disabled:border-mut disabled:bg-mut disabled:text-white disabled:ho
 
 const TONES = {
   primary: `border border-acc bg-acc text-white hover:brightness-95 ${OFF}`,
-  outline: 'border border-line bg-panel text-ink hover:border-acc hover:text-acc ' +
-    'disabled:opacity-45 disabled:hover:border-line disabled:hover:text-ink',
+  outline: 'border border-outline bg-panel text-ink hover:border-acc hover:text-acc ' +
+    'disabled:opacity-45 disabled:hover:border-outline disabled:hover:text-ink',
   soft: `border border-acc bg-accS text-acc hover:brightness-95 ${OFF}`,
   go: `border border-grn bg-grn text-white hover:brightness-95 ${OFF}`,
   hold: `border border-amb bg-amb text-white hover:brightness-95 ${OFF}`,
