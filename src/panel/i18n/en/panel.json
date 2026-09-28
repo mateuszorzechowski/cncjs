@@ -21,8 +21,7 @@
     "port": "port",
     "state": "Machine state",
     "stop": "Stop",
-    "update": "A new panel version is available: {{version}}. Go to Install.",
-    "available": "Available {{version}}"
+    "update": "A new panel version is available: {{version}}. Go to Install."
   },
   "status": {
     "noServer": "No server",

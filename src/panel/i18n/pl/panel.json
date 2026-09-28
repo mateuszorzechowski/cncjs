@@ -21,8 +21,7 @@
     "port": "port",
     "state": "Stan maszyny",
     "stop": "Stop",
-    "update": "Dostępna nowa wersja panelu: {{version}}. Przejdź do Instalacji.",
-    "available": "Dostępna {{version}}"
+    "update": "Dostępna nowa wersja panelu: {{version}}. Przejdź do Instalacji."
   },
   "status": {
     "noServer": "Brak serwera",

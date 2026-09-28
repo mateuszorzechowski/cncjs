@@ -68,6 +68,27 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate
       * moves. `headerSlot`. */}
     {help ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:h-btnh @3xl/shell:w-14 @3xl/shell:text-lead" /> : null}
 
+    {/*
+      * A newer panel is available: the arrow into the tray, and nothing more,
+      * right after the help and as tall as it (Mateusz, 2026-09-28: *"po
+      * lewej, koło statusu i pomocy"*, *"sama ikona bez tekstu"*). Last in
+      * the group, so when it appears nothing that can be pressed moves.
+      * Quiet, because nothing is wrong. It takes you to the settings'
+      * Instalacja, where the version is named and "Aktualizuj" takes it — a
+      * proposal, not a reload under the finger (*"ma przenosić"*).
+      */}
+    {updateTo ? (
+      <button
+        type="button"
+        onClick={onUpdate}
+        aria-label={t('topbar.update', { version: updateTo })}
+        title={t('topbar.update', { version: updateTo })}
+        className="flex size-chiph shrink-0 items-center justify-center rounded-ctl border border-acc bg-accS text-acc @3xl/shell:h-btnh @3xl/shell:w-14"
+      >
+        <Icon name="update" className="size-5 @3xl/shell:size-6" weight={2} />
+      </button>
+    ) : null}
+
     {/* Top left, a line each. Which controller and which port are two
       * separate facts and read faster stacked than joined with a dot; kept
       * against the top edge they sit where a heading would, which is what
@@ -90,30 +111,6 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate
           </span>
         ))}
     </div>
-
-    {/*
-      * A newer panel is available.
-      *
-      * Beside the stop because that is the corner the eye already goes to,
-      * and quiet because it is not urgent: nothing is wrong, there is simply
-      * a newer version. It takes you to the settings' Instalacja, where the
-      * version is named and "Aktualizuj" takes it — a proposal, not a
-      * reload under the finger (Mateusz, 2026-09-28: *"ma przenosić"*). As
-      * tall as everything else in the bar; wide, it names the version, and
-      * on a phone, beside the stop, it is the arrow alone.
-      */}
-    {updateTo ? (
-      <button
-        type="button"
-        onClick={onUpdate}
-        aria-label={t('topbar.update', { version: updateTo })}
-        title={t('topbar.update', { version: updateTo })}
-        className="mr-1 flex h-chiph min-w-chiph shrink-0 items-center justify-center gap-2 rounded-ctl border border-acc bg-accS px-2 text-acc @3xl/shell:h-btnh @3xl/shell:px-5"
-      >
-        <Icon name="update" className="size-5" weight={2} />
-        <span className="hidden text-base font-semibold @3xl/shell:inline">{t('topbar.available', { version: updateTo })}</span>
-      </button>
-    ) : null}
 
     <Button
       tone="stop"

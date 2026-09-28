@@ -45,9 +45,8 @@ test.describe('the panel version', () => {
     await page.route('**/panel/cnc-ca.json', (route) => route.fulfill({ json: {} }));
     await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
 
-    // In the bar: the version, and a way to the settings, not a reload.
+    // In the bar: an icon naming the version, and a way to the settings, not a reload.
     const offer = page.getByRole('banner').getByRole('button', { name: /^Dostępna nowa wersja panelu: panel-2099\.01\.01/ });
-    await expect(offer).toContainText('Dostępna panel-2099.01.01');
     await offer.click();
 
     await expect(page.getByRole('heading', { name: /^Dostępna wersja/ })).toContainText('panel-2099.01.01');
