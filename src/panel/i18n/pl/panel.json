@@ -1045,7 +1045,12 @@
       "external": "spoza panelu",
       "changes": "{{names}} · zmian: {{count}}",
       "restore": "Przywróć stan sprzed",
-      "restoreNote": "Przywrócenie dodaje zmiany do zapisania. Zapis idzie przez przegląd zmian."
+      "restoreNote": "Przywrócenie dodaje zmiany do zapisania. Zapis idzie przez przegląd zmian.",
+      "export": "Eksportuj do pliku",
+      "import": "Importuj z pliku",
+      "imported": "Z pliku do zapisania: {{count}}.",
+      "importUnknown": "Pominięte, sterownik ich nie zna: {{names}}.",
+      "fileFailed": "Nie udało się — sprawdź połączenie z serwerem."
     },
     "s0": {
       "title": "Impuls kroku",

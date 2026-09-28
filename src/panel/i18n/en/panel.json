@@ -1045,7 +1045,12 @@
       "external": "outside the panel",
       "changes": "{{names}} · changes: {{count}}",
       "restore": "Restore the state before",
-      "restoreNote": "Restoring adds changes to save. They are written through the review."
+      "restoreNote": "Restoring adds changes to save. They are written through the review.",
+      "export": "Export to a file",
+      "import": "Import from a file",
+      "imported": "From the file, to save: {{count}}.",
+      "importUnknown": "Left out, the controller does not know them: {{names}}.",
+      "fileFailed": "That did not work — check the connection to the server."
     },
     "s0": {
       "title": "Step pulse",

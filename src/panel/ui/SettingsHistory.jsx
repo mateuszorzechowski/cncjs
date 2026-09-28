@@ -1,4 +1,7 @@
+import { useRef, useState } from 'react';
 import Button from './Button';
+import Sheet from './Sheet';
+import { exportSettings, importDrafts, importSettings } from '../machine/settingsFile';
 import { t } from '../i18n';
 
 /**
@@ -40,24 +43,70 @@ export const historyLine = (history) => {
   return t(last.source === 'external' ? 'machine.history.lastExternal' : 'machine.history.last', { time: shortWhen(last.time) });
 };
 
-const SettingsHistory = ({ history, disabled, onRestore }) => (
-  <div className="flex flex-col gap-gap">
-    {history.length === 0 ? <p className="m-0 text-note text-mut">{t('machine.history.none')}</p> : null}
-    <ul className="m-0 flex list-none flex-col p-0">
-      {[...history].reverse().slice(0, 50).map((entry) => (
-        <li key={entry.id} className="flex flex-col gap-2 border-b border-line py-3 first:pt-0 last:border-b-0">
-          <span className="text-base font-semibold text-ink">
-            {t('machine.history.entry', { when: when.format(new Date(entry.time)), who: who(entry) })}
-          </span>
-          <span className="font-num text-note text-mut">
-            {t('machine.history.changes', { names: names(entry).join(', '), count: names(entry).length })}
-          </span>
-          <Button className="h-ctl" disabled={disabled} onClick={() => onRestore(entry)}>{t('machine.history.restore')}</Button>
-        </li>
-      ))}
-    </ul>
-    {history.length > 0 ? <p className="m-0 text-note text-mut">{t('machine.history.restoreNote')}</p> : null}
-  </div>
-);
+/**
+ * The sheet itself: the writes, and under them, standing, the settings to a
+ * file and back (frame E4). An import is read by the server and becomes
+ * changes waiting to be saved, like a restore; what it could not use is said
+ * here before the sheet goes.
+ */
+const SettingsHistory = ({ history, disabled, onRestore, onImport, onClose }) => {
+  const picker = useRef(null);
+  const [said, setSaid] = useState(null);
+  const pick = async (event) => {
+    const [file] = event.target.files;
+    event.target.value = '';
+    if (!file) {
+      return;
+    }
+    try {
+      const result = await importSettings(await file.text());
+      onImport(importDrafts(result));
+      if (result.unknown.length === 0 && result.changes.length > 0) {
+        onClose();
+        return;
+      }
+      setSaid([
+        t('machine.history.imported', { count: result.changes.length }),
+        result.unknown.length ? t('machine.history.importUnknown', { names: result.unknown.join(', ') }) : null,
+      ].filter(Boolean).join(' '));
+    } catch (err) {
+      setSaid(t('machine.history.fileFailed'));
+    }
+  };
+  const save = () => exportSettings().catch(() => setSaid(t('machine.history.fileFailed')));
+
+  return (
+    <Sheet
+      title={t('machine.history.title')}
+      onClose={onClose}
+      footer={(
+        <div className="flex flex-col gap-2">
+          {said ? <p className="m-0 text-note text-ink">{said}</p> : null}
+          <div className="flex gap-2">
+            <Button className="h-ctl flex-1" onClick={save}>{t('machine.history.export')}</Button>
+            <Button className="h-ctl flex-1" disabled={disabled} onClick={() => picker.current.click()}>{t('machine.history.import')}</Button>
+          </div>
+          <input ref={picker} type="file" accept=".txt,text/plain" className="hidden" aria-hidden="true" tabIndex={-1} onChange={pick} />
+        </div>
+      )}
+    >
+      {history.length === 0 ? <p className="m-0 text-note text-mut">{t('machine.history.none')}</p> : null}
+      <ul className="m-0 flex list-none flex-col p-0">
+        {[...history].reverse().slice(0, 50).map((entry) => (
+          <li key={entry.id} className="flex flex-col gap-2 border-b border-line py-3 first:pt-0 last:border-b-0">
+            <span className="text-base font-semibold text-ink">
+              {t('machine.history.entry', { when: when.format(new Date(entry.time)), who: who(entry) })}
+            </span>
+            <span className="font-num text-note text-mut">
+              {t('machine.history.changes', { names: names(entry).join(', '), count: names(entry).length })}
+            </span>
+            <Button className="h-ctl" disabled={disabled} onClick={() => onRestore(entry)}>{t('machine.history.restore')}</Button>
+          </li>
+        ))}
+      </ul>
+      {history.length > 0 ? <p className="m-0 text-note text-mut">{t('machine.history.restoreNote')}</p> : null}
+    </Sheet>
+  );
+};
 
 export default SettingsHistory;

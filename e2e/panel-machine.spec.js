@@ -201,6 +201,26 @@ test.describe('the Sterownik tab', () => {
     expect(await sent(cncjs.page)).toEqual([]);
   });
 
+  test('the settings to a file and back: an import becomes changes waiting, what it could not use is said', async ({ cncjs }) => {
+    await cncjs.page.route('**/api/machine-settings/export', (route) => route.fulfill({
+      body: '$110=3000.000\n', headers: { 'Content-Type': 'text/plain', 'Content-Disposition': 'attachment; filename="grbl-settings.txt"' },
+    }));
+    await cncjs.page.route('**/api/machine-settings/import', (route) => route.fulfill({
+      json: { changes: [{ name: '$110', value: '3500.000' }], unknown: ['$400'], same: 1 },
+    }));
+    await open(cncjs.page);
+    await cncjs.page.getByRole('button', { name: /^Historia zmian/ }).click();
+
+    const download = cncjs.page.waitForEvent('download');
+    await sheet(cncjs.page).getByRole('button', { name: 'Eksportuj do pliku' }).click();
+    expect((await download).suggestedFilename()).toBe('grbl-settings.txt');
+
+    await sheet(cncjs.page).locator('input[type=file]').setInputFiles({ name: 'm.txt', mimeType: 'text/plain', buffer: Buffer.from('$110=3500\n$400=2\n') });
+    await expect(sheet(cncjs.page)).toContainText('Pominięte, sterownik ich nie zna: $400.');
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+    expect(await sent(cncjs.page)).toEqual([]);
+  });
+
   test('the $$ view shows the same drafts, filtered', async ({ cncjs }) => {
     await open(cncjs.page);
 

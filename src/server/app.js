@@ -465,6 +465,10 @@ const appMain = () => {
     app.get(urljoin(settings.route, 'api/connection/auto'), api.connection.readAuto);
     app.put(urljoin(settings.route, 'api/connection/auto'), api.connection.updateAuto);
 
+    // The controller's settings as a file, out and back in
+    app.get(urljoin(settings.route, 'api/machine-settings/export'), api.machineSettings.exportFile);
+    app.post(urljoin(settings.route, 'api/machine-settings/import'), api.machineSettings.importFile);
+
     // The file editor's vocabulary and its check of unsaved text
     app.get(urljoin(settings.route, 'api/editor/words'), api.editor.words);
     app.post(urljoin(settings.route, 'api/editor/check'), api.editor.check);
