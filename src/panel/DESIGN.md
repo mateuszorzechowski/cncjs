@@ -250,10 +250,21 @@ urządzeniach, zrzuty.
   - `error:N` / `ALARM:N` w kolorze czerwonym, z opisem po polsku obok.
   - Enter wysyła, ↑/↓ przewija historię tego urządzenia (do przeładowania).
 
-### Niegotowe: Sonda, Diagnostyka, Bazowanie
+### Bazowanie (`homing`)
+- **Cel:** wiedzieć, czy maszyna zna swoje położenie, i ją zbazować.
+- **Układ:** jeden na każdej szerokości (karta przewija się pod nagłówkiem).
+  DRO, kafle: Zbazowano (godzina / Nie / Blokada bazowania / Wyłączone
+  `$22`), `$25`, `$24`, `$27`; nota; „Bazuj wszystkie osie” na całą szerokość;
+  martwe X / Y / Z z notą; „Ustawienia bazowania” → Ustawienia → Sterownik.
+- **Zasady:**
+  - „Zbazowano” liczy serwer (`controller:homing`): `$H` z `ok` = bazowanie,
+    zapomniane przy alarmie gubiącym pozycję (wszystkie poza 2/4/5) i przy
+    blokadzie bazowania po twardym resecie. Grbl sam tego nie mówi.
+  - Bez potwierdzenia, jak Bazuj na jogu. Aktywne w alarmie.
+  - Bazowanie per oś wyszarzone (Grbl nie ma `$HX`, serwer ma jedno `homing`).
+
+### Niegotowe: Sonda, Diagnostyka
 - Są w nawigacji wyszarzone. Ekranów nie ma.
-- Bazowanie per oś na Grblu będzie wyszarzone (Grbl nie ma `$HX`); aktywne
-  tylko dla sterowników, które to umieją.
 
 ## 4. Reguły interakcji (obowiązują każdą reorganizację)
 

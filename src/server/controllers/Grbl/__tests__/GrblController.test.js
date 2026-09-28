@@ -1637,6 +1637,65 @@ describe('intent commands', () => {
     });
   });
 
+  describe('when the machine was homed', () => {
+    const homings = (socketEvents) => socketEvents
+      .filter(({ event }) => event === 'controller:homing')
+      .map(({ args }) => args[0]);
+
+    test('a $H answered ok is a homing, and every client hears when', () => {
+      const { controller, socketEvents } = setup();
+      jest.spyOn(Date, 'now').mockReturnValue(1000);
+
+      controller.command('homing');
+      expect(homings(socketEvents)).toEqual([]);
+      controller.runner.parse('ok');
+
+      expect(homings(socketEvents)).toEqual([1000]);
+      expect(controller.homing.at).toBe(1000);
+    });
+
+    test('a $H typed into a console counts the same', () => {
+      const { controller } = setup();
+
+      controller.command('gcode', '$H');
+      controller.runner.parse('ok');
+
+      expect(controller.homing.at).not.toBeNull();
+    });
+
+    test('a $H refused homed nothing', () => {
+      const { controller, socketEvents } = setup();
+
+      controller.command('homing');
+      controller.runner.parse('error:5');
+      controller.runner.parse('ok');
+
+      expect(homings(socketEvents)).toEqual([]);
+    });
+
+    test('an alarm that loses the position forgets it; a soft limit does not', () => {
+      const { controller } = setup();
+      controller.command('homing');
+      controller.runner.parse('ok');
+
+      controller.runner.parse('ALARM:2');
+      expect(controller.homing.at).not.toBeNull();
+
+      controller.runner.parse('ALARM:1');
+      expect(controller.homing.at).toBeNull();
+    });
+
+    test('the homing lock of a hard reset forgets it', () => {
+      const { controller } = setup();
+      controller.command('homing');
+      controller.runner.parse('ok');
+
+      controller.runner.emit('status', { raw: '<Alarm|MPos:0.000,0.000,0.000>', activeState: GRBL_ACTIVE_STATE_ALARM });
+
+      expect(controller.homing.at).toBeNull();
+    });
+  });
+
   describe('a line in alarm', () => {
     const inAlarm = () => {
       const { controller, writes } = setup();

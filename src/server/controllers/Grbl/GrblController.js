@@ -53,6 +53,7 @@ import GrblRunner from './GrblRunner';
 import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, jogStepLine, stopSeconds } from './jog';
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { activeWcsNumber, isWcs, zeroLine } from './zero';
+import { isHomingLine, losesPosition } from './homing';
 import { changesWorkOffsets } from './offsets';
 import { machineEnvelope, programOverrun } from './envelope';
 import { checkLines, createCheckRun } from './check-run';
@@ -665,6 +666,12 @@ class GrblController {
       this.alarmCode = null;
 
       /*
+       * When the machine was last homed, or null — see `homing.js`.
+       * `pending` from a `$H` written until its answer.
+       */
+      this.homing = { pending: false, at: null };
+
+      /*
        * How long the firmware takes to answer, in seconds.
        *
        * Measured off the parser-state query that is being sent anyway, so it
@@ -755,6 +762,11 @@ class GrblController {
         if (this.alarmCode !== null && res.activeState && res.activeState !== GRBL_ACTIVE_STATE_ALARM) {
           this.setAlarm(null);
         }
+        // An alarm with no number is the homing lock of a hard reset: the
+        // position is gone with it.
+        if (res.activeState === GRBL_ACTIVE_STATE_ALARM && this.alarmCode === null) {
+          this.setHomed(null);
+        }
         /**
          * Handle the scenario where a startup message is not received during UART communication.
          * A status query (?) will be issued in the `queryActivity` function.
@@ -836,6 +848,11 @@ class GrblController {
       });
 
       this.runner.on('ok', (res) => {
+        if (this.homing.pending) {
+          this.homing.pending = false;
+          this.setHomed(Date.now());
+        }
+
         /*
          * The acknowledgement of our own `$#`, claimed before anything else
          * can mistake it for its own.
@@ -943,6 +960,8 @@ class GrblController {
       this.runner.on('error', (res) => {
         const code = Number(res.message) || undefined;
         const error = _.find(GRBL_ERRORS, { code: code });
+        // `$H` refused — `error:5`, homing not enabled — homed nothing.
+        this.homing.pending = false;
 
         if (this.fileCheck?.run) {
           this.fileCheck.run.error(error ? `error:${code}` : res.raw);
@@ -1089,6 +1108,10 @@ class GrblController {
         this.note({ level: 'error', source: 'controller', event: 'alarm', code: alarm ? `ALARM:${code}` : res.raw });
         if (alarm) {
           this.setAlarm(code);
+        }
+        this.homing.pending = false;
+        if (losesPosition(code)) {
+          this.setHomed(null);
         }
 
         if (alarm) {
@@ -1995,6 +2018,16 @@ class GrblController {
 
       // Which alarm, for a device that arrives after it was raised.
       socket.emit('controller:alarm', this.alarmCode);
+      // And when the machine was last homed, for the same reason.
+      socket.emit('controller:homing', this.homing.at);
+    }
+
+    /** Remember when the machine was homed (null: not since it lost its position), and say so. */
+    setHomed(at) {
+      if (this.homing.at !== at) {
+        this.homing.at = at;
+        this.emit('controller:homing', at);
+      }
     }
 
     /** Remember the alarm number, and tell every attached client when it changes. */
@@ -2369,6 +2402,10 @@ class GrblController {
     noteOffsetChange(line) {
       if (changesWorkOffsets(line)) {
         this.offsetsStale = true;
+      }
+      // The same three paths carry a `$H` — the panel's, a console's, a macro's.
+      if (isHomingLine(line)) {
+        this.homing.pending = true;
       }
     }
 

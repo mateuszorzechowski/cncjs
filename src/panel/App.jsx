@@ -23,6 +23,7 @@ import { useKeepAwake } from './ui/keepAwake';
 import Dashboard from './screens/Dashboard';
 import JogScreen from './screens/JogScreen';
 import FilesScreen from './screens/FilesScreen';
+import HomingScreen from './screens/HomingScreen';
 import JournalScreen from './screens/JournalScreen';
 import MdiScreen from './screens/MdiScreen';
 import PathScreen from './screens/PathScreen';
@@ -55,7 +56,7 @@ const DESTINATIONS = [
   { id: 'diag', key: 'nav.diag', ready: false },
   // What happened, in place of the alarm list it was drawn as (2026-09-24).
   { id: 'journal', key: 'nav.journal', ready: true },
-  { id: 'homing', key: 'nav.homing', ready: false },
+  { id: 'homing', key: 'nav.homing', ready: true },
   { id: 'mdi', key: 'nav.mdi', ready: true },
   /*
    * Settings last, and the connection inside it.
@@ -118,6 +119,7 @@ const PHONE_REST = DESTINATIONS
 const SCREENS = {
   files: FilesScreen,
   jog: JogScreen,
+  homing: HomingScreen,
   journal: JournalScreen,
   mdi: MdiScreen,
   path: PathScreen,
@@ -369,7 +371,7 @@ const Panel = ({ machine, screen, onScreen }) => {
           <HeaderHelpProvider value={setScreenHelp}>
             <FooterSlotProvider value={setFooter}>
               {Screen
-                ? <Screen machine={machine} />
+                ? <Screen machine={machine} onGo={onScreen} />
                 : <Dashboard machine={machine} onGo={onScreen} />}
             </FooterSlotProvider>
           </HeaderHelpProvider>
