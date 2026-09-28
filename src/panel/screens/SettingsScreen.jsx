@@ -4,6 +4,7 @@ import FadeScroller from '../ui/FadeScroller';
 import JournalLevelChoice from '../ui/JournalLevelChoice';
 import LanguageChoice from '../ui/LanguageChoice';
 import SegmentedChoice from '../ui/SegmentedChoice';
+import SettingGroup from '../ui/SettingGroup';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
 import JogSettings from '../ui/JogSettings';
@@ -30,15 +31,14 @@ import { t } from '../i18n';
  * a few fixed things, and a pair of sections is exactly that.
  *
  * **Four tabs, one level** — variant 2b of the settings drawing of
- * 2026-09-25. The application tab had become regular settings, one-off chores
- * and maintenance in one list; split by how often a thing is touched and by
- * what has to come before what:
+ * 2026-09-25, and the settings handoff of 2026-09-28, which folded the
+ * appearance tab into the preferences (five tabs were squeezed on a phone):
  * - connection: which machine;
- * - controller: Grbl's own settings, `$0`-`$132`, after the settings
- *   design of 2026-09-26 — with its view switch in this row;
- * - appearance: what this device's screen looks like;
- * - preferences: how the panel works — the rows marked for the server are
- *   the same on every device;
+ * - controller: Grbl's own settings, `$0`-`$132`;
+ * - preferences: how the panel works and looks, in two sections by whose
+ *   setting it is — this device's, and the server's, the same on every
+ *   device — rather than a label on each row, which said SERWER ·
+ *   WSZYSTKIE URZĄDZENIA five times down one card;
  * - install: the certificate, the installation, and reloading the panel.
  */
 
@@ -53,7 +53,6 @@ import { t } from '../i18n';
 const LABELS = {
   connection: 'settings.connection',
   controller: 'settings.controller',
-  appearance: 'settings.appearance',
   preferences: 'settings.preferences',
   install: 'settings.install',
 };
@@ -135,40 +134,39 @@ const SettingsScreen = ({ machine }) => {
       <FadeScroller>
         <div className="flex min-h-full flex-col">
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
-          {tab === 'appearance' ? (
-            <Card className="flex-1">
-              <SettingRow title={t('theme.label')} scope="device">
-                <ThemeChoice />
-              </SettingRow>
-              <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} scope="device" noteBelow>
-                <KeepAwakeChoice status={keepAwake} />
-              </SettingRow>
-            </Card>
-          ) : null}
           {tab === 'preferences' ? (
             <Card className="flex-1">
-              <SettingRow title={t('language.label')} scope="device">
-                <LanguageChoice />
-              </SettingRow>
-              <SettingRow title={t('units.choice.label')} note={t('units.choice.note')} scope="server">
-                <UnitsChoice units={machine.units} />
-              </SettingRow>
-              {/*
-                * Right under the units, because it is about them: which units
-                * the machine is put back into is the choice above.
-                */}
-              <SettingRow
-                title={t('units.restore.label')}
-                note={t('units.restore.note', { modal: machine.units?.modal ?? 'G21' })}
-                scope="server"
-              >
-                <RestoreUnitsChoice units={machine.units} />
-              </SettingRow>
-              {/* The jog card's steps and rates, in the units above. */}
-              <JogSettings />
-              <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')} scope="server">
-                <JournalLevelChoice />
-              </SettingRow>
+              <SettingGroup title={t('settings.scope.device')}>
+                <SettingRow title={t('language.label')}>
+                  <LanguageChoice />
+                </SettingRow>
+                <SettingRow title={t('theme.label')}>
+                  <ThemeChoice />
+                </SettingRow>
+                <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} noteBelow>
+                  <KeepAwakeChoice status={keepAwake} />
+                </SettingRow>
+              </SettingGroup>
+              <SettingGroup title={t('settings.scope.server')}>
+                <SettingRow title={t('units.choice.label')} note={t('units.choice.note')}>
+                  <UnitsChoice units={machine.units} />
+                </SettingRow>
+                {/*
+                  * Right under the units, because it is about them: which units
+                  * the machine is put back into is the choice above.
+                  */}
+                <SettingRow
+                  title={t('units.restore.label')}
+                  note={t('units.restore.note', { modal: machine.units?.modal ?? 'G21' })}
+                >
+                  <RestoreUnitsChoice units={machine.units} />
+                </SettingRow>
+                {/* The jog card's steps and rates, in the units above. */}
+                <JogSettings />
+                <SettingRow title={t('journal.keep.label')} note={t('journal.keep.note')}>
+                  <JournalLevelChoice />
+                </SettingRow>
+              </SettingGroup>
             </Card>
           ) : null}
           {tab === 'install' ? (

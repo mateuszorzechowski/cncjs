@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
+import HelpButton from '../ui/HelpButton';
 import Notice from '../ui/Notice';
 import SegmentedChoice from '../ui/SegmentedChoice';
+import Sheet from '../ui/Sheet';
 import StepRow from '../ui/StepRow';
 import { PLATFORMS, platformOf } from '../machine/platform';
 import { trustState } from '../machine/trust';
@@ -87,6 +89,8 @@ const AppScreen = () => {
    */
   const detected = platformOf(window.navigator);
   const [picked, setPicked] = useState(null);
+  // The certificate's warning, behind the `?` beside its download.
+  const [help, setHelp] = useState(false);
   const platform = picked || detected;
 
   /*
@@ -146,17 +150,6 @@ const AppScreen = () => {
         state={steps.cert}
       >
         {/*
-          * The warning goes first, and it is not a formality. Installing a
-          * certificate authority is normally the worst thing a web page can
-          * talk somebody into; this one is name-constrained — see
-          * scripts/make-certs.sh — so it can only vouch for `.lan` and
-          * private addresses, and the warning says that rather than one
-          * everybody learns to tap through.
-          */}
-        <Notice>
-          <span>{t('app.certWarning')}</span>
-        </Notice>
-        {/*
           * The instructions for this device's system, chosen for it where it
           * can be told (`machine/platform`) and changeable — the file may be
           * going to another device than the one reading this.
@@ -175,9 +168,29 @@ const AppScreen = () => {
           * "Download", not "install". Tapping this saves a file; installing
           * it is a separate trip into the device's own settings.
           */}
-        <Button href={AUTHORITY_URL} className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start">
-          {t('app.certDownload')}
-        </Button>
+        {/*
+          * The warning is not a formality. Installing a certificate authority
+          * is normally the worst thing a web page can talk somebody into;
+          * this one is name-constrained — see scripts/make-certs.sh — so it
+          * can only vouch for `.lan` and private addresses, and the warning
+          * says that rather than one everybody learns to tap through. Behind
+          * the `?` beside the download since the settings handoff
+          * (2026-09-28): help behind a question mark, not a paragraph on the
+          * screen.
+          */}
+        <div className="flex gap-2 @3xl/shell:self-start">
+          <Button href={AUTHORITY_URL} className="h-ctl flex-1 @3xl/shell:flex-none">
+            {t('app.certDownload')}
+          </Button>
+          <HelpButton label={t('app.certHelp')} onPress={() => setHelp(true)} className="size-ctl text-base" />
+        </div>
+        {help ? (
+          <Sheet title={t('app.certHelp')} onClose={() => setHelp(false)}>
+            <Notice>
+              <span>{t('app.certWarning')}</span>
+            </Notice>
+          </Sheet>
+        ) : null}
         {authority ? (
           <>
             <Fact label={t('app.certName')}>{authority.name}</Fact>

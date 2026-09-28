@@ -123,7 +123,7 @@ const JogSettings = () => {
   const close = () => setEditing(null);
   return (
     <>
-      <SettingRow title={t('jogSettings.stepsTitle')} note={t('jogSettings.stepsNote')} scope="server">
+      <SettingRow title={t('jogSettings.stepsTitle')} note={t('jogSettings.stepsNote')}>
         <SettingSummary
           label={t('jogSettings.stepsTitle')}
           values={[
@@ -134,7 +134,7 @@ const JogSettings = () => {
           onOpen={() => setEditing('steps')}
         />
       </SettingRow>
-      <SettingRow title={t('jogSettings.ratesTitle')} note={t('jogSettings.ratesNote')} scope="server">
+      <SettingRow title={t('jogSettings.ratesTitle')} note={t('jogSettings.ratesNote')}>
         <SettingSummary
           label={t('jogSettings.ratesTitle')}
           values={[
