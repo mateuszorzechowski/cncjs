@@ -90,7 +90,25 @@ export const useUnderEdge = () => {
   return setNode;
 };
 
-const FadeScroller = ({ className = '', children }) => {
+/*
+ * `frame`: what scrolls is a card's frame itself, under a head that stands
+ * (`Card scrolls`). Two things then change, both from review notes of
+ * 2026-09-28. The top fade is drawn inside the frame, over the contents in
+ * the card's own colour, rather than by the mask — the mask thinned the
+ * card's side edges too, and the card looked cut under its head (*"cień u
+ * góry ma pozostać taki, jakby był wewnątrz karty"*); at the bottom the
+ * mask stays, so the whole card goes under what stands below it. And the
+ * thumb runs inside the frame, by its right edge (*"scroll ma być
+ * pokazany wewnątrz karty"*).
+ */
+/*
+ * `gapBelow`, with `frame`: something stands a gap below the frame — the
+ * settings' bar of changes — so the fade ends a gap above the foot and the
+ * gap stays empty (*"cień ma uwzględniać gap"*), and the track stops there
+ * too. Without it the frame runs to the foot like any card: nothing is left
+ * empty under it (*"karty nie zostawiały po sobie pustej przestrzeni"*).
+ */
+const FadeScroller = ({ className = '', frame = false, gapBelow = false, children }) => {
   const [scroller, setScroller] = useState(null);
   const [edges, setEdges] = useState({ top: false, bottom: false });
   const [scrolls, setScrolls] = useState(false);
@@ -125,7 +143,14 @@ const FadeScroller = ({ className = '', children }) => {
       remark();
     }
 
-    const bar = thumbOf(scroller, MIN_THUMB, TRACK_INSET);
+    /*
+     * The track ends where the card is seen to end: a gap before the foot
+     * when something stands below it, and above the menu's mound on a phone,
+     * where the last card runs on underneath (`--trackTail`, set by `App`).
+     * It ran down into the mound, past the card's outline (review note 9).
+     */
+    const tail = scroller ? parseFloat(getComputedStyle(scroller).getPropertyValue('--trackTail')) || 0 : 0;
+    const bar = thumbOf(scroller, MIN_THUMB, TRACK_INSET, tail);
     setScrolls(Boolean(bar));
     const node = thumb.current;
     if (!node) {
@@ -136,7 +161,7 @@ const FadeScroller = ({ className = '', children }) => {
     // scroller becomes scrollable while it is being looked at.
     node.style.setProperty('--thumbH', `${bar ? bar.height : 0}px`);
     node.style.setProperty('--thumbY', `${bar ? bar.top : 0}px`);
-  }, [scroller]);
+  }, [scroller, frame, gapBelow]);
 
   /*
    * Measured on arrival, on scroll, and whenever the content changes --- not
@@ -176,14 +201,28 @@ const FadeScroller = ({ className = '', children }) => {
   }, [scroller, measure]);
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div
+      className={[
+        'relative flex min-h-0 flex-1 flex-col',
+        frame ? '[--thumbGutter:-1px]' : '',
+        frame && gapBelow ? '[--trackTail:var(--gap)]' : '[--trackTail:0px]',
+      ].join(' ')}
+    >
       <div
         ref={setScroller}
         onScroll={measure}
         className={[
           'min-h-0 flex-1 overflow-y-auto scroll-quiet',
-          '[mask-image:linear-gradient(to_bottom,transparent_0,black_var(--fadeT),black_calc(100%-var(--fadeB)),transparent_100%)]',
-          edges.top ? '[--fadeT:1.75rem]' : '[--fadeT:0px]',
+          /*
+           * A frame fades out a gap above its foot and leaves the gap empty,
+           * so the card never seems to run straight under what stands below
+           * it — the gap between cards stays (review note, 2026-09-28: *"cień
+           * ma uwzględniać gap"*).
+           */
+          frame && gapBelow
+            ? '[mask-image:linear-gradient(to_bottom,black_0,black_calc(100%-var(--fadeB)-var(--gap)),transparent_calc(100%-var(--gap)))]'
+            : '[mask-image:linear-gradient(to_bottom,transparent_0,black_var(--fadeT),black_calc(100%-var(--fadeB)),transparent_100%)]',
+          edges.top && !frame ? '[--fadeT:1.75rem]' : '[--fadeT:0px]',
           edges.bottom ? '[--fadeB:1.75rem]' : '[--fadeB:0px]',
           className,
         ].join(' ')}
@@ -219,15 +258,18 @@ const FadeScroller = ({ className = '', children }) => {
         * inside it, the way a phone's own indicator hugs the edge. `--pad` is
         * the default because most of the things that scroll here are cards.
         */}
+      {frame && edges.top ? (
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-px top-0 h-7 [background:linear-gradient(to_bottom,var(--panel),transparent)]" />
+      ) : null}
       {/* The track: the whole height the thumb can travel, so its length
         * reads as a share of the list. Only where there is something to
         * scroll — a track beside content that fits would promise more.
-        * `top-1.5`/`bottom-1.5` are `TRACK_INSET`, the 6px the thumb is
-        * measured against. */}
+        * `top-1.5` and the `0.375rem` below are `TRACK_INSET`, the 6px the
+        * thumb is measured against; `--trackTail` is what stands under it. */}
       <span
         aria-hidden="true"
         className={[
-          'pointer-events-none absolute bottom-1.5 right-[calc(2px-var(--thumbGutter,var(--pad)))] top-1.5 w-1 rounded-full bg-line',
+          'pointer-events-none absolute right-[calc(2px-var(--thumbGutter,var(--pad)))] top-1.5 bottom-[calc(0.375rem+var(--trackTail))] w-1 rounded-full bg-line',
           scrolls ? '' : 'hidden',
         ].join(' ')}
       />

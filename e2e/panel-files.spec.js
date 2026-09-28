@@ -280,3 +280,54 @@ test.describe('the files screen', () => {
     await expect(page.getByRole('button', { name: 'Wgraj', exact: true })).toBeEnabled();
   });
 });
+
+/*
+ * The list's card when it scrolls. Measured, not looked at: a line of text
+ * 16.5px tall put everything under it on a half pixel, and a half pixel is
+ * drawn one way while something is hovered and another once it is not — the
+ * card jumped whenever the pointer left a row or a button (review note 7,
+ * 2026-09-28).
+ */
+const LONG = { files: Array.from({ length: 20 }, (_, i) => ({ ...PENDING, name: `long-${String(i).padStart(2, '0')}.nc` })), disk: DISK };
+
+// The list's scroller, its card foot and its track, where they are drawn.
+const listFrame = (page) => page.evaluate(() => {
+  const scroller = document.querySelector('main section[data-scrolls] .overflow-y-auto');
+  scroller.scrollTop = scroller.scrollHeight;
+  const box = scroller.getBoundingClientRect();
+  const foot = scroller.querySelector('[data-card-foot]').getBoundingClientRect();
+  const track = [...scroller.parentElement.children].find((node) => node.classList.contains('bg-line')).getBoundingClientRect();
+  const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
+  const menu = document.querySelector('nav[aria-label="Nawigacja"]').getBoundingClientRect();
+  return { top: box.top, height: box.height, foot: box.bottom - foot.bottom, gap, trackEnd: track.bottom, menuTop: menu.top };
+});
+
+test.describe('the files list when it scrolls', () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test('sits on whole pixels, and at its end the card stops a gap above the disk', async ({ cncjs }) => {
+    await serve(cncjs.page, [LONG]);
+    await open(cncjs.page);
+    await expect(cncjs.page.getByRole('button', { name: /long-19\.nc/ })).toBeVisible();
+
+    const frame = await listFrame(cncjs.page);
+    expect(Number.isInteger(frame.top)).toBe(true);
+    expect(Number.isInteger(frame.height)).toBe(true);
+    expect(frame.foot).toBe(frame.gap);
+    cncjs.expectNoPageErrors();
+  });
+});
+
+test.describe('the files list when it scrolls, on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('as the last card, its track ends above the menu it runs under', async ({ cncjs }) => {
+    await serve(cncjs.page, [{ ...LONG, disk: null }]);
+    await open(cncjs.page);
+    await expect(cncjs.page.getByRole('button', { name: /long-19\.nc/ })).toBeVisible();
+
+    const frame = await listFrame(cncjs.page);
+    expect(frame.trackEnd).toBeLessThanOrEqual(frame.menuTop);
+    cncjs.expectNoPageErrors();
+  });
+});

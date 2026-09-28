@@ -157,9 +157,9 @@ export const GeometryChanges = ({ geometry, was, changed, envelope, onJump }) =>
 };
 
 /*
- * One column at every width, in the order of the tablet's column (settings
- * handoff, 2026-09-28, GT0): the box in 3D and where homing leaves each
- * axis, then the summary and the checks. It stands in a 400px column on a
+ * One column at every width: the checks, then the box in 3D and where
+ * homing leaves each axis (the tablet's column in the settings handoff,
+ * GT0), then the summary. It stands in a 400px column on a
  * tablet and a PC, and in a sheet on a phone — nowhere wide enough for the
  * two columns it once had.
  */
@@ -167,12 +167,13 @@ const GeometrySettings = ({ geometry, was, changed, envelope, onJump }) => {
   const units = useUnits();
   return (
     <div className="flex min-w-0 flex-col gap-4">
+      {/* The checks first, in sight without scrolling: they are what asks for something to be done (review note, 2026-09-28). */}
+      <Checks checks={geometry.checks} units={units} onJump={onJump} />
       <div className="flex flex-col gap-2">
         <MachinePreview className="h-60 shrink-0" envelope={envelope} homing={geometry.homing} />
         <HomingTable homing={geometry.homing} units={units} />
       </div>
       <Summary rows={geometry.summary} was={was} changed={changed} units={units} onJump={onJump} />
-      <Checks checks={geometry.checks} units={units} onJump={onJump} />
     </div>
   );
 };

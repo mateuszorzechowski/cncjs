@@ -185,11 +185,18 @@ module.exports = {
       fontSize: {
         // The panel's type scale. Three sizes carry almost everything: a
         // label, body, and the reading a screen is about.
-        label: ['10px', { letterSpacing: '0.14em' }],
-        cap: ['11px', { letterSpacing: '0.08em' }],
-        note: ['12px', { lineHeight: '1.5' }],
-        base: ['13px', { lineHeight: '1.5' }],
-        lead: ['15px', { lineHeight: '1.4' }],
+        //
+        // Every line height is a whole pixel. 11px and 13px at 1.5 made lines
+        // of 16.5 and 19.5, and everything below a heading sat on a half
+        // pixel; the browser snaps a half pixel one way while an element is
+        // hovered and the other once it is not, so cards and lists moved a
+        // pixel whenever the pointer left a row or a button (review note 7,
+        // 2026-09-28).
+        label: ['10px', { lineHeight: '15px', letterSpacing: '0.14em' }],
+        cap: ['11px', { lineHeight: '16px', letterSpacing: '0.08em' }],
+        note: ['12px', { lineHeight: '18px' }],
+        base: ['13px', { lineHeight: '20px' }],
+        lead: ['15px', { lineHeight: '21px' }],
         // The one word on the panel that has to be read from across the
         // room without looking for it. The drawing sets the stop at 22px
         // and everything else well below that.
@@ -197,11 +204,11 @@ module.exports = {
         // A machine reading when it is not the subject of the screen —
         // three of them across a phone, beside the keys that are. The
         // drawing's own size there.
-        read: ['19px', { lineHeight: '1.2' }],
+        read: ['19px', { lineHeight: '23px' }],
         // The same reading where the strip is wide. Measured against the
         // longest coordinate this panel can show: at 28px it comes within
         // four pixels of the divider beside it and at 31 it crosses.
-        readWide: ['26px', { lineHeight: '1.2' }],
+        readWide: ['26px', { lineHeight: '31px' }],
         val: ['var(--val)', { lineHeight: '1' }],
         dro: ['var(--dro)', { lineHeight: '0.9' }],
       },

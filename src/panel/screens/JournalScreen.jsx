@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
-import FadeScroller from '../ui/FadeScroller';
 import JournalDay, { dayOf } from '../ui/JournalDay';
 import JournalFilters from '../ui/JournalFilters';
 import JournalRow from '../ui/JournalRow';
@@ -37,10 +36,14 @@ const JournalScreen = () => {
   const [sheet, setSheet] = useState(false);
   const { entries, devices, counts, matched, kept, more, loading, error, loadMore } = useJournal(filters.query);
 
-  return (
-    <Card label={t('journal.title')} className="min-h-0 flex-1" bodyClassName="gap-3">
-      {/* A rule under the filters, as drawn: they frame the list and are not
-        * part of it. */}
+  /*
+   * A rule under the filters, as drawn: they frame the list and are not part
+   * of it. They stand with the head and the rest of the card scrolls under
+   * them, its frame too — the rule for a card whose head is always in sight,
+   * on a phone as on a tablet (review notes, 2026-09-28).
+   */
+  const filterRow = (
+    <>
       <div className="flex gap-2 border-b border-line pb-3 @3xl/shell:hidden">
         <TextField
           type="search"
@@ -55,6 +58,45 @@ const JournalScreen = () => {
       <div className="hidden border-b border-line pb-3 @3xl/shell:block">
         <JournalFilters filters={filters} counts={counts} matched={matched} kept={kept} />
       </div>
+    </>
+  );
+
+  const list = (
+    <>
+      {error ? <p className="m-0 py-3 text-note text-red">{error}</p> : null}
+      {!error && !loading && entries.length === 0 ? (
+        <p className="m-0 py-3 text-note text-mut">{t('journal.empty')}</p>
+      ) : null}
+      <ul className="m-0 list-none p-0">
+        {entries.flatMap((entry, index) => [
+          index === 0 || dayOf(entries[index - 1].time) !== dayOf(entry.time)
+            ? <JournalDay key={`day-${entry.id}`} time={entry.time} />
+            : null,
+          <JournalRow
+            key={entry.id}
+            entry={entry}
+            device={devices[entry.device]}
+            open={open === entry.id}
+            onToggle={() => setOpen(open === entry.id ? null : entry.id)}
+          />,
+        ])}
+      </ul>
+      {more ? (
+        <Button onClick={loadMore} disabled={loading} className="mt-3 h-ctl w-full">
+          {t('journal.more')}
+        </Button>
+      ) : null}
+    </>
+  );
+
+  return (
+    <Card
+      label={t('journal.title')}
+      scrolls
+      standing={<div className="mb-3">{filterRow}</div>}
+      className="min-h-0 flex-1"
+      bodyClassName="gap-3"
+    >
 
       {sheet ? (
         <Sheet title={t('journal.filter.title')} onClose={() => setSheet(false)}>
@@ -68,31 +110,7 @@ const JournalScreen = () => {
         </Sheet>
       ) : null}
 
-      <FadeScroller className="min-h-0 flex-1">
-        {error ? <p className="m-0 py-3 text-note text-red">{error}</p> : null}
-        {!error && !loading && entries.length === 0 ? (
-          <p className="m-0 py-3 text-note text-mut">{t('journal.empty')}</p>
-        ) : null}
-        <ul className="m-0 list-none p-0">
-          {entries.flatMap((entry, index) => [
-            index === 0 || dayOf(entries[index - 1].time) !== dayOf(entry.time)
-              ? <JournalDay key={`day-${entry.id}`} time={entry.time} />
-              : null,
-            <JournalRow
-              key={entry.id}
-              entry={entry}
-              device={devices[entry.device]}
-              open={open === entry.id}
-              onToggle={() => setOpen(open === entry.id ? null : entry.id)}
-            />,
-          ])}
-        </ul>
-        {more ? (
-          <Button onClick={loadMore} disabled={loading} className="mt-3 h-ctl w-full">
-            {t('journal.more')}
-          </Button>
-        ) : null}
-      </FadeScroller>
+      {list}
     </Card>
   );
 };

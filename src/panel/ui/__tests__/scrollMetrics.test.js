@@ -55,6 +55,12 @@ describe('thumbOf', () => {
     expect(thumbOf(scroller(400, 400, 800)).top).toBe(200);
   });
 
+  it('keeps a tail at the bottom, where a scrolling card frame ends', () => {
+    // 400 tall, 6 at each end and 10 more at the foot: a 378 track, half of it 189.
+    expect(thumbOf(scroller(0, 400, 800), 28, 6, 10)).toEqual({ height: 189, top: 6 });
+    expect(thumbOf(scroller(400, 400, 800), 28, 6, 10).top).toBe(6 + 189);
+  });
+
   it('travels a track that stops short of both ends, by the inset', () => {
     // 400 tall with 6 each end is a 388 track: half of it is 194, and the
     // thumb runs from 6 down to 6 + 194, never touching the container's edge.

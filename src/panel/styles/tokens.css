@@ -70,8 +70,13 @@
    * to line up with it: the curve is drawn across the content area and has to
    * start and stop where the cards do, so the number is needed in the
    * stylesheet as well as in the markup.
+   *
+   * The gap between cards, whatever it is: 10 on a tablet, 14 at Full HD —
+   * one frame round the screen and between its cards, as the gaps were
+   * made to match in the first place (review note, 2026-09-28: *"gap między
+   * kartami jest inny niż padding wokół, padding == gap"*).
    */
-  --shellPad: 10px;
+  --shellPad: var(--gap);
 
   /* Ink */
   --ink: #18222e;

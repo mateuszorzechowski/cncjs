@@ -27,11 +27,8 @@ const UndoNotice = ({ notice, onUndo, className = '' }) => {
 
   return (
     <div role="status" className={`absolute z-20 ${className}`}>
-      <Notice>
-        <div className="flex items-center justify-between gap-3">
-          <span>{notice.text}</span>
-          <Button className="h-chiph" onClick={onUndo}>{t('notice.undo')}</Button>
-        </div>
+      <Notice action={<Button className="h-chiph" onClick={onUndo}>{t('notice.undo')}</Button>}>
+        <span>{notice.text}</span>
       </Notice>
     </div>
   );

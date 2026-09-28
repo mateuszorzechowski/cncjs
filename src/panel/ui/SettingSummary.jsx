@@ -1,4 +1,5 @@
 import Icon from './Icon';
+import { WasDot } from './SegmentedChoice';
 import { t } from '../i18n';
 
 /**
@@ -40,24 +41,43 @@ import { t } from '../i18n';
  * it is lit and has no chevron, because tapping it again goes nowhere.
  * `opens={null}`: a line in that same list that is not the one chosen —
  * no chevron either, since it opens nothing, it chooses.
+ *
+ * `changed`: what the line stands for holds changes not yet written — the
+ * controller's groups with drafts in them (Mateusz, 2026-09-28). The amber
+ * a changed field wears, over the whole line; on the chosen line, which
+ * stays blue, the amber dot a changed choice carries, where the chevron
+ * would be.
  */
 const FACES = {
   locked: 'border-line bg-bg',
   selected: 'border-acc bg-accS',
+  changed: 'border-amb bg-ambS',
   // One or the other, never both in one string: two opacity utilities
   // resolve in the stylesheet's order, not the string's, and the dimming
   // won — the locked value came out as faint as a disabled one.
   plain: 'border-line bg-surf disabled:opacity-45',
 };
 
-const SettingSummary = ({ title, label, values, onOpen, disabled, locked = false, opens = 'sheet', selected = false }) => (
+const face = ({ locked, selected, changed }) => {
+  if (locked) {
+    return 'locked';
+  }
+  if (selected) {
+    return 'selected';
+  }
+  return changed ? 'changed' : 'plain';
+};
+
+const SettingSummary = ({
+  title, label, values, onOpen, disabled, locked = false, opens = 'sheet', selected = false, changed = false,
+}) => (
   <button
     type="button"
     onClick={onOpen}
     disabled={disabled || locked}
     aria-label={title ? undefined : label}
     aria-current={selected ? 'true' : undefined}
-    className={`flex h-ctl shrink-0 items-center gap-2 rounded-ctl border px-3 text-left ${FACES[locked ? 'locked' : selected ? 'selected' : 'plain']}`}
+    className={`flex h-ctl shrink-0 items-center gap-2 rounded-ctl border px-3 text-left ${FACES[face({ locked, selected, changed })]}`}
   >
     {/* The name at the left and the value pushed right; with no name, the
       * value at the left where a field's value sits and the mark pushed
@@ -83,6 +103,7 @@ const SettingSummary = ({ title, label, values, onOpen, disabled, locked = false
         {t('settings.locked')}
       </span>
     ) : null}
+    {selected && changed ? <WasDot /> : null}
     {/* The icon's path points down; a view beside is the same mark turned. */}
     {locked || selected || !opens ? null : (
       <Icon name="chevron" className={`size-4 shrink-0 text-mut ${opens === 'view' ? '-rotate-90' : ''}`} weight={2} />
