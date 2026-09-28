@@ -221,13 +221,15 @@ const JogWidget = ({ machine, className = '' }) => {
 
   const open = editing === 'xy' ? xy : (editing === 'z' ? z : null);
 
-  // Not homed: nothing guards the ends of the axes — said where the keys are.
-  const unguarded = <NoHomingNotice placed={machine.envelope?.placed} />;
-
   return (
     <Card className={`group relative isolate min-h-0 overflow-hidden ${className}`} bodyClassName="gap-0">
       {/* Not homed: nothing guards the ends of the axes, and the whole card says so. */}
       {machine.envelope?.placed === false ? <CautionTape /> : null}
+      {/* Said over the card, pinned to its foot, so it takes no room and scrolls nothing — above the phone menu's mound there. */}
+      <NoHomingNotice
+        placed={machine.envelope?.placed}
+        className={`absolute inset-x-pad z-10 ${phone ? 'bottom-[calc(var(--pad)+var(--navBite))]' : 'bottom-pad'}`}
+      />
       {/* At the panel: the keys at their drawn size, both groups open below
         * them, nothing folded away. */}
       {phone ? null : (
@@ -243,7 +245,6 @@ const JogWidget = ({ machine, className = '' }) => {
             <AxisControls {...xy} />
             <AxisControls {...z} />
           </div>
-          {unguarded}
         </FadeScroller>
       )}
 
@@ -274,7 +275,6 @@ const JogWidget = ({ machine, className = '' }) => {
           onOpen={() => setEditing('z')}
           disabled={!connected}
         />
-        {unguarded}
         </div>
       ) : null}
 

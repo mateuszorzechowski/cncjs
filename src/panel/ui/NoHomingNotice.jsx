@@ -36,9 +36,11 @@ const keepHidden = (on) => {
  * Not homed: the travel has no place, so the server fences nothing and Grbl
  * has no soft limits — said where the jog keys are (COM3, 2026-09-28: with
  * `$22=0` MDI drove 100 mm past the travel). `placed` is the server's
- * `envelope.placed`; nothing is shown until it is false.
+ * `envelope.placed`; nothing is shown until it is false. `className` places
+ * it — over the card, not in its flow (review note, 2026-09-28: *"nad kartą,
+ * nie w ramach niej, nie rozwala karty i nie powoduje scrolla"*).
  */
-const NoHomingNotice = ({ placed }) => {
+const NoHomingNotice = ({ placed, className = '' }) => {
   const [hidden, setHidden] = useState(readHidden);
   useEffect(() => {
     if (placed) {
@@ -52,6 +54,7 @@ const NoHomingNotice = ({ placed }) => {
   }
   return (
     <Notice
+      className={className}
       action={(
         <Button
           compact
