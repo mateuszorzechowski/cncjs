@@ -23,14 +23,19 @@ import { t } from '../i18n';
 const ConfirmSheet = ({
   title, note, warning, confirmLabel, tone = 'stop', onConfirm, onClose, cancelLabel, onCancel, busy = false, children,
 }) => (
-  <Sheet title={title} onClose={onClose}>
+  <Sheet
+    title={title}
+    onClose={onClose}
+    footer={(
+      <div className="flex gap-2">
+        <Button className="h-ctl flex-1" disabled={busy && Boolean(onCancel)} onClick={onCancel || onClose}>{cancelLabel || t('confirm.cancel')}</Button>
+        <Button tone={tone} className="h-ctl flex-1" disabled={busy} onClick={onConfirm}>{confirmLabel}</Button>
+      </div>
+    )}
+  >
     {note ? <p className="m-0 text-base text-ink">{note}</p> : null}
     {warning ? <Notice>{warning}</Notice> : null}
     {children}
-    <div className="flex gap-2">
-      <Button className="h-ctl flex-1" disabled={busy && Boolean(onCancel)} onClick={onCancel || onClose}>{cancelLabel || t('confirm.cancel')}</Button>
-      <Button tone={tone} className="h-ctl flex-1" disabled={busy} onClick={onConfirm}>{confirmLabel}</Button>
-    </div>
   </Sheet>
 );
 

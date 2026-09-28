@@ -1198,6 +1198,7 @@
     "discarded": "Odrzucono zmian: {{count}}",
     "confirm": {
       "eeprom": "Zapis do EEPROM sterownika. Zmiana działa od razu i zostaje po wyłączeniu zasilania."
-    }
+    },
+    "back": "Wróć"
   }
 }

@@ -157,23 +157,22 @@ export const GeometryChanges = ({ geometry, was, changed, envelope, onJump }) =>
 };
 
 /*
- * By its own width, not the shell's: in the tablet's and the PC's column,
- * or a sheet's 520px, the summary and the 3D view stack.
+ * One column at every width, in the order of the tablet's column (settings
+ * handoff, 2026-09-28, GT0): the box in 3D and where homing leaves each
+ * axis, then the summary and the checks. It stands in a 400px column on a
+ * tablet and a PC, and in a sheet on a phone — nowhere wide enough for the
+ * two columns it once had.
  */
 const GeometrySettings = ({ geometry, was, changed, envelope, onJump }) => {
   const units = useUnits();
   return (
-    <div className="@container/geo">
-      <div className="grid grid-cols-1 gap-6 @3xl/geo:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <Summary rows={geometry.summary} was={was} changed={changed} units={units} onJump={onJump} />
-          <Checks checks={geometry.checks} units={units} onJump={onJump} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">
-          <MachinePreview className="h-60" envelope={envelope} homing={geometry.homing} />
-          <HomingTable homing={geometry.homing} units={units} />
-        </div>
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <MachinePreview className="h-60 shrink-0" envelope={envelope} homing={geometry.homing} />
+        <HomingTable homing={geometry.homing} units={units} />
       </div>
+      <Summary rows={geometry.summary} was={was} changed={changed} units={units} onJump={onJump} />
+      <Checks checks={geometry.checks} units={units} onJump={onJump} />
     </div>
   );
 };

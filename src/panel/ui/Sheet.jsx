@@ -73,7 +73,7 @@ const useLayer = () => {
   return { layer: LAYERS[Math.min(index, LAYERS.length - 1)], active: index === stack.length - 1 };
 };
 
-const Sheet = ({ title, onHelp, onClose, children }) => {
+const Sheet = ({ title, onHelp, onClose, footer, children }) => {
   const { layer, active } = useLayer();
   /*
    * Dragged down, it closes — the top sheet only, and told apart from a
@@ -189,6 +189,13 @@ const Sheet = ({ title, onHelp, onClose, children }) => {
         <FadeScroller className="flex flex-col gap-gap">
           {children}
         </FadeScroller>
+        {/*
+          * `footer` stays too: the answers of a question stand under what
+          * scrolls, so a long list above them never pushes "Zapisz" out of
+          * the sheet — which it did, in the controller's review with the
+          * geometry in 3D, on a tablet's 768px (2026-09-28).
+          */}
+        {footer ? <div className="shrink-0">{footer}</div> : null}
       </div>
     </>,
     // Before the shell has measured itself there is no node yet. Nothing can

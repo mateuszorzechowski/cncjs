@@ -39,6 +39,8 @@ const NOT_DISPLAYED = new Set([
   'type', 'tone', 'variant', 'align', 'name', 'frameloop', 'attach', 'memory',
   // A settings row's `device` or `server`; the words shown for it are keys.
   'scope',
+  // What a settings summary's tap does, `sheet` or `view`: a chevron's direction.
+  'opens',
   // Which keyboard a phone raises for a field (`decimal`).
   'inputMode',
   // SVG geometry and paint, which are drawing instructions.
