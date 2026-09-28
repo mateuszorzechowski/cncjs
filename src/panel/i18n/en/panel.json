@@ -21,7 +21,8 @@
     "port": "port",
     "state": "Machine state",
     "stop": "Stop",
-    "update": "A new panel version is available: {{version}}. Go to Install."
+    "update": "A new panel version is available: {{version}}. Go to Install.",
+    "noHoming": "Homing is off: nothing guards the ends of the axes"
   },
   "status": {
     "noServer": "No server",
@@ -84,9 +85,7 @@
     "speed": "Speed",
     "stepFor": "Step {{axes}}",
     "speedFor": "Speed {{axes}}",
-    "sheet": "Jog {{axes}}",
-    "noHoming": "Homing is off: nothing guards the ends of the axes.",
-    "noHomingHide": "Hide the warning"
+    "sheet": "Jog {{axes}}"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -1214,5 +1213,13 @@
       "eeprom": "Written to the controller's EEPROM. The change takes effect at once and survives a power-off."
     },
     "back": "Back"
+  },
+  "caution": {
+    "title": "Homing is off",
+    "where": "Machine zero is wherever the machine stood at power-on, so where its travel lies is not known. Only its size is.",
+    "guards": "Nothing guards the ends of the axes: Grbl has no soft limits then, and the panel does not clip jogging. A move from MDI or a program goes as far as it is told.",
+    "moves": "\"Go to zero\" and go-to-point are off: there is no known top of Z to lift to, and no certain point on the drawing.",
+    "fix": "Homing is switched on in Settings → Controller → Homing ($22). It needs limit switches.",
+    "settings": "Go to the controller settings"
   }
 }

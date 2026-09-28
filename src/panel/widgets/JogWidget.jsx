@@ -2,8 +2,6 @@ import { useState } from 'react';
 import AxisControls from '../ui/AxisControls';
 import SettingSummary from '../ui/SettingSummary';
 import Card from '../ui/Card';
-import CautionTape from '../ui/CautionTape';
-import NoHomingNotice from '../ui/NoHomingNotice';
 import FadeScroller from '../ui/FadeScroller';
 import JogPad from '../ui/JogPad';
 import JogPadTall from '../ui/JogPadTall';
@@ -222,14 +220,7 @@ const JogWidget = ({ machine, className = '' }) => {
   const open = editing === 'xy' ? xy : (editing === 'z' ? z : null);
 
   return (
-    <Card className={`group relative isolate min-h-0 overflow-hidden ${className}`} bodyClassName="gap-0">
-      {/* Not homed: nothing guards the ends of the axes, and the whole card says so. */}
-      {machine.envelope?.placed === false ? <CautionTape /> : null}
-      {/* Said over the card, pinned to its foot, so it takes no room and scrolls nothing — above the phone menu's mound there. */}
-      <NoHomingNotice
-        placed={machine.envelope?.placed}
-        className={`absolute inset-x-pad z-10 ${phone ? 'bottom-[calc(var(--pad)+var(--navBite))]' : 'bottom-pad'}`}
-      />
+    <Card className={`group relative min-h-0 overflow-hidden ${className}`} bodyClassName="gap-0">
       {/* At the panel: the keys at their drawn size, both groups open below
         * them, nothing folded away. */}
       {phone ? null : (
