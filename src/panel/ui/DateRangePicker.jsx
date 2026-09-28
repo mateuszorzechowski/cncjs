@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from './Button';
 import ClockDial from './ClockDial';
 import { t } from '../i18n';
+import { dateFormat } from './dates';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -15,11 +16,12 @@ export const parseLocal = (text) => {
   return match ? new Date(+match[1], +match[2] - 1, +match[3], +match[4], +match[5]) : null;
 };
 
-const monthName = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
-const dayName = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
+const monthName = dateFormat({ month: 'long', year: 'numeric' });
+const dayName = dateFormat({ weekday: 'short' });
 
-// Monday first; 2024-01-01 was a Monday.
-const WEEKDAYS = Array.from({ length: 7 }, (_, i) => dayName.format(new Date(2024, 0, 1 + i)));
+// Monday first; 2024-01-01 was a Monday. A function, so the names follow the
+// panel's language as it changes.
+const weekdays = () => Array.from({ length: 7 }, (_, i) => dayName.format(new Date(2024, 0, 1 + i)));
 
 // Where a picked day lands: a window starts at midnight and ends a minute before the next.
 const START = { hours: 0, minutes: 0 };
@@ -123,7 +125,7 @@ const DateRangePicker = ({ from, to, onChange }) => {
       </div>
 
       <div className="grid grid-cols-7 gap-1">
-        {WEEKDAYS.map((name) => (
+        {weekdays().map((name) => (
           <span key={name} className="text-center text-cap font-semibold uppercase tracking-[0.08em] text-mut">{name}</span>
         ))}
         {cells.map((day, index) => {

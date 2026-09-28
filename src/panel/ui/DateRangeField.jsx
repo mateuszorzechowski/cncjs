@@ -2,8 +2,9 @@ import { useState } from 'react';
 import DateRangePicker, { parseLocal } from './DateRangePicker';
 import Sheet from './Sheet';
 import { t } from '../i18n';
+import { dateFormat } from './dates';
 
-const shown = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' });
+const shown = dateFormat({ dateStyle: 'short', timeStyle: 'short' });
 
 /**
  * A window of time to fill in, as one field (review note, 2026-09-28: *"czy

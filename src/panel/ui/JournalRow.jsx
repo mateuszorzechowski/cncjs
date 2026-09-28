@@ -3,6 +3,7 @@ import { rowTitle, settingValueText } from '../machine/machineSettings';
 import { issueText } from './fileWords';
 import { useUnits } from './units';
 import { t } from '../i18n';
+import { dateFormat } from './dates';
 
 /** Error red, warning amber, info ink, debug quiet — the panel's own tones. */
 const TONE = {
@@ -27,10 +28,10 @@ const DETAILS = {
 
 // The time of day only: the day is the heading above its entries
 // (`JournalDay`), as in the drawing of 2026-09-24.
-const clock = new Intl.DateTimeFormat(undefined, {
+const clock = dateFormat({
   hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3, hour12: false,
 });
-const day = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
+const day = dateFormat({ dateStyle: 'medium', timeStyle: 'medium' });
 
 const said = (entry) => {
   const words = describeEntry(entry);

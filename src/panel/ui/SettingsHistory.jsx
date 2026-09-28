@@ -3,6 +3,7 @@ import Button from './Button';
 import SettingsPlace from './SettingsPlace';
 import { exportSettings, importDrafts, importSettings } from '../machine/settingsFile';
 import { t } from '../i18n';
+import { dateFormat } from './dates';
 
 /**
  * Every write the server has seen to the controller's settings, newest
@@ -16,7 +17,7 @@ import { t } from '../i18n';
  * usual way, through the review.
  */
 
-const when = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' });
+const when = dateFormat({ dateStyle: 'short', timeStyle: 'short' });
 
 /** Who made it: the device by its name, else from the panel or from outside it. */
 const who = (entry) => entry.deviceName ||
@@ -25,8 +26,8 @@ const who = (entry) => entry.deviceName ||
 /** The settings a write changed, each once, in its order. */
 const names = (entry) => [...new Set(entry.changes.map(({ name }) => name))];
 
-const today = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-const earlier = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' });
+const today = dateFormat({ timeStyle: 'short' });
+const earlier = dateFormat({ dateStyle: 'short' });
 
 /** When, as short as it can be said: the time today, the date before. */
 const shortWhen = (time) => {

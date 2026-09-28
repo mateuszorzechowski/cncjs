@@ -20,6 +20,11 @@ describe('what an entry says', () => {
     expect(describeEntry(entry({ event: 'refused', code: 'program-running' })).key).toBe('refusal.programRunning');
   });
 
+  test('a refusal names the command it refused', () => {
+    expect(describeEntry(entry({ event: 'refused', code: 'unknown-command', data: { cmd: 'settings:drafts' } })))
+      .toEqual({ key: 'refusal.unknownCommand', params: { cmd: 'settings:drafts' } });
+  });
+
   test('a console line, with the line', () => {
     expect(describeEntry(entry({ event: 'command', code: 'gcode', data: { line: 'G10 L20 P1 Z0' } })))
       .toEqual({ key: 'journal.command.line', params: { line: 'G10 L20 P1 Z0', wcs: '' } });

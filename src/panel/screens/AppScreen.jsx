@@ -13,6 +13,10 @@ import {
   THIS_BUILD, applyUpdate, buildName, isUpdateReady, readAutoUpdate, servedBuild, setAutoUpdate, watchUpdate,
 } from '../machine/update';
 import { t } from '../i18n';
+import { dateFormat } from '../ui/dates';
+
+// The certificate's last day, as the panel's language writes a date.
+const validTo = dateFormat({});
 
 /**
  * Putting the panel on the home screen, and what stands in the way.
@@ -200,7 +204,7 @@ const AppScreen = () => {
           <>
             <Fact label={t('app.certName')}>{authority.name}</Fact>
             {authority.validTo ? (
-              <Fact label={t('app.certValidTo')}>{authority.validTo.toLocaleDateString()}</Fact>
+              <Fact label={t('app.certValidTo')}>{validTo.format(authority.validTo)}</Fact>
             ) : null}
             {/*
               * Long, and deliberately not shortened. Half a fingerprint

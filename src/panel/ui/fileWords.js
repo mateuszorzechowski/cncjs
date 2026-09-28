@@ -2,13 +2,14 @@ import { durationParts, sizeParts } from '../machine/files';
 import { NO_READING } from '../machine/readings';
 import { figure, lengthLabel } from '../machine/units';
 import { t } from '../i18n';
+import { dateFormat } from './dates';
 
 /**
  * How the Pliki screen says a file's numbers — the parts come from
  * `machine/files`, the words and the number formats from the language.
  */
 
-const modified = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' });
+const modified = dateFormat({ dateStyle: 'short', timeStyle: 'short' });
 
 // Whole keys, one per unit. And not `unit` for the option's name: i18next
 // hands every option to Intl.NumberFormat, and `unit: 'MB'` stops the number
