@@ -46,12 +46,48 @@ import { edgesOf, thumbOf, MIN_THUMB, TRACK_INSET } from './scrollMetrics';
  */
 const under = new Set();
 
+/*
+ * Whether a scroller's bottom edge is the content area's — the one the
+ * menu's mound sits on. A scroller that ends above it has something else
+ * between it and the mound, which decides for itself: the controller
+ * settings' bar of changes stands there glowing whatever the list above it
+ * is scrolled to (`useUnderEdge`), and the list no longer turns the glow on
+ * and off under it (review, 2026-09-28). A pixel of slack for rounding.
+ */
+const reachesEdge = (el, main) => main.getBoundingClientRect().bottom - el.getBoundingClientRect().bottom < 1;
+
 /** Re-mark every content area from the set. */
 const remark = () => {
-  const mains = new Set([...under].map((el) => el.closest('main')).filter(Boolean));
+  const mains = new Set([...under]
+    .map((el) => [el, el.closest('main')])
+    .filter(([el, main]) => main && reachesEdge(el, main))
+    .map(([, main]) => main));
   for (const el of document.querySelectorAll('main')) {
     el.toggleAttribute('data-under-edge', mains.has(el));
   }
+};
+
+/**
+ * Something that stands under the menu's mound for as long as it is there,
+ * whatever scrolls above it: the controller settings' bar of changes, which
+ * should look as if it came out from under the menu (Mateusz, 2026-09-28:
+ * *"pasek ma dostać cień i pozostać tam"*). A ref callback; it joins the set
+ * the scrollers use, so the same edge rule decides.
+ */
+export const useUnderEdge = () => {
+  const [node, setNode] = useState(null);
+  useEffect(() => {
+    if (!node) {
+      return undefined;
+    }
+    under.add(node);
+    remark();
+    return () => {
+      under.delete(node);
+      remark();
+    };
+  }, [node]);
+  return setNode;
 };
 
 const FadeScroller = ({ className = '', children }) => {

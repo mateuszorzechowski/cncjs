@@ -24,12 +24,19 @@ import { t } from '../i18n';
  * On a phone the whole card scrolls with its head, as the other tabs do;
  * wider the head stands and the list scrolls under it (handoff,
  * "Przewijanie").
+ *
+ * `aboveBar`: on a phone the shell gives its last card room for the menu's
+ * mound, and this card is last inside its scroller — but with the bar of
+ * changes under it, the bar is what stands on the mound and takes that room.
+ * The card then ends like any card (Mateusz, 2026-09-28: *"wolny obszar
+ * dotyczy tylko karty"*). `!`, because the shell's rule is a descendant
+ * selector and would otherwise win on specificity.
  */
 
 const title = (id) => t(GROUPS.find((g) => g.id === id).titleKey);
 
 const ControllerMemory = ({
-  view, groups, chosen, rule, canWrite, onRead, onGroup, onGeometry, onHistory, onRaw,
+  view, groups, chosen, rule, canWrite, aboveBar = false, onRead, onGroup, onGeometry, onHistory, onRaw,
 }) => {
   const phone = useIsPhone();
   const wide = useIsWide();
@@ -72,7 +79,7 @@ const ControllerMemory = ({
           <Icon name="refresh" className="size-5" weight={2} />
         </Button>
       )}
-      className={phone ? 'flex-1' : 'min-h-0 flex-1'}
+      className={(phone && (aboveBar ? 'flex-1 !pb-pad' : 'flex-1')) || 'min-h-0 flex-1'}
     >
       {phone ? list : <FadeScroller>{list}</FadeScroller>}
     </Card>
