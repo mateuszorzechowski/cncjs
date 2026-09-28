@@ -263,8 +263,21 @@ urządzeniach, zrzuty.
   - Bez potwierdzenia, jak Bazuj na jogu. Aktywne w alarmie.
   - Bazowanie per oś wyszarzone (Grbl nie ma `$HX`, serwer ma jedno `homing`).
 
-### Niegotowe: Sonda, Diagnostyka
-- Są w nawigacji wyszarzone. Ekranów nie ma.
+### Diagnostyka (`diag`)
+- **Cel:** zobaczyć, co widzi sterownik na wejściach, i ile kosztuje ta
+  instalacja.
+- **Układ:** dwie karty, jedna pod drugą do tabletu, obok siebie na PC.
+  „Wejścia sterownika”: 8 kafli wejść z `Pn:` (krańcówki X/Y/Z, sonda, drzwi,
+  wstrzymanie, reset, start cyklu), wrzeciono i chłodzenie z `A:`, wolny bufor
+  z `Bf:` (tylko gdy `$10` go raportuje). „Sterownik i panel”: firmware, port ·
+  prędkość, wersja panelu, a pod nimi `JogTiming` z arkusza jogu.
+- **Zasady:**
+  - Wyzwolone wejście w bursztynie. Kafle stoją w miejscu — rząd nie rośnie.
+  - Nic tu nie rusza maszyną i nic nie zapisuje; panel nie proponuje zmiany
+    `$10` (zapis EEPROM).
+
+### Niegotowe: Sonda
+- Jest w nawigacji wyszarzona. Ekranu nie ma.
 
 ## 4. Reguły interakcji (obowiązują każdą reorganizację)
 
