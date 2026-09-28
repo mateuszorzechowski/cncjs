@@ -36,23 +36,24 @@ describe('describeSettings', () => {
 
 describe('groupSummaries', () => {
   const FULL = {
-    '$0': '10', '$11': '0.010', '$21': '1', '$22': '1', '$25': '500.000', '$30': '24000.000', '$31': '0.000',
+    '$0': '10', '$11': '0.010', '$13': '0', '$20': '1', '$21': '1', '$22': '1', '$25': '500.000', '$30': '24000.000', '$31': '0.000', '$32': '0',
     '$110': '3500.000', '$111': '3500.000', '$112': '600.000',
   };
 
-  test('each group\'s line: values, in millimetres, with the settings they came from', () => {
+  // One rule for every group: its switches first, then one limit (Mateusz, 2026-09-28).
+  test('each group\'s line: its switches, then one limit, in millimetres', () => {
     expect(groupSummaries(FULL)).toEqual([
       { group: 'axes', parts: [{ names: ['$110', '$111', '$112'], unit: 'feed', values: [3500, 3500, 600] }] },
       { group: 'homing', parts: [{ names: ['$22'], on: true }, { names: ['$25'], unit: 'feed', values: [500] }] },
-      { group: 'limits', parts: [{ names: ['$21'], on: true }] },
-      { group: 'spindle', parts: [{ names: ['$31', '$30'], unit: 'rpm', range: true, values: [0, 24000] }] },
-      { group: 'signals', parts: [{ names: ['$0'], unit: 'us', values: [10] }] },
-      { group: 'motion', parts: [{ names: ['$11'], unit: 'length', values: [0.01] }] },
+      { group: 'limits', parts: [{ names: ['$21'], on: true }, { names: ['$20'], on: true }] },
+      { group: 'spindle', parts: [{ names: ['$32'], on: false }, { names: ['$30'], unit: 'rpm', values: [24000] }] },
+      { group: 'signals', parts: [] },
+      { group: 'motion', parts: [{ names: ['$13'], on: false }] },
     ]);
   });
 
   test('a switch that is off says so', () => {
-    expect(groupSummaries({ ...FULL, '$21': '0' })[2].parts).toEqual([{ names: ['$21'], on: false }]);
+    expect(groupSummaries({ ...FULL, '$21': '0' })[2].parts[0]).toEqual({ names: ['$21'], on: false });
   });
 
   test('a part the controller did not report all of is left out, the group kept', () => {

@@ -1185,7 +1185,10 @@
       "unplaced": "Homing is off: the size of the travel is known, its place is not. Machine zero is wherever the machine stood at power-on."
     },
     "summary": {
-      "hard": "hard"
+      "hard": "switches",
+      "soft": "soft",
+      "laser": "laser",
+      "inches": "inches"
     },
     "card": {
       "title": "Controller memory",

@@ -230,13 +230,19 @@ export const rowTitle = (row) => {
   return quantity ? t('machine.axisTitle', { title: t(quantity.titleKey), axis: t(AXIS_KEYS[AXES.indexOf(row.axis)]) }) : settingText(row).title;
 };
 
-// A switch in a group's line that needs saying which one it is.
-const PART_LABELS = { $21: 'machine.summary.hard' };
+// A switch in a group's line that needs saying which one it is — every switch but the group's own (homing).
+const PART_LABELS = {
+  $21: 'machine.summary.hard',
+  $20: 'machine.summary.soft',
+  $32: 'machine.summary.laser',
+  $13: 'machine.summary.inches',
+};
 
 /**
  * A group's line in the list, from the server's summary of it (`groups` in
  * `machine:settings`): `{ value, unit }`s for `SettingSummary`. A switch
- * says on or off, figures stand side by side, a range from–to.
+ * says on or off, named unless it is the group's own; figures stand side by
+ * side.
  */
 export const groupLine = (summary, rule) => (summary?.parts ?? []).map((part) => {
   if (part.values === undefined) {
@@ -245,7 +251,7 @@ export const groupLine = (summary, rule) => (summary?.parts ?? []).map((part) =>
     return { value: label ? `${t(label)} ${state}` : state };
   }
   const figures = part.values.map((value) => settingFigure(value, part.unit, rule, { brief: true }));
-  return { value: figures.map(({ value }) => value).join(part.range ? '–' : ' · '), unit: figures[0]?.unit };
+  return { value: figures.map(({ value }) => value).join(' · '), unit: figures[0]?.unit };
 });
 
 /** The groups the pending changes are in, in the list's order: `[{ id, count }]`. */

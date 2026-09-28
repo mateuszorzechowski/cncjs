@@ -41,6 +41,11 @@ const ControllerMemory = ({
   const wide = useIsWide();
   const { firmware, geometry } = view;
   const travel = geometry?.summary.find(({ id }) => id === 'travel')?.value;
+  // A group's line by the server's rule — its switches, then one limit — or, with neither, how many settings it has.
+  const lineOf = (id) => {
+    const line = groupLine((view.groups ?? []).find(({ group }) => group === id), rule);
+    return line.length ? line : [{ value: t('machine.raw.count', { count: view.rows.filter((row) => row.group === id).length }) }];
+  };
   // The groups, the history and `$$` all open in the same place.
   const opens = (phone && 'sheet') || (wide ? null : 'view');
 
@@ -51,7 +56,7 @@ const ControllerMemory = ({
         <SettingSummary
           key={id}
           title={title(id)}
-          values={groupLine((view.groups ?? []).find(({ group }) => group === id), rule)}
+          values={lineOf(id)}
           opens={opens}
           selected={wide && id === chosen}
           changed={changedGroups.includes(id)}
