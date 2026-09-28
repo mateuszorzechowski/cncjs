@@ -44,11 +44,13 @@ const TURN_PIXELS = 600;
 // How close, in pixels, a drag has to start to the drawn path to turn about it.
 const PATH_PICK_PIXELS = 6;
 
-const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab, glideMs = 0, floor }) => {
+const Controls = ({ view, bounds, machineKnown = false, revision, memory, object, fit, onFree, onGrab, glideMs = 0, floor }) => {
   const camera = useThree((state) => state.camera);
   const scene = useThree((state) => state.scene);
   // Read through a ref, like the callback: a new floor must not rebuild the
   // controls and drop the pose.
+  // Whether the machine's travel was known at the last framing — see `arrived`.
+  const knownBefore = useRef(machineKnown);
   const floorAt = useRef(floor);
   floorAt.current = floor;
   // The program's box, for a drag that starts over the part but not on a line.
@@ -386,7 +388,17 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
      * The pose is still written down under the new signature, so leaving the
      * screen and coming back finds it.
      */
-    const pressed = first || revision !== pointed.current;
+    /*
+     * …and the machine's travel arriving counts as the first time. A screen
+     * opened before the server has said how far the machine goes — just
+     * after a restart — framed what little it had, the floor's fallback, and
+     * stayed zoomed right into it when the travel came (review note,
+     * 2026-09-28: *"domyślny widok bardzo przybliża"*). Once, when it
+     * becomes known; after that only a press, as above.
+     */
+    const arrived = machineKnown && !knownBefore.current;
+    knownBefore.current = machineKnown;
+    const pressed = first || arrived || revision !== pointed.current;
     pointed.current = revision;
 
     if (!pressed) {
@@ -434,7 +446,7 @@ const Controls = ({ view, bounds, revision, memory, object, fit, onFree, onGrab,
       return;
     }
     invalidate();
-  }, [camera, view, bounds, revision, invalidate, memory, glideMs]);
+  }, [camera, view, bounds, machineKnown, revision, invalidate, memory, glideMs]);
 
   /*
    * **Fill the frame with the object, and do not turn the camera.**

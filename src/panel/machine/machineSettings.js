@@ -203,6 +203,26 @@ export const decoded = (row) => {
   return '';
 };
 
+/**
+ * A value this setting once had, as the settings screen would show it: a
+ * switch as on or off, a mask as its axes, a figure in the panel's units with
+ * its unit. For the journal's line about a change (review note, 2026-09-28:
+ * *"napisz co to za ustawienie i wartość"*); the controller's own text is its
+ * details. `raw` is what Grbl said; anything that is not a number stays as it
+ * came.
+ */
+export const settingValueText = (row, raw, rule) => {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    return String(raw ?? '');
+  }
+  if (row.kind === 'bool' || row.bits) {
+    return decoded({ ...row, value }) || String(raw);
+  }
+  const figure = settingFigure(value, row.unit, rule);
+  return figure.unit ? `${figure.value} ${figure.unit}` : String(figure.value);
+};
+
 /** A setting's name as a list of changes gives it — an axis' quantity with its axis. */
 export const rowTitle = (row) => {
   const n = Number(row.name.slice(1));
@@ -210,13 +230,19 @@ export const rowTitle = (row) => {
   return quantity ? t('machine.axisTitle', { title: t(quantity.titleKey), axis: t(AXIS_KEYS[AXES.indexOf(row.axis)]) }) : settingText(row).title;
 };
 
-// A switch in a group's line that needs saying which one it is.
-const PART_LABELS = { $21: 'machine.summary.hard' };
+// A switch in a group's line that needs saying which one it is — every switch but the group's own (homing).
+const PART_LABELS = {
+  $21: 'machine.summary.hard',
+  $20: 'machine.summary.soft',
+  $32: 'machine.summary.laser',
+  $13: 'machine.summary.inches',
+};
 
 /**
  * A group's line in the list, from the server's summary of it (`groups` in
  * `machine:settings`): `{ value, unit }`s for `SettingSummary`. A switch
- * says on or off, figures stand side by side, a range from–to.
+ * says on or off, named unless it is the group's own; figures stand side by
+ * side.
  */
 export const groupLine = (summary, rule) => (summary?.parts ?? []).map((part) => {
   if (part.values === undefined) {
@@ -225,7 +251,7 @@ export const groupLine = (summary, rule) => (summary?.parts ?? []).map((part) =>
     return { value: label ? `${t(label)} ${state}` : state };
   }
   const figures = part.values.map((value) => settingFigure(value, part.unit, rule, { brief: true }));
-  return { value: figures.map(({ value }) => value).join(part.range ? '–' : ' · '), unit: figures[0]?.unit };
+  return { value: figures.map(({ value }) => value).join(' · '), unit: figures[0]?.unit };
 });
 
 /** The groups the pending changes are in, in the list's order: `[{ id, count }]`. */

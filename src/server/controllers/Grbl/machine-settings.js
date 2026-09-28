@@ -138,18 +138,25 @@ export const describeSettings = (reported = {}) => {
 };
 
 /*
- * What each group's line in the list says, from which settings (settings
- * handoff, 2026-09-28): values rather than a count, since the value is what
- * somebody opening the list is looking for. `on` is a switch, `range` two
- * figures from–to, anything else figures side by side.
+ * What each group's line in the list says, by one rule (Mateusz,
+ * 2026-09-28: *"klucz doboru musi być czytelny"*): **the group's switches
+ * first — what is on — then one limit, the highest the machine is allowed**
+ * (a speed, a spindle's top). A group with neither says how many settings it
+ * has, in the panel. `on` is a switch, anything else figures side by side.
  */
 const SUMMARIES = [
+  // No switches; the limit is how fast each axis may go.
   { group: 'axes', parts: [{ names: ['$110', '$111', '$112'], unit: 'feed' }] },
+  // Homing on or off; the limit is how fast it seeks.
   { group: 'homing', parts: [{ names: ['$22'], on: true }, { names: ['$25'], unit: 'feed' }] },
-  { group: 'limits', parts: [{ names: ['$21'], on: true }] },
-  { group: 'spindle', parts: [{ names: ['$31', '$30'], unit: 'rpm', range: true }] },
-  { group: 'signals', parts: [{ names: ['$0'], unit: 'us' }] },
-  { group: 'motion', parts: [{ names: ['$11'], unit: 'length' }] },
+  // Two switches — the switches and the soft limits — and nothing to top.
+  { group: 'limits', parts: [{ names: ['$21'], on: true }, { names: ['$20'], on: true }] },
+  // Laser mode on or off; the limit is the spindle's top speed.
+  { group: 'spindle', parts: [{ names: ['$32'], on: true }, { names: ['$30'], unit: 'rpm' }] },
+  // Inversions and timings only: neither a switch nor a limit.
+  { group: 'signals', parts: [] },
+  // Reporting in inches on or off; nothing to top.
+  { group: 'motion', parts: [{ names: ['$13'], on: true }] },
 ];
 
 /**

@@ -109,14 +109,14 @@ describe('what the save bar holds', () => {
 });
 
 describe('the list of groups', () => {
-  test('a line of a group: rates to the digits of a feed, side by side; a switch in words; a range from–to', () => {
+  test('a line of a group: rates to the digits of a feed, side by side; a switch in words, named', () => {
     expect(groupLine({ parts: [{ names: ['$110', '$111', '$112'], unit: 'feed', values: [3500, 3500, 600] }] }, MM))
       .toEqual([{ value: '3500 · 3500 · 600', unit: 'mm/min' }]);
     expect(groupLine({ parts: [{ names: ['$22'], on: true }, { names: ['$25'], unit: 'feed', values: [500] }] }, MM))
       .toEqual([{ value: 'Wł.' }, { value: '500', unit: 'mm/min' }]);
-    expect(groupLine({ parts: [{ names: ['$21'], on: false }] }, MM)).toEqual([{ value: 'twarde Wył.' }]);
-    expect(groupLine({ parts: [{ names: ['$31', '$30'], unit: 'rpm', range: true, values: [0, 24000] }] }, MM))
-      .toEqual([{ value: '0–24000', unit: 'obr/min' }]);
+    expect(groupLine({ parts: [{ names: ['$21'], on: false }, { names: ['$20'], on: true }] }, MM))
+      .toEqual([{ value: 'krańcówki Wył.' }, { value: 'programowe Wł.' }]);
+    expect(groupLine({ parts: [{ names: ['$30'], unit: 'rpm', values: [24000] }] }, MM)).toEqual([{ value: '24000', unit: 'obr/min' }]);
     // A length keeps a position's digits: 0.010 mm is not 0 mm.
     expect(groupLine({ parts: [{ names: ['$11'], unit: 'length', values: [0.01] }] }, MM)).toEqual([{ value: '0.010', unit: 'mm' }]);
   });

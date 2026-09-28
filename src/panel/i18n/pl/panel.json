@@ -554,7 +554,7 @@
       "line": "Linia",
       "text": "Treść",
       "cmd": "Komenda",
-      "controller": "Sterownik",
+      "controller": "W sterowniku",
       "baudrate": "Prędkość",
       "message": "Komunikat",
       "name": "Plik",
@@ -596,7 +596,8 @@
       "auto": "Tryb łączenia: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
     },
     "setting": {
-      "changed": "{{name}}: {{from}} → {{to}}"
+      "changed": "{{name}}: {{from}} → {{to}}",
+      "described": "{{title}}: {{from}} → {{to}}"
     }
   },
   "grbl": {
@@ -1182,7 +1183,10 @@
       "unplaced": "Bazowanie wyłączone: znany jest rozmiar obszaru, ale nie jego położenie. Zero maszyny to miejsce, w którym stała przy włączeniu."
     },
     "summary": {
-      "hard": "twarde"
+      "hard": "krańcówki",
+      "soft": "programowe",
+      "laser": "laser",
+      "inches": "cale"
     },
     "card": {
       "title": "Pamięć sterownika",

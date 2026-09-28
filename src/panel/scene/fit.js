@@ -92,6 +92,50 @@ export const fitWithRulers = (camera, box, direction, rulerPixels) => {
     );
     target = fitCameraToBounds(camera, box.clone().union(floor), direction);
   }
+
+  /*
+   * Then centred on what is drawn, top to bottom (review note, 2026-09-28:
+   * *"podgląd wyśrodkuj w kadrze, teraz jest za bardzo na górze"*). The fit
+   * centres the box and the room it keeps for the figures, and the figures
+   * fill that room only in part — seen from above a corner both near sides
+   * reach down, so a small preview had an empty band under its figures and
+   * the box rode high. The drawing is the box's own height on screen and one
+   * row of figures with its title below it; the camera slides along its own
+   * up to put the middle of that in the middle. The scale is the fit's.
+   */
+  camera.updateMatrixWorld();
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  /*
+   * How far the figures reach below the box on screen: they stand outward
+   * from the near edges, and seen from a corner those edges run down at a
+   * slant, so a row reaches down only by the downward share of its outward
+   * direction — all of it from above, about half from a corner.
+   */
+  const drop = [[outX, 0], [0, outY]]
+    .filter(([x, y]) => x || y)
+    .map(([x, y]) => {
+      const out = new THREE.Vector3(x, y, 0);
+      const across = out.dot(right);
+      const down = -out.dot(up);
+      return Math.max(0, down / (Math.hypot(across, down) || 1));
+    })
+    .reduce((most, share) => Math.max(most, share), 0);
+  const heights = [];
+  for (const x of [box.min.x, box.max.x]) {
+    for (const y of [box.min.y, box.max.y]) {
+      for (const z of [box.min.z, box.max.z]) {
+        heights.push(new THREE.Vector3(x, y, z).sub(target).dot(up));
+      }
+    }
+  }
+  const top = Math.max(...heights);
+  const bottom = Math.min(...heights) - (drop * TITLED_RULER * (rulerPixels / camera.zoom));
+  const shift = up.multiplyScalar((top + bottom) / 2);
+  camera.position.add(shift);
+  target.add(shift);
+  camera.lookAt(target);
+  camera.updateMatrixWorld();
   return target;
 };
 

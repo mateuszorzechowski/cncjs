@@ -554,7 +554,7 @@
       "line": "Line",
       "text": "Text",
       "cmd": "Command",
-      "controller": "Controller",
+      "controller": "In the controller",
       "baudrate": "Baud rate",
       "message": "Message",
       "name": "File",
@@ -596,7 +596,8 @@
       "auto": "Connection mode: $t(connect.auto.{{was}}) → $t(connect.auto.{{mode}})"
     },
     "setting": {
-      "changed": "{{name}}: {{from}} → {{to}}"
+      "changed": "{{name}}: {{from}} → {{to}}",
+      "described": "{{title}}: {{from}} → {{to}}"
     }
   },
   "grbl": {
@@ -1182,7 +1183,10 @@
       "unplaced": "Homing is off: the size of the travel is known, its place is not. Machine zero is wherever the machine stood at power-on."
     },
     "summary": {
-      "hard": "hard"
+      "hard": "switches",
+      "soft": "soft",
+      "laser": "laser",
+      "inches": "inches"
     },
     "card": {
       "title": "Controller memory",
