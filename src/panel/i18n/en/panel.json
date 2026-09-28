@@ -240,7 +240,6 @@
   },
   "settings": {
     "connection": "Connection",
-    "appearance": "Appearance",
     "preferences": "Preferences",
     "install": "Install",
     "locked": "Locked",
@@ -285,7 +284,8 @@
     "step2Blocked": "Step 1 first: a browser installs the app only over a connection it trusts.",
     "step2Done": "Installed on this device.",
     "stepDone": "done",
-    "version": "Panel version {{version}}"
+    "version": "Panel version {{version}}",
+    "certHelp": "About the certificate"
   },
   "refusal": {
     "alarm": "The machine is in alarm, so nothing was sent. Clear the alarm first.",
