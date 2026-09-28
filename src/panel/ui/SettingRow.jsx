@@ -53,7 +53,17 @@ export const CodeTag = ({ code }) => (
 const SettingRow = ({ title, note, scope, code, lit = false, noteBelow = false, children }) => {
   const ref = useLitIntoView(lit);
   return (
-  <div ref={ref} className={`grid grid-cols-1 gap-y-2 border-b border-line py-4 transition-colors duration-700 first:pt-0 last:border-b-0 last:pb-0 ${lit ? 'bg-accS' : ''} @3xl/shell:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] @3xl/shell:grid-rows-[auto_auto_1fr] @3xl/shell:items-start @3xl/shell:gap-x-10 @3xl/shell:gap-y-1`}>
+  /*
+    * The row is its own container, and lays itself out by its own width
+    * rather than the shell's (settings handoff, 2026-09-28): in the tablet's
+    * ~430px column beside Geometria the shell is wide and the row is not.
+    * 32rem sits between that column and the narrowest row laid out wide
+    * before this change — 578px, on a 768px shell — so no screen that
+    * existed then changed. The outer box is the container because a
+    * container cannot query itself.
+    */
+  <div ref={ref} className={`@container/setting border-b border-line py-4 transition-colors duration-700 first:pt-0 last:border-b-0 last:pb-0 ${lit ? 'bg-accS' : ''}`}>
+  <div className="grid grid-cols-1 gap-y-2 @lg/setting:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] @lg/setting:grid-rows-[auto_auto_1fr] @lg/setting:items-start @lg/setting:gap-x-10 @lg/setting:gap-y-1">
     {/*
       * The name and the scope share a line on a phone and wrap as a pair when
       * they do not fit — `SERWER · WSZYSTKIE URZĄDZENIA` beside a long name
@@ -63,23 +73,24 @@ const SettingRow = ({ title, note, scope, code, lit = false, noteBelow = false, 
       * note's do and only the wash reaches past them (*"czy to ma marginses z
       * lewej? wyglada jakby bylo nierowno"*, 2026-09-25).
       */}
-    <div className="order-1 flex flex-wrap items-center gap-x-2 gap-y-1 @3xl/shell:contents">
-      <h3 className="m-0 flex flex-wrap items-center gap-2 text-base font-semibold text-ink @3xl/shell:col-start-1 @3xl/shell:row-start-1">
+    <div className="order-1 flex flex-wrap items-center gap-x-2 gap-y-1 @lg/setting:contents">
+      <h3 className="m-0 flex flex-wrap items-center gap-2 text-base font-semibold text-ink @lg/setting:col-start-1 @lg/setting:row-start-1">
         {title}
         {code ? <CodeTag code={code} /> : null}
       </h3>
       {scope ? (
-        <span className={`whitespace-nowrap rounded-ctl px-1.5 py-0.5 font-num text-cap uppercase tracking-[0.08em] @3xl/shell:col-start-1 @3xl/shell:row-start-3 @3xl/shell:-ml-1.5 @3xl/shell:mt-1 @3xl/shell:justify-self-start ${SCOPES[scope].face}`}>
+        <span className={`whitespace-nowrap rounded-ctl px-1.5 py-0.5 font-num text-cap uppercase tracking-[0.08em] @lg/setting:col-start-1 @lg/setting:row-start-3 @lg/setting:-ml-1.5 @lg/setting:mt-1 @lg/setting:justify-self-start ${SCOPES[scope].face}`}>
           {t(SCOPES[scope].key)}
         </span>
       ) : null}
     </div>
-    <div className="order-3 flex min-w-0 flex-col gap-3 @3xl/shell:col-start-2 @3xl/shell:row-span-3 @3xl/shell:row-start-1">
+    <div className="order-3 flex min-w-0 flex-col gap-3 @lg/setting:col-start-2 @lg/setting:row-span-3 @lg/setting:row-start-1">
       {children}
     </div>
     {note ? (
-      <p className={`${noteBelow ? 'order-4' : 'order-2'} m-0 text-note text-mut @3xl/shell:col-start-1 @3xl/shell:row-start-2`}>{note}</p>
+      <p className={`${noteBelow ? 'order-4' : 'order-2'} m-0 text-note text-mut @lg/setting:col-start-1 @lg/setting:row-start-2`}>{note}</p>
     ) : null}
+  </div>
   </div>
   );
 };

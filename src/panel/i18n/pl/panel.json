@@ -311,7 +311,8 @@
     "badValue": "Ta wartość jest poza zakresem tego ustawienia."
   },
   "notice": {
-    "warning": "Ostrzeżenie"
+    "warning": "Ostrzeżenie",
+    "undo": "Cofnij"
   },
   "connect": {
     "choosePort": "Wybierz port",

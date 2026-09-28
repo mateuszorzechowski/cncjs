@@ -12,8 +12,14 @@ import HelpButton from './HelpButton';
  * A screen that has to explain itself should do it behind a question mark
  * rather than in a paragraph nobody can put away — which is the whole of what
  * the zeroing screen learned.
+ *
+ * `sublabel` is a second line under the caption — the firmware's name and
+ * version under PAMIĘĆ STEROWNIKA (settings handoff, 2026-09-28). In the
+ * number face and not in capitals, because it is a reading, and it wraps
+ * rather than truncates: `Smoothieware edge-9a1b2c3` cut short is a
+ * different firmware.
  */
-const Card = ({ label, aside, onHelp, helpLabel, row = false, className = '', bodyClassName = '', children }) => (
+const Card = ({ label, sublabel, aside, onHelp, helpLabel, row = false, className = '', bodyClassName = '', children }) => (
   <section
     /*
       * `--thumbGutter` so a scroller inside this card puts its indicator in
@@ -24,13 +30,16 @@ const Card = ({ label, aside, onHelp, helpLabel, row = false, className = '', bo
       */
     className={`flex min-w-0 flex-col rounded-card border border-line bg-panel p-pad [--thumbGutter:var(--pad)] ${className}`}
   >
-    {(label || aside || onHelp) && (
+    {(label || sublabel || aside || onHelp) && (
       // `items-center` only when there is a button to centre against. A
       // baseline is right for two pieces of text and wrong for a square.
       <header className={`mb-3 flex justify-between gap-3 ${onHelp ? 'items-baseline @3xl/shell:items-center' : 'items-baseline'}`}>
-        <h2 className="m-0 truncate text-cap font-semibold uppercase tracking-[0.1em] text-mut">
-          {label}
-        </h2>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h2 className="m-0 truncate text-cap font-semibold uppercase tracking-[0.1em] text-mut">
+            {label}
+          </h2>
+          {sublabel ? <span className="break-words font-num text-note text-mut">{sublabel}</span> : null}
+        </div>
         <div className="flex shrink-0 items-center gap-3">
           {aside ? <span className="font-num text-note text-mut">{aside}</span> : null}
           {/* Not on a phone: there the screen lifts it into the top bar with

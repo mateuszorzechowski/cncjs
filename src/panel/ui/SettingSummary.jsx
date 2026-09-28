@@ -30,17 +30,32 @@ import { t } from '../i18n';
  * connecting, so it stays at full contrast in a grey field and says LOCKED
  * where the chevron was (settings drawing, 2026-09-25, point 4: dimmed, it
  * was below 2:1 and read as broken rather than held).
+ *
+ * The chevron says what a tap does *on this device* (settings handoff,
+ * 2026-09-28), so the same line can carry a different one on a phone and a
+ * tablet. `opens="sheet"`, pointing down: something comes up over the
+ * screen. `opens="view"`, pointing right: the next view takes this one's
+ * place, in the same column. `selected`: the line is the choice in a list
+ * that stands beside what it chose — the controller's groups on a PC — so
+ * it is lit and has no chevron, because tapping it again goes nowhere.
  */
-const SettingSummary = ({ title, label, values, onOpen, disabled, locked = false }) => (
+const FACES = {
+  locked: 'border-line bg-bg',
+  selected: 'border-acc bg-accS',
+  // One or the other, never both in one string: two opacity utilities
+  // resolve in the stylesheet's order, not the string's, and the dimming
+  // won — the locked value came out as faint as a disabled one.
+  plain: 'border-line bg-surf disabled:opacity-45',
+};
+
+const SettingSummary = ({ title, label, values, onOpen, disabled, locked = false, opens = 'sheet', selected = false }) => (
   <button
     type="button"
     onClick={onOpen}
     disabled={disabled || locked}
     aria-label={title ? undefined : label}
-    // One or the other, never both in one string: two opacity utilities
-    // resolve in the stylesheet's order, not the string's, and the dimming
-    // won — the locked value came out as faint as a disabled one.
-    className={`flex h-ctl shrink-0 items-center gap-2 rounded-ctl border border-line px-3 text-left ${locked ? 'bg-bg' : 'bg-surf disabled:opacity-45'}`}
+    aria-current={selected ? 'true' : undefined}
+    className={`flex h-ctl shrink-0 items-center gap-2 rounded-ctl border px-3 text-left ${FACES[locked ? 'locked' : selected ? 'selected' : 'plain']}`}
   >
     {/* The name at the left and the value pushed right; with no name, the
       * value at the left where a field's value sits and the mark pushed
@@ -65,8 +80,10 @@ const SettingSummary = ({ title, label, values, onOpen, disabled, locked = false
       <span className="shrink-0 text-cap font-semibold uppercase tracking-[0.08em] text-mut">
         {t('settings.locked')}
       </span>
-    ) : (
-      <Icon name="chevron" className="size-4 shrink-0 text-mut" weight={2} />
+    ) : null}
+    {/* The icon's path points down; a view beside is the same mark turned. */}
+    {locked || selected ? null : (
+      <Icon name="chevron" className={`size-4 shrink-0 text-mut ${opens === 'view' ? '-rotate-90' : ''}`} weight={2} />
     )}
   </button>
 );

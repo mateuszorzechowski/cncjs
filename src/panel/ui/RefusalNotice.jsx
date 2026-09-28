@@ -35,17 +35,17 @@ import { t } from '../i18n';
  */
 export const SHOWN_FOR = 6000;
 
-const RefusalNotice = ({ refusal }) => {
-  /*
-   * Which refusal has had its turn, by number.
-   *
-   * Two identical refusals are two presses, and holding the message rather
-   * than the count would make the second one indistinguishable from the first
-   * — the notice would stay up from the first press and never reappear. See
-   * `seq` in `useMachine`.
-   */
+/**
+ * Whether the notice numbered `seq` is still having its turn.
+ *
+ * By number, not by message. Two identical refusals are two presses, and
+ * holding the message rather than the count would make the second one
+ * indistinguishable from the first — the notice would stay up from the first
+ * press and never reappear. See `seq` in `useMachine`. Shared with
+ * `UndoNotice`, which comes and goes on the same clock.
+ */
+export const useShowing = (seq) => {
   const [done, setDone] = useState(0);
-  const seq = refusal?.seq ?? 0;
 
   useEffect(() => {
     if (!seq) {
@@ -55,10 +55,16 @@ const RefusalNotice = ({ refusal }) => {
     return () => clearTimeout(timer);
   }, [seq]);
 
+  return seq > done;
+};
+
+const RefusalNotice = ({ refusal }) => {
+  const showing = useShowing(refusal?.seq ?? 0);
+
   // A settings write is answered in the sheet that made it, which stays
   // open over this notice until it has an answer.
   const message = refusal?.cmd === 'settings:write' ? null : refusalMessage(refusal);
-  if (!message || done >= seq) {
+  if (!message || !showing) {
     return null;
   }
 
