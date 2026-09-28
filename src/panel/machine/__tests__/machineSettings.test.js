@@ -1,6 +1,6 @@
 import {
-  changesOf, decoded, fieldText, filterRows, groupRows, groupsIn, isBad, isDirty, isInactive,
-  pendingCounts, pendingRows, rowTitle, settingText, valueText, withBit, bitOf,
+  changesOf, decoded, fieldText, filterRows, groupLine, groupRows, groupsIn, isBad, isDirty, isInactive,
+  pendingCounts, pendingGroups, pendingRows, restoreDrafts, rowTitle, settingText, valueText, withBit, bitOf,
 } from '../machineSettings';
 import { grblUnit, settingFigure, settingInGrbl } from '../units';
 import { NO_READING } from '../readings';
@@ -105,6 +105,53 @@ describe('what the save bar holds', () => {
     expect(valueText(row('$3'), { text: '3' }, false, MM)).toBe('X · Y');
     expect(rowTitle(row('$110'))).toBe('Maks. prędkość X');
     expect(rowTitle(row('$0'))).toBe('Impuls kroku');
+  });
+});
+
+describe('the list of groups', () => {
+  test('a line of a group: rates to the digits of a feed, side by side; a switch in words; a range from–to', () => {
+    expect(groupLine({ parts: [{ names: ['$110', '$111', '$112'], unit: 'feed', values: [3500, 3500, 600] }] }, MM))
+      .toEqual([{ value: '3500 · 3500 · 600', unit: 'mm/min' }]);
+    expect(groupLine({ parts: [{ names: ['$22'], on: true }, { names: ['$25'], unit: 'feed', values: [500] }] }, MM))
+      .toEqual([{ value: 'Wł.' }, { value: '500', unit: 'mm/min' }]);
+    expect(groupLine({ parts: [{ names: ['$21'], on: false }] }, MM)).toEqual([{ value: 'twarde Wył.' }]);
+    expect(groupLine({ parts: [{ names: ['$31', '$30'], unit: 'rpm', range: true, values: [0, 24000] }] }, MM))
+      .toEqual([{ value: '0–24000', unit: 'obr/min' }]);
+    // A length keeps a position's digits: 0.010 mm is not 0 mm.
+    expect(groupLine({ parts: [{ names: ['$11'], unit: 'length', values: [0.01] }] }, MM)).toEqual([{ value: '0.010', unit: 'mm' }]);
+  });
+
+  test('in inches, converted with the same rule as the rows', () => {
+    expect(groupLine({ parts: [{ names: ['$110'], unit: 'feed', values: [508] }] }, INCH)).toEqual([{ value: '20.0', unit: 'in/min' }]);
+  });
+
+  test('a group the server said nothing about has an empty line', () => {
+    expect(groupLine(undefined, MM)).toEqual([]);
+  });
+
+  test('the groups the changes are in, in the order of the list', () => {
+    const pending = pendingRows(ROWS, { $22: { text: '0' }, $110: { text: '1' }, $100: { text: '2' } }, MM);
+    expect(pendingGroups(pending)).toEqual([{ id: 'axes', count: 2 }, { id: 'homing', count: 1 }]);
+  });
+});
+
+describe('restoring the state before a write', () => {
+  test('each setting back to what it was before the first change of it, as the figure Grbl keeps', () => {
+    const entry = {
+      changes: [
+        { name: '$110', from: '5000.000', to: '5100.000' },
+        { name: '$110', from: '5100.000', to: '5200.000' },
+        { name: '$22', from: '1', to: '0' },
+        // No longer reported by the controller.
+        { name: '$400', from: '1', to: '2' },
+      ],
+    };
+
+    const drafts = restoreDrafts(entry, ROWS);
+
+    expect(drafts).toEqual({ $110: { text: '5000.000', raw: true }, $22: { text: '1', raw: true } });
+    // Shown in the described view in the server's units, as any draft.
+    expect(fieldText(row('$110'), drafts.$110, false, INCH)).toBe('196.8504');
   });
 });
 

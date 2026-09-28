@@ -1,46 +1,59 @@
 import { useEffect, useRef, useState } from 'react';
-import AxesSettings from './AxesSettings';
+import Button from './Button';
 import Card from './Card';
+import ConfirmSheet from './ConfirmSheet';
 import FadeScroller from './FadeScroller';
-import GeometrySettings, { HomingTable } from './GeometrySettings';
-import MachinePreview from './MachinePreview';
+import GeometrySettings from './GeometrySettings';
+import Icon from './Icon';
 import Notice from './Notice';
 import RawSettings from './RawSettings';
-import ReportUnitsFix from './ReportUnitsFix';
-import GroupTabs from './GroupTabs';
-import SettingControl from './SettingControl';
-import SettingRow from './SettingRow';
-import SettingsHistory from './SettingsHistory';
-import SettingsSaveBar from './SettingsSaveBar';
-import { useIsWide } from './shell';
+import SettingSummary from './SettingSummary';
+import SettingsGroupSheet from './SettingsGroupSheet';
+import SettingsHistory, { historyLine } from './SettingsHistory';
+import SettingsPendingBar from './SettingsPendingBar';
+import SettingsReview from './SettingsReview';
+import Sheet from './Sheet';
+import UndoNotice from './UndoNotice';
+import { useIsPhone } from './shell';
 import { useUnits } from './units';
 import {
-  changesOf, GROUPS, groupRows, groupsIn, isBad, isInactive, pendingCounts, pendingRows, settingText,
+  changesOf, GROUPS, groupLine, groupsIn, isBad, pendingGroups, pendingRows, restoreDrafts,
 } from '../machine/machineSettings';
-import { writeSettings } from '../machine/commands';
+import { figure, lengthLabel } from '../machine/units';
+import { readSettings, writeSettings } from '../machine/commands';
 import { GRBL_ERROR_KEYS } from '../machine/journalWords';
 import { REFUSAL_KEYS } from '../machine/refusal';
 import { t } from '../i18n';
 
 /**
- * The Sterownik tab: Grbl's settings, after the settings design of
- * 2026-09-26 — groups in a menu with a count of changes beside each, one
- * group at a time, values edited where they stand, and nothing reaching the
- * controller before the bar at the bottom writes it, after asking.
+ * The Sterownik tab: Grbl's settings, after the settings handoff of
+ * 2026-09-28 — a list of groups that opens a group, one bar for the changes
+ * not yet written, and one review that writes them.
  *
- * `raw` is the switch in the tab row: the same drafts shown as Grbl's `$$`.
+ * The card says what it is reading — PAMIĘĆ STEROWNIKA and the firmware —
+ * and reads it again with ↻. Each group's line shows its values, from the
+ * server; under a rule, the two things that are not groups: the history of
+ * writes, and Grbl's own `$$`. A group opens in a sheet (frame D2); nothing
+ * reaches the controller before the review's "Zapisz w sterowniku".
+ *
+ * The same on every width for now. The tablet's and the PC's columns — a
+ * group beside the list, Geometria beside both — are the next two steps.
+ *
  * The server lists, converts, checks, writes and reads back; the panel keeps
  * only what was typed.
  */
 
-// How long a write may take to come back before the bar says nothing did.
+// How long a write may take to come back before the review says nothing did.
 const ANSWER_MS = 10000;
 
-const HISTORY = 'history';
-const GEOMETRY = 'geo';
-
-// How long a setting reached from the Geometria group stays lit.
+// How long a setting reached from the Geometria summary stays lit.
 const FLASH_MS = 1800;
+
+const HISTORY = 'history';
+const RAW = 'raw';
+const GEOMETRY = 'geo';
+const REVIEW = 'review';
+const REREAD = 'reread';
 
 const refusalText = ({ reason, name }) => {
   if (GRBL_ERROR_KEYS[reason]) {
@@ -49,77 +62,52 @@ const refusalText = ({ reason, name }) => {
   return REFUSAL_KEYS[reason] ? t(REFUSAL_KEYS[reason]) : t('refusal.other', { cmd: 'settings:write', reason });
 };
 
-// The group last open, for as long as the page lives.
-let lastGroup = 'axes';
+const groupTitle = (id) => t(GROUPS.find((g) => g.id === id).titleKey);
 
-const Row = ({ row, rows, drafts, onDraft, rule, disabled, flash }) => {
-  const text = settingText(row);
-  const inactive = isInactive(row, rows, drafts, rule);
-  const note = inactive ? t('machine.needs', { name: row.needs }) : text.note;
-  return (
-    <SettingRow title={text.title} code={row.name} note={note} lit={flash === row.name}>
-      {/* A column of its own at the right, as wide as panel v2 gives it, rather than the row's whole width. */}
-      <div className="w-full @lg/setting:max-w-[340px] @lg/setting:self-end">
-        <SettingControl row={row} draft={drafts[row.name]} onDraft={onDraft} rule={rule} disabled={disabled || inactive} label={text.title} />
-      </div>
-      {row.wrong ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-ctl border border-red bg-redS px-3 py-2">
-          <span className="flex-1 text-note text-red">{t('machine.reportFix.wrong')}</span>
-          <ReportUnitsFix disabled={disabled} />
-        </div>
-      ) : null}
-    </SettingRow>
-  );
-};
-
-const ControllerSettings = ({ machine, raw }) => {
+const ControllerSettings = ({ machine }) => {
   const units = useUnits();
   const { rule } = units;
-  const wide = useIsWide();
-  const [group, setGroup] = useState(() => lastGroup);
+  const phone = useIsPhone();
   const [drafts, setDrafts] = useState({});
+  // What is open over the list: a group, Geometria, the history, `$$`, the review, or "read over the changes?".
+  const [open, setOpen] = useState(null);
   const [saving, setSaving] = useState(null);
   const [error, setError] = useState(null);
-  const rows = machine.machineSettings?.rows ?? [];
+  const [discarded, setDiscarded] = useState(null);
+  const view = machine.machineSettings;
+  const rows = view?.rows ?? [];
   const disabled = !machine.canWriteSettings || Boolean(saving);
   const pending = pendingRows(rows, drafts, rule);
-  const counts = pendingCounts(pending);
   const bad = pending.some((row) => isBad(row, drafts[row.name], rule));
-  const geometry = machine.machineSettings?.geometry;
-  /*
-   * On a PC the geometry is the axes' own view: the travel in 3D and the
-   * homing table beside the table of X, Y and Z — the design's PC layout
-   * (Mateusz, 2026-09-26: *"dla pc to jest na widoku osi"*). Narrower, where
-   * there is no room beside it, it is a tab of its own (panel v2).
-   */
-  const geometryTab = geometry && !wide;
-  const groups = [...groupsIn(rows).map(({ id }) => id), ...(geometryTab ? [GEOMETRY] : []), HISTORY];
+  const geometry = view?.geometry;
   const [flash, setFlash] = useState(null);
   const flashTimer = useRef(null);
   // From a Geometria line to the setting behind it, lit for a moment.
   const jump = (to, name) => {
-    setGroup(to);
+    setOpen(to);
     setFlash(name);
     clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
   };
   useEffect(() => () => clearTimeout(flashTimer.current), []);
-  const shownGroup = groups.includes(group) ? group : groups[0];
-  const about = GROUPS.find(({ id }) => id === shownGroup);
-
-  useEffect(() => {
-    lastGroup = group;
-  }, [group]);
 
   // Written and read back: every draft now matches the controller.
   useEffect(() => {
     if (saving && pending.length === 0) {
       setSaving(null);
       setDrafts({});
+      setOpen(null);
     }
   }, [saving, pending.length]);
 
-  // Refused by the server or by Grbl: said in the bar, the drafts kept.
+  // The review with nothing left in it has nothing to say.
+  useEffect(() => {
+    if (open === REVIEW && pending.length === 0 && !saving) {
+      setOpen(null);
+    }
+  }, [open, pending.length, saving]);
+
+  // Refused by the server or by Grbl: said in the review and the bar, the drafts kept.
   const refusal = machine.refusal;
   useEffect(() => {
     if (saving && refusal?.cmd === 'settings:write' && refusal.seq > saving.seq) {
@@ -140,11 +128,25 @@ const ControllerSettings = ({ machine, raw }) => {
   }, [saving]);
 
   const onDraft = (name, draft) => setDrafts((now) => ({ ...now, [name]: draft }));
+  const close = () => setOpen(null);
   const save = () => {
     setError(null);
     setSaving({ seq: refusal?.seq ?? 0 });
     writeSettings(changesOf(pending, drafts, rule));
   };
+  // No "are you sure": they are only this panel's edits, and "Cofnij" brings them back (frame E3).
+  const discard = () => {
+    setDiscarded({ seq: (discarded?.seq ?? 0) + 1, text: t('machine.discarded', { count: pending.length }), drafts });
+    setDrafts({});
+    setError(null);
+    setOpen(null);
+  };
+  const undo = () => {
+    setDrafts(discarded.drafts);
+    setDiscarded(null);
+  };
+  // Reading again replaces what is on screen, so with changes waiting it asks first.
+  const read = () => (pending.length > 0 ? setOpen(REREAD) : readSettings());
 
   if (rows.length === 0) {
     return (
@@ -154,86 +156,144 @@ const ControllerSettings = ({ machine, raw }) => {
     );
   }
 
-  const menu = (
-    <GroupTabs
-      label={t('machine.groups')}
-      options={groups}
-      value={shownGroup}
-      onChange={setGroup}
-      counts={counts}
-      format={(id) => t(id === HISTORY ? 'machine.history.title' : GROUPS.find((g) => g.id === id).titleKey)}
-    />
+  const firmware = view.firmware;
+  const summaries = view.groups ?? [];
+  const groups = groupsIn(rows);
+  const travel = geometry?.summary.find(({ id }) => id === 'travel')?.value;
+
+  const list = (
+    <div className="flex flex-col gap-2">
+      {!machine.canWriteSettings ? <Notice>{t('machine.readOnly')}</Notice> : null}
+      {groups.map(({ id }) => (
+        <SettingSummary
+          key={id}
+          title={groupTitle(id)}
+          values={groupLine(summaries.find(({ group }) => group === id), rule)}
+          onOpen={() => setOpen(id)}
+        />
+      ))}
+      {geometry ? (
+        <SettingSummary
+          title={groupTitle(GEOMETRY)}
+          values={travel ? [{ value: ['x', 'y', 'z'].map((axis) => figure(travel[axis], rule, 'extent')).join(' × '), unit: lengthLabel(rule) }] : []}
+          onOpen={() => setOpen(GEOMETRY)}
+        />
+      ) : null}
+      {/* Not groups: what was written, and Grbl's own list. */}
+      <div className="mt-1 flex flex-col gap-2 border-t border-line pt-3">
+        <SettingSummary title={t('machine.history.title')} values={[{ value: historyLine(view.history ?? []) }]} onOpen={() => setOpen(HISTORY)} />
+        <SettingSummary title={t('machine.raw.title')} values={[{ value: t('machine.raw.count', { count: rows.length }) }]} onOpen={() => setOpen(RAW)} />
+      </div>
+    </div>
   );
 
   /*
-   * The card fills the screen and keeps its head and foot: the group tabs,
-   * what the group is about, and the save bar stand still; only the settings
-   * between them scroll (Mateusz, 2026-09-26).
+   * The card's head reads what it is and has the one action; on a phone the
+   * whole card scrolls with it, as the other tabs do, and wider the head
+   * stands and the list scrolls under it (handoff, "Przewijanie").
    */
-  return (
-    <Card className="min-h-0 flex-1" bodyClassName="gap-4">
-      {!machine.canWriteSettings ? <Notice>{t('machine.readOnly')}</Notice> : null}
-      {raw ? (
-        <RawSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} canRead={machine.canWriteSettings} />
-      ) : (
-        <>
-          {menu}
-          {/*
-            * Only what the group is about: its name is the tab lit above
-            * (*"czy potrzebujemy duplikowac tytul skoro tab jest zaznaczony?"*,
-            * 2026-09-26).
-            */}
-          {about ? <p className="m-0 shrink-0 text-note text-mut">{t(about.noteKey)}</p> : null}
-          <FadeScroller>
-            <div className="flex min-w-0 max-w-[1180px] flex-col gap-4">
-              {shownGroup === 'axes' ? (
-                <div className="flex flex-col gap-6 @3xl/shell:flex-row @3xl/shell:items-start">
-                  <div className="min-w-0 flex-1">
-                    <AxesSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} flash={flash} />
-                  </div>
-                  {geometry && wide ? (
-                    <div className="flex w-[360px] shrink-0 flex-col gap-2">
-                      <MachinePreview className="h-[340px]" envelope={machine.envelope} homing={geometry.homing} />
-                      <HomingTable homing={geometry.homing} units={units} />
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {shownGroup === HISTORY ? <SettingsHistory history={machine.machineSettings?.history ?? []} /> : null}
-              {shownGroup === GEOMETRY ? (
-                <GeometrySettings geometry={geometry} envelope={machine.envelope} pending={new Set(pending.map(({ name }) => name))} onJump={jump} />
-              ) : null}
-              {!['axes', HISTORY, GEOMETRY].includes(shownGroup) ? (
-                <div className="flex flex-col">
-                  {groupRows(rows, shownGroup).map((row) => (
-                    <Row key={row.name} row={row} rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} flash={flash} />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </FadeScroller>
-        </>
+  const card = (
+    <Card
+      label={t('machine.card.title')}
+      sublabel={firmware?.version ? `${firmware.name} ${firmware.version}` : firmware?.name}
+      aside={(
+        <Button compact className="size-chiph" aria-label={t('machine.card.read')} title={t('machine.card.read')} disabled={!machine.canWriteSettings} onClick={read}>
+          <Icon name="refresh" className="size-5" weight={2} />
+        </Button>
       )}
-      <div className="shrink-0">
-        <SettingsSaveBar
+      className={phone ? 'flex-1' : 'min-h-0 flex-1'}
+    >
+      {phone ? list : <FadeScroller>{list}</FadeScroller>}
+    </Card>
+  );
+
+  const shownGroup = groups.find(({ id }) => id === open)?.id;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-gap">
+      {phone ? (
+        <FadeScroller>
+          <div className="flex min-h-full flex-col">{card}</div>
+        </FadeScroller>
+      ) : card}
+      {pending.length > 0 ? (
+        <SettingsPendingBar pending={pending} groups={pendingGroups(pending)} error={error} onReview={() => setOpen(REVIEW)} />
+      ) : null}
+
+      {shownGroup ? (
+        <SettingsGroupSheet
+          group={shownGroup}
+          rows={rows}
+          drafts={drafts}
+          onDraft={onDraft}
+          rule={rule}
+          disabled={disabled}
+          readOnly={!machine.canWriteSettings}
+          flash={flash}
+          onClose={close}
+        />
+      ) : null}
+      {open === GEOMETRY && geometry ? (
+        <Sheet title={groupTitle(GEOMETRY)} onClose={close}>
+          <GeometrySettings geometry={geometry} envelope={machine.envelope} pending={new Set(pending.map(({ name }) => name))} onJump={jump} />
+        </Sheet>
+      ) : null}
+      {open === HISTORY ? (
+        <Sheet title={t('machine.history.title')} onClose={close}>
+          <SettingsHistory
+            history={view.history ?? []}
+            disabled={disabled}
+            onRestore={(entry) => {
+              setDrafts((now) => ({ ...now, ...restoreDrafts(entry, rows) }));
+              close();
+            }}
+          />
+        </Sheet>
+      ) : null}
+      {open === RAW ? (
+        <Sheet title={t('machine.raw.title')} onClose={close}>
+          <RawSettings rows={rows} drafts={drafts} onDraft={onDraft} rule={rule} disabled={disabled} />
+        </Sheet>
+      ) : null}
+      {open === REVIEW ? (
+        <SettingsReview
           pending={pending}
           drafts={drafts}
-          raw={raw}
           rule={rule}
-          readAt={machine.machineSettings?.readAt}
-          count={rows.length}
           bad={bad}
           saving={Boolean(saving)}
           error={error}
           canWrite={machine.canWriteSettings}
-          onDiscard={() => {
-            setDrafts({});
-            setError(null);
-          }}
+          onUndo={(name) => setDrafts((now) => {
+            const next = { ...now };
+            delete next[name];
+            return next;
+          })}
+          onDiscard={discard}
           onSave={save}
+          onClose={close}
         />
-      </div>
-    </Card>
+      ) : null}
+      {open === REREAD ? (
+        <ConfirmSheet
+          title={t('machine.readOver.title')}
+          note={t('machine.readOver.note', { count: pending.length })}
+          confirmLabel={t('machine.readOver.confirm')}
+          tone="primary"
+          onConfirm={() => {
+            setDrafts({});
+            close();
+            readSettings();
+          }}
+          onClose={close}
+        />
+      ) : null}
+      <UndoNotice
+        notice={discarded}
+        onUndo={undo}
+        className={phone ? 'inset-x-shellPad bottom-[calc(var(--navBite)+var(--gap))]' : 'inset-x-shellPad bottom-shellPad'}
+      />
+    </div>
   );
 };
 

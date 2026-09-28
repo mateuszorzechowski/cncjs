@@ -18,7 +18,6 @@
     "DroStack": "src/panel/ui/DroStack.jsx",
     "DroStrip": "src/panel/ui/DroStrip.jsx",
     "FadeScroller": "src/panel/ui/FadeScroller.jsx",
-    "GroupTabs": "src/panel/ui/GroupTabs.jsx",
     "HelpButton": "src/panel/ui/HelpButton.jsx",
     "Icon": "src/panel/ui/Icon.jsx",
     "IconBar": "src/panel/ui/IconBar.jsx",
@@ -53,9 +52,6 @@
       "viewport": "900x620"
     },
     "SettingGroup": {
-      "cardMode": "column"
-    },
-    "GroupTabs": {
       "cardMode": "column"
     },
     "Button": {

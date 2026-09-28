@@ -162,6 +162,8 @@ const GLYPHS = {
   // A file's checks, on its row: passed, and will not run.
   check: <path d="M5 12.5 10 17.5 19 7" />,
   cross: <path d="M7 7 17 17M17 7 7 17" />,
+  // Read again from the controller: an arc that comes back round to itself.
+  refresh: <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15" />,
 
   /*
    * The machine's zero: the same arms, **in the corner**.

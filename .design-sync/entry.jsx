@@ -10,7 +10,6 @@ export { default as DateTimeField } from '../src/panel/ui/DateTimeField';
 export { default as DroStack } from '../src/panel/ui/DroStack';
 export { default as DroStrip } from '../src/panel/ui/DroStrip';
 export { default as FadeScroller } from '../src/panel/ui/FadeScroller';
-export { default as GroupTabs } from '../src/panel/ui/GroupTabs';
 export { default as HelpButton } from '../src/panel/ui/HelpButton';
 export { default as Icon } from '../src/panel/ui/Icon';
 export { default as IconBar } from '../src/panel/ui/IconBar';

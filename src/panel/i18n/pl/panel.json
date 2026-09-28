@@ -950,15 +950,9 @@
     }
   },
   "machine": {
-    "view": {
-      "label": "Widok",
-      "described": "Opisowy",
-      "raw": "GRBL $$"
-    },
     "empty": "Połącz się ze sterownikiem, żeby zobaczyć jego ustawienia.",
     "waiting": "Sterownik nie podał jeszcze ustawień. Jeśli to się nie zmienia, serwer jest starszy niż ten panel — uruchom go ponownie.",
     "readOnly": "Maszyna pracuje albo trwa zapis. GRBL przyjmuje zmiany tylko w stanie Idle lub Alarm, poza programem.",
-    "groups": "Grupy ustawień",
     "group": {
       "axes": {
         "title": "Osie",
@@ -1000,8 +994,6 @@
       "travel": "Zakres ruchu"
     },
     "axisTitle": "{{title}} {{axis}}",
-    "axisPick": "Oś",
-    "bitCode": "{{name}} · bit {{bit}}",
     "dir": {
       "normal": "Norm.",
       "inverted": "Odwr."
@@ -1030,28 +1022,10 @@
       "placeholder": "$11, bazow, mm/min",
       "count": "{{shown}} / {{all}}"
     },
-    "readRaw": "$$ Odczytaj",
     "bar": {
-      "pending": "Niezapisane w sterowniku: {{count}}",
-      "pendingBad": "Niezapisane w sterowniku: {{count}} · popraw błędne wartości",
-      "line": "{{name}}={{value}}",
-      "discard": "Odrzuć",
-      "save": "Zapisz w sterowniku ({{count}})",
       "saving": "Zapisuję…",
-      "clean": "Zgodne ze sterownikiem",
-      "readAt": "Odczytano {{time}} · ustawień: {{count}}",
-      "reload": "Odczytaj ponownie",
       "noAnswer": "Sterownik nie potwierdził zapisu. Sprawdź połączenie i Dziennik.",
-      "grblRefused": "Grbl odrzucił {{name}} ({{code}}): {{meaning}} Wcześniejsze zmiany są już zapisane.",
-      "saveShort": "Zapisz ({{count}})",
-      "reloadShort": "Odczytaj",
-      "pendingShort": "Do zapisu: {{count}}"
-    },
-    "confirm": {
-      "title": "Zapisać w sterowniku: {{count}}?",
-      "note": "Te wartości trafią do sterownika w tej kolejności. Pierwsza odrzucona zatrzymuje resztę.",
-      "eeprom": "Zapis do EEPROM sterownika. Zmiana działa od razu i zostaje po wyłączeniu zasilania.",
-      "save": "Zapisz w sterowniku"
+      "grblRefused": "Grbl odrzucił {{name}} ({{code}}): {{meaning}} Wcześniejsze zmiany są już zapisane."
     },
     "reportFix": {
       "wrong": "Sterownik raportuje w calach ($13=1). Serwer czyta każdą pozycję w milimetrach, więc pozycje, limity i ruchy są teraz błędne. Przywróć $13=0.",
@@ -1063,9 +1037,15 @@
     "history": {
       "title": "Historia zmian",
       "none": "Serwer nie widział jeszcze żadnej zmiany.",
-      "change": "{{name}}: {{from}} → {{to}}",
-      "elsewhere": "poza panelem",
-      "unnamed": "urządzenie bez nazwy"
+      "empty": "brak zapisów",
+      "last": "ostatni zapis {{time}}",
+      "lastExternal": "zmiana spoza panelu {{time}}",
+      "entry": "{{when}} · {{who}}",
+      "fromPanel": "z panelu",
+      "external": "spoza panelu",
+      "changes": "{{names}} · zmian: {{count}}",
+      "restore": "Przywróć stan sprzed",
+      "restoreNote": "Przywrócenie dodaje zmiany do zapisania. Zapis idzie przez przegląd zmian."
     },
     "s0": {
       "title": "Impuls kroku",
@@ -1183,6 +1163,40 @@
       "range": "Obszar MPos",
       "after": "Po $H",
       "span": "{{min}} … {{max}}"
+    },
+    "summary": {
+      "hard": "twarde"
+    },
+    "card": {
+      "title": "Pamięć sterownika",
+      "read": "Odczytaj ze sterownika"
+    },
+    "readOver": {
+      "title": "Odczytać ze sterownika?",
+      "note": "Niezapisane zmiany ({{count}}) przepadną, a na ekranie będzie to, co trzyma sterownik.",
+      "confirm": "Odczytaj"
+    },
+    "raw": {
+      "title": "Widok surowy $$",
+      "count": "ustawień: {{count}}"
+    },
+    "axesSheet": "Osie · X Y Z",
+    "pending": {
+      "count": "Niezapisane zmiany: {{count}}",
+      "group": "{{group}} {{count}}",
+      "review": "Przejrzyj"
+    },
+    "review": {
+      "title": "Zmiany do zapisania ({{count}})",
+      "undo": "Cofnij zmianę {{name}}",
+      "note": "Zapis do EEPROM działa od razu i zostaje po wyłączeniu zasilania. Wartości idą w tej kolejności; pierwsza odrzucona zatrzymuje resztę. Poprzednie wartości zostają w Historii zmian.",
+      "bad": "Popraw błędne wartości przed zapisem.",
+      "discard": "Odrzuć wszystkie",
+      "save": "Zapisz w sterowniku"
+    },
+    "discarded": "Odrzucono zmian: {{count}}",
+    "confirm": {
+      "eeprom": "Zapis do EEPROM sterownika. Zmiana działa od razu i zostaje po wyłączeniu zasilania."
     }
   }
 }

@@ -13,15 +13,22 @@ import { t } from '../i18n';
  * `warning` is a consequence that holds only this time (the `$C` of a program
  * that leaves the table), marked as the panel marks what wants reading first;
  * `children` is a choice about how the action is taken, made in the same
- * breath as taking it.
+ * breath as taking it — or, with no `note`, the whole of what is asked.
+ *
+ * `cancelLabel` and `onCancel` when the other answer is an action of its
+ * own rather than closing: the controller settings' review, whose two
+ * answers are "discard them all" and "write them" (settings handoff,
+ * 2026-09-28). Outlined either way.
  */
-const ConfirmSheet = ({ title, note, warning, confirmLabel, tone = 'stop', onConfirm, onClose, busy = false, children }) => (
+const ConfirmSheet = ({
+  title, note, warning, confirmLabel, tone = 'stop', onConfirm, onClose, cancelLabel, onCancel, busy = false, children,
+}) => (
   <Sheet title={title} onClose={onClose}>
-    <p className="m-0 text-base text-ink">{note}</p>
+    {note ? <p className="m-0 text-base text-ink">{note}</p> : null}
     {warning ? <Notice>{warning}</Notice> : null}
     {children}
     <div className="flex gap-2">
-      <Button className="h-ctl flex-1" onClick={onClose}>{t('confirm.cancel')}</Button>
+      <Button className="h-ctl flex-1" disabled={busy && Boolean(onCancel)} onClick={onCancel || onClose}>{cancelLabel || t('confirm.cancel')}</Button>
       <Button tone={tone} className="h-ctl flex-1" disabled={busy} onClick={onConfirm}>{confirmLabel}</Button>
     </div>
   </Sheet>

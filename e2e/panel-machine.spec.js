@@ -1,8 +1,9 @@
 const { test, expect } = require('./fixtures');
 
 /**
- * The Sterownik tab — Grbl's `$` settings, after the settings design of
- * 2026-09-26 — against a controller that is not there: the client's port
+ * The Sterownik tab — Grbl's `$` settings, after the settings handoff of
+ * 2026-09-28 (a list of groups, a sheet per group, one review that writes),
+ * on a phone — against a controller that is not there: the client's port
  * opening and commands are replaced, and what the server would say is fired
  * at the panel directly, as `panel-preview` does.
  *
@@ -33,6 +34,8 @@ const state = (activeState) => ({
 
 const open = async (page, view = VIEW) => {
   await page.addInitScript(() => {
+    // Straight to Ustawienia: on a phone it is not one of the menu's tabs.
+    window.localStorage.setItem('panel.screen', 'settings');
     let client = null;
     Object.defineProperty(window, '__panelController', {
       configurable: true,
@@ -69,85 +72,157 @@ const open = async (page, view = VIEW) => {
     window.__fire('controller:settings', 'Grbl', { settings: reported });
     window.__fire('machine:settings', v);
   }, { reported: REPORTED, v: view, st: state('Idle') });
-  await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Ustawienia' }).click();
   await page.getByRole('button', { name: 'Sterownik', exact: true }).click();
 };
 
 const sent = (page) => page.evaluate(() => window.__sent.filter(([cmd]) => cmd === 'settings:write').map(([, args]) => args));
-const groups = (page) => page.getByRole('tablist', { name: 'Grupy ustawień' });
 const field = (page, name) => page.getByRole('textbox', { name, exact: true });
+const sheet = (page) => page.getByRole('dialog');
+const openGroup = (page, name) => page.getByRole('button', { name: new RegExp(`^${name}`) }).first().click();
+const done = (page) => sheet(page).getByRole('button', { name: 'Gotowe' }).click();
 
 test.describe('the Sterownik tab', () => {
-  test.use({ viewport: { width: 1280, height: 800 } });
+  test.use({ viewport: { width: 390, height: 844 } });
 
-  test('groups in a menu, the axes as a table of X, Y and Z', async ({ cncjs }) => {
-    await open(cncjs.page);
+  test('a list of groups with their values, the firmware in the head, a group in a sheet', async ({ cncjs }) => {
+    await open(cncjs.page, {
+      ...VIEW,
+      firmware: { name: 'Grbl', version: '1.1h' },
+      groups: [{ group: 'axes', parts: [{ names: ['$110', '$111', '$112'], unit: 'feed', values: [3000, 3000, 600] }] }],
+    });
 
-    await expect(groups(cncjs.page).getByRole('tab', { name: 'Osie' })).toHaveAttribute('aria-selected', 'true');
+    await expect(cncjs.page.getByText('Grbl 1.1h')).toBeVisible();
+    await expect(cncjs.page.getByRole('button', { name: /^Osie/ })).toContainText('3000 · 3000 · 600');
+    await openGroup(cncjs.page, 'Osie');
     await expect(field(cncjs.page, 'Kroki silnika X')).toHaveValue('800.000');
     await expect(field(cncjs.page, 'Kroki silnika Z')).toHaveValue('400.000');
-    await expect(cncjs.page.getByText('Zgodne ze sterownikiem')).toBeVisible();
+    // No bar while nothing waits.
+    await done(cncjs.page);
+    await expect(cncjs.page.getByRole('button', { name: 'Przejrzyj' })).toHaveCount(0);
     cncjs.expectNoPageErrors();
   });
 
-  test('a change waits in the bar, asks first, then goes to the server', async ({ cncjs }) => {
+  test('a change waits in the bar; the review is the one way to the server', async ({ cncjs }) => {
     await open(cncjs.page);
 
+    await openGroup(cncjs.page, 'Osie');
     await field(cncjs.page, 'Maks. prędkość X').fill('3500');
-    await expect(cncjs.page.getByText('Niezapisane w sterowniku: 1')).toBeVisible();
-    await expect(groups(cncjs.page).getByRole('tab', { name: /Osie\s*1/ })).toBeVisible();
+    await done(cncjs.page);
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+    await expect(cncjs.page.getByText('Osie 1')).toBeVisible();
     expect(await sent(cncjs.page)).toEqual([]);
 
-    await cncjs.page.getByRole('button', { name: 'Zapisz w sterowniku (1)' }).click();
-    const sheet = cncjs.page.getByRole('dialog');
-    await expect(sheet).toContainText('Maks. prędkość X');
-    await expect(sheet).toContainText('3000.000 → 3500 mm/min');
-    await sheet.getByRole('button', { name: 'Zapisz w sterowniku' }).click();
+    await cncjs.page.getByRole('button', { name: 'Przejrzyj' }).click();
+    await expect(sheet(cncjs.page)).toContainText('Maks. prędkość X');
+    await expect(sheet(cncjs.page)).toContainText('3000.000 → 3500 mm/min');
+    await sheet(cncjs.page).getByRole('button', { name: 'Zapisz w sterowniku' }).click();
     expect(await sent(cncjs.page)).toEqual([{ changes: [{ name: '$110', value: '3500', units: 'mm' }] }]);
 
-    // `$$` read back by the server says the new value: the bar is clean again.
+    // `$$` read back by the server says the new value: the bar and the review go.
     await cncjs.page.evaluate((v) => {
       window.__fire('machine:settings', { ...v, rows: v.rows.map((r) => (r.name === '$110' ? { ...r, value: 3500, raw: '3500.000' } : r)) });
     }, VIEW);
-    await expect(cncjs.page.getByText('Zgodne ze sterownikiem')).toBeVisible();
-    await expect(field(cncjs.page, 'Maks. prędkość X')).toHaveValue('3500.000');
+    await expect(cncjs.page.getByRole('button', { name: 'Przejrzyj' })).toHaveCount(0);
+    await expect(sheet(cncjs.page)).toHaveCount(0);
   });
 
-  test('Grbl\'s refusal names the setting in the bar, and the drafts stay', async ({ cncjs }) => {
+  test('a change taken back alone with its ✕', async ({ cncjs }) => {
     await open(cncjs.page);
 
+    await openGroup(cncjs.page, 'Osie');
     await field(cncjs.page, 'Maks. prędkość X').fill('3500');
-    await cncjs.page.getByRole('button', { name: 'Zapisz w sterowniku (1)' }).click();
-    await cncjs.page.getByRole('dialog').getByRole('button', { name: 'Zapisz w sterowniku' }).click();
+    await field(cncjs.page, 'Kroki silnika Z').fill('500');
+    await done(cncjs.page);
+    await cncjs.page.getByRole('button', { name: 'Przejrzyj' }).click();
+    await sheet(cncjs.page).getByRole('button', { name: 'Cofnij zmianę $110' }).click();
+
+    await expect(sheet(cncjs.page)).toContainText('Zmiany do zapisania (1)');
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+  });
+
+  test('Grbl\'s refusal names the setting in the review, and the drafts stay', async ({ cncjs }) => {
+    await open(cncjs.page);
+
+    await openGroup(cncjs.page, 'Osie');
+    await field(cncjs.page, 'Maks. prędkość X').fill('3500');
+    await done(cncjs.page);
+    await cncjs.page.getByRole('button', { name: 'Przejrzyj' }).click();
+    await sheet(cncjs.page).getByRole('button', { name: 'Zapisz w sterowniku' }).click();
     await cncjs.page.evaluate(() => window.__fire('command:refused', { cmd: 'settings:write', reason: 'error:9', name: '$110', written: [] }));
 
-    await expect(cncjs.page.getByText(/Grbl odrzucił \$110 \(error:9\)/)).toBeVisible();
-    await expect(field(cncjs.page, 'Maks. prędkość X')).toHaveValue('3500');
-    // Said once, in the bar — not again in the notice over the screen.
+    await expect(sheet(cncjs.page).getByText(/Grbl odrzucił \$110 \(error:9\)/)).toBeVisible();
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+    // Said where it was asked — not again in the notice over the screen.
     await expect(cncjs.page.getByRole('status').filter({ hasText: 'settings:write' })).toHaveCount(0);
+  });
+
+  test('discarding all asks nothing, and "Cofnij" brings them back', async ({ cncjs }) => {
+    await open(cncjs.page);
+
+    await openGroup(cncjs.page, 'Osie');
+    await field(cncjs.page, 'Maks. prędkość X').fill('3500');
+    await done(cncjs.page);
+    await cncjs.page.getByRole('button', { name: 'Przejrzyj' }).click();
+    await sheet(cncjs.page).getByRole('button', { name: 'Odrzuć wszystkie' }).click();
+
+    await expect(cncjs.page.getByRole('button', { name: 'Przejrzyj' })).toHaveCount(0);
+    await expect(cncjs.page.getByText('Odrzucono zmian: 1')).toBeVisible();
+    await cncjs.page.getByRole('button', { name: 'Cofnij' }).click();
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+    expect(await sent(cncjs.page)).toEqual([]);
+  });
+
+  test('reading again over waiting changes asks first', async ({ cncjs }) => {
+    await open(cncjs.page);
+
+    await openGroup(cncjs.page, 'Osie');
+    await field(cncjs.page, 'Maks. prędkość X').fill('3500');
+    await done(cncjs.page);
+    await cncjs.page.getByRole('button', { name: 'Odczytaj ze sterownika' }).click();
+    await expect(sheet(cncjs.page)).toContainText('Niezapisane zmiany (1) przepadną');
+    await sheet(cncjs.page).getByRole('button', { name: 'Odczytaj', exact: true }).click();
+
+    await expect(cncjs.page.getByRole('button', { name: 'Przejrzyj' })).toHaveCount(0);
+  });
+
+  test('restoring the state before a write puts it back as changes waiting, not written', async ({ cncjs }) => {
+    const history = [{
+      id: 4, time: '2026-09-26T12:00:00Z', source: 'panel', device: 'laptop', deviceName: 'Laptop', changes: [{ name: '$110', from: '2500.000', to: '3000.000' }],
+    }];
+    await open(cncjs.page, { ...VIEW, history });
+
+    await cncjs.page.getByRole('button', { name: /^Historia zmian/ }).click();
+    await expect(sheet(cncjs.page)).toContainText('Laptop');
+    await sheet(cncjs.page).getByRole('button', { name: 'Przywróć stan sprzed' }).click();
+
+    await expect(cncjs.page.getByText('Niezapisane zmiany: 1')).toBeVisible();
+    await cncjs.page.getByRole('button', { name: 'Przejrzyj' }).click();
+    await expect(sheet(cncjs.page)).toContainText('3000.000 → 2500.000 mm/min');
+    expect(await sent(cncjs.page)).toEqual([]);
   });
 
   test('the $$ view shows the same drafts, filtered', async ({ cncjs }) => {
     await open(cncjs.page);
 
+    await openGroup(cncjs.page, 'Osie');
     await field(cncjs.page, 'Maks. prędkość X').fill('3500');
-    await cncjs.page.getByRole('button', { name: 'GRBL $$' }).click();
+    await done(cncjs.page);
+    await cncjs.page.getByRole('button', { name: /^Widok surowy/ }).click();
     await expect(field(cncjs.page, '$110')).toHaveValue('3500');
     await expect(cncjs.page.getByText('było 3000.000')).toBeVisible();
 
     await field(cncjs.page, 'Filtr').fill('$10');
     await expect(field(cncjs.page, '$100')).toBeVisible();
     await expect(field(cncjs.page, '$110')).toHaveCount(0);
-    await cncjs.page.getByRole('button', { name: 'Odrzuć' }).click();
-    await expect(cncjs.page.getByText('Zgodne ze sterownikiem')).toBeVisible();
   });
 
   test('soft limits are dark while homing is off', async ({ cncjs }) => {
     await open(cncjs.page);
 
-    await groups(cncjs.page).getByRole('tab', { name: 'Bazowanie' }).click();
-    await cncjs.page.getByRole('group', { name: 'Bazowanie' }).getByRole('button', { name: 'Wył.' }).click();
-    await groups(cncjs.page).getByRole('tab', { name: 'Limity' }).click();
+    await openGroup(cncjs.page, 'Bazowanie');
+    await sheet(cncjs.page).getByRole('group', { name: 'Bazowanie' }).getByRole('button', { name: 'Wył.' }).click();
+    await done(cncjs.page);
+    await openGroup(cncjs.page, 'Limity');
 
     await expect(cncjs.page.getByText('Włącz bazowanie ($22), aby użyć.')).toBeVisible();
     await expect(cncjs.page.getByRole('group', { name: 'Limity programowe' }).getByRole('button', { name: 'Wył.' })).toBeDisabled();
@@ -156,7 +231,7 @@ test.describe('the Sterownik tab', () => {
   test('a controller reporting in inches: red, and the fix asks first', async ({ cncjs }) => {
     await open(cncjs.page, { ...VIEW, rows: ROWS.map((r) => (r.name === '$13' ? { ...r, value: 1, raw: '1', wrong: true } : r)) });
 
-    await groups(cncjs.page).getByRole('tab', { name: 'Ruch i raporty' }).click();
+    await openGroup(cncjs.page, 'Ruch i raporty');
     await expect(cncjs.page.getByText(/raportuje w calach \(\$13=1\)/).first()).toBeVisible();
     await cncjs.page.getByRole('button', { name: 'Napraw: $13=0' }).click();
     await cncjs.page.getByRole('dialog').getByRole('button', { name: 'Zapisz $13=0' }).click();
@@ -168,6 +243,8 @@ test.describe('the Sterownik tab', () => {
     await cncjs.page.evaluate((st) => window.__fire('controller:state', 'Grbl', st), state('Run'));
 
     await expect(cncjs.page.getByText(/GRBL przyjmuje zmiany tylko/)).toBeVisible();
+    await expect(cncjs.page.getByRole('button', { name: 'Odczytaj ze sterownika' })).toBeDisabled();
+    await openGroup(cncjs.page, 'Osie');
     await expect(field(cncjs.page, 'Kroki silnika X')).toBeDisabled();
   });
 
@@ -184,13 +261,13 @@ test.describe('the Sterownik tab', () => {
     await open(cncjs.page, { ...VIEW, geometry });
     await cncjs.page.evaluate(() => window.__fire('controller:envelope', { min: { x: -420, y: -290, z: -11 }, max: { x: 0, y: 0, z: 0 } }));
 
-    await groups(cncjs.page).getByRole('tab', { name: 'Geometria' }).click();
-    await expect(cncjs.page.getByText('420 × 290 × 11 mm')).toBeVisible();
-    await expect(cncjs.page.getByText('X− Y+ Z+')).toBeVisible();
-    await expect(cncjs.page.getByText(/bazowanie jest wyłączone\. GRBL ich nie użyje/)).toBeVisible();
+    await expect(cncjs.page.getByRole('button', { name: /^Geometria/ })).toContainText('420 × 290 × 11');
+    await openGroup(cncjs.page, 'Geometria');
+    await expect(sheet(cncjs.page).getByText('X− Y+ Z+')).toBeVisible();
+    await expect(sheet(cncjs.page).getByText(/bazowanie jest wyłączone\. GRBL ich nie użyje/)).toBeVisible();
 
-    await cncjs.page.getByRole('button', { name: /Limity programowe bazowanie jest wyłączone|\$22 →/ }).click();
-    await expect(groups(cncjs.page).getByRole('tab', { name: 'Bazowanie' })).toHaveAttribute('aria-selected', 'true');
+    await sheet(cncjs.page).getByRole('button', { name: /Limity programowe bazowanie jest wyłączone|\$22 →/ }).click();
+    await expect(sheet(cncjs.page)).toHaveAttribute('aria-label', 'Bazowanie');
     cncjs.expectNoPageErrors();
   });
 
