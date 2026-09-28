@@ -10,7 +10,7 @@ import { installSteps } from '../machine/installSteps';
 import { AUTHORITY_URL, fetchAuthority } from '../machine/authority';
 import { canInstall, isInstalled, promptInstall, watchInstall } from '../machine/install';
 import {
-  THIS_BUILD, applyUpdate, isUpdateReady, readAutoUpdate, servedBuild, setAutoUpdate, watchUpdate,
+  THIS_BUILD, applyUpdate, buildName, isUpdateReady, readAutoUpdate, servedBuild, setAutoUpdate, watchUpdate,
 } from '../machine/update';
 import { t } from '../i18n';
 
@@ -71,9 +71,6 @@ const STEP_FACE = {
   done: 'done',
 };
 
-// A build as it is named: its tag or commit, and whether it was built with local changes.
-const buildName = (build) => (build?.dirty ? t('app.dirty', { version: build.label }) : build?.label ?? '');
-
 const AUTO = ['off', 'on'];
 // Written out, so every key is a literal the resources test can find.
 const AUTO_LABELS = {
@@ -112,7 +109,7 @@ const AppScreen = () => {
   const served = servedBuild();
   let versionNote = t('app.refreshWhy');
   if (updateReady) {
-    versionNote = t('app.updateReady', { version: buildName(served) });
+    versionNote = t('app.updateBelow');
   } else if (served) {
     versionNote = t('app.upToDate');
   }
@@ -245,10 +242,16 @@ const AppScreen = () => {
       <footer className="flex flex-col border-t border-line pt-4">
         {/* Rows like the auto-update's below, so the button and the switch stand in one column. */}
         <SettingRow title={t('app.versionLabel')} code={buildName(THIS_BUILD)} note={versionNote} noteBelow>
-          <Button tone={updateReady ? 'primary' : 'outline'} onClick={applyUpdate} className="h-ctl w-full">
-            {t(updateReady ? 'app.update' : 'app.refresh')}
-          </Button>
+          {updateReady ? null : (
+            <Button tone="outline" onClick={applyUpdate} className="h-ctl w-full @lg/setting:max-w-[340px]">{t('app.refresh')}</Button>
+          )}
         </SettingRow>
+        {/* The version to update to: a row of its own, only while there is one. */}
+        {updateReady ? (
+          <SettingRow title={t('app.available')} code={buildName(served)} note={t('app.updateReady')} noteBelow>
+            <Button tone="primary" onClick={applyUpdate} className="h-ctl w-full @lg/setting:max-w-[340px]">{t('app.update')}</Button>
+          </SettingRow>
+        ) : null}
         <SettingRow title={t('app.auto.label')} note={t('app.auto.note')} noteBelow>
           <SegmentedChoice
             joined

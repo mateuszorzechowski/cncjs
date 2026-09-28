@@ -33,18 +33,25 @@ test.describe('the panel version', () => {
     const line = cncjs.page.getByRole('heading', { name: /^Wersja panelu/ });
     await expect(line).toContainText(served.label);
     await expect(line).not.toContainText('1.11.5');
-    await expect(cncjs.page.getByText('Na serwerze ta sama wersja.')).toBeVisible();
+    await expect(cncjs.page.getByText('To najnowsza dostępna wersja.')).toBeVisible();
     await expect(cncjs.page.getByRole('button', { name: 'Odśwież panel' })).toBeVisible();
     cncjs.expectNoPageErrors();
   });
 
-  test('another build on the server is named, and waits for a tap when this device says so', async ({ cncjs }) => {
-    await cncjs.page.addInitScript(() => window.localStorage.setItem('panel.autoUpdate', 'off'));
-    await serveBuild(cncjs.page, OTHER);
-    await openInstall(cncjs.page);
+  test('another build is named in the top bar, which leads to Instalacja, where it waits for a tap', async ({ cncjs }) => {
+    const { page } = cncjs;
+    await page.addInitScript(() => window.localStorage.setItem('panel.autoUpdate', 'off'));
+    await serveBuild(page, OTHER);
+    await page.route('**/panel/cnc-ca.json', (route) => route.fulfill({ json: {} }));
+    await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
 
-    await expect(cncjs.page.getByText('Na serwerze: panel-2099.01.01. Zaktualizuj, żeby ją wziąć.')).toBeVisible();
-    await expect(cncjs.page.getByRole('button', { name: 'Aktualizuj', exact: true })).toBeVisible();
+    // In the bar: the version, and a way to the settings, not a reload.
+    const offer = page.getByRole('banner').getByRole('button', { name: /^Dostępna nowa wersja panelu: panel-2099\.01\.01/ });
+    await expect(offer).toContainText('Dostępna panel-2099.01.01');
+    await offer.click();
+
+    await expect(page.getByRole('heading', { name: /^Dostępna wersja/ })).toContainText('panel-2099.01.01');
+    await expect(page.getByRole('button', { name: 'Aktualizuj', exact: true })).toBeVisible();
     await expect(cncjs.page.getByRole('radio', { name: 'Wyłączone' }).or(cncjs.page.getByRole('button', { name: 'Wyłączone' })).first()).toBeVisible();
     cncjs.expectNoPageErrors();
   });

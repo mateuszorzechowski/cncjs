@@ -24,8 +24,13 @@
  * `IDLE_MS` without a touch or a key.
  */
 
+import { t } from '../i18n';
+
 /** This panel's own build: `{ label, tag, commit, dirty, builtAt, id }`. */
 export const THIS_BUILD = process.env.BUILD_VERSION ?? null;
+
+/** A build as it is named: its tag or commit, and whether it was built with local changes. */
+export const buildName = (build) => (build?.dirty ? t('app.dirty', { version: build.label }) : build?.label ?? '');
 
 /** Whether the server serves another build than the one running here. */
 export const isNewer = (mine, served) => Boolean(mine && served?.id && served.id !== mine.id);

@@ -65,6 +65,13 @@ const TABS = Object.keys(LABELS);
  * be on screen afterwards rather than the first tab.
  */
 let lastTab = 'connection';
+const tabWatchers = new Set();
+
+/** Open this tab: now, if the screen is showing, or when it next is. The top bar's update goes to `install`. */
+export const showSettingsTab = (id) => {
+  lastTab = id;
+  tabWatchers.forEach((show) => show(id));
+};
 
 const SettingsScreen = ({ machine }) => {
   const [tab, setTab] = useState(() => lastTab);
@@ -83,6 +90,10 @@ const SettingsScreen = ({ machine }) => {
   useEffect(() => {
     lastTab = tab;
   }, [tab]);
+  useEffect(() => {
+    tabWatchers.add(setTab);
+    return () => tabWatchers.delete(setTab);
+  }, []);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-gap">

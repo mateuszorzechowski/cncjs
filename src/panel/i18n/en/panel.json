@@ -21,7 +21,8 @@
     "port": "port",
     "state": "Machine state",
     "stop": "Stop",
-    "update": "A newer panel is available — tap to reload"
+    "update": "A new panel version is available: {{version}}. Go to Install.",
+    "available": "Available {{version}}"
   },
   "status": {
     "noServer": "No server",
@@ -269,7 +270,7 @@
     "certDownload": "Download certificate",
     "refresh": "Reload panel",
     "refreshWhy": "Fetches the newest panel from the server.",
-    "updateReady": "On the server: {{version}}. Update to take it.",
+    "updateReady": "A newer panel. Update to take it.",
     "certPlatform": "Your device",
     "certHow": {
       "android": "Android: choose “CA certificate” rather than “VPN and app certificate”, and set a screen lock first if you have none.",
@@ -284,7 +285,7 @@
     "step2Blocked": "Step 1 first: a browser installs the app only over a connection it trusts.",
     "step2Done": "Installed on this device.",
     "stepDone": "done",
-    "upToDate": "The server has the same version.",
+    "upToDate": "This is the latest available version.",
     "update": "Update",
     "dirty": "{{version}} (local changes)",
     "auto": {
@@ -293,7 +294,9 @@
       "on": "On",
       "note": "On this device. The panel reloads by itself when nobody is using it: in the background or after 30 s without a touch."
     },
-    "versionLabel": "Panel version"
+    "versionLabel": "Panel version",
+    "available": "Available version",
+    "updateBelow": "The one running on this device."
   },
   "refusal": {
     "alarm": "The machine is in alarm, so nothing was sent. Clear the alarm first.",

@@ -1,5 +1,6 @@
 import Button from './Button';
 import HelpButton from './HelpButton';
+import Icon from './Icon';
 import StateChip from './StateChip';
 import { t } from '../i18n';
 
@@ -45,7 +46,7 @@ import { t } from '../i18n';
  * rail's own width. On a phone there is no rail to line up with and the chip
  * has no box, so it keeps the bar's ordinary margin instead.
  */
-const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpdate, help }) => (
+const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate, help }) => (
   /*
     * The safe area is padded here rather than on the body.
     *
@@ -91,29 +92,26 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateReady, onUpd
     </div>
 
     {/*
-      * A newer panel is on the server.
+      * A newer panel is available.
       *
       * Beside the stop because that is the corner the eye already goes to,
-      * and small because it is not urgent: nothing is wrong, there is simply
-      * a better version a tap away. It exists at all because pull-to-refresh
-      * was switched off — the gesture that used to reload the panel now
-      * scrolls the settings and opens the menu, so the panel has to offer the
-      * reload itself. The other half of the offer is a button in the
-      * application settings, for anyone who reaches for one there.
-      *
-      * Reloading costs nothing on this panel: the port and the running job
-      * belong to the server, and the page re-attaches to both on the way back
-      * up. That is what makes it safe to put next to a stop button.
+      * and quiet because it is not urgent: nothing is wrong, there is simply
+      * a newer version. It takes you to the settings' Instalacja, where the
+      * version is named and "Aktualizuj" takes it — a proposal, not a
+      * reload under the finger (Mateusz, 2026-09-28: *"ma przenosić"*). As
+      * tall as everything else in the bar; wide, it names the version, and
+      * on a phone, beside the stop, it is the arrow alone.
       */}
-    {updateReady ? (
+    {updateTo ? (
       <button
         type="button"
         onClick={onUpdate}
-        aria-label={t('topbar.update')}
-        title={t('topbar.update')}
-        className="mr-1 size-chiph shrink-0 rounded-ctl border border-acc bg-accS text-lead font-semibold leading-none text-acc"
+        aria-label={t('topbar.update', { version: updateTo })}
+        title={t('topbar.update', { version: updateTo })}
+        className="mr-1 flex h-chiph min-w-chiph shrink-0 items-center justify-center gap-2 rounded-ctl border border-acc bg-accS px-2 text-acc @3xl/shell:h-btnh @3xl/shell:px-5"
       >
-        &#8635;
+        <Icon name="update" className="size-5" weight={2} />
+        <span className="hidden text-base font-semibold @3xl/shell:inline">{t('topbar.available', { version: updateTo })}</span>
       </button>
     ) : null}
 
