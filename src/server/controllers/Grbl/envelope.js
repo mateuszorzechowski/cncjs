@@ -81,6 +81,11 @@ export const placedBy = (settings) => setting(settings, '$22') === 1;
  * `placed`: whether the box is where it is drawn (`placedBy`). Without it the
  * box is its size only — every fence and every move planned against it is a
  * guess, and each consumer says so rather than acting on it.
+ *
+ * `fenced`: placed, and the firmware stops a move at its edge (`$20=1`, soft
+ * limits). Placed and not fenced, the box is where it is, and MDI or a
+ * program can still leave it. The drawings tell the three apart by their
+ * line: solid, long dashes, dots (Mateusz, 2026-09-28).
  */
 export const machineEnvelope = (settings) => {
   const min = {};
@@ -95,7 +100,8 @@ export const machineEnvelope = (settings) => {
     max[axis] = range.max;
   }
 
-  return { min, max, placed: placedBy(settings) };
+  const placed = placedBy(settings);
+  return { min, max, placed, fenced: placed && setting(settings, '$20') === 1 };
 };
 
 /**

@@ -14,30 +14,13 @@
  * reach used to be derived here out of `$130`-`$132` and the mask in `$23` —
  * the same four registers the server reads to bound a jog. Two readings of
  * the numbers somebody else enforces is a drawing that can disagree with the
- * machine, so the server works it out and says so on `controller:envelope`.
+ * machine, so the server works it out and says so on `controller:envelope` —
+ * with whether it has a place (`placed`, homing) and whether the firmware
+ * stops a move at its edge (`fenced`, soft limits) beside it.
  * What is left here is what only a drawing needs.
  */
 
-// `$20` — whether the firmware enforces the travel as a limit rather than
-// merely reporting it.
-const SOFT_LIMITS = '$20';
-
 const AXES = ['x', 'y', 'z'];
-
-/** One `$`-setting as a number, or null when the firmware has not said. */
-const setting = (settings, name) => {
-  const value = Number.parseFloat(settings?.settings?.[name]);
-  return Number.isFinite(value) ? value : null;
-};
-
-/**
- * Whether the firmware treats the envelope as a fence or as a description.
- *
- * The same numbers either way, which is why this is a separate reading rather
- * than a second box: with `$20=0` the outline says how far the axes can go,
- * and nothing stops a move going further.
- */
-export const softLimitsEnabled = (settings) => setting(settings, SOFT_LIMITS) === 1;
 
 /**
  * The work coordinate systems the firmware has reported, in machine

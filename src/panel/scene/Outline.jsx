@@ -15,19 +15,24 @@ import * as THREE from 'three';
  * silently comes out solid, or does not come out. Opacity says the same thing
  * and cannot fail quietly.
  *
- * `dashed`, then, only for the one box that is a size without a place — a
- * machine that is not homed (`envelope.placed` false, see `Scene`) — and the
- * distances computed on the object right here, before the first frame, so it
- * cannot come out solid by accident.
+ * `pattern`, then, only for the machine's own box, and only to say how much
+ * is known of it (see `Scene`): `dashed`, long dashes, where it is but nothing
+ * stops a move at its edge; `dotted` where only its size is known. The
+ * distances are computed on the object right here, before the first frame, so
+ * a pattern cannot come out solid by accident.
  *
  * A box with no extent on an axis is drawn, not skipped. A program milled at
  * one depth has zero height, and a rectangle lying in the bed is the truthful
  * picture of it.
  */
-// Dash and gap as a share of the box's longest side, so a bench and a router read alike.
-const DASH_SHARE = 1 / 60;
+// Dash and gap as shares of the box's longest side, so a bench and a router read alike.
+const PATTERNS = {
+  dashed: { dash: 1 / 40, gap: 1 / 80 },
+  dotted: { dash: 1 / 400, gap: 1 / 110 },
+};
 
-const Outline = ({ bounds, color, opacity = 1, dashed = false }) => {
+const Outline = ({ bounds, color, opacity = 1, pattern = 'solid' }) => {
+  const shares = PATTERNS[pattern];
   const line = useRef(null);
   const geometry = useMemo(() => {
     const box = new THREE.BoxGeometry(
@@ -43,15 +48,15 @@ const Outline = ({ bounds, color, opacity = 1, dashed = false }) => {
 
   useEffect(() => () => geometry.dispose(), [geometry]);
   useLayoutEffect(() => {
-    if (dashed && line.current) {
+    if (shares && line.current) {
       line.current.computeLineDistances();
     }
-  }, [dashed, geometry]);
-  const dash = Math.max(
+  }, [shares, geometry]);
+  const longest = Math.max(
     bounds.max.x - bounds.min.x,
     bounds.max.y - bounds.min.y,
     bounds.max.z - bounds.min.z
-  ) * DASH_SHARE;
+  );
 
   return (
     <lineSegments
@@ -63,8 +68,8 @@ const Outline = ({ bounds, color, opacity = 1, dashed = false }) => {
         (bounds.min.z + bounds.max.z) / 2,
       ]}
     >
-      {dashed
-        ? <lineDashedMaterial color={color} transparent opacity={opacity} dashSize={dash} gapSize={dash} />
+      {shares
+        ? <lineDashedMaterial color={color} transparent opacity={opacity} dashSize={longest * shares.dash} gapSize={longest * shares.gap} />
         : <lineBasicMaterial color={color} transparent opacity={opacity} />}
     </lineSegments>
   );

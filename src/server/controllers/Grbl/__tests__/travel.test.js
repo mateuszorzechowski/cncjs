@@ -17,7 +17,13 @@ describe('where the machine reaches', () => {
       min: { x: -1000, y: -700, z: -150 },
       max: { x: 0, y: 0, z: 0 },
       placed: true,
+      fenced: false,
     });
+  });
+
+  test('is fenced only placed and with soft limits on', () => {
+    expect(machineEnvelope({ ...HOMES_TO_MAX, $20: '1' }).fenced).toBe(true);
+    expect(machineEnvelope({ ...HOMES_TO_MAX, $20: '1', $22: '0' }).fenced).toBe(false);
   });
 
   // COM3, 2026-09-28: with `$22=0` MDI drove past `$130`; the size is known, the place is not.

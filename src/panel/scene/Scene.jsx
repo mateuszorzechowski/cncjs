@@ -50,12 +50,20 @@ const Scene = ({
    */
   const floor = (envelope || frame).min.z;
   /*
-   * A machine that is not homed: the travel is its size, not its place
-   * (`envelope.placed`, from the server). Drawn dashed and with no figures on
-   * the floor, since every coordinate there would be made up (Mateusz,
-   * 2026-09-28, on the Geometria preview).
+   * How much is known of the machine's box, said by its line (Mateusz,
+   * 2026-09-28): solid where it is and the firmware stops a move at its edge
+   * (`envelope.fenced`), long dashes where it is and nothing stops a move
+   * there (soft limits off), dots where only its size is known — not homed,
+   * `envelope.placed` false — and then no figures on the floor either, since
+   * every coordinate there would be made up.
    */
   const unplaced = envelope?.placed === false;
+  let pattern = 'solid';
+  if (unplaced) {
+    pattern = 'dotted';
+  } else if (envelope?.fenced === false) {
+    pattern = 'dashed';
+  }
   // What the datum lines span, and what the grid is the ground for.
   const area = envelope || frame;
 
@@ -136,7 +144,7 @@ const Scene = ({
       {/* The machine is context, not content: quiet enough that the program
         * inside it is what the eye lands on. */}
       {layers.machineArea && envelope ? (
-        <Outline bounds={envelope} color={colors.edge} opacity={unplaced ? 0.8 : 0.45} dashed={unplaced} />
+        <Outline bounds={envelope} color={colors.edge} opacity={pattern === 'solid' ? 0.45 : 0.8} pattern={pattern} />
       ) : null}
 
       {layers.machineAxes ? (

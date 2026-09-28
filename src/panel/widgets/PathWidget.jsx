@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import Card from '../ui/Card';
 import PathStage from '../ui/PathStage';
 import { cancelTravel, canGoToPoint, goToPoint } from '../machine/goto';
-import { softLimitsEnabled, workOffset } from '../machine/envelope';
+import { workOffset } from '../machine/envelope';
 import { readToolpath } from '../machine/toolpath';
 import { pathProgress } from '../machine/pathProgress';
 import { composeScene, toolPoint } from '../scene/compose';
@@ -319,8 +319,8 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
 
   const notes = [
     machine.envelope?.placed === false && t('path.note.noHoming'),
-    // Unhomed, Grbl will not turn soft limits on at all: the note above says it already.
-    machine.envelope?.placed && !softLimitsEnabled(machine.settings) && t('path.note.noSoftLimits'),
+    // Placed and not fenced: soft limits off. Unhomed, the note above says it already.
+    machine.envelope?.placed && !machine.envelope.fenced && t('path.note.noSoftLimits'),
   ].filter(Boolean);
 
   return (

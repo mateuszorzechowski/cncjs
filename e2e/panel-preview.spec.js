@@ -22,8 +22,8 @@ const { test, expect } = require('./fixtures');
 const SETTINGS = {
   $20: '1', $22: '1', $23: '0', $130: '1000.000', $131: '700.000', $132: '150.000',
 };
-// Homed, so the travel has its place (`placed`, as the server says it).
-const ENVELOPE = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 }, placed: true };
+// Homed and with soft limits on: the travel has its place and its fence (`placed`, `fenced`, as the server says them).
+const ENVELOPE = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 }, placed: true, fenced: true };
 
 // Work zero in the middle of the bed, on the surface of the stock.
 const WORK_ZERO = { x: -500, y: -350, z: -100 };
