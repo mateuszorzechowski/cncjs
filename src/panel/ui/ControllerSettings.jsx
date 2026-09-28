@@ -129,6 +129,7 @@ const ControllerSettings = ({ machine }) => {
       chosen={shownGroup}
       rule={rule}
       canWrite={machine.canWriteSettings}
+      aboveBar={pending.length > 0}
       onRead={read}
       onGroup={setGroup}
       onGeometry={() => setOpen(GEOMETRY)}

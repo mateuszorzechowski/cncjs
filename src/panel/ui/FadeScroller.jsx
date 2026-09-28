@@ -46,9 +46,22 @@ import { edgesOf, thumbOf, MIN_THUMB, TRACK_INSET } from './scrollMetrics';
  */
 const under = new Set();
 
+/*
+ * Whether a scroller's bottom edge is the content area's — the one the
+ * menu's mound sits on. A scroller that ends above it has something else
+ * between it and the mound: the controller settings' bar of changes, which
+ * does not scroll, wore the glow for as long as the list above it had more
+ * to show (Mateusz, 2026-09-28: *"ten fade i clip nie znika kiedy pozycja
+ * scrolla jest na samym dole"*). A pixel of slack for rounding.
+ */
+const reachesEdge = (el, main) => main.getBoundingClientRect().bottom - el.getBoundingClientRect().bottom < 1;
+
 /** Re-mark every content area from the set. */
 const remark = () => {
-  const mains = new Set([...under].map((el) => el.closest('main')).filter(Boolean));
+  const mains = new Set([...under]
+    .map((el) => [el, el.closest('main')])
+    .filter(([el, main]) => main && reachesEdge(el, main))
+    .map(([, main]) => main));
   for (const el of document.querySelectorAll('main')) {
     el.toggleAttribute('data-under-edge', mains.has(el));
   }
