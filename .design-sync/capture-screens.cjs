@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('../node_modules/playwright');
-const { describeSettings } = require('../output/cncjs/server/controllers/Grbl/machine-settings.js');
+const { describeSettings, groupSummaries } = require('../output/cncjs/server/controllers/Grbl/machine-settings.js');
 const { machineGeometry } = require('../output/cncjs/server/controllers/Grbl/geometry.js');
 const { machineEnvelope } = require('../output/cncjs/server/controllers/Grbl/envelope.js');
 
@@ -64,7 +64,6 @@ const SHOTS = [
   { name: 'journal', screen: 'journal' },
   { name: 'settings-connection', screen: 'settings', tab: 'Połączenie' },
   { name: 'settings-controller', screen: 'settings', tab: 'Sterownik' },
-  { name: 'settings-appearance', screen: 'settings', tab: 'Wygląd' },
   { name: 'settings-preferences', screen: 'settings', tab: 'Preferencje' },
   { name: 'settings-install', screen: 'settings', tab: 'Instalacja' },
 ];
@@ -105,7 +104,15 @@ const open = async (browser, device, shot) => {
     window.__fire('sender:status', { name: 'kieszen-kontur.nc', total: program.split('\n').length, sent: 0, received: 0 });
   }, {
     reported: REPORTED,
-    view: { rows: describeSettings(REPORTED), geometry: machineGeometry(REPORTED), history: [], readAt: new Date().toISOString() },
+    // What the server sends as `machine:settings`: the firmware and each group's line besides the rows.
+    view: {
+      firmware: { name: 'Grbl', version: '1.1h' },
+      rows: describeSettings(REPORTED),
+      groups: groupSummaries(REPORTED),
+      geometry: machineGeometry(REPORTED),
+      history: [],
+      readAt: new Date().toISOString(),
+    },
     envelope: machineEnvelope(REPORTED),
     st: state('Idle'),
     program: PROGRAM,
