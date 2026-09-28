@@ -177,7 +177,7 @@ describe('file:check', () => {
 describe('files:fit', () => {
   test('says where each file leaves the table at the current zero, once per change', () => {
     const { controller, events } = setup();
-    controller.envelope = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 } };
+    controller.envelope = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 }, placed: true };
     controller.runner.settings = { settings: { $20: '1' } };
     controller.runner.state.status.wco = { x: -10, y: -300, z: -70 };
     library.bounds.mockReturnValue({ 'part.nc': { min: { x: -25, y: -25, z: -10 }, max: { x: 25, y: 25, z: 1 } } });
@@ -187,5 +187,17 @@ describe('files:fit', () => {
 
     const said = events.filter(({ event }) => event === 'files:fit').map(({ args }) => args[0]);
     expect(said).toEqual([{ softLimits: true, files: { 'part.nc': [{ axis: 'x', side: 'max', by: 15 }] } }]);
+  });
+
+  test('says nothing unhomed: where the table is is not known, so neither is what leaves it', () => {
+    const { controller, events } = setup();
+    controller.envelope = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 }, placed: false };
+    controller.runner.state.status.wco = { x: -10, y: -300, z: -70 };
+    library.bounds.mockReturnValue({ 'part.nc': { min: { x: -25, y: -25, z: -10 }, max: { x: 25, y: 25, z: 1 } } });
+
+    controller.updateFits();
+
+    const said = events.filter(({ event }) => event === 'files:fit').map(({ args }) => args[0]);
+    expect(said).toEqual([null]);
   });
 });

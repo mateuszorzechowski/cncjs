@@ -8,6 +8,7 @@ jest.mock('../controller', () => ({ command: jest.fn() }));
 const ENVELOPE = {
   min: { x: -1000, y: -700, z: -150 },
   max: { x: 0, y: 0, z: 0 },
+  placed: true,
 };
 
 describe('what the panel sends', () => {
@@ -45,6 +46,13 @@ describe('what the panel sends', () => {
 });
 
 describe('when a travel is offered at all', () => {
+  // COM3, 2026-09-28: unhomed, the "retract" to machine Z0 went 20 mm down.
+  test('not on a machine that is not homed: the travel has a size and no place', () => {
+    const unplaced = { ...ENVELOPE, placed: false };
+    expect(canGoToWorkZero(unplaced)).toBe(false);
+    expect(canGoToPoint(unplaced, { x: -500, y: -300 })).toBe(false);
+  });
+
   test('only with an envelope, because only then is there a machine that can', () => {
     /*
      * The envelope comes from the side that makes the move: the server sends

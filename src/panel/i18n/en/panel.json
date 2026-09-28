@@ -84,7 +84,8 @@
     "speed": "Speed",
     "stepFor": "Step {{axes}}",
     "speedFor": "Speed {{axes}}",
-    "sheet": "Jog {{axes}}"
+    "sheet": "Jog {{axes}}",
+    "noHoming": "Homing is off: nothing guards the ends of the axes."
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -316,7 +317,8 @@
     "settingPending": "The previous settings write is still waiting for the controller's answer.",
     "unknownSetting": "The controller has not reported such a setting.",
     "settingLocked": "This setting is not changed from the panel.",
-    "badValue": "This value is outside the setting's range."
+    "badValue": "This value is outside the setting's range.",
+    "noHoming": "Homing is off, so where the machine's travel is is not known: neither where the top of Z is, nor where a point on the drawing lies."
   },
   "notice": {
     "warning": "Warning",
@@ -1178,7 +1180,8 @@
       "range": "MPos range",
       "after": "After $H",
       "span": "{{min}} … {{max}}",
-      "afterWrite": "Geometry after the write"
+      "afterWrite": "Geometry after the write",
+      "unplaced": "Homing is off: the size of the travel is known, its place is not. Machine zero is wherever the machine stood at power-on."
     },
     "summary": {
       "hard": "hard"

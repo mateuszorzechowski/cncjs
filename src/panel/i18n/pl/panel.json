@@ -84,7 +84,8 @@
     "speed": "Prędkość",
     "stepFor": "Krok {{axes}}",
     "speedFor": "Prędkość {{axes}}",
-    "sheet": "Jog {{axes}}"
+    "sheet": "Jog {{axes}}",
+    "noHoming": "Bazowanie wyłączone: nic nie pilnuje końców osi."
   },
   "shortcuts": {
     "title": "Skróty klawiszowe",
@@ -316,7 +317,8 @@
     "settingPending": "Poprzedni zapis ustawienia czeka jeszcze na odpowiedź sterownika.",
     "unknownSetting": "Sterownik nie podał takiego ustawienia.",
     "settingLocked": "Tego ustawienia nie zmienia się z panelu.",
-    "badValue": "Ta wartość jest poza zakresem tego ustawienia."
+    "badValue": "Ta wartość jest poza zakresem tego ustawienia.",
+    "noHoming": "Bazowanie jest wyłączone, więc nie wiadomo, gdzie jest obszar maszyny: ani gdzie jest góra osi Z, ani gdzie leży punkt z rysunku."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -1178,7 +1180,8 @@
       "range": "Obszar MPos",
       "after": "Po $H",
       "span": "{{min}} … {{max}}",
-      "afterWrite": "Geometria po zapisie"
+      "afterWrite": "Geometria po zapisie",
+      "unplaced": "Bazowanie wyłączone: znany jest rozmiar obszaru, ale nie jego położenie. Zero maszyny to miejsce, w którym stała przy włączeniu."
     },
     "summary": {
       "hard": "twarde"

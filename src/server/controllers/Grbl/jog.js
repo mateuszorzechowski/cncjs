@@ -24,7 +24,7 @@
  * their mind, and everything downstream pays for it.
  */
 
-import { AXES, axisRange } from './envelope';
+import { AXES, axisRange, placedBy } from './envelope';
 
 /**
  * Seconds of travel per segment.
@@ -156,9 +156,11 @@ export const segmentDistance = (feedrate, seconds = SEGMENT_SECONDS) => (feedrat
 /**
  * How far an axis can still go in one direction, in millimetres.
  *
- * Null when the machine has not said how far it travels, or has not reported
- * where it is — in which case there is no boundary to measure against and the
- * caller sends the segment as asked.
+ * Null when the machine has not said how far it travels, has not reported
+ * where it is, or is not homed (`placedBy`) — in which case there is no
+ * boundary to measure against and the caller sends the segment as asked.
+ * Unhomed, the travel's place is a guess, and a fence there refused room the
+ * machine had (COM3, 2026-09-28).
  *
  * Where the axis reaches to is `envelope.js`, which a travel asks the same
  * question of from the other end.
@@ -167,7 +169,7 @@ export const roomFor = (axis, sign, settings, mpos) => {
   const range = axisRange(axis, settings);
   const at = Number.parseFloat(mpos?.[axis]);
 
-  if (!range || !Number.isFinite(at)) {
+  if (!range || !Number.isFinite(at) || !placedBy(settings)) {
     return null;
   }
 

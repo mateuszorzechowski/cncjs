@@ -22,9 +22,6 @@
 // merely reporting it.
 const SOFT_LIMITS = '$20';
 
-// `$22` — whether this machine can be homed at all. See `machineZeroIsGuess`.
-const HOMING_ENABLED = '$22';
-
 const AXES = ['x', 'y', 'z'];
 
 /** One `$`-setting as a number, or null when the firmware has not said. */
@@ -41,26 +38,6 @@ const setting = (settings, name) => {
  * and nothing stops a move going further.
  */
 export const softLimitsEnabled = (settings) => setting(settings, SOFT_LIMITS) === 1;
-
-/**
- * Whether machine zero — and therefore every outline drawn from it — is a
- * guess.
- *
- * With `$22=0` homing is off, which means machine zero is wherever the
- * controller happened to be powered on. The envelope is then the right *size*
- * and in an unknown *place*, and a screen that draws it as a confident frame
- * is claiming to know something it cannot.
- *
- * With `$22=1` this returns false, and that is the weaker half of the answer:
- * the machine *can* be homed, not that it *has* been. An operator who clears
- * the startup alarm with `$X` instead of `$H` has an unhomed machine that
- * reports exactly like a homed one, and the firmware offers nothing that
- * separates them. Known gap, written down rather than papered over.
- */
-export const machineZeroIsGuess = (settings) => {
-  const flag = settings?.settings?.[HOMING_ENABLED];
-  return flag !== undefined && String(flag).trim() === '0';
-};
 
 /**
  * The work coordinate systems the firmware has reported, in machine

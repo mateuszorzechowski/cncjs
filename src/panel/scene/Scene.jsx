@@ -49,6 +49,13 @@ const Scene = ({
    * controller that has not said how far it goes.
    */
   const floor = (envelope || frame).min.z;
+  /*
+   * A machine that is not homed: the travel is its size, not its place
+   * (`envelope.placed`, from the server). Drawn dashed and with no figures on
+   * the floor, since every coordinate there would be made up (Mateusz,
+   * 2026-09-28, on the Geometria preview).
+   */
+  const unplaced = envelope?.placed === false;
   // What the datum lines span, and what the grid is the ground for.
   const area = envelope || frame;
 
@@ -124,12 +131,12 @@ const Scene = ({
         * Sized to the machine's own travel where that is known, so the
         * squares are the machine's squares. Only when nothing has been
         * reported does it fall back to whatever is being drawn. */}
-      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} ground={colors.ground} />
+      <Grid area={area} z={floor} color={colors.edge} ends={scene.farCorner} ground={colors.ground} figures={!unplaced} />
 
       {/* The machine is context, not content: quiet enough that the program
         * inside it is what the eye lands on. */}
       {layers.machineArea && envelope ? (
-        <Outline bounds={envelope} color={colors.edge} opacity={0.45} />
+        <Outline bounds={envelope} color={colors.edge} opacity={unplaced ? 0.8 : 0.45} dashed={unplaced} />
       ) : null}
 
       {layers.machineAxes ? (

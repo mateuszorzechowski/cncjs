@@ -4,7 +4,7 @@ import {
 } from '../jog';
 
 // A Grbl that homes to the maximum: travel is [-range, 0].
-const HOMES_TO_MAX = { $130: '1000', $131: '700', $132: '150', $23: '0' };
+const HOMES_TO_MAX = { $130: '1000', $131: '700', $132: '150', $23: '0', $22: '1' };
 // The Z bit set in `$23`: that axis homes at the bottom; its travel is still
 // [-range, 0] (Grbl 1.1h on COM3, 2026-09-26).
 const Z_HOMES_TO_MIN = { ...HOMES_TO_MAX, $23: '4' };
@@ -116,6 +116,11 @@ describe('how long a segment is', () => {
 });
 
 describe('how much room is left', () => {
+  // COM3, 2026-09-28: unhomed, a fence at the guessed travel refused room the machine had.
+  test('is not measured unhomed: the travel has no place, so there is no end to measure to', () => {
+    expect(roomFor('x', 1, { ...HOMES_TO_MAX, $22: '0' }, MIDDLE)).toBeNull();
+  });
+
   test('measures towards the end being driven at', () => {
     expect(roomFor('x', 1, HOMES_TO_MAX, MIDDLE)).toBe(500);
     expect(roomFor('x', -1, HOMES_TO_MAX, MIDDLE)).toBe(500);

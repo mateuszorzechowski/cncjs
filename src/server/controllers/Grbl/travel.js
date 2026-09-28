@@ -81,7 +81,8 @@ const retract = (settings, envelope) => (
  */
 export const goToWorkZeroLines = (settings) => {
   const envelope = machineEnvelope(settings);
-  if (!envelope) {
+  // Unhomed, machine Z0 is the power-on height: the "retract" went down (COM3, 2026-09-28).
+  if (!envelope || !envelope.placed) {
     return null;
   }
 
@@ -113,7 +114,7 @@ export const insideEnvelope = (envelope, x, y) => (
  */
 export const goToPointLines = (settings, point) => {
   const envelope = machineEnvelope(settings);
-  if (!envelope || !Number.isFinite(point?.x) || !Number.isFinite(point?.y)) {
+  if (!envelope || !envelope.placed || !Number.isFinite(point?.x) || !Number.isFinite(point?.y)) {
     return null;
   }
 

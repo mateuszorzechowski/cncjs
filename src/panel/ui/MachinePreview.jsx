@@ -3,6 +3,7 @@ import Scene from '../scene/Scene';
 import Axes from '../scene/Axes';
 import { composeScene } from '../scene/compose';
 import { DEFAULT_VIEW } from '../scene/views';
+import { t } from '../i18n';
 
 /**
  * The machine's travel in 3D, with where homing leaves it and where its
@@ -30,6 +31,8 @@ const homeOf = (homing) => (homing && homing.every((row) => row.range)
   : null);
 
 const MachinePreview = ({ envelope, homing, className = '' }) => {
+  // Not homed: the box is a size without a place — dashed in `Scene`, and said here.
+  const unplaced = envelope?.placed === false;
   const [home, setHome] = useState(0);
   const idle = useRef(null);
   const hold = () => clearTimeout(idle.current);
@@ -44,23 +47,27 @@ const MachinePreview = ({ envelope, homing, className = '' }) => {
   }), [envelope]);
 
   return (
-    <div className={`relative min-h-0 overflow-hidden rounded-ctl border border-line bg-field ${className}`}>
-      {envelope ? (
-        <Scene
-          scene={scene}
-          layers={LAYERS}
-          view={DEFAULT_VIEW}
-          revision={home}
-          memory="machine"
-          fit={0}
-          onFree={release}
-          onGrab={hold}
-          glideMs={GLIDE_MS}
-        >
-          {homeOf(homing) ? <Axes origin={homeOf(homing)} /> : null}
-        </Scene>
-      ) : null}
-    </div>
+    <>
+      <div className={`relative min-h-0 overflow-hidden rounded-ctl border border-line bg-field ${className}`}>
+        {envelope ? (
+          <Scene
+            scene={scene}
+            layers={LAYERS}
+            view={DEFAULT_VIEW}
+            revision={home}
+            memory="machine"
+            fit={0}
+            onFree={release}
+            onGrab={hold}
+            glideMs={GLIDE_MS}
+          >
+            {homeOf(homing) ? <Axes origin={homeOf(homing)} /> : null}
+          </Scene>
+        ) : null}
+      </div>
+      {/* Under the drawing, not over it: laid over the canvas it took the top of the scene with it. */}
+      {unplaced ? <p className="m-0 text-note text-mut">{t('machine.geo.unplaced')}</p> : null}
+    </>
   );
 };
 

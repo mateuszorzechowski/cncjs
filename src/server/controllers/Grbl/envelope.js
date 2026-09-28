@@ -55,11 +55,32 @@ export const axisRange = (axis, settings) => {
 };
 
 /**
+ * Whether the box has a place: `$22`, homing on.
+ *
+ * Only a homed machine knows where its travel is. Without homing, machine
+ * zero is wherever it stood at power-on, and `$130`–`$132` say how big the
+ * box is and nothing about where — Grbl itself does not use them then, and
+ * will not turn soft limits on. Measured on COM3, 2026-09-28: with `$22=0`
+ * MDI drove 100 mm past `$130`, the jog fence refused room the machine had,
+ * and a "retract" to machine Z0 went 20 mm down.
+ *
+ * The weaker half of the answer: `$22=1` says the machine *can* be homed, not
+ * that it *has* been. One whose start-up alarm was cleared with `$X` instead
+ * of `$H` reports exactly like a homed one, and the firmware offers nothing
+ * that separates them. Known gap, written down rather than papered over.
+ */
+export const placedBy = (settings) => setting(settings, '$22') === 1;
+
+/**
  * The box the machine can reach, in machine coordinates.
  *
  * Null when any axis has not reported its travel: three quarters of an
  * envelope is not an envelope, and a move planned against one would put a wall
  * where there is none.
+ *
+ * `placed`: whether the box is where it is drawn (`placedBy`). Without it the
+ * box is its size only — every fence and every move planned against it is a
+ * guess, and each consumer says so rather than acting on it.
  */
 export const machineEnvelope = (settings) => {
   const min = {};
@@ -74,7 +95,7 @@ export const machineEnvelope = (settings) => {
     max[axis] = range.max;
   }
 
-  return { min, max };
+  return { min, max, placed: placedBy(settings) };
 };
 
 /**

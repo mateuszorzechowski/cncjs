@@ -70,13 +70,14 @@ export const jogLines = ({ type, moves, feedrate }) => {
  * not clip it — so holding a key did nothing at all, silently. With soft
  * limits off the same line runs into a limit switch instead.
  *
- * Null when the machine has not reported its travel, in which case there is
- * no boundary to measure against and the bounded fallback stands.
+ * Null when the machine has not reported its travel, or is not homed — its
+ * travel then has no place (`envelope.placed`) — in which case there is no
+ * boundary to measure against and the bounded fallback stands.
  */
 export const jogRoom = (axis, sign, envelope, position) => {
   const at = Number.parseFloat(position?.[axis]);
 
-  if (!envelope || !Number.isFinite(at)) {
+  if (!envelope?.placed || !Number.isFinite(at)) {
     return null;
   }
 

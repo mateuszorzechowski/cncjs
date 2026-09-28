@@ -20,9 +20,10 @@ const { test, expect } = require('./fixtures');
 // A 1000 × 700 × 150 machine that homes to the top corner: its travel runs
 // from minus the length to zero, which is what `$23=0` means.
 const SETTINGS = {
-  $20: '1', $22: '0', $23: '0', $130: '1000.000', $131: '700.000', $132: '150.000',
+  $20: '1', $22: '1', $23: '0', $130: '1000.000', $131: '700.000', $132: '150.000',
 };
-const ENVELOPE = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 } };
+// Homed, so the travel has its place (`placed`, as the server says it).
+const ENVELOPE = { min: { x: -1000, y: -700, z: -150 }, max: { x: 0, y: 0, z: 0 }, placed: true };
 
 // Work zero in the middle of the bed, on the surface of the stock.
 const WORK_ZERO = { x: -500, y: -350, z: -100 };

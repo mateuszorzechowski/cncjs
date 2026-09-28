@@ -1,5 +1,4 @@
 import {
-  machineZeroIsGuess,
   softLimitsEnabled,
   workOffset,
   workOrigins,
@@ -29,23 +28,6 @@ describe('softLimitsEnabled', () => {
     [undefined, false],
   ])('$20=%s', (flag, expected) => {
     expect(softLimitsEnabled(withSettings({ $20: flag }))).toBe(expected);
-  });
-});
-
-describe('machineZeroIsGuess', () => {
-  test('is true with homing disabled, which is COM3', () => {
-    expect(machineZeroIsGuess(COM3)).toBe(true);
-  });
-
-  test('is false once homing is enabled', () => {
-    expect(machineZeroIsGuess(withSettings({ $22: '1' }))).toBe(false);
-  });
-
-  test('is false when the firmware has no such setting', () => {
-    // Marlin and TinyG never report `$22`. Claiming their zero is a guess
-    // would be inventing a reading, which is worse than not having one.
-    expect(machineZeroIsGuess({ settings: {} })).toBe(false);
-    expect(machineZeroIsGuess(undefined)).toBe(false);
   });
 });
 

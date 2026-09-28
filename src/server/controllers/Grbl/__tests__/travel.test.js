@@ -4,7 +4,7 @@ import { RATE_UNKNOWN, goToPointLines, goToWorkZeroLines, rateFor } from '../tra
 // A Grbl that homes to the maximum: travel is [-range, 0], which is the
 // default and the source of "why are my machine coordinates all minus".
 const HOMES_TO_MAX = {
-  $130: '1000', $131: '700', $132: '150', $23: '0', $110: '5000', $112: '4000',
+  $130: '1000', $131: '700', $132: '150', $23: '0', $22: '1', $110: '5000', $112: '4000',
 };
 // The Z bit set in `$23`: that axis homes at the bottom — and its travel is
 // still [-range, 0] (Grbl 1.1h on COM3, 2026-09-26: X+1 from 0 with `$23=1`
@@ -16,7 +16,19 @@ describe('where the machine reaches', () => {
     expect(machineEnvelope(HOMES_TO_MAX)).toEqual({
       min: { x: -1000, y: -700, z: -150 },
       max: { x: 0, y: 0, z: 0 },
+      placed: true,
     });
+  });
+
+  // COM3, 2026-09-28: with `$22=0` MDI drove past `$130`; the size is known, the place is not.
+  test('has no place unhomed: the same size, `placed` false', () => {
+    expect(machineEnvelope({ ...HOMES_TO_MAX, $22: '0' })).toMatchObject({ min: { x: -1000 }, placed: false });
+  });
+
+  test('unhomed, going to the work zero and to a point are not planned at all', () => {
+    const unhomed = { ...HOMES_TO_MAX, $22: '0' };
+    expect(goToWorkZeroLines(unhomed)).toBeNull();
+    expect(goToPointLines(unhomed, { x: -500, y: -300 })).toBeNull();
   });
 
   test('stays where it is when a bit is set in $23', () => {
@@ -106,7 +118,7 @@ describe('travelling to a point off the drawing', () => {
 
 describe('whether a program fits the table at the current zero', () => {
   // The bench: X in [-1000, 0], Y in [-700, 0], Z in [-150, 0].
-  const ENVELOPE = machineEnvelope({ $130: '1000', $131: '700', $132: '150', $23: '0' });
+  const ENVELOPE = machineEnvelope({ $130: '1000', $131: '700', $132: '150', $23: '0', $22: '1' });
   const BOUNDS = { min: { x: -25, y: -25, z: -10 }, max: { x: 25, y: 25, z: 1 } };
 
   test('fits: nothing to say', () => {
