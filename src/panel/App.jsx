@@ -17,6 +17,7 @@ import StateHelp from './ui/StateHelp';
 import NoHomingSheet from './ui/NoHomingSheet';
 import { buildName, isUpdateReady, servedBuild, watchUpdate } from './machine/update';
 import { useAutoConnect } from './machine/autoConnect';
+import useScreen from './machine/useScreen';
 import { useDeviceName } from './machine/useDeviceName';
 import { useKeepAwake } from './ui/keepAwake';
 import Dashboard from './screens/Dashboard';
@@ -430,29 +431,6 @@ const Panel = ({ machine, screen, onScreen }) => {
   );
 };
 
-/*
- * The screen last open, kept on this device.
- *
- * *"Zapamiętywanie ostatniego ekranu, żeby po odświeżeniu albo wejściu
- * trafiać na ten sam"* (Mateusz, 2026-09-25): a reload — and the panel
- * reloads itself on every update — dropped whoever was on the journal or the
- * zeroing screen back on the dashboard. Per device rather than on the server,
- * since a phone and the desk are usually looking at different things.
- *
- * Only a screen that exists: a name kept by an older panel, or typed into
- * storage by hand, opens the dashboard instead.
- */
-const KEEP_SCREEN = 'panel.screen';
-
-const rememberedScreen = () => {
-  try {
-    const kept = window.localStorage.getItem(KEEP_SCREEN);
-    return kept && SCREENS[kept] ? kept : 'dashboard';
-  } catch (err) {
-    return 'dashboard';
-  }
-};
-
 const App = () => {
   const machine = useMachine();
   useAutoConnect(machine);
@@ -461,14 +439,8 @@ const App = () => {
   useDeviceName(machine.linked);
   // The screen kept on while the panel is open, where this device asked.
   useKeepAwake();
-  const [screen, setScreen] = useState(rememberedScreen);
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(KEEP_SCREEN, screen);
-    } catch (err) {
-      // Private mode: the panel opens on the dashboard next time, as before.
-    }
-  }, [screen]);
+  // The screen open, kept on this device and in the address (`useScreen`).
+  const [screen, go] = useScreen((id) => Boolean(SCREENS[id]));
   const shell = useMeasuredShell();
   useFullHdTarget(shell.width);
 
@@ -523,7 +495,7 @@ const App = () => {
       <ShellWidthProvider value={shell.width}>
         <ShellNodeProvider value={shell.node}>
           <UnitsProvider value={machine.units}>
-            <Panel key={language} machine={machine} screen={screen} onScreen={setScreen} />
+            <Panel key={language} machine={machine} screen={screen} onScreen={go} />
           </UnitsProvider>
         </ShellNodeProvider>
       </ShellWidthProvider>

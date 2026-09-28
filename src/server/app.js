@@ -339,6 +339,25 @@ const appMain = () => {
       app.use(route, serveStatic(asset.path, {
         maxAge: asset.maxAge
       }));
+
+      /*
+       * The panel's own addresses — `/panel/jog`, `/panel/settings/controller`
+       * — are screens, not files: each is the panel's page, which reads the
+       * address and opens that screen. So a reload, a bookmark or a link
+       * lands where it points, and the browser's back button has somewhere
+       * to go (Mateusz, 2026-09-28: *"nawigując nie zmienia się adres URL …
+       * przycisk wstecz, gest cofnij nie działają"*). Only a page asked for:
+       * anything with an extension is a file, found above or not at all.
+       */
+      if (name === 'panel') {
+        app.get(urljoin(route, '*'), (req, res, next) => {
+          if (path.extname(req.path) || !req.accepts('html')) {
+            next();
+            return;
+          }
+          res.sendFile(path.join(asset.path, 'index.html'));
+        });
+      }
     });
   });
 
