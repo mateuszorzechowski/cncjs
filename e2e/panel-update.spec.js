@@ -25,7 +25,7 @@ test.describe('the panel version', () => {
   // The worker's own requests pass by `page.route`; the version is asked for by the page, so the cases go without it.
   test.use({ viewport: { width: 1024, height: 768 }, serviceWorkers: 'block' });
 
-  test('names this fork\'s build, and with nothing newer the available row stays, with nothing to update to', async ({ cncjs }) => {
+  test('names this fork\'s build, and says when nothing newer is available', async ({ cncjs }) => {
     const served = await (await cncjs.page.request.get('/panel/version.json')).json();
     expect(served.id).toBeTruthy();
     await openInstall(cncjs.page);
@@ -33,10 +33,9 @@ test.describe('the panel version', () => {
     const line = cncjs.page.getByRole('heading', { name: /^Wersja panelu/ });
     await expect(line).toContainText(served.label);
     await expect(line).not.toContainText('1.11.5');
-    // The available version's row stays, naming the same build, and there is nothing to update to.
-    await expect(cncjs.page.getByRole('heading', { name: /^Dostępna wersja/ })).toContainText(served.label);
+    // Nothing newer: the row says so, and its one button reloads.
     await expect(cncjs.page.getByText('To najnowsza dostępna wersja.')).toBeVisible();
-    await expect(cncjs.page.getByRole('button', { name: 'Aktualizuj', exact: true })).toBeDisabled();
+    await expect(cncjs.page.getByRole('button', { name: 'Aktualizuj', exact: true })).toHaveCount(0);
     await expect(cncjs.page.getByRole('button', { name: 'Odśwież panel' })).toBeVisible();
     cncjs.expectNoPageErrors();
   });
@@ -52,7 +51,7 @@ test.describe('the panel version', () => {
     const offer = page.getByRole('banner').getByRole('button', { name: /^Dostępna nowa wersja panelu: panel-2099\.01\.01/ });
     await offer.click();
 
-    await expect(page.getByRole('heading', { name: /^Dostępna wersja/ })).toContainText('panel-2099.01.01');
+    await expect(page.getByText('Dostępna panel-2099.01.01. Aktualizuj, żeby ją wziąć.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Aktualizuj', exact: true })).toBeVisible();
     await expect(cncjs.page.getByRole('radio', { name: 'Wyłączone' }).or(cncjs.page.getByRole('button', { name: 'Wyłączone' })).first()).toBeVisible();
     cncjs.expectNoPageErrors();

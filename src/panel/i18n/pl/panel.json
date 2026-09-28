@@ -268,7 +268,7 @@
     "certFingerprint": "Odcisk SHA-256",
     "certDownload": "Pobierz certyfikat",
     "refresh": "Odśwież panel",
-    "updateReady": "Nowsza wersja panelu. Aktualizuj, żeby ją wziąć.",
+    "updateReady": "Dostępna {{version}}. Aktualizuj, żeby ją wziąć.",
     "certPlatform": "Twoje urządzenie",
     "certHow": {
       "android": "Android: wybierz „Certyfikat CA”, a nie „certyfikat VPN i aplikacji”, i ustaw najpierw blokadę ekranu, jeśli jej nie masz.",
@@ -293,8 +293,6 @@
       "note": "Na tym urządzeniu. Panel przeładuje się sam, gdy nikt go nie używa: w tle albo po 30 s bez dotyku."
     },
     "versionLabel": "Wersja panelu",
-    "available": "Dostępna wersja",
-    "running": "Ta, która działa na tym urządzeniu.",
     "checking": "Sprawdzam dostępną wersję…"
   },
   "refusal": {

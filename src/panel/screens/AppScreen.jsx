@@ -107,12 +107,12 @@ const AppScreen = () => {
   useEffect(() => watchUpdate(() => bump((n) => n + 1)), []);
   const updateReady = isUpdateReady();
   const served = servedBuild();
-  // What the available version's row says: not asked yet, a newer one, or this one.
-  let availableNote = t('app.checking');
+  // What the version's row says of the server's: not asked yet, a newer one to take, or this one.
+  let versionNote = t('app.checking');
   if (updateReady) {
-    availableNote = t('app.updateReady');
+    versionNote = t('app.updateReady', { version: buildName(served) });
   } else if (served) {
-    availableNote = t('app.upToDate');
+    versionNote = t('app.upToDate');
   }
 
   const [authority, setAuthority] = useState(null);
@@ -242,17 +242,16 @@ const AppScreen = () => {
         */}
       <footer className="flex flex-col border-t border-line pt-4">
         {/* Rows like the auto-update's below, so the button and the switch stand in one column. */}
-        <SettingRow title={t('app.versionLabel')} code={buildName(THIS_BUILD)} note={t('app.running')} noteBelow>
-          <Button tone="outline" onClick={applyUpdate} className="h-ctl w-full @lg/setting:max-w-[340px]">{t('app.refresh')}</Button>
-        </SettingRow>
         {/*
-          * The version to update to, always there: with nothing newer it names
-          * the same version and "Aktualizuj" is dark, rather than the row
-          * coming and going (Mateusz, 2026-09-28: *"nie podoba mi się
-          * znikająca sekcja"*).
+          * One row, always there (Mateusz, 2026-09-28: *"nie podoba mi się
+          * znikająca sekcja"*, *"nie może być jedna?"*): this panel's version,
+          * what is available under it, and one button — "Aktualizuj" to take
+          * a newer one, else "Odśwież panel".
           */}
-        <SettingRow title={t('app.available')} code={served ? buildName(served) : null} note={availableNote} noteBelow>
-          <Button tone="primary" disabled={!updateReady} onClick={applyUpdate} className="h-ctl w-full @lg/setting:max-w-[340px]">{t('app.update')}</Button>
+        <SettingRow title={t('app.versionLabel')} code={buildName(THIS_BUILD)} note={versionNote} noteBelow>
+          <Button tone={updateReady ? 'primary' : 'outline'} onClick={applyUpdate} className="h-ctl w-full @lg/setting:max-w-[340px]">
+            {t(updateReady ? 'app.update' : 'app.refresh')}
+          </Button>
         </SettingRow>
         <SettingRow title={t('app.auto.label')} note={t('app.auto.note')} noteBelow>
           <SegmentedChoice
