@@ -669,12 +669,10 @@
     "previous": "Poprzedni miesiąc",
     "next": "Następny miesiąc",
     "hour": "Godzina",
-    "hourUnit": "h",
     "minute": "Minuta",
-    "minuteUnit": "min",
-    "now": "Teraz",
     "clear": "Wyczyść",
-    "none": "dowolnie"
+    "none": "dowolnie",
+    "days": "Dni"
   },
   "platform": {
     "android": "Android",
