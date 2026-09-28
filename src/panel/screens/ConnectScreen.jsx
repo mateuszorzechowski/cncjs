@@ -7,7 +7,6 @@ import SegmentedChoice from '../ui/SegmentedChoice';
 import Sheet from '../ui/Sheet';
 import { OnOpenConnectChoice, SERVER_NOTES, ServerConnectChoice, useAutoMode } from '../ui/AutoConnectChoice';
 import SettingGroup from '../ui/SettingGroup';
-import DeviceNameRow from '../ui/DeviceNameRow';
 import SettingRow from '../ui/SettingRow';
 import SettingSummary from '../ui/SettingSummary';
 import { NO_READING } from '../machine/readings';
@@ -274,8 +273,6 @@ const ConnectScreen = ({ machine }) => {
         <SettingRow title={t('connect.address')} note={t('connect.serverNote')}>
           <span className="font-num text-base text-ink">{window.location.host}</span>
         </SettingRow>
-        {/* How this device is named to the server and in its journal. */}
-        <DeviceNameRow linked={machine.linked} />
       </SettingGroup>
 
       {/*

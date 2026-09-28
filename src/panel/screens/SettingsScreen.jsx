@@ -8,6 +8,7 @@ import SettingGroup from '../ui/SettingGroup';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
 import JogSettings from '../ui/JogSettings';
+import DeviceNameRow from '../ui/DeviceNameRow';
 import KeepAwakeChoice, { keepAwakeNote } from '../ui/KeepAwakeChoice';
 import { useKeepAwakeStatus } from '../ui/keepAwake';
 import { useSwipe } from '../ui/swipe';
@@ -157,6 +158,12 @@ const SettingsScreen = ({ machine }) => {
                 <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} noteBelow>
                   <KeepAwakeChoice status={keepAwake} />
                 </SettingRow>
+                {/*
+                  * How this device is named to the server and in its journal:
+                  * this device's, like its language and theme, so with them rather
+                  * than with the link to the controller (review note, 2026-09-28).
+                  */}
+                <DeviceNameRow linked={machine.linked} />
               </SettingGroup>
               <SettingGroup title={t('settings.scope.server')}>
                 <SettingRow title={t('units.choice.label')} note={t('units.choice.note')}>

@@ -5,7 +5,7 @@
  * panel was chosen, stepped or jogged, never typed. One component so that
  * the second screen to need a field gets the same one.
  *
- * `label` is the name read aloud. A date and time is `DateTimeField`, which
+ * `label` is the name read aloud. A window of dates and times is `DateRangeField`, which
  * wears the same face. `unit`, when given, stands inside the field at its
  * right, muted — the figure typed and what it is in (Mateusz, 2026-09-26,
  * the jog steps: *"dodaj maskę do wartości z jednostkami"*).
