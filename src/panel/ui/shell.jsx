@@ -65,13 +65,22 @@ export const useMeasuredShell = () => {
     return () => observer.disconnect();
   }, [node]);
 
-  /*
-   * The drawing's Full HD tokens on a real Full HD screen (decision D,
-   * 2026-09-28): the `fullhd` target — a 200px rail, 26px of padding, 68px
-   * controls — was set only by the review frame, so a 1920 screen ran on
-   * the tablet's. Same threshold as a third card. The review frame's own
-   * `phone` target is left alone; only `fullhd` is taken back.
-   */
+  return { ref: setNode, width, node };
+};
+
+/**
+ * The drawing's Full HD tokens on a real Full HD screen (decision D,
+ * 2026-09-28): the `fullhd` target — a 200px rail, 26px of padding, 68px
+ * controls — was set only by the review frame, so a 1920 screen ran on the
+ * tablet's. Same threshold as a third card. The review frame's own `phone`
+ * target is left alone; only `fullhd` is taken back.
+ *
+ * The app's alone, not every measured shell's: it sets the attribute on the
+ * whole document, and the design-sync previews measure several shells on
+ * one page — a PC cell there would have switched the phone's beside it.
+ * Those scope the attribute to their own frame instead.
+ */
+export const useFullHdTarget = (width) => {
   const fullHd = Number.isFinite(width) && width >= WIDE_FROM;
   useEffect(() => {
     const root = document.documentElement;
@@ -81,8 +90,6 @@ export const useMeasuredShell = () => {
       delete root.dataset.target;
     }
   }, [fullHd]);
-
-  return { ref: setNode, width, node };
 };
 
 export const ShellWidthProvider = ShellWidth.Provider;

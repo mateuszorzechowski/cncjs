@@ -112,3 +112,10 @@ export const PC = () => (
     </Card>
   </DeviceFrame>
 );
+
+export const WithSublabel = () => (
+  // `sublabel`, a second header line: the firmware under PAMIĘĆ STEROWNIKA, in the number face and not in capitals; it wraps rather than truncates.
+  <Card label="Pamięć sterownika" sublabel="Grbl 1.1h" aside={<Button compact className="size-chiph">↻</Button>} className="w-setcol">
+    <p className="m-0 text-note text-mut">Lista grup.</p>
+  </Card>
+);

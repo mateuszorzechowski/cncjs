@@ -44,3 +44,21 @@ export const JogSettings = () => (
     <SettingSummary label="Posuwy jogu" values={[{ value: 'XY 1500', unit: 'mm/min' }, { value: 'Z 600', unit: 'mm/min' }]} onOpen={() => {}} />
   </div>
 );
+
+export const ControllerGroups = () => (
+  // The chevron says what a tap does on this device (settings handoff, 2026-09-28): ⌄ `opens="sheet"` — something comes up over the screen (phone); › `opens="view"` — the next view takes this one's place (tablet); `selected` and no chevron on the others (`opens={null}`) — the choice in a list that stands beside what it chose (PC).
+  <div className="flex w-setcol flex-col gap-4">
+    <div className="flex flex-col gap-2">
+      <SettingSummary title="Osie" values={[{ value: '3500 · 3500 · 600', unit: 'mm/min' }]} opens="sheet" onOpen={() => {}} />
+      <SettingSummary title="Bazowanie" values={[{ value: 'Wł.' }, { value: '500', unit: 'mm/min' }]} opens="sheet" onOpen={() => {}} />
+    </div>
+    <div className="flex flex-col gap-2">
+      <SettingSummary title="Osie" values={[{ value: '3500 · 3500 · 600', unit: 'mm/min' }]} opens="view" onOpen={() => {}} />
+      <SettingSummary title="Bazowanie" values={[{ value: 'Wł.' }, { value: '500', unit: 'mm/min' }]} opens="view" onOpen={() => {}} />
+    </div>
+    <div className="flex flex-col gap-2">
+      <SettingSummary title="Osie" values={[{ value: '3500 · 3500 · 600', unit: 'mm/min' }]} selected onOpen={() => {}} />
+      <SettingSummary title="Bazowanie" values={[{ value: 'Wł.' }, { value: '500', unit: 'mm/min' }]} opens={null} onOpen={() => {}} />
+    </div>
+  </div>
+);
