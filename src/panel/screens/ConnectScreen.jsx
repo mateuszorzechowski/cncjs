@@ -5,10 +5,9 @@ import FadeScroller from '../ui/FadeScroller';
 import PortRow from '../ui/PortRow';
 import SegmentedChoice from '../ui/SegmentedChoice';
 import Sheet from '../ui/Sheet';
-import AutoConnectChoice, { AUTO_NOTES, useAutoMode } from '../ui/AutoConnectChoice';
+import { OnOpenConnectChoice, SERVER_NOTES, ServerConnectChoice, useAutoMode } from '../ui/AutoConnectChoice';
 import SettingGroup from '../ui/SettingGroup';
 import DeviceNameRow from '../ui/DeviceNameRow';
-import { connectScope } from '../machine/connectMode';
 import SettingRow from '../ui/SettingRow';
 import SettingSummary from '../ui/SettingSummary';
 import { NO_READING } from '../machine/readings';
@@ -45,20 +44,16 @@ import { t } from '../i18n';
  * again and it is the one built for a finger.
  */
 
-/** The server's own mode, said after this device's choice (`serverBeside`). */
-const BESIDE_NOTES = {
-  manual: 'connect.auto.serverManual',
-  server: 'connect.auto.serverToo',
-};
-
-/** What each mode will do about a port that is not open — the state row's second sentence. */
-const UNLINKED_NEXT = {
-  panel: 'connect.auto.panelNext',
-  server: 'connect.auto.serverNext',
+/** What will open a port that is not open — the state row's second sentence: this device first, then the server. */
+const unlinkedNext = (serverMode, onOpen) => {
+  if (onOpen) {
+    return 'connect.auto.panelNext';
+  }
+  return serverMode === 'server' ? 'connect.auto.serverNext' : null;
 };
 
 const ConnectScreen = ({ machine }) => {
-  const { mode: autoMode, beside, choose: chooseAuto } = useAutoMode();
+  const { serverMode, onOpen, chooseServer, chooseOnOpen } = useAutoMode();
   const { list, controllers, baudrates, asked, refresh, last } = usePorts(machine.linked);
   const [picked, setPicked] = useState('');
   /*
@@ -211,9 +206,9 @@ const ConnectScreen = ({ machine }) => {
    * picked from a list. The port locks with them, because one port at a
    * time is the rule — see the button below.
    *
-   * The connection mode is a parameter of the port, so it stands with the
-   * port (design, 3a). Its scope follows the choice: `panel` is this
-   * device's, the other two the server's — see `machine/connectMode`.
+   * When the port opens unasked is a parameter of the port, so it stands
+   * with the port (design, 3a): the server's setting and this device's, a
+   * row each — see `ui/AutoConnectChoice`.
    */
   return (
     <Card className="flex-1">
@@ -256,13 +251,14 @@ const ConnectScreen = ({ machine }) => {
         ) : null}
         <SettingRow
           title={t('connect.auto.label')}
-          note={autoMode
-            ? [t(AUTO_NOTES[autoMode]), beside ? t(BESIDE_NOTES[beside]) : null].filter(Boolean).join(' ')
-            : null}
-          scope={autoMode ? connectScope(autoMode) : null}
+          note={serverMode ? t(SERVER_NOTES[serverMode === 'server' ? 'server' : 'manual']) : null}
+          scope="server"
           noteBelow
         >
-          <AutoConnectChoice mode={autoMode} beside={beside} onChoose={chooseAuto} />
+          <ServerConnectChoice mode={serverMode} onChoose={chooseServer} />
+        </SettingRow>
+        <SettingRow title={t('connect.open.label')} note={t('connect.open.note')} scope="device" noteBelow>
+          <OnOpenConnectChoice on={onOpen} onChoose={chooseOnOpen} />
         </SettingRow>
       </SettingGroup>
 
@@ -292,7 +288,7 @@ const ConnectScreen = ({ machine }) => {
           title={t('connect.link')}
           note={open
             ? t('connect.linked', { port: held, baudrate: machine.baudrate })
-            : [t('connect.unlinked'), autoMode && UNLINKED_NEXT[autoMode] ? t(UNLINKED_NEXT[autoMode]) : null].filter(Boolean).join(' ')}
+            : [t('connect.unlinked'), unlinkedNext(serverMode, onOpen) ? t(unlinkedNext(serverMode, onOpen)) : null].filter(Boolean).join(' ')}
         >
           <div className="flex gap-2 @3xl/shell:self-start">
             <Button

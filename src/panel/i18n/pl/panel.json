@@ -347,17 +347,13 @@
     "linked": "Połączono z {{port}} przy {{baudrate}} bodów.",
     "unlinked": "Żaden port nie jest otwarty.",
     "auto": {
-      "label": "Tryb łączenia",
+      "label": "Łączenie przez serwer",
       "server": "Przy starcie serwera",
-      "panel": "Przy otwarciu panelu",
       "manual": "Ręcznie",
       "serverNote": "Serwer sam otwiera ostatnie połączenie po starcie i po podłączeniu kabla, bez żadnego otwartego panelu. Port rozłączony ręcznie zostaje zamknięty, dopóki kabel nie zostanie wyjęty.",
-      "panelNote": "Panel łączy się, gdy otworzysz go w tej przeglądarce. Inne urządzenia zachowują własne ustawienie. Dotknij ponownie, żeby wyłączyć.",
-      "manualNote": "Port otwiera tylko przycisk Połącz.",
+      "manualNote": "Serwer nie otwiera portu sam: otwiera go przycisk Połącz albo panel ustawiony niżej.",
       "panelNext": "Panel połączy się przy następnym otwarciu.",
-      "serverNext": "Serwer połączy się przy następnym starcie albo po ponownym podłączeniu kabla.",
-      "serverToo": "Serwer ma też ustawione łączenie przy starcie — dla wszystkich urządzeń.",
-      "serverManual": "Dla pozostałych urządzeń serwer zostawia to przyciskowi Połącz."
+      "serverNext": "Serwer połączy się przy następnym starcie albo po ponownym podłączeniu kabla."
     },
     "group": {
       "controller": "Sterownik",
@@ -369,6 +365,12 @@
       "title": "Nazwa tego urządzenia",
       "note": "Tak nazywa je dziennik. Wykryte: {{facts}}. Puste pole = nazwa wykryta.",
       "noteBare": "Tak nazywa je dziennik. Puste pole = nazwa wykryta."
+    },
+    "open": {
+      "label": "Łącz przy otwarciu panelu",
+      "off": "Wyłączone",
+      "on": "Włączone",
+      "note": "Panel łączy się, gdy otworzysz go w tej przeglądarce. Inne urządzenia mają własne ustawienie."
     }
   },
   "ports": {

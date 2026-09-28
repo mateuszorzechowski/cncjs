@@ -347,17 +347,13 @@
     "linked": "Connected to {{port}} at {{baudrate}} baud.",
     "unlinked": "No port is open.",
     "auto": {
-      "label": "Connection mode",
+      "label": "Connecting by the server",
       "server": "When the server starts",
-      "panel": "When the panel opens",
       "manual": "Manually",
       "serverNote": "The server opens the last connection by itself when it starts and when the cable is plugged in, with no panel open. A port disconnected by hand stays closed until its cable is taken out.",
-      "panelNote": "The panel connects when you open it in this browser. Other devices keep their own setting. Tap again to turn it off.",
-      "manualNote": "Only the Connect button opens a port.",
+      "manualNote": "The server does not open the port by itself: the Connect button does, or a panel set below.",
       "panelNext": "This panel connects the next time it is opened.",
-      "serverNext": "The server connects when it next starts, or when the cable is plugged in again.",
-      "serverToo": "The server is set to connect when it starts, too — for every device.",
-      "serverManual": "For every other device the server leaves it to the Connect button."
+      "serverNext": "The server connects when it next starts, or when the cable is plugged in again."
     },
     "group": {
       "controller": "Controller",
@@ -369,6 +365,12 @@
       "title": "This device's name",
       "note": "What the journal calls it. Detected: {{facts}}. Leave it empty for the detected name.",
       "noteBare": "What the journal calls it. Leave it empty for the detected name."
+    },
+    "open": {
+      "label": "Connect when the panel opens",
+      "off": "Off",
+      "on": "On",
+      "note": "The panel connects when you open it in this browser. Other devices keep their own setting."
     }
   },
   "ports": {
