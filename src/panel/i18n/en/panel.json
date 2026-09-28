@@ -268,7 +268,6 @@
     "certFingerprint": "SHA-256 fingerprint",
     "certDownload": "Download certificate",
     "refresh": "Reload panel",
-    "refreshWhy": "Fetches the newest panel from the server.",
     "updateReady": "A newer panel. Update to take it.",
     "certPlatform": "Your device",
     "certHow": {
@@ -295,7 +294,8 @@
     },
     "versionLabel": "Panel version",
     "available": "Available version",
-    "updateBelow": "The one running on this device."
+    "running": "The one running on this device.",
+    "checking": "Checking the available version…"
   },
   "refusal": {
     "alarm": "The machine is in alarm, so nothing was sent. Clear the alarm first.",

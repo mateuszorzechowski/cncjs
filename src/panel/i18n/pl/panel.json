@@ -268,7 +268,6 @@
     "certFingerprint": "Odcisk SHA-256",
     "certDownload": "Pobierz certyfikat",
     "refresh": "Odśwież panel",
-    "refreshWhy": "Pobiera z serwera najnowszą wersję panelu.",
     "updateReady": "Nowsza wersja panelu. Aktualizuj, żeby ją wziąć.",
     "certPlatform": "Twoje urządzenie",
     "certHow": {
@@ -295,7 +294,8 @@
     },
     "versionLabel": "Wersja panelu",
     "available": "Dostępna wersja",
-    "updateBelow": "Ta, która działa na tym urządzeniu."
+    "running": "Ta, która działa na tym urządzeniu.",
+    "checking": "Sprawdzam dostępną wersję…"
   },
   "refusal": {
     "alarm": "Maszyna jest w alarmie, więc nic nie zostało wysłane. Najpierw zdejmij alarm.",
