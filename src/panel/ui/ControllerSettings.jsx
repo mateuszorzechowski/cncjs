@@ -59,7 +59,7 @@ const Row = ({ row, rows, drafts, onDraft, rule, disabled, flash }) => {
   return (
     <SettingRow title={text.title} code={row.name} note={note} lit={flash === row.name}>
       {/* A column of its own at the right, as wide as panel v2 gives it, rather than the row's whole width. */}
-      <div className="w-full @3xl/shell:max-w-[340px] @3xl/shell:self-end">
+      <div className="w-full @lg/setting:max-w-[340px] @lg/setting:self-end">
         <SettingControl row={row} draft={drafts[row.name]} onDraft={onDraft} rule={rule} disabled={disabled || inactive} label={text.title} />
       </div>
       {row.wrong ? (
