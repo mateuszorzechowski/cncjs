@@ -27,7 +27,7 @@ const UndoNotice = ({ notice, onUndo, className = '' }) => {
 
   return (
     <div role="status" className={`absolute z-20 ${className}`}>
-      <Notice action={<Button className="h-chiph" onClick={onUndo}>{t('notice.undo')}</Button>}>
+      <Notice key={notice.seq} lapsing action={<Button className="h-chiph" onClick={onUndo}>{t('notice.undo')}</Button>}>
         <span>{notice.text}</span>
       </Notice>
     </div>
