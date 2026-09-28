@@ -58,3 +58,20 @@ test.describe('the panel\'s addresses', () => {
     cncjs.expectNoPageErrors();
   });
 });
+
+test.describe('the phone menu and back', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('back lowers the raised menu and stays on the screen', async ({ cncjs }) => {
+    const { page } = cncjs;
+    await page.goto('/panel/jog?lng=pl', { waitUntil: 'domcontentloaded' });
+    const more = page.getByRole('button', { name: 'Więcej' });
+    await more.click();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+
+    await page.goBack();
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await expect(page).toHaveURL(/\/panel\/jog\?lng=pl$/);
+    cncjs.expectNoPageErrors();
+  });
+});
