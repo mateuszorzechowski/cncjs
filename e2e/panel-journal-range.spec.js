@@ -40,8 +40,8 @@ test.describe('the journal window', () => {
 
     await expect(sheet.getByRole('button', { name: 'Do 17:30' })).toBeVisible();
     await sheet.getByRole('button', { name: 'Gotowe' }).click();
-    // Written in the browser's own date format (a Playwright browser is en-US), so only the parts that must be there.
-    await expect(page.getByRole('button', { name: 'Czas', exact: true })).toContainText(/12\D[\s\S]*\D20\D[\s\S]*\D(17:30|5:30)\D/);
+    // In the panel's language, not the browser's (a Playwright browser is en-US): Polish day.month.year and a 24-hour clock.
+    await expect(page.getByRole('button', { name: 'Czas', exact: true })).toHaveText(/^12\.\d\d\.\d{4}, 00:00 – 20\.\d\d\.\d{4}, 17:30$/);
     cncjs.expectNoPageErrors();
   });
 });
