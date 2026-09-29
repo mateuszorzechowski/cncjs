@@ -1,4 +1,4 @@
-import { changesWorkOffsets } from '../offsets';
+import { changesWorkOffsets, offsetChange } from '../offsets';
 
 describe('which lines make the work offsets stale', () => {
   test('the two that write a coordinate system', () => {
@@ -43,5 +43,20 @@ describe('which lines make the work offsets stale', () => {
     expect(changesWorkOffsets('')).toBe(false);
     expect(changesWorkOffsets(null)).toBe(false);
     expect(changesWorkOffsets(undefined)).toBe(false);
+  });
+});
+
+describe('what the journal says about an offset that moved', () => {
+  const G54 = { x: '-518.728', y: '-309.044', z: '-71.468' };
+
+  test('the axes that moved, before and after, as Grbl reported them', () => {
+    expect(offsetChange(G54, { x: '0.000', y: '0.000', z: '-71.468' }))
+      .toEqual({ axes: 'X Y', from: '-518.728 · -309.044', to: '0.000 · 0.000' });
+  });
+
+  test('nothing for the first reading, or for one that changed nothing', () => {
+    expect(offsetChange(undefined, G54)).toBeNull();
+    // The same figure written differently is not a change.
+    expect(offsetChange(G54, { ...G54, z: '-71.4680' })).toBeNull();
   });
 });

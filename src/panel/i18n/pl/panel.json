@@ -614,7 +614,8 @@
       "fileCheck": "Kontrola",
       "file": "Plik",
       "settings": "Ustawienia",
-      "setting": "Ustawienie"
+      "setting": "Ustawienie",
+      "offset": "Przesunięcie"
     },
     "program": {
       "start": "Start {{name}}",
@@ -712,6 +713,9 @@
     "setting": {
       "changed": "{{name}}: {{from}} → {{to}}",
       "described": "{{title}}: {{from}} → {{to}}"
+    },
+    "offset": {
+      "changed": "{{code}} {{axes}}: {{from}} → {{to}}"
     }
   },
   "grbl": {

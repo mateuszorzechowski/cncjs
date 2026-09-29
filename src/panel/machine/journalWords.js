@@ -150,6 +150,7 @@ export const EVENT_KEYS = {
   'file-check': 'journal.event.fileCheck',
   file: 'journal.event.file',
   setting: 'journal.event.setting',
+  offset: 'journal.event.offset',
 };
 
 export const LEVEL_KEYS = {
@@ -194,6 +195,10 @@ const BY_EVENT = {
   settings: ({ code, data }) => (code === 'connection.auto'
     ? keyed('journal.settings.auto', { was: data?.was ?? 'manual', mode: data?.mode ?? 'manual' })
     : null),
+  // A coordinate system or stored position moved: its axes, before and after (server's `offsets.offsetChange`).
+  offset: ({ code, data }) => keyed('journal.offset.changed', {
+    code: code ?? '', axes: data?.axes ?? '', from: data?.from ?? '', to: data?.to ?? '',
+  }),
   // One of Grbl's `$` settings changed, as the server's copy saw it.
   setting: ({ code, data }) => keyed('journal.setting.changed', { name: code ?? '', from: data?.from ?? '', to: data?.to ?? '' }),
   'file-check': ({ code, data }) => {
