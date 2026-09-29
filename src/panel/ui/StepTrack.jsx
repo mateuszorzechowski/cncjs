@@ -5,14 +5,14 @@ import Icon from './Icon';
  * arrows between them (review notes, 2026-09-29).
  *
  * Three states, three fills: the steps behind in a quiet accent with a tick,
- * the one it is on in the full accent and a little larger, the ones ahead
- * grey. The names under the marks on a wide screen; on a phone the current
+ * the one it is on in the full accent and larger, the ones ahead grey and
+ * a little smaller (review notes 5 and 7). The names under the marks on a wide screen; on a phone the current
  * one's on a line of its own — six names in 390px are six truncations.
  */
 const MARKS = {
   done: 'bg-accS text-acc',
-  now: 'scale-110 bg-acc text-white',
-  ahead: 'bg-mutS text-mut',
+  now: 'scale-125 bg-acc text-white',
+  ahead: 'scale-90 bg-mutS text-mut',
 };
 
 // Between two steps, the way the wizard goes. On the mark's line, not the name's.
