@@ -172,8 +172,13 @@ test.describe('panel, disconnected', () => {
     await nav.getByRole('button', { name: 'Zerowanie' }).click();
     await expect(bar.getByRole('button', { name: 'Czym jest zerowanie' })).toBeVisible();
 
+    await nav.getByRole('button', { name: 'MDI' }).click();
+    await bar.getByRole('button', { name: 'Czym jest MDI' }).click();
+    await expect(cncjs.page.getByRole('dialog', { name: 'MDI' })).toBeVisible();
+    await cncjs.page.keyboard.press('Escape');
+
     await nav.getByRole('button', { name: 'Pliki', exact: true }).click();
-    await expect(bar.getByRole('button', { name: /Skróty klawiszowe|Czym jest zerowanie/ })).toHaveCount(0);
+    await expect(bar.getByRole('button', { name: /Skróty klawiszowe|Czym jest zerowanie|Czym jest MDI/ })).toHaveCount(0);
   });
 
   test('the rail says where you are', async ({ cncjs }) => {

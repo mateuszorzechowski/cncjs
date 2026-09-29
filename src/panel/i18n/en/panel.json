@@ -305,7 +305,15 @@
     "clear": "Clear",
     "offline": "No controller connected.",
     "running": "MDI is off while a program runs.",
-    "alarm": "Alarm: the controller takes only $ commands now (e.g. $X to unlock, $H to home)."
+    "alarm": "Alarm: the controller takes only $ commands now (e.g. $X to unlock, $H to home).",
+    "help": {
+      "open": "What MDI does",
+      "title": "MDI",
+      "what": "One line at a time, straight to the controller: a G-code block or one of Grbl's $ commands. It goes through the server's queue like any other line and is kept in the journal. Nothing asks for confirmation — the line is yours.",
+      "keys": "Enter sends. Up and down bring back what this device sent before. While typing, suggestions offer the codes and letters with what they do — pick one with the arrows and Enter, or keep typing.",
+      "console": "Above the line is the machine's console: every line sent to the controller, from any device, and every answer, each with its time. An error or an alarm shows its meaning beside the code.",
+      "alarm": "In alarm the controller takes only $ commands — $X to unlock, $H to home. Any other line is refused and stays in the console struck through. While a program runs the line is off."
+    }
   },
   "settings": {
     "connection": "Connection",

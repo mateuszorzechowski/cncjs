@@ -3,6 +3,8 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import ConsoleRow from '../ui/ConsoleRow';
 import FadeScroller from '../ui/FadeScroller';
+import MdiHelp from '../ui/MdiHelp';
+import { useHeaderHelp } from '../ui/headerSlot';
 import MdiLine from '../editor/MdiLine';
 import { suggestions } from '../editor/assist';
 import { fetchWords } from '../editor/words';
@@ -39,6 +41,8 @@ const MdiScreen = ({ machine }) => {
   const [history, setHistory] = useState([]);
   const [at, setAt] = useState(0);
   const end = useRef(null);
+  const [helping, setHelping] = useState(false);
+  useHeaderHelp(t('mdi.help.open'), () => setHelping(true));
 
   // The editor's suggestions, once the server's words are in; the machine
   // read when one is asked for, as the editor reads it.
@@ -128,6 +132,8 @@ const MdiScreen = ({ machine }) => {
           {t('mdi.send')}
         </Button>
       </div>
+
+      {helping ? <MdiHelp onClose={() => setHelping(false)} /> : null}
     </Card>
   );
 };
