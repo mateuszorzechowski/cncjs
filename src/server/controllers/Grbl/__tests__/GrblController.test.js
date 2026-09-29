@@ -1598,6 +1598,55 @@ describe('intent commands', () => {
     });
   });
 
+  describe('wcs', () => {
+    const asking = (controller) => {
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push(payload) };
+      return refusals;
+    };
+
+    test('sends the coordinate system as a line of its own', () => {
+      const { controller, writes } = setup();
+
+      controller.command('wcs', { wcs: 'G56' });
+
+      expect(writes.map(write => write.data)).toEqual(['G56\n']);
+    });
+
+    test('says the new system at once rather than after the next $G', () => {
+      const { controller, socketEvents } = setup();
+
+      controller.command('wcs', { wcs: 'G57' });
+
+      const said = socketEvents.filter(({ event }) => event === 'controller:state');
+      expect(said.map(({ args }) => args[1].parserstate.modal.wcs)).toEqual(['G57']);
+      expect(controller.runner.state.parserstate.modal.wcs).toBe('G57');
+    });
+
+    test('refuses in alarm instead of being swallowed by the feeder', () => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+
+      controller.command('wcs', { wcs: 'G55' });
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: 'wcs', reason: 'alarm' }]);
+    });
+
+    test.each([['G53'], ['G92'], ['G54 G0 X0'], [undefined]])('refuses %p rather than passing it on', (wcs) => {
+      const { controller, writes } = setup();
+      const refusals = asking(controller);
+
+      // The word is the whole line, so anything else in it would be a
+      // console reached through a button.
+      controller.command('wcs', { wcs });
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: 'wcs', reason: 'bad-value' }]);
+    });
+  });
+
   describe('travel', () => {
     const asking = (controller) => {
       const refusals = [];

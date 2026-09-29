@@ -22,7 +22,12 @@ describe('what an entry says', () => {
 
   test('a console line, with the line', () => {
     expect(describeEntry(entry({ event: 'command', code: 'gcode', data: { line: 'G10 L20 P1 Z0' } })))
-      .toEqual({ key: 'journal.command.line', params: { line: 'G10 L20 P1 Z0' } });
+      .toEqual({ key: 'journal.command.line', params: { line: 'G10 L20 P1 Z0', wcs: '' } });
+  });
+
+  test('a change of coordinate system, with the system', () => {
+    expect(describeEntry(entry({ event: 'command', code: 'wcs', data: { wcs: 'G55' } })))
+      .toEqual({ key: 'journal.command.wcs', params: { line: '', wcs: 'G55' } });
   });
 
   test('the firmware\'s own words, untranslated', () => {

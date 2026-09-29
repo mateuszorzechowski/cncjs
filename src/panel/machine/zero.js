@@ -28,6 +28,32 @@ const WCS_TO_P = {
 export const activeWcsNumber = (modal = {}) => WCS_TO_P[modal.wcs] || 0;
 
 /**
+ * The systems the zeroing card offers: all six Grbl has.
+ *
+ * G54–G57 at first (2026-09-21), because six chips did not fit beside the
+ * card's title on a phone. Under the readings, as a grid, they do (review
+ * note, 2026-09-29: *"przyciski układu pod osią 2×2"* — *"a co z G58 i
+ * G59?"*), so nothing is left to reach only from a console.
+ */
+const OFFERED = Object.keys(WCS_TO_P);
+
+export const wcsChoices = () => OFFERED;
+
+/**
+ * Work in another coordinate system from here on.
+ *
+ * On Grbl the intention, which the server refuses in alarm and during a
+ * program; elsewhere the word itself, which is the whole line.
+ */
+export const selectWcs = ({ type, wcs }) => {
+  if (type === GRBL) {
+    controller.command('wcs', { wcs });
+    return;
+  }
+  controller.command('gcode', wcs);
+};
+
+/**
  * The line that sets the current position as the work zero for some axes.
  *
  * **Only for a controller whose server side cannot do this itself.** On Grbl

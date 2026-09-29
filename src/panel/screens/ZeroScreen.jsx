@@ -2,10 +2,12 @@ import { useState } from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import DroStack from '../ui/DroStack';
-import WcsBadge from '../ui/WcsBadge';
+import SegmentedChoice from '../ui/SegmentedChoice';
 import ZeroHelp from '../ui/ZeroHelp';
 import { useHeaderHelp } from '../ui/headerSlot';
-import { zero, activeWcsNumber } from '../machine/zero';
+import { zero, activeWcsNumber, wcsChoices, selectWcs } from '../machine/zero';
+import { NO_READING } from '../machine/readings';
+import { useUnits } from '../ui/units';
 import { t } from '../i18n';
 
 /**
@@ -99,14 +101,66 @@ const ZeroScreen = ({ machine }) => {
 
   const zeroing = (...axes) => () => zero({ type, modal, axes });
 
+  /*
+   * Where each system's zero is, in machine coordinates, under its name
+   * (review note, 2026-09-29: *"czy do przycisku można dodać koordynaty
+   * układu?"*). From `$#`, which the server asks again whenever an offset
+   * moves; as sizes, without spare zeros, so three fit a phone's tile.
+   */
+  const units = useUnits();
+  const zeroOf = (id, named) => {
+    const at = machine.settings?.parameters?.[id];
+    if (!at) {
+      return NO_READING;
+    }
+    const figures = ['x', 'y', 'z'].map((axis) => units.figure(Number(at[axis]), 'extent'));
+    // With the axes and the unit where the tile has the room (*"jednostka i
+    // xyz, jak się zmieści"*); the figures alone on a phone's.
+    return named
+      ? t('zero.wcsAt', { x: figures[0], y: figures[1], z: figures[2], unit: units.length })
+      : figures.join(' · ');
+  };
+
+  /*
+   * Which system, as a grid of all six under the readings (review note,
+   * 2026-09-29: *"przyciski układu pod osią 2×2"*; it began as four chips in
+   * the card's header, where six did not fit a phone). Two columns, as wide
+   * as a settings column at most, so on a desk they stay a block of keys. A press sends `G55` and nothing else: no offset is written
+   * and nothing moves, so no confirmation — but every move after it lands
+   * somewhere else, so it answers to alarm and to a running program exactly
+   * as the zero buttons do. The chip that lights is the machine's reply, not
+   * the press: the server asks `$G` again within half a second.
+   */
+  const choosing = (
+    <SegmentedChoice
+      options={wcsChoices(modal)}
+      value={wcs}
+      onChange={(next) => selectWcs({ type, wcs: next })}
+      label={t('zero.wcs')}
+      disabled={!(connected && mayZero && status.known)}
+      columns={2}
+      tall
+      format={(id) => (
+        <span className="@container flex min-w-0 flex-1 flex-col gap-0.5">
+          <span>{id}</span>
+          <span className="hidden truncate font-num text-cap font-normal opacity-75 @xs:block">{zeroOf(id, true)}</span>
+          <span className="truncate font-num text-cap font-normal opacity-75 @xs:hidden">{zeroOf(id, false)}</span>
+        </span>
+      )}
+    />
+  );
+
   return (
     <Card
       label={t('zero.title')}
-      aside={<WcsBadge wcs={wcs} />}
       className="min-h-0 flex-1"
       bodyClassName="gap-4"
     >
       <DroStack position={position} machinePosition={machinePosition} />
+
+      {/* The card's width up to a tablet (review note: *"na tablecie na całą
+        * szerokość"*); a settings column's on a PC, where it would be a strip. */}
+      <div className="w-full shrink-0 @6xl/shell:max-w-[var(--setcol)]">{choosing}</div>
 
       {/*
         * What the buttons will do, and nothing about what zeroing *is*.

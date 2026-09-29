@@ -34,6 +34,9 @@ const WCS_TO_P = {
 /** The `P` number of the active system, or 0 when the machine has not said. */
 export const activeWcsNumber = (modal = {}) => WCS_TO_P[modal.wcs] || 0;
 
+/** Whether a word is one of the six coordinate systems, and so a line of its own. */
+export const isWcs = (wcs) => Object.prototype.hasOwnProperty.call(WCS_TO_P, wcs);
+
 /**
  * The one line that sets some axes to zero, or null when it cannot be built.
  *

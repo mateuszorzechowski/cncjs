@@ -94,6 +94,7 @@ const COMMANDS = {
   cyclestart: 'journal.command.cyclestart',
   sleep: 'journal.command.sleep',
   zero: 'journal.command.zero',
+  wcs: 'journal.command.wcs',
   goToWorkZero: 'journal.command.goToWorkZero',
   goToPoint: 'journal.command.goToPoint',
   'file:check': 'journal.command.fileCheck',
@@ -177,7 +178,7 @@ const BY_EVENT = {
     const key = code === 'pause' ? PAUSE[data?.reason] : PROGRAM[code];
     return key ? keyed(key, { name: program?.name ?? '', line: program?.line ?? 0, total: program?.total ?? 0 }) : null;
   },
-  command: ({ code, data }) => (COMMANDS[code] ? keyed(COMMANDS[code], { line: data?.line ?? '' }) : null),
+  command: ({ code, data }) => (COMMANDS[code] ? keyed(COMMANDS[code], { line: data?.line ?? '', wcs: data?.wcs ?? '' }) : null),
   port: ({ code, data }) => (PORT[code]
     ? keyed(PORT[code], { type: data?.controllerType ?? '', baudrate: data?.baudrate ?? '', message: data?.message ?? '' })
     : null),

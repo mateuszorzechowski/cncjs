@@ -372,6 +372,13 @@ test.describe('panel, disconnected', () => {
       await expect(key).toBeDisabled();
     }
 
+    // The coordinate systems, dead for the same reason: nothing to switch.
+    const systems = cncjs.page.getByRole('group', { name: 'Układ współrzędnych' });
+    // Named by the system, then where its zero is — unread here.
+    for (const wcs of ['G54', 'G55', 'G56', 'G57', 'G58', 'G59']) {
+      await expect(systems.getByRole('button', { name: new RegExp(`^${wcs}\\b`) })).toBeDisabled();
+    }
+
     cncjs.expectNoPageErrors();
   });
 

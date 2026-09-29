@@ -52,7 +52,7 @@ import { in2mm, mapPositionToUnits, mapValueToUnits } from '../utils/units';
 import GrblRunner from './GrblRunner';
 import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, jogStepLine, stopSeconds } from './jog';
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
-import { activeWcsNumber, zeroLine } from './zero';
+import { activeWcsNumber, isWcs, zeroLine } from './zero';
 import { changesWorkOffsets } from './offsets';
 import { machineEnvelope, programOverrun } from './envelope';
 import { checkLines, createCheckRun } from './check-run';
@@ -2711,6 +2711,47 @@ class GrblController {
           }
 
           this.command('gcode', line);
+        },
+        /**
+         * Work in another coordinate system: `wcs({ wcs: 'G55' })`.
+         *
+         * The word is the whole line, so this carries it rather than a number
+         * to be turned into one. It moves nothing and writes no EEPROM — the
+         * offsets stay where they are, and a reset puts Grbl back in G54 — but
+         * it does change where every following move lands, so it answers to
+         * the program's rule the way zeroing does, and to alarm for the same
+         * reason: the feeder would drop it before the cable.
+         */
+        'wcs': () => {
+          const [{ wcs } = {}] = args;
+
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+          if (!isWcs(wcs)) {
+            this.refuse(cmd, 'bad-value');
+            return;
+          }
+
+          this.command('gcode', wcs);
+
+          /*
+           * Said at once, not after the next `$G`. The chips waited for the
+           * parser state, asked at most every half second and passed on at the
+           * next tick, and a press took the better part of a second to light
+           * (review note, 2026-09-29: *"czemu przełączanie trwa tak wolno?"*).
+           * Idle and out of alarm — the only case this line is sent in — Grbl
+           * takes a G54-G59 without fail; the next `$G` confirms it, and would
+           * put it right if it did not.
+           */
+          const { parserstate } = this.runner.state;
+          this.runner.state = {
+            ...this.runner.state,
+            parserstate: { ...parserstate, modal: { ...parserstate.modal, wcs } },
+          };
+          this.state = this.runner.state;
+          this.emit('controller:state', GRBL, this.state);
         },
         /**
          * Back to the work zero, Z first, without crossing the work at depth.
