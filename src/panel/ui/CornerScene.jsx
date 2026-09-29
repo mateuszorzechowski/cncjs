@@ -45,15 +45,17 @@ const ANCHORS = {
   wallX: WALL_X_AT,
   maxXY: [['top', 4, 116], ['side', 0, 206]],
   toolDiameter: [['top', 160, 96]],
+  clearance: [['side', 182, 122]],
   wallY: [['top', 218, 202]],
 };
 
 const Contact = ({ at }) => <circle cx={at[0]} cy={at[1]} r={4.5} className="fill-amb" />;
 
-// An arrowhead with its tip at (x, y), pointing along (dx, dy): `len` long, `half` either side.
+// An arrowhead with its tip at (x, y), pointing along the unit (dx, dy): `len`
+// long, `half` either side across it — along (-dy, dx), so a slant has a head too.
 const Head = ({ x, y, dx = 0, dy = 0, len = 6, half = 3.5 }) => (
   <path
-    d={`M${x - dx * len - dy * half} ${y - dy * len - dx * half} L${x} ${y} L${x - dx * len + dy * half} ${y - dy * len + dx * half} Z`}
+    d={`M${x - dx * len - dy * half} ${y - dy * len + dx * half} L${x} ${y} L${x - dx * len + dy * half} ${y - dy * len - dx * half} Z`}
     className="fill-acc"
   />
 );
@@ -138,6 +140,8 @@ const DIMENSIONS = {
   ],
   maxZ: [['side', () => <Vertical x={120} top={110} bottom={150} from={112} to={150} />]],
   wallY: [['top', () => <Vertical x={206} top={210} bottom={220} from={192} to={214} />]],
+  // A few millimetres between the tip and the plate, before measuring.
+  clearance: [['side', () => <Vertical x={172} top={130} bottom={150} from={150} to={182} />]],
   toolDiameter: [['top', ({ at }) => <Horizontal y={at.top[1] - 22} left={at.top[0] - 10} right={at.top[0] + 10} from={at.top[1] - 28} to={at.top[1] - 6} />]],
 };
 
@@ -149,11 +153,13 @@ const DIMENSIONS = {
  * the view the move is seen in. `at.target` is where the move ends.
  */
 const Move = ({ from, to }) => {
-  const dx = Math.sign(to[0] - from[0]);
-  const dy = Math.sign(to[1] - from[1]);
-  if (Math.hypot(to[0] - from[0], to[1] - from[1]) <= 12) {
+  const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+  if (length <= 12) {
     return null;
   }
+  // Along the move, a unit long — so a slant across the table gets its head too.
+  const dx = (to[0] - from[0]) / length;
+  const dy = (to[1] - from[1]) / length;
   return (
     <>
       <path d={`M${from[0]} ${from[1]} L${to[0] - dx * 9} ${to[1] - dy * 9}`} className="stroke-acc" strokeWidth={3} strokeLinecap="round" />

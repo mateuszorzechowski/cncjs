@@ -1,5 +1,5 @@
 import {
-  BEFORE_MM, CORNER_MS, PART_MS, PART_STOP_MS, WHOLE_MS, WHOLE_PART_MS, WHOLE_STOP_MS, ZERO_FROM, cornerAt, cornerReadout, cornerSides, figureAt, loopIn, windowOfPhase,
+  BEFORE_MM, CORNER_MS, POSITION_MS, positionAt, PART_MS, PART_STOP_MS, WHOLE_MS, WHOLE_PART_MS, WHOLE_STOP_MS, ZERO_FROM, cornerAt, cornerReadout, cornerSides, figureAt, loopIn, windowOfPhase,
 } from '../cornerCycle';
 import { methodOf, stepBeside, stepsOf } from '../probe';
 
@@ -136,5 +136,16 @@ describe('the whole loop, part by part', () => {
 
   test('ends on the zero, held', () => {
     expect(cornerAt(loopIn('whole', WHOLE_MS - 500)).zero).toBe(true);
+  });
+});
+
+describe('the move into place', () => {
+  test('comes across high, then down to a few millimetres over the plate, and stays', () => {
+    expect(positionAt(POSITION_MS * 0.3).moving.top).toEqual([1, 1]);
+    expect(positionAt(POSITION_MS * 0.3).side[1]).toBe(100);
+    expect(positionAt(POSITION_MS * 0.65).moving.side).toEqual([0, 1]);
+    const there = positionAt(POSITION_MS * 0.9);
+    expect(there).toMatchObject({ over: true, top: [145, 165], side: [145, 130] });
+    expect(there.moving).toEqual({ top: null, side: null });
   });
 });

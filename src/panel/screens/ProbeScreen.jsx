@@ -6,7 +6,7 @@ import Notice from '../ui/Notice';
 import ProbePicture from '../ui/ProbePicture';
 import ZPlatePosition from '../ui/ZPlatePosition';
 import CornerChooser from '../ui/CornerChooser';
-import CornerCycle from '../ui/CornerCycle';
+import CornerPosition from '../ui/CornerPosition';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
@@ -24,8 +24,7 @@ import { t } from '../i18n';
 // The methods that show the move into place rather than a picture of it.
 const MOVES = {
   z: ZPlatePosition,
-  // The tool over the plate, where 1f starts.
-  corner: ({ choice }) => <CornerCycle corner={choice} still={0} className="w-full max-w-md self-center" />,
+  corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
 };
 
 // The methods whose one choice is a step of its own, and what it is picked on.

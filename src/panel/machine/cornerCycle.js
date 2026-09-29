@@ -260,6 +260,49 @@ const SIDES = {
 export const cornerSides = (corner) => SIDES[corner] || SIDES['front-left'];
 
 /*
+ * Getting the tool into place before measuring, as the Z plate's position
+ * step shows it (review note, 2026-09-30): from off the work and high,
+ * across until it is over the plate, then down to a few millimetres above it,
+ * and a moment there before it starts again. The same frames as the cycle's
+ * — [when, from above, ring, from the side] — so the same drawing plays it.
+ */
+export const POSITION_MS = 4500;
+
+const INTO_PLACE = [
+  [0, [40, 96], 26, [40, 100]],
+  [0.12, [40, 96], 26, [40, 100]],
+  [0.5, [145, 165], 26, [145, 100]], // across, high
+  [0.8, [145, 165], 16, [145, 130]], // down to a few millimetres over the plate
+  [1, [145, 165], 16, [145, 130]],
+];
+
+/** The frame of the move into place at `ms`, as `cornerAt` gives one; `over` once it is there. */
+export const positionAt = (ms) => {
+  const p = (ms % POSITION_MS) / POSITION_MS;
+  const i = Math.max(0, INTO_PLACE.findIndex((frame, k) => k < INTO_PLACE.length - 1 && p >= frame[0] && p <= INTO_PLACE[k + 1][0]));
+  const [from, topA, ringA, sideA] = INTO_PLACE[i];
+  const [to, topB, ringB, sideB] = INTO_PLACE[i + 1] || INTO_PLACE[i];
+  const u = to > from ? (p - from) / (to - from) : 0;
+  const way = (a, b) => {
+    const d = [Math.sign(b[0] - a[0]), Math.sign(b[1] - a[1])];
+    return d[0] || d[1] ? d : null;
+  };
+  return {
+    p,
+    top: lerp(topA, topB, u),
+    ring: lerp(ringA, ringB, u),
+    side: lerp(sideA, sideB, u),
+    moving: { top: way(topA, topB), side: way(sideA, sideB) },
+    target: { top: topB, side: sideB },
+    touch: null,
+    stage: 1,
+    zero: false,
+    sideFaded: false,
+    over: p >= 0.8,
+  };
+};
+
+/*
  * The tool's X, Y and Z in the coordinate system through the loop, for the
  * example it is (review note, 2026-09-29: the Z plate showed one, the corner
  * did not). The drawing's walls are 10 across and the plate 20 over the
