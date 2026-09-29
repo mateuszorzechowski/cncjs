@@ -128,6 +128,20 @@ export const BLOCK_KEYS = {
   end: 'editor.block.end',
 };
 
+// Grbl's own `$` commands the server lists (`api.editor` — `SYSTEM`).
+export const SYSTEM_KEYS = {
+  '$$': 'gcode.system.settings',
+  '$#': 'gcode.system.offsets',
+  '$G': 'gcode.system.parser',
+  '$I': 'gcode.system.info',
+  '$N': 'gcode.system.startup',
+  '$C': 'gcode.system.check',
+  '$X': 'gcode.system.unlock',
+  '$H': 'gcode.system.home',
+  '$SLP': 'gcode.system.sleep',
+  '$J=': 'gcode.system.jog',
+};
+
 export const BUILTIN_KEYS = {
   '%wait': 'gcode.builtin.wait',
   '%msg': 'gcode.builtin.msg',
