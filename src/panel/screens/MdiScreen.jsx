@@ -60,7 +60,7 @@ const MdiScreen = ({ machine }) => {
   const settings = useRef(machine.settings);
   settings.current = machine.settings;
   const help = useMemo(
-    () => (words ? suggestions(words, () => settings.current, { blocks: false, above: true }) : null),
+    () => (words ? suggestions(words, () => settings.current, { blocks: false }) : null),
     [words]
   );
 

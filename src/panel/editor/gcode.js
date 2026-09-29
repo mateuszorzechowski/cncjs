@@ -143,22 +143,11 @@ const lineFrame = EditorView.theme({
   '.cm-line': { padding: '0' },
   '.cm-cursor': { borderLeftColor: 'var(--acc)' },
   '.cm-placeholder': { color: 'var(--mut)' },
-  // A list opened above the line clears the field's frame, not only the text.
-  '.cm-tooltip-above': { marginTop: '-14px' },
+  // Its suggestions are the panel's own list, over the field (`MdiLine`);
+  // CodeMirror still works them out and moves through them.
+  '.cm-tooltip-autocomplete': { display: 'none' },
 });
 
 export const gcodeEditing = [gcode, syntaxHighlighting(colours), frame, popups];
 
 export const gcodeLine = [gcode, syntaxHighlighting(colours), popups, lineFrame];
-
-/*
- * The list of suggestions at a finger's size, where there is no pointer — a
- * tablet or a phone (review note, 2026-09-29: *"na tablecie i telefonie są
- * małe i ciężko kliknąć"*): rows 44px tall, the text at the panel's body size.
- */
-export const touchPopups = EditorView.theme({
-  // As specific as CodeMirror's own 10em cap, which otherwise wins: ten rows.
-  '.cm-tooltip.cm-tooltip-autocomplete > ul': { maxHeight: 'min(60vh, 460px)' },
-  '.cm-tooltip-autocomplete>ul>li': { display: 'flex', alignItems: 'center', minHeight: '44px', padding: '0 12px', fontSize: '15px' },
-  '.cm-completionDetail': { fontSize: '13px' },
-});
