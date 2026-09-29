@@ -193,10 +193,13 @@ const ProbeScreen = ({ machine }) => {
     );
   }
 
+  // The track only once there is a method to follow (review note, 2026-09-29):
+  // before that the choice is the whole screen, under the screen's name.
+  const choosing = step === 'method';
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-gap">
-      {track}
-      <Card scrolls className="min-h-0 flex-1" bodyClassName="gap-3 pt-1">
+      {choosing ? null : track}
+      <Card scrolls label={choosing ? t('probe.title') : null} className="min-h-0 flex-1" bodyClassName="gap-3 pt-1">
         {body}
         {foot}
       </Card>

@@ -1,35 +1,48 @@
+import Icon from './Icon';
+
 /**
- * Where a wizard is: every step in a row, the ones behind ticked, the one
- * it is on in the accent. The names on a wide screen; on a phone the
- * current one's on a line of its own under the marks — beside them, in
- * 390px, it came out as `Płyt…`.
+ * Where a wizard is: every step in a row, centred, a mark over its name,
+ * arrows between them (review notes, 2026-09-29).
  *
- * The marks are `StepRow`'s — a number in a round chip, green once done —
- * so a sequence reads the same on the Install tab and here.
+ * Three states, three fills: the steps behind in a quiet accent with a tick,
+ * the one it is on in the full accent and a little larger, the ones ahead
+ * grey. The names under the marks on a wide screen; on a phone the current
+ * one's on a line of its own — six names in 390px are six truncations.
  */
+const MARKS = {
+  done: 'bg-accS text-acc',
+  now: 'scale-110 bg-acc text-white',
+  ahead: 'bg-mutS text-mut',
+};
+
+// Between two steps, the way the wizard goes. On the mark's line, not the name's.
+const Arrow = () => (
+  <li aria-hidden="true" className="flex h-chiph items-center">
+    <Icon name="chevron" className="size-3 -rotate-90 text-mut @3xl/shell:size-4" weight={2} />
+  </li>
+);
+
 const StepTrack = ({ steps, current, label }) => {
   const at = steps.findIndex((step) => step.id === current);
   return (
-    <div className="flex shrink-0 flex-col gap-2">
-      <ol aria-label={label} className="m-0 flex list-none items-center gap-2 p-0">
+    <div className="flex shrink-0 flex-col items-center gap-2">
+      <ol aria-label={label} className="m-0 flex list-none items-start justify-center gap-1 p-0 @3xl/shell:gap-2">
         {steps.map((step, index) => {
-          const done = index < at;
-          const now = index === at;
-          let mark = 'bg-mutS text-mut';
-          if (done) {
-            mark = 'bg-grnS text-grn';
-          } else if (now) {
-            mark = 'bg-acc text-white';
+          let state = 'ahead';
+          if (index < at) {
+            state = 'done';
+          } else if (index === at) {
+            state = 'now';
           }
-          return (
-            <li key={step.id} aria-current={now ? 'step' : undefined} className="flex min-w-0 items-center gap-2">
-              <span className={`flex size-chiph shrink-0 items-center justify-center rounded-full font-num text-base font-semibold ${mark}`}>
-                {done ? '✓' : index + 1}
+          return [
+            index > 0 ? <Arrow key={`${step.id}-arrow`} /> : null,
+            <li key={step.id} aria-current={state === 'now' ? 'step' : undefined} className="flex min-w-0 flex-col items-center gap-1">
+              <span className={`flex size-chiph shrink-0 items-center justify-center rounded-full font-num text-base font-semibold ${MARKS[state]}`}>
+                {state === 'done' ? '✓' : index + 1}
               </span>
-              <span className={`hidden truncate text-note @3xl/shell:inline ${now ? 'font-semibold text-ink' : 'text-mut'}`}>{step.name}</span>
-              {index < steps.length - 1 ? <span aria-hidden="true" className="hidden h-px w-4 shrink-0 bg-line @3xl/shell:block" /> : null}
-            </li>
-          );
+              <span className={`hidden text-note @3xl/shell:inline ${state === 'now' ? 'font-semibold text-ink' : 'text-mut'}`}>{step.name}</span>
+            </li>,
+          ];
         })}
       </ol>
       <p aria-hidden="true" className="m-0 text-base font-semibold text-ink @3xl/shell:hidden">{steps[at]?.name}</p>
