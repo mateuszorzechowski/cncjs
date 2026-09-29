@@ -78,6 +78,8 @@ module.exports = {
       red: 'var(--red)',
       grn: 'var(--grn)',
       amb: 'var(--amb)',
+      // A rapid move's colour in the drawings, and a word's in G-code (`editor/gcode`).
+      rapid: 'var(--rapid)',
       white: '#ffffff',
     },
     borderRadius: {

@@ -89,8 +89,10 @@ const Sheet = ({ title, onHelp, onClose, footer, children }) => {
   useDragToClose(panel, onClose, active, scrim);
 
   useEffect(() => {
+    // Not an Escape something inside already answered: the MDI line's
+    // suggestions close on it, and the sheet round them must stay.
     const onKey = (event) => {
-      if (event.key === 'Escape' && active) {
+      if (event.key === 'Escape' && active && !event.defaultPrevented) {
         onClose();
       }
     };

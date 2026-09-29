@@ -172,8 +172,13 @@ test.describe('panel, disconnected', () => {
     await nav.getByRole('button', { name: 'Zerowanie' }).click();
     await expect(bar.getByRole('button', { name: 'Czym jest zerowanie' })).toBeVisible();
 
+    await nav.getByRole('button', { name: 'MDI' }).click();
+    await bar.getByRole('button', { name: 'Czym jest MDI' }).click();
+    await expect(cncjs.page.getByRole('dialog', { name: 'MDI' })).toBeVisible();
+    await cncjs.page.keyboard.press('Escape');
+
     await nav.getByRole('button', { name: 'Pliki', exact: true }).click();
-    await expect(bar.getByRole('button', { name: /Skróty klawiszowe|Czym jest zerowanie/ })).toHaveCount(0);
+    await expect(bar.getByRole('button', { name: /Skróty klawiszowe|Czym jest zerowanie|Czym jest MDI/ })).toHaveCount(0);
   });
 
   test('the rail says where you are', async ({ cncjs }) => {
@@ -382,6 +387,17 @@ test.describe('panel, disconnected', () => {
     cncjs.expectNoPageErrors();
   });
 
+  test('the MDI screen will not take a line with no machine, and says why', async ({ cncjs }) => {
+    await openPanel(cncjs.page);
+    await rail(cncjs.page).getByRole('button', { name: 'MDI' }).click();
+
+    await expect(cncjs.page.getByRole('textbox', { name: 'Linia do wysłania' })).toBeDisabled();
+    await expect(cncjs.page.getByRole('button', { name: 'Wyślij', exact: true })).toBeDisabled();
+    await expect(cncjs.page.getByText('Brak połączenia ze sterownikiem.')).toBeVisible();
+
+    cncjs.expectNoPageErrors();
+  });
+
   test('can be installed as an application, and every icon it names exists', async ({ cncjs }) => {
     /*
      * The pendant is meant to live on a phone's home screen, which means the
@@ -546,6 +562,22 @@ test.describe('panel, disconnected', () => {
     await openPanel(cncjs.page, 'pl');
     await expect(rail(cncjs.page)).toBeVisible();
 
+    cncjs.expectNoPageErrors();
+  });
+});
+
+test.describe('MDI on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  // Mateusz, 2026-09-29: on a phone the line is typed in a sheet, the last
+  // commands and the suggestions above it. With no machine there is nothing
+  // to type at, so the field that opens it is dead.
+  test('the line is a field that opens a sheet, dead with no machine', async ({ cncjs }) => {
+    const { page } = cncjs;
+    await page.goto('/panel/mdi?lng=pl', { waitUntil: 'domcontentloaded' });
+    const field = page.getByRole('button', { name: 'Linia do wysłania' });
+    await expect(field).toBeDisabled();
+    await expect(page.getByRole('textbox', { name: 'Linia do wysłania' })).toHaveCount(0);
     cncjs.expectNoPageErrors();
   });
 });

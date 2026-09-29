@@ -1,6 +1,7 @@
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language';
 import { EditorView } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
+import { tokenAt } from './tokens';
 
 /**
  * G-code, as the editor reads it: enough to tell a word from a comment.
@@ -12,40 +13,11 @@ import { tags } from '@lezer/highlight';
  */
 const gcode = StreamLanguage.define({
   name: 'gcode',
+  // One tokenizer for the editor and the MDI console — see `tokens.js`.
   token: (stream) => {
-    if (stream.eatSpace()) {
-      return null;
-    }
-    // `; to the end of the line` and `(inline)`.
-    if (stream.peek() === ';') {
-      stream.skipToEnd();
-      return 'comment';
-    }
-    if (stream.peek() === '(') {
-      stream.skipTo(')') ? stream.next() : stream.skipToEnd();
-      return 'comment';
-    }
-    if (stream.eat('%')) {
-      return 'meta';
-    }
-
-    const letter = stream.next().toUpperCase();
-    // The number that belongs to the letter is part of the same word.
-    stream.match(/^\s*[-+]?(\d+\.?\d*|\.\d+)/);
-
-    if (letter === 'G' || letter === 'M') {
-      return 'keyword';
-    }
-    if ('XYZABCIJKR'.includes(letter)) {
-      return 'variableName';
-    }
-    if (letter === 'N') {
-      return 'meta';
-    }
-    if (/[A-Z]/.test(letter)) {
-      return 'number';
-    }
-    return null;
+    const { kind, end } = tokenAt(stream.string, stream.pos);
+    stream.pos = end;
+    return kind;
   },
 });
 
@@ -103,34 +75,6 @@ const frame = EditorView.theme({
   '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
     backgroundColor: wash('acc', 22),
   },
-  // Suggestions and the check's messages: panel surfaces, panel words.
-  '.cm-tooltip': {
-    backgroundColor: 'var(--panel)',
-    color: 'var(--ink)',
-    border: '1px solid var(--line)',
-    borderRadius: 'var(--r-ctl)',
-    fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-  },
-  '.cm-tooltip-autocomplete>ul>li': { padding: '2px 8px', fontFamily: 'var(--num)' },
-  '.cm-tooltip-autocomplete>ul>li[aria-selected]': { backgroundColor: 'var(--acc)', color: '#ffffff' },
-  // Muted by weight rather than by colour, so a selected row's white carries.
-  '.cm-completionDetail': { marginLeft: '12px', fontStyle: 'normal', opacity: '0.7', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" },
-  // Narrow enough to stay over the card, the words wrapping; the fix in it
-  // a panel button rather than CodeMirror's dark default.
-  '.cm-tooltip-lint': { maxWidth: '360px' },
-  '.cm-diagnostic': { padding: '6px 10px', whiteSpace: 'normal' },
-  '.cm-diagnosticAction': {
-    display: 'inline-block',
-    marginTop: '6px',
-    marginLeft: '0',
-    padding: '4px 10px',
-    border: '1px solid var(--acc)',
-    borderRadius: 'var(--r-ctl)',
-    backgroundColor: 'var(--accS)',
-    color: 'var(--acc)',
-    font: "600 12px 'IBM Plex Sans', system-ui, sans-serif",
-    cursor: 'pointer',
-  },
   '.cm-diagnostic-error': { borderLeft: '3px solid var(--red)' },
   '.cm-diagnostic-warning': { borderLeft: '3px solid var(--amb)' },
   // The gutter's marks: small solid dots, not the default outlined circle
@@ -152,4 +96,54 @@ const frame = EditorView.theme({
   '.cm-searchMatch': { backgroundColor: wash('amb', 25) },
 });
 
-export const gcodeEditing = [gcode, syntaxHighlighting(colours), frame];
+/*
+ * Suggestions and the check's messages, for the editor and the MDI line
+ * alike: panel surfaces, panel words.
+ */
+const popups = EditorView.theme({
+  // The suggestions are the panel's own list (`suggestionList`, `LineChoices`),
+  // in the MDI line and the editor alike; CodeMirror still works them out.
+  '.cm-tooltip-autocomplete': { display: 'none' },
+  '.cm-tooltip': {
+    backgroundColor: 'var(--panel)',
+    color: 'var(--ink)',
+    border: '1px solid var(--line)',
+    borderRadius: 'var(--r-ctl)',
+    fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+  },
+  // Narrow enough to stay over the card, the words wrapping; the fix in it
+  // a panel button rather than CodeMirror's dark default.
+  '.cm-tooltip-lint': { maxWidth: '360px' },
+  '.cm-diagnostic': { padding: '6px 10px', whiteSpace: 'normal' },
+  '.cm-diagnosticAction': {
+    display: 'inline-block',
+    marginTop: '6px',
+    marginLeft: '0',
+    padding: '4px 10px',
+    border: '1px solid var(--acc)',
+    borderRadius: 'var(--r-ctl)',
+    backgroundColor: 'var(--accS)',
+    color: 'var(--acc)',
+    font: "600 12px 'IBM Plex Sans', system-ui, sans-serif",
+    cursor: 'pointer',
+  },
+});
+
+/*
+ * One line of G-code in a field of the panel's own (`MdiLine`): the field
+ * draws the frame, so the editor draws none, and the text sits in the
+ * figures face at the field's size.
+ */
+const lineFrame = EditorView.theme({
+  '&': { flex: '1', minWidth: '0', color: 'var(--ink)', backgroundColor: 'transparent' },
+  '&.cm-focused': { outline: 'none' },
+  '.cm-scroller': { fontFamily: 'var(--num)', overflow: 'hidden' },
+  '.cm-content': { caretColor: 'var(--acc)', padding: '0' },
+  '.cm-line': { padding: '0' },
+  '.cm-cursor': { borderLeftColor: 'var(--acc)' },
+  '.cm-placeholder': { color: 'var(--mut)' },
+});
+
+export const gcodeEditing = [gcode, syntaxHighlighting(colours), frame, popups];
+
+export const gcodeLine = [gcode, syntaxHighlighting(colours), popups, lineFrame];

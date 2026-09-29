@@ -1647,6 +1647,43 @@ describe('intent commands', () => {
     });
   });
 
+  describe('a line in alarm', () => {
+    const inAlarm = () => {
+      const { controller, writes } = setup();
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push(payload) };
+      controller.runner.state.status.activeState = GRBL_ACTIVE_STATE_ALARM;
+      return { controller, writes, refusals };
+    };
+
+    test('Grbl\'s own $ commands go through: they are the way out of one', () => {
+      const { controller, writes, refusals } = inAlarm();
+
+      controller.command('gcode', '$X');
+
+      expect(writes.map(write => write.data)).toEqual(['$X\n']);
+      expect(refusals).toEqual([]);
+    });
+
+    test('anything else is refused out loud rather than dropped', () => {
+      const { controller, writes, refusals } = inAlarm();
+
+      controller.command('gcode', 'G0 X1');
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: 'gcode', reason: 'alarm' }]);
+    });
+
+    test('a block with one G-code line in it is refused whole', () => {
+      const { controller, writes, refusals } = inAlarm();
+
+      controller.command('gcode', '$X\nG0 X1');
+
+      expect(writes).toEqual([]);
+      expect(refusals.map(({ reason }) => reason)).toEqual(['alarm']);
+    });
+  });
+
   describe('travel', () => {
     const asking = (controller) => {
       const refusals = [];
@@ -2547,7 +2584,8 @@ describe('initController', () => {
     await controller.initController();
 
     // Straight at the connection rather than through the feeder, which
-    // discards every line while the machine is in alarm -- and a machine with
+    // discarded every line while the machine was in alarm, `$#` included,
+    // until 2026-09-29 -- and a machine with
     // homing enabled is in alarm from power-on until it is homed, which is
     // exactly when a panel opens to look at it. That is why the panel's own
     // `$#`, sent as a `gcode` command, never once got an answer.

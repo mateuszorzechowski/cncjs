@@ -242,6 +242,41 @@
     "xy": "Zero XY",
     "xyz": "Zero XYZ"
   },
+  "mdi": {
+    "title": "MDI",
+    "log": "Machine console",
+    "empty": "Type a G-code line or a $ command and press Send. What the machine answers appears here.",
+    "line": "Line to send",
+    "placeholder": "e.g. G0 X10 or $$",
+    "send": "Send",
+    "clear": "Clear",
+    "offline": "No controller connected.",
+    "running": "MDI is off while a program runs.",
+    "alarm": "Alarm: the controller takes only $ commands now (e.g. $X to unlock, $H to home).",
+    "help": {
+      "open": "What MDI does",
+      "title": "MDI",
+      "what": "One line at a time, straight to the controller: a G-code block or one of Grbl's $ commands. It goes through the server's queue like any other line and is kept in the journal. Nothing asks for confirmation.",
+      "console": "Above the line is the machine's console: every line sent to the controller, from any device, and every answer, each with its time. An error or an alarm shows its meaning beside the code.",
+      "alarm": "In alarm the controller takes only $ commands — $X to unlock, $H to home. Any other line is refused and stays in the console struck through. While a program runs the line is off.",
+      "key": {
+        "enter": "Enter",
+        "suggest": "Ctrl+Space"
+      },
+      "send": "Sends the line",
+      "history": "The line sent before, and back — this device's, until the page is reloaded",
+      "suggest": "Opens the suggestions; they also open by themselves as you type a word",
+      "pick": "With the suggestions open: choose one and put it in the line",
+      "dismiss": "Closes the suggestions",
+      "sendButton": "Sends the line, as Enter does",
+      "clearButton": "Empties the console on this device; the journal keeps everything"
+    },
+    "sheet": {
+      "recent": "Last commands",
+      "suggestions": "Suggestions",
+      "empty": "Type a G-code line or a $ command. Suggestions appear here as you type, and the lines you send are kept here to use again."
+    }
+  },
   "settings": {
     "connection": "Connection",
     "preferences": "Preferences",
@@ -942,6 +977,18 @@
     "builtin": {
       "wait": "cncjs: wait until the machine has stopped",
       "msg": "cncjs: show a message"
+    },
+    "system": {
+      "settings": "All the controller's settings",
+      "offsets": "Coordinate systems, G28/G30, probe",
+      "parser": "Parser state (modes)",
+      "info": "Firmware version and options",
+      "startup": "Startup blocks",
+      "check": "Check mode on/off (no motion)",
+      "unlock": "Unlock the alarm",
+      "home": "Home all axes",
+      "sleep": "Sleep",
+      "jog": "Jog: $J=G91 X… F…"
     }
   },
   "keepAwake": {
@@ -970,6 +1017,8 @@
   "editor": {
     "forCode": "{{what}} — for {{code}}",
     "machine": "this machine’s top figure ({{setting}})",
+    "setting": "{{what}} — now {{value}}",
+    "settingNow": "now {{value}}",
     "wcsAt": "{{what}} — now at X {{x}} Y {{y}} Z {{z}}",
     "block": {
       "header": "Program header",

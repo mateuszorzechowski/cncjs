@@ -1,7 +1,8 @@
 import { autocompletion } from '@codemirror/autocomplete';
 import { linter, lintGutter } from '@codemirror/lint';
 import { checkLine } from './lineCheck';
-import { BLOCK_KEYS, BUILTIN_KEYS, CODE_KEYS, LETTER_KEYS, checkText } from './words';
+import { BLOCK_KEYS, BUILTIN_KEYS, CODE_KEYS, LETTER_KEYS, SYSTEM_KEYS, checkText } from './words';
+import { AXES, rowTitle } from '../machine/machineSettings';
 import { codeBefore, machineFigures, wordsFor } from './hints';
 import { declarationLine, headAt, offerFor } from './declarations';
 import { issueText } from '../ui/fileWords';
@@ -42,6 +43,44 @@ const figureOptions = (letter, figures) => {
   return options;
 };
 
+/**
+ * After `$`: Grbl's own commands, then the machine's settings by number with
+ * their names and what each holds now — taking one writes `$110=`, ready for
+ * the value (review note, 2026-09-29: *"w MDI brakuje podpowiedzi $"*).
+ */
+const systemOptions = (words, settings) => [
+  ...(words.system?.commands ?? []).map((command) => described(command, SYSTEM_KEYS[command], 'keyword')),
+  ...Object.keys(settings?.settings ?? {}).map((name) => {
+    // An axis' settings ($100-$132) by their quantity and axis, as the settings list names them.
+    const n = Number(name.slice(1));
+    const title = rowTitle({ name, axis: n >= 100 && n % 10 < AXES.length ? AXES[n % 10] : undefined });
+    return {
+      label: name,
+      type: 'property',
+      apply: `${name}=`,
+      detail: title === name
+        ? t('editor.settingNow', { value: settings.settings[name] })
+        : t('editor.setting', { what: title, value: settings.settings[name] }),
+    };
+  }),
+];
+
+/**
+ * What may follow the words already on the line, offered the moment a space
+ * is typed after them: the letters the line's code takes (`G1` → X Y Z F), or
+ * after `$J=` the jog's modes and words (*"brakuje podpowiedzi
+ * argumentów"*). Nothing when the line has no code that takes any.
+ */
+const argumentOptions = (words, before) => {
+  if (/\$J=/i.test(before)) {
+    return (words.system?.jog ?? []).map((word) => (LETTER_KEYS[word]
+      ? described(word, LETTER_KEYS[word], 'variable')
+      : described(word, CODE_KEYS[word], 'keyword')));
+  }
+  const code = codeBefore(before);
+  return wordsFor(words.params, code).filter((letter) => LETTER_KEYS[letter]).map((letter) => letterOption(letter, code, true));
+};
+
 /** A ready block, whole lines, for a blank line. */
 const blockOption = (block) => ({
   label: t(BLOCK_KEYS[block.id]),
@@ -59,12 +98,20 @@ const blockOption = (block) => ({
  * `G54`…`G59` say where each system is; and asked for on a blank line
  * (Ctrl+Space), ready blocks — a header, a retract, a tool change, an end.
  */
-const suggest = (words, machine) => (context) => {
+const suggest = (words, machine, { blocks = true } = {}) => (context) => {
   const word = context.matchBefore(/[A-Za-z%][\w.]*/);
   const line = context.state.doc.lineAt(context.pos);
   const before = line.text.slice(0, context.pos - line.from);
-  if (!word && context.explicit && !before.trim() && words.blocks?.length) {
+  if (blocks && !word && context.explicit && !before.trim() && words.blocks?.length) {
     return { from: context.pos, options: words.blocks.filter((b) => BLOCK_KEYS[b.id]).map(blockOption) };
+  }
+  const dollar = context.matchBefore(/\$[\w=#$]*/);
+  if (dollar && !/^\$J=/i.test(dollar.text)) {
+    return { from: dollar.from, options: systemOptions(words, machine()), validFor: /^\$[\w=#$]*$/ };
+  }
+  if (!word && /[\s=]$/.test(before)) {
+    const options = argumentOptions(words, before);
+    return options.length ? { from: context.pos, options } : null;
   }
   if (!word || (word.from === word.to && !context.explicit)) {
     return null;
@@ -151,13 +198,22 @@ const byServer = ({ onFindings, units, fixes = false } = {}) => async (view) => 
 };
 
 /**
+ * The suggestions alone. `blocks` off for one line, where a ready block of
+ * several lines has nowhere to go — the MDI line (review note, 2026-09-29:
+ * *"autocomplete?"*).
+ */
+export const suggestions = (words, machine, options) => autocompletion({
+  override: [suggest(words, machine, options)], activateOnTyping: true,
+});
+
+/**
  * The editor's help, from the server's words: suggestions, and a check in two
  * speeds — each line as it is typed, and the whole program by the server's
  * own file check a moment after typing stops. Both underline in place and
  * mark the gutter; the message is on the mark and under the pointer.
  */
 export const assist = (words, size, { machine = () => null, onFindings, units } = {}) => [
-  autocompletion({ override: [suggest(words, machine)], activateOnTyping: true }),
+  suggestions(words, machine),
   ...findings(words, size, { onFindings, units, fixes: true }),
 ];
 

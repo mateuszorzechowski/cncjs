@@ -1,4 +1,5 @@
 import controller from './controller';
+import { machineConsole } from './console';
 
 /** The one firmware whose server side can stop the machine by itself. */
 const GRBL = 'Grbl';
@@ -126,4 +127,14 @@ export const readSettings = () => {
 /** Take the loaded program off the controller — the Pliki screen's way back out of LOAD. */
 export const unloadProgram = () => {
   controller.command('gcode:unload');
+};
+
+/**
+ * A line typed at the MDI screen, through the server's queue like any console
+ * line — counted, acknowledged, and refused out loud in alarm unless it is
+ * one of Grbl's own `$` commands. See `machine/mdi.js`.
+ */
+export const sendLine = (line) => {
+  machineConsole.sending(line);
+  controller.command('gcode', line);
 };
