@@ -108,9 +108,17 @@ const ZeroScreen = ({ machine }) => {
    * moves; as sizes, without spare zeros, so three fit a phone's tile.
    */
   const units = useUnits();
-  const zeroOf = (id) => {
+  const zeroOf = (id, named) => {
     const at = machine.settings?.parameters?.[id];
-    return at ? ['x', 'y', 'z'].map((axis) => units.figure(Number(at[axis]), 'extent')).join(' · ') : NO_READING;
+    if (!at) {
+      return NO_READING;
+    }
+    const figures = ['x', 'y', 'z'].map((axis) => units.figure(Number(at[axis]), 'extent'));
+    // With the axes and the unit where the tile has the room (*"jednostka i
+    // xyz, jak się zmieści"*); the figures alone on a phone's.
+    return named
+      ? t('zero.wcsAt', { x: figures[0], y: figures[1], z: figures[2], unit: units.length })
+      : figures.join(' · ');
   };
 
   /*
@@ -133,9 +141,10 @@ const ZeroScreen = ({ machine }) => {
       columns={2}
       tall
       format={(id) => (
-        <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="@container flex min-w-0 flex-1 flex-col gap-0.5">
           <span>{id}</span>
-          <span className="truncate font-num text-cap font-normal opacity-75">{zeroOf(id)}</span>
+          <span className="hidden truncate font-num text-cap font-normal opacity-75 @xs:block">{zeroOf(id, true)}</span>
+          <span className="truncate font-num text-cap font-normal opacity-75 @xs:hidden">{zeroOf(id, false)}</span>
         </span>
       )}
     />
