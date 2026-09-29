@@ -38,10 +38,12 @@ import { t } from '../i18n';
  * appearance tab into the preferences (five tabs were squeezed on a phone):
  * - connection: which machine;
  * - controller: Grbl's own settings, `$0`-`$132`;
- * - preferences: how the panel works and looks, in two sections by whose
- *   setting it is — this device's, and the server's, the same on every
- *   device — rather than a label on each row, which said SERWER ·
- *   WSZYSTKIE URZĄDZENIA five times down one card;
+ * - preferences: the server's, the same on every device — units, the jog's
+ *   steps and rates, what the journal keeps;
+ * - device: this device's own — language, theme, density, text, number face,
+ *   keeping the screen awake, its name. A tab of its own since 2026-09-29
+ *   (review note: *"czy można przenieść do zakładki urządzenie?"* — *"tak"*);
+ *   it was the first of two sections under Preferencje;
  * - install: the certificate, the installation, and reloading the panel.
  */
 
@@ -57,6 +59,7 @@ const LABELS = {
   connection: 'settings.connection',
   controller: 'settings.controller',
   preferences: 'settings.preferences',
+  device: 'settings.device',
   install: 'settings.install',
 };
 
@@ -156,24 +159,6 @@ const SettingsScreen = ({ machine }) => {
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
           {tab === 'preferences' ? (
             <Card className="flex-1">
-              <SettingGroup title={t('settings.scope.device')}>
-                <SettingRow title={t('language.label')}>
-                  <LanguageChoice />
-                </SettingRow>
-                <SettingRow title={t('theme.label')}>
-                  <ThemeChoice />
-                </SettingRow>
-                <LookSettings />
-                <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} noteBelow>
-                  <KeepAwakeChoice status={keepAwake} />
-                </SettingRow>
-                {/*
-                  * How this device is named to the server and in its journal:
-                  * this device's, like its language and theme, so with them rather
-                  * than with the link to the controller (review note, 2026-09-28).
-                  */}
-                <DeviceNameRow linked={machine.linked} />
-              </SettingGroup>
               <SettingGroup title={t('settings.scope.server')}>
                 <SettingRow title={t('units.choice.label')} note={t('units.choice.note')}>
                   <UnitsChoice units={machine.units} />
@@ -194,6 +179,29 @@ const SettingsScreen = ({ machine }) => {
                   <JournalLevelChoice />
                 </SettingRow>
               </SettingGroup>
+            </Card>
+          ) : null}
+          {tab === 'device' ? (
+            <Card className="flex-1">
+              {/* No heading: the tab's name says whose settings these are. */}
+              <div className="flex flex-col">
+                <SettingRow title={t('language.label')}>
+                  <LanguageChoice />
+                </SettingRow>
+                <SettingRow title={t('theme.label')}>
+                  <ThemeChoice />
+                </SettingRow>
+                <LookSettings />
+                <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} noteBelow>
+                  <KeepAwakeChoice status={keepAwake} />
+                </SettingRow>
+                {/*
+                  * How this device is named to the server and in its journal:
+                  * this device's, like its language and theme, so with them rather
+                  * than with the link to the controller (review note, 2026-09-28).
+                  */}
+                <DeviceNameRow linked={machine.linked} />
+              </div>
             </Card>
           ) : null}
           {tab === 'install' ? (
