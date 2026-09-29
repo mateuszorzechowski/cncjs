@@ -31,8 +31,7 @@ const Clip = ({ x }) => (
 
 const Tool = ({ x }) => (
   <>
-    <path d={`M${x} 28 H${x + 20} V120 H${x} Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" />
-    <path d={`M${x} 86 L${x + 20} 78 M${x} 98 L${x + 20} 90 M${x} 110 L${x + 20} 102`} className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" />
+    <path d={`M${x} 28 H${x + 20} V102.7 L${x + 10} 120 L${x} 102.7 Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" />
   </>
 );
 

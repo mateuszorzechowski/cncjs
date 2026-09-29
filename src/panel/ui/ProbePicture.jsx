@@ -77,6 +77,22 @@ const TopView = ({ id, corner }) => {
   );
 };
 
+/*
+ * The Z plate's pictogram, as the design draws it (1d, 2026-09-29): the work,
+ * the plate with its blue edge, the tool as an outline — a 60° V bit, the
+ * panel's one tool (Mateusz, the same day) — and the accent arrow
+ * down onto the plate. Its own 48-unit box, three shapes, so it stays legible
+ * as small as a tile.
+ */
+const ZPlatePictogram = ({ label, className }) => (
+  <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <rect x={4} y={37} width={40} height={7} className="fill-mutS stroke-line" strokeWidth={1.6} />
+    <rect x={15} y={31} width={18} height={6} className="fill-accS stroke-acc" strokeWidth={1.6} />
+    <path d="M20.5 3 H27.5 V13.4 L24 19.5 L20.5 13.4 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M20 23.5 H28 L24 29 Z" className="fill-acc stroke-acc" strokeWidth={0.96} strokeLinejoin="round" />
+  </svg>
+);
+
 /** The view for a method and its choice: the corner from above, a paper side from above, the rest side-on. */
 const viewOf = (method, choice) => {
   if (method === 'corner') {
@@ -90,6 +106,9 @@ const viewOf = (method, choice) => {
 
 const ProbePicture = ({ method, choice, label, className = '' }) => {
   const id = `probe-arrow-${useId().replace(/:/g, '')}`;
+  if (method === 'z') {
+    return <ZPlatePictogram label={label} className={className} />;
+  }
   return (
     <svg viewBox="0 0 124 92" role="img" aria-label={label} className={`shrink-0 ${className}`} fill="none" strokeWidth={1.5}>
       <defs>

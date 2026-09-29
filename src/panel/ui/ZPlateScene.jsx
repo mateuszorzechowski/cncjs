@@ -4,8 +4,8 @@ import { t } from '../i18n';
 /**
  * The Z plate side-on, as the design draws it (`Sondowanie - grafiki
  * plaskie`, 1a/1g/1l, 2026-09-29): the work grey, the plate with its blue
- * edge, the tool as an outline — an end mill, one shape for every tool
- * (Mateusz: the tool need not be chosen).
+ * edge, the tool as an outline — a 60° V bit, one shape for every tool
+ * (Mateusz: the tool need not be chosen, and *"v 60 stopni"*).
  *
  * Everything that moves comes in: `gap`, the tool's height over the plate in
  * the drawing's pixels; `arrow`, the move under way; `contact`, the amber dot
@@ -77,8 +77,8 @@ const ZPlateScene = ({ gap = 84, arrow = null, contact = false, marks = null, ze
       <rect x={180} y={PLATE_TOP} width={80} height={18} className="fill-accS stroke-acc" strokeWidth={2} />
       {Mark ? <Mark zero={zero} /> : null}
       <g transform={`translate(0 ${-gap})`}>
-        <path d="M210 100 H230 V192 H210 Z" className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" />
-        <path d="M210 158 L230 150 M210 170 L230 162 M210 182 L230 174" className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" />
+        {/* A 60° V bit: the point is its half-width over tan 30° long. */}
+        <path d="M210 100 H230 V174.7 L220 192 L210 174.7 Z" className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" />
       </g>
       {arrow ? (
         <>
