@@ -13,39 +13,42 @@ import { useEffect, useRef } from 'react';
  *      dashboard — from anywhere, whatever was visited before;
  *   3. on the dashboard with nothing open, back leaves the panel.
  *
- * It was the browser's own history, a step per screen and per sheet, and it
- * did what history does: back walked through every screen visited, and a
- * sheet that closed itself to open another took back the new one's step as
- * well as its own, so the next back closed both and changed the screen.
+ * **Every step of history is put there by a tap, never by back.** Chrome on
+ * Android skips, on back, an entry a page added without a user's gesture: a
+ * step re-added while handling back was jumped over, and the second back
+ * after closing a sheet left the app instead of closing the first sheet
+ * (measured on Mateusz's phone, 2026-09-29). So a step is pushed when a layer
+ * opens or a screen other than the dashboard is gone to — both follow a tap —
+ * and back only ever takes steps away.
  *
- * Now the history holds at most one step of the panel's own — a sentinel on
- * top of wherever the page was opened — while there is somewhere to go back
- * to inside the panel. Back takes it away, the panel does step 1 or 2, and
- * puts it back if there is still somewhere to go. Screens change the address
- * in place (`useScreen`), so an address still names the screen and its tab.
+ * `entries` mirrors the steps above where the page was opened, oldest first:
+ * a layer's, or the screen's (at most one: "not on the dashboard"). A layer
+ * closed by hand takes its step back when it is the newest; under a newer
+ * one it cannot, and its step is left dead — back passes over it.
  */
-const layers = [];
+const entries = [];
 const screen = { current: null, home: 'dashboard', goHome: null };
-// Our own backs, when a sentinel no longer needed is taken away: not the operator's.
+// Our own backs, taking a closed layer's step away: not the operator's.
 let skipping = 0;
+let next = 1;
 
-const sentinelOn = () => Boolean(window.history.state?.panelBack);
-
-// Whether a back would still have something to do inside the panel.
-const needed = (closing = 0) => layers.length - closing > 0 || (screen.current !== null && screen.current !== screen.home);
-
-/** Put the sentinel on, when there is somewhere to go back to and it is not on already. */
-const arm = (closing = 0) => {
-  if (needed(closing) && !sentinelOn()) {
-    window.history.pushState({ panelBack: true }, '', window.location.href);
-  }
+const push = (entry) => {
+  window.history.pushState({ panelBack: entry.id }, '', window.location.href);
+  entries.push(entry);
 };
 
-/** Take it away again when there is not — so the next back leaves rather than doing nothing. */
-const disarm = () => {
-  if (!needed() && sentinelOn()) {
+/** Take `entry`'s step away if it is the newest; otherwise leave it dead. */
+const retire = (entry) => {
+  const at = entries.indexOf(entry);
+  if (at < 0) {
+    return;
+  }
+  if (at === entries.length - 1 && window.history.state?.panelBack === entry.id) {
+    entries.pop();
     skipping += 1;
     window.history.back();
+  } else {
+    entry.dead = true;
   }
 };
 
@@ -53,32 +56,65 @@ if (typeof window !== 'undefined') {
   window.addEventListener('popstate', () => {
     if (skipping > 0) {
       skipping -= 1;
-      // Something may have opened while that back was on its way.
-      arm();
       return;
     }
-    const top = layers[layers.length - 1];
-    if (top) {
-      top.close();
-      arm(1);
+    const entry = entries.pop();
+    if (!entry) {
       return;
     }
-    if (needed()) {
-      screen.goHome?.();
+    if (entry.dead) {
+      // A step nothing stands behind any more: this back is for the next one.
+      window.history.back();
+      return;
     }
+    if (entry.layer) {
+      entry.layer.popped = true;
+      entry.layer.close();
+      return;
+    }
+    screen.goHome?.();
   });
 }
 
+const screenEntry = () => entries.find((entry) => entry.screen && !entry.dead);
+
+/*
+ * A page opened on another screen — an address, a reload — has no tap to put
+ * its step there with, so it is put there on the first one.
+ */
+let waiting = null;
+const onFirstTouch = () => {
+  if (waiting) {
+    return;
+  }
+  waiting = () => {
+    window.removeEventListener('pointerdown', waiting, true);
+    waiting = null;
+    if (screen.current !== screen.home && !screenEntry()) {
+      push({ id: next++, screen: true });
+    }
+  };
+  window.addEventListener('pointerdown', waiting, true);
+};
+
 /**
  * The screen the panel shows, and the way home — from `useScreen`, on every
- * change of screen. The address is the screen's; this keeps the sentinel on
- * while the screen is not the dashboard, and off when it is.
+ * change of screen. Away from the dashboard there is one step to go back
+ * home with; on it, none.
  */
-export const backScreen = (current, goHome) => {
+export const backScreen = (current, goHome, { first = false } = {}) => {
   screen.current = current;
   screen.goHome = goHome;
-  arm();
-  disarm();
+  const kept = screenEntry();
+  if (current !== screen.home && !kept) {
+    if (first) {
+      onFirstTouch();
+    } else {
+      push({ id: next++, screen: true });
+    }
+  } else if (current === screen.home && kept) {
+    retire(kept);
+  }
 };
 
 /** While `open`, this layer is what back closes first, with `onClose`. */
@@ -89,13 +125,14 @@ const useBackCloses = (open, onClose) => {
     if (!open) {
       return undefined;
     }
-    const layer = { close: () => closing.current() };
-    layers.push(layer);
-    arm();
+    const layer = { popped: false, close: () => closing.current() };
+    const entry = { id: next++, layer };
+    push(entry);
     return () => {
-      layers.splice(layers.indexOf(layer), 1);
-      // Closed by hand, or by back: the sentinel goes when nothing is left to go back to.
-      disarm();
+      // Closed by hand: its step goes, now or as a dead one.
+      if (!layer.popped) {
+        retire(entry);
+      }
     };
   }, [open]);
 };

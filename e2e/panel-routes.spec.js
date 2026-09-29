@@ -91,3 +91,43 @@ test.describe('the phone menu and back', () => {
     cncjs.expectNoPageErrors();
   });
 });
+
+test.describe('back on a phone\'s Chrome', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  /*
+   * Chrome on Android skips, on back, a step of history a page added without
+   * a user's gesture. A step re-added while handling back was jumped over:
+   * after closing a sheet the next back left the app instead of closing the
+   * sheet under it, or going home from Settings (Mateusz's phone,
+   * 2026-09-29). Playwright's back does not skip such steps, so this watches
+   * the cause: every step the panel adds must be added under a tap.
+   */
+  test('every step of history is added under a tap, never while handling back', async ({ cncjs }) => {
+    const { page } = cncjs;
+    await page.addInitScript(() => {
+      window.__pushes = [];
+      const push = window.history.pushState.bind(window.history);
+      window.history.pushState = (...args) => {
+        window.__pushes.push(navigator.userActivation?.isActive ?? true);
+        return push(...args);
+      };
+    });
+    await page.goto('/panel/settings/preferences?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('banner').getByRole('button').first().click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Co znaczą stany' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(2);
+
+    await page.goBack();
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await page.goBack();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/panel\/dashboard\?lng=pl$/);
+
+    const pushes = await page.evaluate(() => window.__pushes);
+    expect(pushes.length).toBeGreaterThan(0);
+    expect(pushes.every(Boolean)).toBe(true);
+    cncjs.expectNoPageErrors();
+  });
+});

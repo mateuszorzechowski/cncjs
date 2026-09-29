@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { pathOf, routeFrom } from './route';
 import { backScreen } from '../ui/backStack';
 import { showSettingsTab } from '../screens/SettingsScreen';
@@ -48,6 +48,7 @@ const firstScreen = (isScreen) => {
  */
 const useScreen = (isScreen) => {
   const [screen, setScreen] = useState(() => firstScreen(isScreen));
+  const started = useRef(false);
   useEffect(() => {
     try {
       window.localStorage.setItem(KEEP_SCREEN, screen);
@@ -67,7 +68,9 @@ const useScreen = (isScreen) => {
     if (routeFrom(window.location.pathname)?.screen !== screen) {
       window.history.replaceState(window.history.state, '', pathOf(screen, null, window.location.search));
     }
-    backScreen(screen, () => setScreen('dashboard'));
+    // The first, from an address or a reload, waits for a tap to put its step in (`backStack`).
+    backScreen(screen, () => setScreen('dashboard'), { first: !started.current });
+    started.current = true;
   }, [screen]);
   const go = (next) => {
     if (next !== screen) {
