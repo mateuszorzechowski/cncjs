@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { fitToBounds, fitWithRulers } from './fit';
+import { fitToBounds, fitWithRulers, makeRoom } from './fit';
+import { stageInsets } from './insets';
 import { recallCamera, rememberCamera } from './cameraMemory';
 import { UP, VIEWS } from './views';
 import { orbitAbout, pivotFor } from './pivotOrbit';
@@ -58,6 +59,10 @@ const Controls = ({ view, bounds, machineKnown = false, revision, memory, object
   programAt.current = object;
   const domElement = useThree((state) => state.gl.domElement);
   const invalidate = useThree((state) => state.invalidate);
+  // The canvas's size, for the room the overlays leave (`makeRoom`).
+  const size = useThree((state) => state.size);
+  const sizeAt = useRef(size);
+  sizeAt.current = size;
   const controls = useRef(null);
   // Held in a ref so that a new callback on every render does not tear down
   // and rebuild the orbit controls — which would drop the camera pose with it.
@@ -414,12 +419,13 @@ const Controls = ({ view, bounds, machineKnown = false, revision, memory, object
     const from = poseOf(camera, orbit.target);
     // With room on the floor for the figures along the grid's edges, so a
     // view shows its rulers too — see `fitWithRulers`.
-    const target = fitWithRulers(
+    // Then into the part of the canvas the overlays leave free.
+    const target = makeRoom(camera, fitWithRulers(
       camera,
       box,
       new THREE.Vector3().fromArray(VIEWS[view].direction),
       RULER_PIXELS
-    );
+    ), sizeAt.current, stageInsets(domElement));
 
     // Orbit about what the camera was framed on, rather than about wherever
     // the target happened to be left. Without this a view change puts the
@@ -446,7 +452,7 @@ const Controls = ({ view, bounds, machineKnown = false, revision, memory, object
       return;
     }
     invalidate();
-  }, [camera, view, bounds, machineKnown, revision, invalidate, memory, glideMs]);
+  }, [camera, view, bounds, machineKnown, revision, invalidate, memory, glideMs, domElement]);
 
   /*
    * **Fill the frame with the object, and do not turn the camera.**
@@ -469,12 +475,12 @@ const Controls = ({ view, bounds, machineKnown = false, revision, memory, object
     }
     fitted.current = fit;
 
-    const center = fitToBounds(camera, orbit.target, object);
+    const center = makeRoom(camera, fitToBounds(camera, orbit.target, object), sizeAt.current, stageInsets(domElement));
     orbit.target.copy(center);
     orbit.update();
     rememberCamera(memory, signature.current, camera, orbit.target);
     invalidate();
-  }, [camera, object, fit, invalidate, memory]);
+  }, [camera, object, fit, invalidate, memory, domElement]);
 
   return null;
 };

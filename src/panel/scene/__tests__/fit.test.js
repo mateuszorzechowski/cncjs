@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TITLED_RULER, boundsBox, currentDirection, fitToBounds, fitWithRulers } from '../fit';
+import { TITLED_RULER, boundsBox, currentDirection, fitToBounds, fitWithRulers, makeRoom } from '../fit';
 import fitCameraToBounds from '../../../lib/toolpath/camera-fit';
 
 // The frustum is fixed and framing is done with `zoom`, which is how the
@@ -168,5 +168,47 @@ describe('framing with room for the rulers', () => {
     fitWithRulers(ruled, TALL, ISO, 0);
 
     expect(ruled.zoom).toBeCloseTo(plain.zoom, 9);
+  });
+});
+
+describe('the room the overlays leave', () => {
+  // A canvas in pixels, with the frustum in pixels as the scene's is.
+  const canvas = (width, height) => {
+    const c = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, -100000, 100000);
+    c.up.set(0, 0, 1);
+    return c;
+  };
+  const onScreen = (c, point) => {
+    const p = point.clone().project(c);
+    return { x: p.x * c.right, y: p.y * c.top };
+  };
+
+  test('the drawing moves to the middle of what is free, and shrinks to fit it', () => {
+    const c = canvas(400, 300);
+    const target = new THREE.Vector3(10, 20, 0);
+    put(c, target);
+    c.zoom = 2;
+    c.updateProjectionMatrix();
+
+    // A 100px column at the right, an 60px readout at the bottom.
+    const moved = makeRoom(c, target, { width: 400, height: 300 }, { right: 100, bottom: 60 });
+
+    // The free rectangle is 300 × 240: its middle is 50px left of the
+    // canvas's middle and 30px above it.
+    const at = onScreen(c, target);
+    expect(at.x).toBeCloseTo(-50, 3);
+    expect(at.y).toBeCloseTo(30, 3);
+    expect(c.zoom).toBeCloseTo(2 * Math.min(300 / 400, 240 / 300), 6);
+    // The camera still looks the way it looked.
+    expect(currentDirection(c, moved).normalize().angleTo(OBLIQUE)).toBeLessThan(1e-6);
+  });
+
+  test('nothing over the drawing changes nothing', () => {
+    const c = canvas(400, 300);
+    const target = new THREE.Vector3(0, 0, 0);
+    put(c, target);
+    const before = c.position.clone();
+    expect(makeRoom(c, target, { width: 400, height: 300 }, {})).toBe(target);
+    expect(c.position.equals(before)).toBe(true);
   });
 });

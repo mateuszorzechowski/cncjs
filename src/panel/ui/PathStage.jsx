@@ -83,6 +83,8 @@ const PathStage = ({
         * own rounding stops at its padding, so the frame and the clipping are
         * here. `relative`, because the menu is positioned against it. */}
       <div
+        // What the frame keeps clear of is found inside this (`scene/insets`).
+        data-stage=""
         className={[
           'relative min-h-0 flex-1 overflow-hidden rounded-ctl border',
           // No second edge inside the tape: one warning, one line.
@@ -133,7 +135,7 @@ const PathStage = ({
            */
           {
             label: t('stage.frame'),
-            closes: true,
+            onDrawing: true,
             items: [{
               id: 'fit',
               icon: 'fit',
@@ -143,7 +145,7 @@ const PathStage = ({
               onSelect: onFit,
             }],
           },
-          { label: t('stage.layers'), items: layerItems(sections, layers, onLayers) },
+          { label: t('stage.layers'), icon: 'layers', items: layerItems(sections, layers, onLayers) },
         ]}
       />
       </div>
