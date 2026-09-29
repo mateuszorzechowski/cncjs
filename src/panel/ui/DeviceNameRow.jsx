@@ -27,7 +27,6 @@ const DeviceNameRow = ({ linked }) => {
     <SettingRow
       title={t('connect.device.title')}
       note={facts ? t('connect.device.note', { facts }) : t('connect.device.noteBare')}
-      scope="device"
     >
       <TextField
         label={t('connect.device.title')}
