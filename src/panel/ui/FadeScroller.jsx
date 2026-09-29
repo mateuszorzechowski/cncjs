@@ -170,12 +170,15 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
      * docelowo obok, żeby nie zajmować miejsca"*). Wherever the scroller
      * stands, the thumb is put two pixels inside the content area's right
      * edge, measured, rather than in the gutter of whatever holds it. Not in
-     * a sheet, which has no margin beside it. Wider, the gutter decides:
+     * a sheet, which has no margin beside it, nor in a list floating over the
+     * page. Wider, the gutter decides:
      * the screen's margin for a scroller that is the screen, a card's own
      * padding for a card among others that scrolls by itself.
      */
     const wrapper = scroller?.parentElement;
-    const main = phone ? scroller?.closest('main') : null;
+    // Not a list that floats over the page and keeps its thumb inside it
+    // (`data-thumb-inside`: the MDI line's suggestions).
+    const main = phone && !scroller?.closest('[data-thumb-inside]') ? scroller?.closest('main') : null;
     if (wrapper && main) {
       const beside = main.getBoundingClientRect().right - wrapper.getBoundingClientRect().right;
       wrapper.style.setProperty('--thumbRight', `${2 - beside}px`);
