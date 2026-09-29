@@ -82,7 +82,9 @@ const SegmentedChoice = ({
           onClick={() => onChange(option)}
           className={[
             'flex items-center gap-2 border text-base font-semibold transition-colors',
-            unit ? 'font-num' : '',
+            // Said either way, or a row in a card's header takes the number
+            // face its reading is set in.
+            unit ? 'font-num' : 'font-sans',
             // Joined: one border between two buttons rather than two, and the
             // chosen one drawn over its neighbours so its edge is whole.
             // Hovered drawn over its neighbours too, or the neighbour's edge

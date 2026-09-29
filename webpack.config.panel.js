@@ -146,6 +146,14 @@ module.exports = ({ mode, outputPath }) => ({
         generator: { filename: 'icons/[name][ext]' },
       },
       {
+        // The number faces `styles/fonts.css` declares, as files beside the
+        // bundle rather than inlined: the browser fetches only the ones a
+        // chosen face and the glyphs on screen ask for.
+        test: /\.woff2$/,
+        type: 'asset/resource',
+        generator: { filename: 'fonts/[name][ext]' },
+      },
+      {
         test: /\.m?js$/,
         resolve: { fullySpecified: false },
       },

@@ -7,6 +7,7 @@ import SegmentedChoice from '../ui/SegmentedChoice';
 import SettingGroup from '../ui/SettingGroup';
 import SettingRow from '../ui/SettingRow';
 import ThemeChoice from '../ui/ThemeChoice';
+import LookSettings from '../ui/LookSettings';
 import JogSettings from '../ui/JogSettings';
 import DeviceNameRow from '../ui/DeviceNameRow';
 import KeepAwakeChoice, { keepAwakeNote } from '../ui/KeepAwakeChoice';
@@ -37,10 +38,12 @@ import { t } from '../i18n';
  * appearance tab into the preferences (five tabs were squeezed on a phone):
  * - connection: which machine;
  * - controller: Grbl's own settings, `$0`-`$132`;
- * - preferences: how the panel works and looks, in two sections by whose
- *   setting it is — this device's, and the server's, the same on every
- *   device — rather than a label on each row, which said SERWER ·
- *   WSZYSTKIE URZĄDZENIA five times down one card;
+ * - preferences: the server's, the same on every device — units, the jog's
+ *   steps and rates, what the journal keeps;
+ * - device: this device's own — language, theme, density, text, number face,
+ *   keeping the screen awake, its name. A tab of its own since 2026-09-29
+ *   (review note: *"czy można przenieść do zakładki urządzenie?"* — *"tak"*);
+ *   it was the first of two sections under Preferencje;
  * - install: the certificate, the installation, and reloading the panel.
  */
 
@@ -56,6 +59,7 @@ const LABELS = {
   connection: 'settings.connection',
   controller: 'settings.controller',
   preferences: 'settings.preferences',
+  device: 'settings.device',
   install: 'settings.install',
 };
 
@@ -98,6 +102,11 @@ const SettingsScreen = ({ machine }) => {
     // The tab in the address, in the same step of history as the screen: back goes back a screen, not a tab.
     window.history.replaceState(window.history.state, '', pathOf('settings', tab, window.location.search));
   }, [tab]);
+  // The chosen tab into view, in a row that scrolls on a phone.
+  const tabRow = useRef(null);
+  useEffect(() => {
+    tabRow.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [tab]);
   useEffect(() => {
     tabWatchers.add(setTab);
     return () => tabWatchers.delete(setTab);
@@ -105,10 +114,16 @@ const SettingsScreen = ({ machine }) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-gap">
-      <div className="flex flex-col gap-2 @3xl/shell:flex-row @3xl/shell:items-center @3xl/shell:justify-between">
+      {/*
+        * Five tabs are wider than a phone once the words are large: the row
+        * scrolls sideways, each tab as wide as its name, rather than squeezing
+        * the names into each other (2026-09-29, with the Urządzenie tab and
+        * the text size).
+        */}
+      <div ref={tabRow} className="scroll-quiet flex shrink-0 overflow-x-auto">
         <SegmentedChoice
           joined
-          fitWide
+          compact
           label={t('nav.settings')}
           options={TABS}
           value={tab}
@@ -155,23 +170,6 @@ const SettingsScreen = ({ machine }) => {
           {tab === 'connection' ? <ConnectScreen machine={machine} /> : null}
           {tab === 'preferences' ? (
             <Card className="flex-1">
-              <SettingGroup title={t('settings.scope.device')}>
-                <SettingRow title={t('language.label')}>
-                  <LanguageChoice />
-                </SettingRow>
-                <SettingRow title={t('theme.label')}>
-                  <ThemeChoice />
-                </SettingRow>
-                <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} noteBelow>
-                  <KeepAwakeChoice status={keepAwake} />
-                </SettingRow>
-                {/*
-                  * How this device is named to the server and in its journal:
-                  * this device's, like its language and theme, so with them rather
-                  * than with the link to the controller (review note, 2026-09-28).
-                  */}
-                <DeviceNameRow linked={machine.linked} />
-              </SettingGroup>
               <SettingGroup title={t('settings.scope.server')}>
                 <SettingRow title={t('units.choice.label')} note={t('units.choice.note')}>
                   <UnitsChoice units={machine.units} />
@@ -192,6 +190,29 @@ const SettingsScreen = ({ machine }) => {
                   <JournalLevelChoice />
                 </SettingRow>
               </SettingGroup>
+            </Card>
+          ) : null}
+          {tab === 'device' ? (
+            <Card className="flex-1">
+              {/* No heading: the tab's name says whose settings these are. */}
+              <div className="flex flex-col">
+                <SettingRow title={t('language.label')}>
+                  <LanguageChoice />
+                </SettingRow>
+                <SettingRow title={t('theme.label')}>
+                  <ThemeChoice />
+                </SettingRow>
+                <LookSettings />
+                <SettingRow title={t('keepAwake.label')} note={keepAwakeNote(keepAwake)} noteBelow>
+                  <KeepAwakeChoice status={keepAwake} />
+                </SettingRow>
+                {/*
+                  * How this device is named to the server and in its journal:
+                  * this device's, like its language and theme, so with them rather
+                  * than with the link to the controller (review note, 2026-09-28).
+                  */}
+                <DeviceNameRow linked={machine.linked} />
+              </div>
             </Card>
           ) : null}
           {tab === 'install' ? (

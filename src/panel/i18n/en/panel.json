@@ -245,6 +245,7 @@
   "settings": {
     "connection": "Connection",
     "preferences": "Preferences",
+    "device": "Device",
     "install": "Install",
     "locked": "Locked",
     "scope": {
@@ -259,6 +260,26 @@
     "system": "System",
     "light": "Light",
     "dark": "Dark"
+  },
+  "density": {
+    "label": "Density",
+    "comfortable": "Comfortable",
+    "compact": "Compact",
+    "note": "Compact has smaller gaps and lower readouts, so more fits on the screen."
+  },
+  "textSize": {
+    "label": "Text",
+    "note": "The size of words on this device, in per cent. Readings keep theirs — density sets those.",
+    "unit": "%"
+  },
+  "numFont": {
+    "label": "Number face",
+    "azeret": "Azeret",
+    "jetbrains": "JetBrains",
+    "plex": "Plex",
+    "segment": "Segment",
+    "note": "The face of the readouts, the step and feed values and the G-code editor.",
+    "sample": "X 1234.567 · Y −890.010 · Z 0.100"
   },
   "app": {
     "install": "Install on this device",

@@ -278,9 +278,9 @@ does it stay behind in the old application, or does it go?
   as a twelfth, at the end. Five are built — Dashboard (temporary), Jog,
   Zeroing, Path, Connection; the rest are shown disabled, so the rail does
   not move under the hand between releases.
-- **Where the remaining variants live**, decided 2026-09-21 and not yet
-  built: `theme`, `density` and `numFont` belong to a **Ustawienia**
-  screen; the active coordinate system belongs to **Zerowanie**, beside
+- **Where the remaining variants live**, decided 2026-09-21 and built since:
+  `theme`, `density` and `numFont` are rows under Ustawienia → Preferencje
+  (`ui/theme`, `ui/look`; the number faces are bundled, `styles/fonts.css`); the active coordinate system belongs to **Zerowanie**, beside
   the offsets and the zeroing buttons, because switching it is a modal
   G-code and not a display option. `navMode` and `target` have no home at
   all — width decides them, so there is nothing to set wrongly. The

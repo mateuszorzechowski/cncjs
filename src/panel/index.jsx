@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { syncThemeColor } from './ui/themeColor';
 import { startTheme } from './ui/theme';
+import { startLook } from './ui/look';
 import './styles/base.css';
 // The manifest and the icons. Nothing in the panel's code reads them — the
 // operating system does, by URL — so without this import webpack has no
@@ -18,6 +19,7 @@ import './assets';
  * See `ui/theme`.
  */
 startTheme();
+startLook();
 
 createRoot(document.getElementById('panel-root')).render(<App />);
 

@@ -230,6 +230,20 @@
    * not settled.
    */
   --num: 'Azeret Mono', 'IBM Plex Mono', monospace;
+
+  /*
+   * How big this device draws words: the type scale's pixels are multiplied
+   * by it (`tailwind.panel.config.js`). The panel's own, set on the root by
+   * Settings → Urządzenie → Tekst (`ui/look`, Mateusz, 2026-09-29).
+   */
+  --textScale: 1;
+
+  /*
+   * The number face's sample in Settings: a reading's size, and smaller when
+   * its row is narrower than the 31 characters at that size — one line
+   * always (review note, 2026-09-29). `cqw` is the settings row's width.
+   */
+  --numSample: min(19px, 4.4cqw);
 }
 
 [data-target='fullhd'] {
@@ -261,6 +275,10 @@
   --val: 34px;
 }
 
+/* The default again, as a block: the Settings chips show each face in
+ * itself by carrying its attribute, and Azeret's chip must not inherit the
+ * face chosen on the root. */
+[data-num='azeret'] { --num: 'Azeret Mono', 'IBM Plex Mono', monospace; }
 [data-num='jetbrains'] { --num: 'JetBrains Mono', monospace; }
 [data-num='segment'] { --num: 'Share Tech Mono', monospace; }
 [data-num='plex'] { --num: 'IBM Plex Mono', monospace; }
@@ -291,4 +309,16 @@
   --pad: 12px;
   --gap: 9px;
   --dro: 60px;
+}
+
+/*
+ * The compact density at full HD. The panel's own: the drawing's compact
+ * block was drawn at 1024 and, applied as it is, took a 1920 screen's DRO row
+ * from 132px to 60 — smaller than at 1024. The same proportions as the
+ * drawing's step from `:root` to compact, on the full-HD values.
+ */
+[data-target='fullhd'][data-density='compact'] {
+  --pad: 18px;
+  --gap: 12px;
+  --dro: 100px;
 }

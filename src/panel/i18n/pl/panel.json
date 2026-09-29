@@ -245,6 +245,7 @@
   "settings": {
     "connection": "Połączenie",
     "preferences": "Preferencje",
+    "device": "Urządzenie",
     "install": "Instalacja",
     "locked": "Zablokowane",
     "scope": {
@@ -259,6 +260,26 @@
     "system": "Systemowy",
     "light": "Jasny",
     "dark": "Ciemny"
+  },
+  "density": {
+    "label": "Gęstość",
+    "comfortable": "Wygodna",
+    "compact": "Zwarta",
+    "note": "Zwarta ma mniejsze odstępy i niższe odczyty, więc więcej mieści się na ekranie."
+  },
+  "textSize": {
+    "label": "Tekst",
+    "note": "Wielkość napisów na tym urządzeniu, w procentach. Odczyty zostają — ich wielkość ustawia gęstość.",
+    "unit": "%"
+  },
+  "numFont": {
+    "label": "Krój cyfr",
+    "azeret": "Azeret",
+    "jetbrains": "JetBrains",
+    "plex": "Plex",
+    "segment": "Segment",
+    "note": "Krój odczytów, wartości kroków i posuwów oraz edytora G-code.",
+    "sample": "X 1234.567 · Y −890.010 · Z 0.100"
   },
   "app": {
     "install": "Zainstaluj na tym urządzeniu",
