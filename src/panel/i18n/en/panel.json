@@ -431,7 +431,12 @@
     "unknownSetting": "The controller has not reported such a setting.",
     "settingLocked": "This setting is not changed from the panel.",
     "badValue": "This value is outside the setting's range.",
-    "noHoming": "Homing is off, so where the machine's travel is is not known: neither where the top of Z is, nor where a point on the drawing lies."
+    "noHoming": "Homing is off, so where the machine's travel is is not known: neither where the top of Z is, nor where a point on the drawing lies.",
+    "probeTriggered": "The probe input is lit, so the measurement did not start: the plate is touching the tool or the lead is shorted.",
+    "probing": "A measurement is already running.",
+    "noResult": "There is no measurement to save.",
+    "badMethod": "The server does not know that probing method.",
+    "badCorner": "That is not a corner the server knows."
   },
   "notice": {
     "warning": "Warning",
@@ -1355,5 +1360,102 @@
     "moves": "\"Go to zero\" and go-to-point are off: there is no known top of Z to lift to, and no certain point on the drawing.",
     "fix": "Homing is switched on in Settings → Controller → Homing ($22). It needs limit switches.",
     "settings": "Go to the controller settings"
+  },
+  "probe": {
+    "title": "Probe",
+    "steps": "Probing steps",
+    "back": "Back",
+    "next": "Next",
+    "remember": "Kept from last time. Check them, change what differs — they are kept again for next time.",
+    "cornerLabel": "Which corner of the work",
+    "method": {
+      "z": "Z plate",
+      "zNote": "Top of the work: Z0.",
+      "corner": "XYZ corner",
+      "cornerNote": "Corner of the work: X0, Y0 and Z0, with an L-shaped plate.",
+      "paper": "Paper",
+      "paperNote": "By hand with a sheet of paper, no probe.",
+      "soon": "Not built yet."
+    },
+    "how": {
+      "z": "Lay the plate flat on the work, under the tool. Clip the lead to the tool.",
+      "corner": "Set the L plate on the chosen corner, its walls against both edges of the work. Clip the lead to the tool."
+    },
+    "place": {
+      "z": "Jog the tool over the plate, a few millimetres above it — less than the Z travel limit.",
+      "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls."
+    },
+    "corner": {
+      "backLeft": "Back left",
+      "backRight": "Back right",
+      "frontLeft": "Front left",
+      "frontRight": "Front right"
+    },
+    "field": {
+      "plateThickness": "Plate thickness",
+      "cornerThickness": "Plate top thickness",
+      "wallX": "X wall thickness",
+      "wallY": "Y wall thickness",
+      "toolDiameter": "Tool diameter",
+      "clear": "Out past the wall",
+      "depth": "Down beside the wall",
+      "maxZ": "Z travel limit",
+      "maxXY": "X/Y travel limit",
+      "retract": "Back-off",
+      "fast": "Fast touch",
+      "slow": "Slow touch"
+    },
+    "step": {
+      "method": "Method",
+      "prepare": "Plate",
+      "wire": "Wire",
+      "position": "Position",
+      "measure": "Measure",
+      "result": "Result"
+    },
+    "wire": {
+      "how": "Touch the plate to the tool and let go. The probe input has to light while they touch and go out after.",
+      "waiting": "Waiting for a touch",
+      "touching": "Touching",
+      "ok": "Works",
+      "unknown": "The controller does not report its inputs, so the wire cannot be checked here."
+    },
+    "position": {
+      "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",
+      "notNow": "The machine has to stand idle, with no program, to measure.",
+      "start": "Measure"
+    },
+    "measure": {
+      "stepOf": "Step {{n}} of {{total}}",
+      "note": "The machine moves by itself now. STOP is at the top as always.",
+      "abort": "Abort"
+    },
+    "phase": {
+      "fast": "{{axis}}: finding the plate",
+      "back": "{{axis}}: backing off",
+      "settle": "{{axis}}: letting the contact open",
+      "touch": "{{axis}}: slow touch",
+      "out": "{{axis}}: out past the wall",
+      "down": "{{axis}}: down beside the wall",
+      "up": "{{axis}}: up over the plate",
+      "return": "{{axis}}: back over the start"
+    },
+    "failure": {
+      "notFound": "{{axis}}: the plate was not touched within the travel limit. Nothing was written. Check the plate and the lead, or move the tool closer.",
+      "alreadyTouching": "{{axis}}: the probe was already touching before the move. Nothing was written. Check the lead is not shorted.",
+      "softLimit": "The move would leave the machine travel (soft limits). Nothing was written. Reset, then move the tool or home the machine.",
+      "touched": "{{axis}}: the tool came down on the plate instead of beside it. Nothing was written. Increase “Out past the wall” or start closer to the corner.",
+      "reset": "The measurement was stopped. Nothing was written.",
+      "other": "The measurement failed ({{code}}). Nothing was written."
+    },
+    "result": {
+      "into": "New zero for",
+      "shift": "{{axis}} moves by",
+      "note": "Nothing is written until you save. Remove the plate before cutting.",
+      "save": "Save zero",
+      "discard": "Discard",
+      "close": "Close",
+      "again": "Try again"
+    }
   }
 }

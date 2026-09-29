@@ -431,7 +431,12 @@
     "unknownSetting": "Sterownik nie podał takiego ustawienia.",
     "settingLocked": "Tego ustawienia nie zmienia się z panelu.",
     "badValue": "Ta wartość jest poza zakresem tego ustawienia.",
-    "noHoming": "Bazowanie jest wyłączone, więc nie wiadomo, gdzie jest obszar maszyny: ani gdzie jest góra osi Z, ani gdzie leży punkt z rysunku."
+    "noHoming": "Bazowanie jest wyłączone, więc nie wiadomo, gdzie jest obszar maszyny: ani gdzie jest góra osi Z, ani gdzie leży punkt z rysunku.",
+    "probeTriggered": "Wejście sondy świeci, więc pomiar nie ruszył: płytka dotyka freza albo przewód jest zwarty.",
+    "probing": "Pomiar już trwa.",
+    "noResult": "Nie ma pomiaru do zapisania.",
+    "badMethod": "Serwer nie zna tej metody sondowania.",
+    "badCorner": "Serwer nie zna takiego narożnika."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -1355,5 +1360,102 @@
     "moves": "„Do zera” i „jedź do punktu” są wyłączone: nie ma pewnej góry osi Z, do której można się podnieść, ani pewnego punktu na rysunku.",
     "fix": "Bazowanie włącza się w Ustawienia → Sterownik → Bazowanie ($22). Wymaga krańcówek.",
     "settings": "Przejdź do ustawień sterownika"
+  },
+  "probe": {
+    "title": "Sonda",
+    "steps": "Kroki sondowania",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "remember": "Zapamiętane z ostatniego razu. Sprawdź i popraw, co się różni — zapamiętam na następny raz.",
+    "cornerLabel": "Który narożnik materiału",
+    "method": {
+      "z": "Płytka Z",
+      "zNote": "Wierzch materiału: Z0.",
+      "corner": "Narożnik XYZ",
+      "cornerNote": "Narożnik materiału: X0, Y0 i Z0, płytką w kształcie L.",
+      "paper": "Kartka",
+      "paperNote": "Ręcznie, kartką papieru, bez sondy.",
+      "soon": "Jeszcze niezbudowane."
+    },
+    "how": {
+      "z": "Połóż płytkę płasko na materiale, pod frezem. Przypnij krokodylek do frezu.",
+      "corner": "Załóż płytkę L na wybrany narożnik, ściankami do obu krawędzi materiału. Przypnij krokodylek do frezu."
+    },
+    "place": {
+      "z": "Podjedź frezem nad płytkę, kilka milimetrów nad nią — mniej niż limit dojazdu Z.",
+      "corner": "Podjedź frezem nad płytkę, kilka milimetrów nad nią i ok. 8 mm od obu ścianek."
+    },
+    "corner": {
+      "backLeft": "Tył lewy",
+      "backRight": "Tył prawy",
+      "frontLeft": "Przód lewy",
+      "frontRight": "Przód prawy"
+    },
+    "field": {
+      "plateThickness": "Grubość płytki",
+      "cornerThickness": "Grubość blatu płytki",
+      "wallX": "Grubość ścianki X",
+      "wallY": "Grubość ścianki Y",
+      "toolDiameter": "Średnica freza",
+      "clear": "Odsunięcie za ściankę",
+      "depth": "Zejście przy ściance",
+      "maxZ": "Limit dojazdu Z",
+      "maxXY": "Limit dojazdu X/Y",
+      "retract": "Odjazd",
+      "fast": "Szybki dotyk",
+      "slow": "Wolny dotyk"
+    },
+    "step": {
+      "method": "Metoda",
+      "prepare": "Płytka",
+      "wire": "Przewód",
+      "position": "Ustawienie",
+      "measure": "Pomiar",
+      "result": "Wynik"
+    },
+    "wire": {
+      "how": "Dotknij płytką frezu i puść. Wejście sondy ma się zapalić przy dotyku i zgasnąć po nim.",
+      "waiting": "Czekam na dotyk",
+      "touching": "Dotyk",
+      "ok": "Działa",
+      "unknown": "Sterownik nie podaje stanu wejść, więc przewodu nie da się tu sprawdzić."
+    },
+    "position": {
+      "clipOn": "Wejście sondy świeci: płytka dotyka freza albo przewód jest zwarty. Usuń to przed pomiarem.",
+      "notNow": "Do pomiaru maszyna musi stać bezczynnie, bez programu.",
+      "start": "Mierz"
+    },
+    "measure": {
+      "stepOf": "Krok {{n}} z {{total}}",
+      "note": "Maszyna jedzie teraz sama. STOP jak zawsze u góry.",
+      "abort": "Przerwij"
+    },
+    "phase": {
+      "fast": "{{axis}}: szukam płytki",
+      "back": "{{axis}}: odjazd",
+      "settle": "{{axis}}: czekam, aż styk się rozewrze",
+      "touch": "{{axis}}: wolny dotyk",
+      "out": "{{axis}}: za ściankę",
+      "down": "{{axis}}: w dół przy ściance",
+      "up": "{{axis}}: w górę nad płytkę",
+      "return": "{{axis}}: nad punkt startu"
+    },
+    "failure": {
+      "notFound": "{{axis}}: nie dotknięto płytki w limicie dojazdu. Nic nie zapisano. Sprawdź płytkę i krokodylek albo podjedź bliżej.",
+      "alreadyTouching": "{{axis}}: sonda była zwarta przed ruchem. Nic nie zapisano. Sprawdź, czy przewód nie jest zwarty.",
+      "softLimit": "Ruch wyszedłby poza zakres maszyny (soft limity). Nic nie zapisano. Zresetuj, potem przestaw frez albo zbazuj maszynę.",
+      "touched": "{{axis}}: frez zjechał na płytkę zamiast obok niej. Nic nie zapisano. Zwiększ „Odsunięcie za ściankę” albo zacznij bliżej narożnika.",
+      "reset": "Pomiar przerwany. Nic nie zapisano.",
+      "other": "Pomiar nie udał się ({{code}}). Nic nie zapisano."
+    },
+    "result": {
+      "into": "Nowe zero dla",
+      "shift": "{{axis}} przesuwa się o",
+      "note": "Nic nie jest zapisane, dopóki nie zapiszesz. Zdejmij płytkę przed frezowaniem.",
+      "save": "Zapisz zero",
+      "discard": "Odrzuć",
+      "close": "Zamknij",
+      "again": "Spróbuj ponownie"
+    }
   }
 }

@@ -203,6 +203,16 @@ class Controller {
         'files:fit': [],
 
         /**
+         * A probing measurement: running (with the step it is on), measured
+         * and waiting for the operator to confirm the zero, or failed — and
+         * null once it is written or put away. See `controllers/Grbl/probe-run`.
+         *
+         * @event probe:state
+         * @param {object} probe - `{ method, options, wcs, state, step, result, failure }`, or null
+         */
+        'probe:state': [],
+
+        /**
          * The units every panel shows and the machine goes back to — the
          * server's setting, with the rule for formatting a millimetre in
          * them. Sent to every client on arrival and whenever it changes.

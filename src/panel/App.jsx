@@ -28,6 +28,7 @@ import HomingScreen from './screens/HomingScreen';
 import JournalScreen from './screens/JournalScreen';
 import MdiScreen from './screens/MdiScreen';
 import PathScreen from './screens/PathScreen';
+import ProbeScreen from './screens/ProbeScreen';
 import SettingsScreen, { showSettingsTab } from './screens/SettingsScreen';
 import ZeroScreen from './screens/ZeroScreen';
 import { useMachine } from './machine/useMachine';
@@ -53,7 +54,7 @@ const DESTINATIONS = [
   { id: 'zero', key: 'nav.zero', ready: true },
   { id: 'files', key: 'nav.files', ready: true },
   { id: 'path', key: 'nav.path', ready: true },
-  { id: 'probe', key: 'nav.probe', ready: false },
+  { id: 'probe', key: 'nav.probe', ready: true },
   { id: 'diag', key: 'nav.diag', ready: true },
   // What happened, in place of the alarm list it was drawn as (2026-09-24).
   { id: 'journal', key: 'nav.journal', ready: true },
@@ -125,6 +126,7 @@ const SCREENS = {
   journal: JournalScreen,
   mdi: MdiScreen,
   path: PathScreen,
+  probe: ProbeScreen,
   zero: ZeroScreen,
   settings: SettingsScreen,
 };
