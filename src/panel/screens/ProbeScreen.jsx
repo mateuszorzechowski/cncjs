@@ -11,7 +11,7 @@ import JogWidget from '../widgets/JogWidget';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  FIRST_CORNER, STEPS, applyProbe, discardProbe, fetchProbe, fieldText, methodOf, saveProbe, startProbe, wizardStep,
+  applyProbe, discardProbe, fetchProbe, fieldText, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
 } from '../machine/probe';
 import { useIsPhone } from '../ui/shell';
 import { useUnits } from '../ui/units';
@@ -37,7 +37,8 @@ const ProbeScreen = ({ machine }) => {
   const { probe } = machine;
   const [local, setLocal] = useState('method');
   const [picked, setPicked] = useState(null);
-  const [corner, setCorner] = useState(FIRST_CORNER);
+  // The corner, the paper's surface: each method's one choice, kept per method.
+  const [chosen, setChosen] = useState({});
   const [kept, setKept] = useState(null);
   const [texts, setTexts] = useState({});
   const [bad, setBad] = useState(null);
@@ -52,6 +53,8 @@ const ProbeScreen = ({ machine }) => {
   // With no method in hand — a page opened afresh — the wizard starts at the start.
   const step = wizardStep(method ? local : 'method', probe);
   const fields = kept?.methods?.[method?.id]?.fields ?? [];
+  const choice = chosen[method?.id] ?? method?.choice?.first;
+  const go = (by) => setLocal(stepBeside(method, step, by));
   const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
 
   useEffect(() => {
@@ -74,20 +77,23 @@ const ProbeScreen = ({ machine }) => {
         setKept(next);
         setBad(null);
         setTouched(false);
-        setLocal('wire');
+        go(1);
       })
       .catch((error) => setBad(error.name || fields[0]));
   };
 
-  const measure = () => startProbe(method.id, method.id === 'corner' ? { corner } : {});
+  const measure = () => startProbe(method.id, optionsFor(method, choice));
 
   const again = () => {
     if (machine.status?.word === 'Alarm') {
       controller.command('unlock');
     }
-    // Tried again here even if it was started on another device: its method and corner, then.
-    setPicked(probe?.method ?? picked);
-    setCorner(probe?.options?.corner ?? corner);
+    // Tried again here even if it was started on another device: its method and choice, then.
+    const again = methodOf(probe?.method ?? picked);
+    setPicked(again?.id ?? null);
+    if (again?.choice && probe?.options?.[again.choice.option]) {
+      setChosen((now) => ({ ...now, [again.id]: probe.options[again.choice.option] }));
+    }
     discardProbe();
     setLocal('position');
   };
@@ -104,7 +110,7 @@ const ProbeScreen = ({ machine }) => {
 
   const track = (
     <Card label={t('probe.title')} aside={method ? t(method.key) : null}>
-      <StepTrack steps={STEPS.map((s) => ({ ...s, name: t(s.key) }))} current={step} label={t('probe.steps')} />
+      <StepTrack steps={stepsOf(method).map((s) => ({ ...s, name: t(s.key) }))} current={step} label={t('probe.steps')} />
     </Card>
   );
 
@@ -115,14 +121,14 @@ const ProbeScreen = ({ machine }) => {
         <div className="flex min-h-0 flex-1 flex-col gap-gap @4xl/shell:flex-row">
           <Card className="min-w-0 shrink-0 @4xl/shell:flex-1" bodyClassName="gap-3">
             <div className="flex items-start gap-4">
-              <ProbePicture method={method.id} corner={corner} label={t(method.key)} className="h-24 w-32" />
+              <ProbePicture method={method.id} choice={choice} label={t(method.key)} className="h-24 w-32" />
               <p className="m-0 text-base text-ink">{t(method.place)}</p>
             </div>
-            {lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
+            {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
             {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
-            <Foot back={() => setLocal('wire')}>
-              <Button tone="go" disabled={!machine.canProbe || lit !== false} onClick={measure} className="h-ctl">
-                {t('probe.position.start')}
+            <Foot back={() => go(-1)}>
+              <Button tone="go" disabled={!machine.canProbe || (method.touches && lit !== false)} onClick={measure} className="h-ctl">
+                {t(method.start)}
               </Button>
             </Foot>
           </Card>
@@ -140,8 +146,8 @@ const ProbeScreen = ({ machine }) => {
     body = (
       <PrepareStep
         method={method}
-        corner={corner}
-        onCorner={setCorner}
+        chosen={choice}
+        onChoose={(id) => setChosen((now) => ({ ...now, [method.id]: id }))}
         fields={fields}
         texts={texts}
         onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}
@@ -149,15 +155,15 @@ const ProbeScreen = ({ machine }) => {
       />
     );
     foot = (
-      <Foot back={() => setLocal('method')}>
+      <Foot back={() => go(-1)}>
         <Button tone="primary" onClick={confirmFigures} className="h-ctl">{t('probe.next')}</Button>
       </Foot>
     );
   } else if (step === 'wire') {
     body = <WireStep lit={lit} touched={touched} />;
     foot = (
-      <Foot back={() => setLocal('prepare')}>
-        <Button tone="primary" disabled={!touched || lit !== false} onClick={() => setLocal('position')} className="h-ctl">
+      <Foot back={() => go(-1)}>
+        <Button tone="primary" disabled={!touched || lit !== false} onClick={() => go(1)} className="h-ctl">
           {t('probe.next')}
         </Button>
       </Foot>

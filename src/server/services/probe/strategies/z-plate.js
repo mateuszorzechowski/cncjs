@@ -7,6 +7,7 @@ import { touch } from '../moves';
 export default {
   fields: ['plateThickness', 'maxZ', 'retract', 'fast', 'slow'],
   options: {},
+  touches: true,
 
   check: () => null,
 

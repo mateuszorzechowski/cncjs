@@ -2410,7 +2410,7 @@ class GrblController {
       const mpos = this.reportedMm(this.runner.getMachinePosition());
       const wpos = this.reportedMm(this.runner.getWorkPosition());
 
-      this.probe = { method, options, wcs: modal.wcs, run: null, step: null, result: null, failure: null };
+      this.probe = { method, options, wcs: modal.wcs, start: mpos, run: null, step: null, result: null, failure: null };
       this.note({ level: 'info', source: 'server', event: 'probe', code: 'start', data: { method, ...options } });
 
       this.probe.run = createProbeRun({
@@ -2437,7 +2437,7 @@ class GrblController {
       if (!this.probe) {
         return;
       }
-      const { method, options, wcs } = this.probe;
+      const { method, options, wcs, start } = this.probe;
       this.probe.run = null;
 
       if (outcome.failure) {
@@ -2445,7 +2445,7 @@ class GrblController {
         this.note({ level: 'warn', source: 'server', event: 'probe', code: outcome.failure, data: { method, phase: outcome.phase } });
       } else {
         const parameters = this.runner.getParameters();
-        const zero = strategy.zero(params, options, outcome.seen);
+        const zero = strategy.zero(params, options, outcome.seen, start);
         const offset = offsetFor(zero, {
           g92: this.reportedMm(parameters.G92),
           tlo: this.reportedMm({ z: parameters.TLO }).z || 0,
@@ -3059,7 +3059,7 @@ class GrblController {
             return;
           }
           // Grbl would alarm at once (ALARM:4): the clip is on the tool, or the wire is shorted.
-          if (String(this.runner.state?.status?.pinState || '').includes('P')) {
+          if (strategy.touches && String(this.runner.state?.status?.pinState || '').includes('P')) {
             this.refuse(cmd, 'probe-triggered');
             return;
           }

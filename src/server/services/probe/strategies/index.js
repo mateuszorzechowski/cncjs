@@ -1,4 +1,5 @@
 import corner from './corner';
+import paper from './paper';
 import zPlate from './z-plate';
 
 /**
@@ -6,16 +7,19 @@ import zPlate from './z-plate';
  *
  * - `fields` — the figures it uses, in the order the wizard shows them;
  * - `options` — the choices made per measurement, each with its values;
+ * - `touches` — whether it works through the probe input, which must then
+ *   be clear before it starts;
  * - `check(options)` — why these choices will not do, or null;
  * - `steps(params, options)` — the moves, see `moves`;
- * - `zero(params, options, seen)` — the new work zero, machine coordinates,
- *   from the touches kept.
+ * - `zero(params, options, seen, start)` — the new work zero, machine
+ *   coordinates, from the touches kept and where the tool started.
  *
  * A new method is a new file here; nothing that runs them changes.
  */
 export const STRATEGIES = {
   z: zPlate,
   corner,
+  paper,
 };
 
 /** What a panel needs to offer the methods: their figures and choices. */

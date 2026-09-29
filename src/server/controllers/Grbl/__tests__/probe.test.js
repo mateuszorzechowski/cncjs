@@ -180,6 +180,19 @@ describe('probe:start', () => {
     expect(refusals.map(({ reason: said }) => said)).toEqual([reason]);
   });
 
+  test('the paper needs no probe input, so a lit one does not stop it', () => {
+    const { controller, sent, refusals, probeStates } = setup();
+    controller.runner.state.status.pinState = 'P';
+
+    controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
+    controller.runner.parse('ok');
+
+    expect(refusals).toEqual([]);
+    expect(sent()).toEqual(['G91 G21']);
+    // Machine Z0 less a tenth of paper, against G54's -30: the zero moves up 29.9.
+    expect(probeStates().pop().result.shift.z).toBeCloseTo(29.9, 6);
+  });
+
   test('not in a pause, for now', () => {
     expect(programRefusal('probe:start', { workflow: 'paused', firmware: 'Idle' })).toBe('program-running');
     expect(programRefusal('probe:apply', { workflow: 'paused', firmware: 'Idle' })).toBe('program-running');

@@ -80,6 +80,7 @@ const KEYS = {
   'no-result': 'refusal.noResult',
   'bad-method': 'refusal.badMethod',
   'bad-corner': 'refusal.badCorner',
+  'bad-edge': 'refusal.badEdge',
 };
 
 /**

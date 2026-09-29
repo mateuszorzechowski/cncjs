@@ -31,6 +31,7 @@ const wall = (axis, sign, params) => [
 export default {
   fields: ['cornerThickness', 'wallX', 'wallY', 'toolDiameter', 'clear', 'depth', 'maxZ', 'maxXY', 'retract', 'fast', 'slow'],
   options: { corner: Object.keys(CORNERS) },
+  touches: true,
 
   check: ({ corner } = {}) => (CORNERS[corner] ? null : 'bad-corner'),
 

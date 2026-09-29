@@ -6,7 +6,7 @@ import StatTile from './StatTile';
 import TextField from './TextField';
 import WcsBadge from './WcsBadge';
 import {
-  CORNERS, FIELDS, FIRST_CORNER, METHODS, failureKey, fieldUnit, phaseWords,
+  FIELDS, METHODS, failureKey, fieldUnit, phaseWords,
 } from '../machine/probe';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
@@ -39,32 +39,31 @@ export const MethodStep = ({ onPick }) => (
       <button
         key={method.id}
         type="button"
-        disabled={method.soon}
         onClick={() => onPick(method.id)}
-        className="flex flex-col items-center gap-3 rounded-ctl border border-line bg-field p-4 text-center hover:border-acc disabled:opacity-45 disabled:hover:border-line"
+        className="flex flex-col items-center gap-3 rounded-ctl border border-line bg-field p-4 text-center hover:border-acc"
       >
-        <ProbePicture method={method.id} corner={FIRST_CORNER} label={t(method.key)} className="h-24 w-32" />
+        <ProbePicture method={method.id} choice={method.choice?.first} label={t(method.key)} className="h-24 w-32" />
         <span className="text-base font-semibold text-ink">{t(method.key)}</span>
-        <span className="text-note text-mut">{method.soon ? t('probe.method.soon') : t(method.note)}</span>
+        <span className="text-note text-mut">{t(method.note)}</span>
       </button>
     ))}
   </div>
 );
 
-export const PrepareStep = ({ method, corner, onCorner, fields, texts, onText, bad }) => {
+export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, bad }) => {
   const units = useUnits();
   return (
     <div className="grid gap-4 @3xl/shell:grid-cols-[auto_minmax(0,1fr)]">
       <div className="flex flex-col items-center gap-3">
-        <ProbePicture method={method.id} corner={corner} label={t(method.key)} className="h-40 w-52" />
-        {method.id === 'corner' ? (
+        <ProbePicture method={method.id} choice={chosen} label={t(method.key)} className="h-40 w-52" />
+        {method.choice ? (
           <SegmentedChoice
-            options={CORNERS.map((c) => c.id)}
-            value={corner}
-            onChange={onCorner}
-            format={(id) => t(CORNERS.find((c) => c.id === id).key)}
-            label={t('probe.cornerLabel')}
-            columns={2}
+            options={method.choice.list.map((c) => c.id)}
+            value={chosen}
+            onChange={onChoose}
+            format={(id) => t(method.choice.list.find((c) => c.id === id).key)}
+            label={t(method.choice.key)}
+            columns={method.choice.columns}
           />
         ) : null}
       </div>
@@ -141,7 +140,7 @@ export const ResultStep = ({ probe }) => {
         <span className="text-base text-ink">{t('probe.result.into')}</span>
         <WcsBadge wcs={probe?.wcs} />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid gap-2 @3xl/shell:grid-cols-3">
         {['x', 'y', 'z'].filter((axis) => axis in shift).map((axis) => (
           <StatTile
             key={axis}

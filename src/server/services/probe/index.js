@@ -27,6 +27,8 @@ export const FIELDS = {
   clear: { value: 20, min: 1, max: 100 },
   depth: { value: 5, min: 0.5, max: 50 },
   toolDiameter: { value: 6, min: 0.1, max: 50 },
+  // Paper by hand: an office sheet is a tenth of a millimetre.
+  paperThickness: { value: 0.1, min: 0.01, max: 5 },
   // The fence: the furthest one probing move may go.
   maxZ: { value: 15, min: 1, max: 100 },
   maxXY: { value: 15, min: 1, max: 100 },

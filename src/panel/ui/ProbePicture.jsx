@@ -41,6 +41,28 @@ const SideView = ({ id, paper }) => (
   </>
 );
 
+// Where the tool stands for each side the paper finds, and which way it faces.
+const SIDE_AT = {
+  'x-left': { x: 28, y: 48, dx: 1, dy: 0 },
+  'x-right': { x: 96, y: 48, dx: -1, dy: 0 },
+  'y-front': { x: 62, y: 72, dx: 0, dy: -1 },
+  'y-back': { x: 62, y: 24, dx: 0, dy: 1 },
+};
+
+/** From above: the tool beside one side of the work, a sheet between them. */
+const SideOfWork = ({ id, edge }) => {
+  const { x, y, dx, dy } = SIDE_AT[edge];
+  const along = { x: dy !== 0 ? 10 : 0, y: dx !== 0 ? 10 : 0 };
+  return (
+    <>
+      <rect x={28} y={24} width={68} height={48} className="fill-mutS stroke-line" />
+      <line x1={x - dx * 2 - along.x} y1={y - dy * 2 - along.y} x2={x - dx * 2 + along.x} y2={y - dy * 2 + along.y} className="stroke-acc" strokeWidth={2} />
+      <circle cx={x - dx * 8} cy={y - dy * 8} r={4} className="fill-ink" />
+      <Arrow id={id} x1={x - dx * 22} y1={y - dy * 22} x2={x - dx * 14} y2={y - dy * 14} />
+    </>
+  );
+};
+
 const TopView = ({ id, corner }) => {
   const { x, y, dx, dy } = CORNER_AT[corner] || CORNER_AT['front-left'];
   const tool = { x: x + dx * 12, y: y + dy * 12 };
@@ -55,7 +77,18 @@ const TopView = ({ id, corner }) => {
   );
 };
 
-const ProbePicture = ({ method, corner, label, className = '' }) => {
+/** The view for a method and its choice: the corner from above, a paper side from above, the rest side-on. */
+const viewOf = (method, choice) => {
+  if (method === 'corner') {
+    return (id) => <TopView id={id} corner={choice} />;
+  }
+  if (method === 'paper' && SIDE_AT[choice]) {
+    return (id) => <SideOfWork id={id} edge={choice} />;
+  }
+  return (id) => <SideView id={id} paper={method === 'paper'} />;
+};
+
+const ProbePicture = ({ method, choice, label, className = '' }) => {
   const id = `probe-arrow-${useId().replace(/:/g, '')}`;
   return (
     <svg viewBox="0 0 124 92" role="img" aria-label={label} className={`shrink-0 ${className}`} fill="none" strokeWidth={1.5}>
@@ -64,7 +97,7 @@ const ProbePicture = ({ method, corner, label, className = '' }) => {
           <path d="M0 0 L8 4 L0 8 Z" className="fill-acc" />
         </marker>
       </defs>
-      {method === 'corner' ? <TopView id={id} corner={corner} /> : <SideView id={id} paper={method === 'paper'} />}
+      {viewOf(method, choice)(id)}
     </svg>
   );
 };

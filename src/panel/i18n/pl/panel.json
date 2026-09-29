@@ -436,7 +436,8 @@
     "probing": "Pomiar już trwa.",
     "noResult": "Nie ma pomiaru do zapisania.",
     "badMethod": "Serwer nie zna tej metody sondowania.",
-    "badCorner": "Serwer nie zna takiego narożnika."
+    "badCorner": "Serwer nie zna takiego narożnika.",
+    "badEdge": "Serwer nie zna takiej powierzchni."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -1374,16 +1375,17 @@
       "corner": "Narożnik XYZ",
       "cornerNote": "Narożnik materiału: X0, Y0 i Z0, płytką w kształcie L.",
       "paper": "Kartka",
-      "paperNote": "Ręcznie, kartką papieru, bez sondy.",
-      "soon": "Jeszcze niezbudowane."
+      "paperNote": "Ręcznie, kartką papieru: wierzch albo dowolny bok, bez sondy."
     },
     "how": {
       "z": "Połóż płytkę płasko na materiale, pod frezem. Przypnij krokodylek do frezu.",
-      "corner": "Załóż płytkę L na wybrany narożnik, ściankami do obu krawędzi materiału. Przypnij krokodylek do frezu."
+      "corner": "Załóż płytkę L na wybrany narożnik, ściankami do obu krawędzi materiału. Przypnij krokodylek do frezu.",
+      "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
     },
     "place": {
       "z": "Podjedź frezem nad płytkę, kilka milimetrów nad nią — mniej niż limit dojazdu Z.",
-      "corner": "Podjedź frezem nad płytkę, kilka milimetrów nad nią i ok. 8 mm od obu ścianek."
+      "corner": "Podjedź frezem nad płytkę, kilka milimetrów nad nią i ok. 8 mm od obu ścianek.",
+      "paper": "Dojedź frezem do kartki najmniejszym krokiem. Zatrzymaj się, gdy kartka przy przesuwaniu zaczyna stawiać opór — wtedy „Tu”."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1403,11 +1405,12 @@
       "maxXY": "Limit dojazdu X/Y",
       "retract": "Odjazd",
       "fast": "Szybki dotyk",
-      "slow": "Wolny dotyk"
+      "slow": "Wolny dotyk",
+      "paperThickness": "Grubość kartki"
     },
     "step": {
       "method": "Metoda",
-      "prepare": "Płytka",
+      "prepare": "Przygotowanie",
       "wire": "Przewód",
       "position": "Ustawienie",
       "measure": "Pomiar",
@@ -1423,7 +1426,8 @@
     "position": {
       "clipOn": "Wejście sondy świeci: płytka dotyka freza albo przewód jest zwarty. Usuń to przed pomiarem.",
       "notNow": "Do pomiaru maszyna musi stać bezczynnie, bez programu.",
-      "start": "Mierz"
+      "start": "Mierz",
+      "here": "Tu"
     },
     "measure": {
       "stepOf": "Krok {{n}} z {{total}}",
@@ -1451,11 +1455,19 @@
     "result": {
       "into": "Nowe zero dla",
       "shift": "{{axis}} przesuwa się o",
-      "note": "Nic nie jest zapisane, dopóki nie zapiszesz. Zdejmij płytkę przed frezowaniem.",
+      "note": "Nic nie jest zapisane, dopóki nie zapiszesz. Przed frezowaniem zabierz płytkę albo kartkę.",
       "save": "Zapisz zero",
       "discard": "Odrzuć",
       "close": "Zamknij",
       "again": "Spróbuj ponownie"
+    },
+    "edgeLabel": "Która powierzchnia materiału",
+    "edge": {
+      "z": "Wierzch (Z)",
+      "xLeft": "Lewy bok (X)",
+      "xRight": "Prawy bok (X)",
+      "yFront": "Przedni bok (Y)",
+      "yBack": "Tylny bok (Y)"
     }
   }
 }
