@@ -252,6 +252,9 @@
    * dark one, and a light shadow reads as a glow.
    */
   --menuShadow: 0 -4px 12px rgb(0 0 0 / 0.28);
+  /* The same for a sheet (*"cień dla arkuszy również"*): up from the foot on a
+   * phone, where it rises like the menu; all round a dialog in the middle. */
+  --dialogShadow: 0 6px 24px rgb(0 0 0 / 0.28);
 }
 
 [data-target='fullhd'] {

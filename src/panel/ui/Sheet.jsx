@@ -154,7 +154,7 @@ const Sheet = ({ title, onHelp, onClose, footer, children }) => {
          * the review frame is, and against the viewport when there is none.
          * Both are the right answer.
          */
-        className={`fixed inset-x-0 bottom-0 ${layer.panel} flex max-h-[85%] flex-col gap-gap rounded-t-card border-t border-line bg-panel p-pad @3xl/shell:inset-x-auto @3xl/shell:bottom-auto @3xl/shell:left-1/2 @3xl/shell:top-1/2 @3xl/shell:w-dialog @3xl/shell:-translate-x-1/2 @3xl/shell:-translate-y-1/2 @3xl/shell:rounded-card @3xl/shell:border`}
+        className={`fixed inset-x-0 bottom-0 ${layer.panel} flex max-h-[85%] flex-col gap-gap rounded-t-card border-t border-line bg-panel p-pad [box-shadow:var(--menuShadow)] @3xl/shell:[box-shadow:var(--dialogShadow)] @3xl/shell:inset-x-auto @3xl/shell:bottom-auto @3xl/shell:left-1/2 @3xl/shell:top-1/2 @3xl/shell:w-dialog @3xl/shell:-translate-x-1/2 @3xl/shell:-translate-y-1/2 @3xl/shell:rounded-card @3xl/shell:border`}
       >
         <div className="flex items-center gap-3">
           <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{title}</span>
