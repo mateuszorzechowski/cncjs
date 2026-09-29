@@ -97,6 +97,7 @@ const EditorScrollbar = ({ view, tick }) => {
   return (
     <div
       ref={track}
+      data-scroll-grab=""
       className="absolute bottom-1.5 right-0.5 top-1.5 w-7 cursor-pointer touch-none"
     >
       {bar ? (
