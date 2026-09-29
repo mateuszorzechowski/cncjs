@@ -53,6 +53,10 @@ module.exports = {
       redS: 'color-mix(in srgb, var(--red) 12%, var(--surf))',
       ambS: 'color-mix(in srgb, var(--amb) 12%, var(--surf))',
       mutS: 'color-mix(in srgb, var(--mut) 10%, var(--surf))',
+      // The accent half-quietened: a quantity drawn beside the accent that is
+      // its own part, as the disk's used room beside cncjs's files (review
+      // note, 2026-09-29: grey there read as a scroll track).
+      accM: 'color-mix(in srgb, var(--acc) 35%, var(--surf))',
       /*
        * Amber for words on amber's own wash. The amber itself is ~4:1 there
        * at 13px — enough for a mark, short of text (settings drawing,

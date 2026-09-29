@@ -40,7 +40,7 @@ const Stepper = ({ value, onChange, fine, coarse, min, max, label, unit, disable
     >
       <Key {...key} delta={-coarse}>&laquo;</Key>
       <Key {...key} delta={-fine}>&lsaquo;</Key>
-      <output className="flex h-full min-w-0 items-center justify-center rounded-ctl border border-line bg-field font-num text-lead font-semibold tabular-nums text-ink">
+      <output className="flex h-full min-w-0 items-center justify-center rounded-ctl border border-line bg-field font-num text-lead font-medium tabular-nums text-ink">
         {value}
         {unit ? <span className="ml-1 text-note font-normal text-mut">{unit}</span> : null}
       </output>

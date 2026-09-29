@@ -39,7 +39,10 @@ const Key = ({ children, onClick, hold, disabled, label, quiet, className = '' }
       'flex min-h-jbtnh min-w-0 flex-col items-center justify-center rounded-ctl border leading-tight',
       quiet
         ? 'border-line bg-field text-cap font-medium text-mut hover:border-acc hover:text-acc'
-        : 'border-line bg-surf text-lead font-semibold text-acc hover:border-acc',
+        // A faint wash of the accent: the one family of keys on the panel
+        // with a ground of its own, so the pad is found at a glance (review
+        // note, 2026-09-29: *"delikatny background … łatwiej identyfikowalne"*).
+        : 'border-line bg-accS text-lead font-semibold text-acc hover:border-acc',
       'disabled:opacity-45 disabled:hover:border-line',
       className,
     ].join(' ')}

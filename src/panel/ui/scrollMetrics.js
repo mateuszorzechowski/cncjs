@@ -99,3 +99,14 @@ export const sideThumbOf = (el, min = MIN_THUMB) => {
   const at = Math.min(1, Math.max(0, scrollLeft / hidden));
   return { width, left: Math.round(at * (clientWidth - width)) };
 };
+
+/**
+ * Where to scroll for a thumb dragged to `top` pixels down its track: the
+ * track less the thumb is the whole of the scroll, as `thumbOf` draws it, so
+ * a thumb dragged to the end of its travel is the end of the list.
+ */
+export const scrollForThumb = (top, track, height, hidden) => {
+  const travel = track - height;
+  const at = travel > 0 ? Math.min(1, Math.max(0, top / travel)) : 0;
+  return Math.round(at * hidden);
+};

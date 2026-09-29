@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorSelection } from '@codemirror/state';
 import { forEachDiagnostic } from '@codemirror/lint';
 import { MIN_THUMB, thumbOf } from '../ui/scrollMetrics';
-import { scrollAt, scrollMarks } from './scrollMarks';
+import { scrollMarks } from './scrollMarks';
+import { thumbFace, useScrollGrab } from '../ui/scrollGrab';
 import { t } from '../i18n';
 
 // A mark's colour, by the finding's severity.
@@ -66,39 +67,26 @@ const EditorScrollbar = ({ view, tick }) => {
   }, [tick, measure]);
 
   /*
-   * Press or drag on the track: to that place in the file. Bound on the node,
-   * as the scene's controls are, and not on a mark — a mark is a button to
-   * its own line.
+   * Taken hold of and dragged as every scroller on the panel is (`scrollGrab`):
+   * the thumb where it was taken, or to the pointer pressed beside it. A mark
+   * is a button to its own line and is left to itself.
    */
-  useEffect(() => {
-    const node = track.current;
+  const [held, hot] = useScrollGrab(track, () => {
     const scroller = view?.scrollDOM;
-    if (!node || !scroller) {
-      return undefined;
+    const height = track.current?.clientHeight ?? 0;
+    const at = scroller && height ? thumbOf(scroller, MIN_THUMB, 0) : null;
+    if (!at) {
+      return null;
     }
-    const follow = (event) => {
-      const box = node.getBoundingClientRect();
-      scroller.scrollTop = scrollAt(event.clientY - box.top, box.height, scroller.scrollHeight, scroller.clientHeight);
+    const scale = height / scroller.clientHeight;
+    return {
+      top: at.top * scale,
+      height: at.height * scale,
+      track: height,
+      hidden: scroller.scrollHeight - scroller.clientHeight,
+      scroller,
     };
-    const press = (event) => {
-      if (event.target.closest('button')) {
-        return;
-      }
-      node.setPointerCapture(event.pointerId);
-      follow(event);
-    };
-    const drag = (event) => {
-      if (node.hasPointerCapture(event.pointerId)) {
-        follow(event);
-      }
-    };
-    node.addEventListener('pointerdown', press);
-    node.addEventListener('pointermove', drag);
-    return () => {
-      node.removeEventListener('pointerdown', press);
-      node.removeEventListener('pointermove', drag);
-    };
-  }, [view]);
+  });
 
   const go = (line) => {
     const at = view.state.doc.line(line).from;
@@ -109,13 +97,14 @@ const EditorScrollbar = ({ view, tick }) => {
   return (
     <div
       ref={track}
+      data-scroll-grab=""
       className="absolute bottom-1.5 right-0.5 top-1.5 w-7 cursor-pointer touch-none"
     >
       {bar ? (
         <>
           <span className="pointer-events-none absolute inset-y-0 right-0.5 w-1 rounded-full bg-line" />
           <span
-            className="pointer-events-none absolute right-0.5 top-0 h-[var(--thumbH)] w-1 translate-y-[var(--thumbY)] rounded-full bg-mut"
+            className={`pointer-events-none absolute right-0.5 top-0 h-[var(--thumbH)] translate-y-[var(--thumbY)] rounded-full transition-[width,background-color] duration-100 ${thumbFace(held, hot)}`}
             ref={(node) => {
               node?.style.setProperty('--thumbH', `${Math.round(bar.height * bar.scale)}px`);
               node?.style.setProperty('--thumbY', `${Math.round(bar.top * bar.scale)}px`);

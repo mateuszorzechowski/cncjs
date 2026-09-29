@@ -1,4 +1,4 @@
-import { scrollAt, scrollMarks } from '../scrollMarks';
+import { scrollMarks } from '../scrollMarks';
 
 describe('the findings on the editor scrollbar', () => {
   test('each where it is in the file, top to bottom', () => {
@@ -25,14 +25,5 @@ describe('the findings on the editor scrollbar', () => {
 
   test('the last line stays on the track', () => {
     expect(scrollMarks([{ line: 1, top: 1, severity: 'error' }], 100)[0].y).toBe(97);
-  });
-});
-
-describe('a press on the track', () => {
-  test('scrolls to that place in the file', () => {
-    expect(scrollAt(0, 400, 5000, 1000)).toBe(0);
-    expect(scrollAt(200, 400, 5000, 1000)).toBe(2000);
-    expect(scrollAt(400, 400, 5000, 1000)).toBe(4000);
-    expect(scrollAt(900, 400, 5000, 1000)).toBe(4000);
   });
 });

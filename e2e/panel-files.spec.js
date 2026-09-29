@@ -299,7 +299,11 @@ const listFrame = (page) => page.evaluate(() => {
   const track = [...scroller.parentElement.children].find((node) => node.classList.contains('bg-line')).getBoundingClientRect();
   const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
   const menu = document.querySelector('nav[aria-label="Nawigacja"]').getBoundingClientRect();
-  return { top: box.top, height: box.height, foot: box.bottom - foot.bottom, gap, trackEnd: track.bottom, menuTop: menu.top };
+  const card = scroller.querySelector('[data-card-foot]').getBoundingClientRect();
+  return {
+    top: box.top, height: box.height, foot: box.bottom - foot.bottom, gap, trackEnd: track.bottom, menuTop: menu.top,
+    trackLeft: track.left, trackRight: track.right, cardRight: card.right,
+  };
 });
 
 test.describe('the files list when it scrolls', () => {
@@ -328,6 +332,9 @@ test.describe('the files list when it scrolls, on a phone', () => {
 
     const frame = await listFrame(cncjs.page);
     expect(frame.trackEnd).toBeLessThanOrEqual(frame.menuTop);
+    // Beside the card, in the screen's margin, not over its contents (review
+    // note, 2026-09-29: *"na telefonie … docelowo obok"*).
+    expect(frame.trackLeft).toBeGreaterThanOrEqual(frame.cardRight);
     cncjs.expectNoPageErrors();
   });
 });

@@ -155,8 +155,10 @@ const SUMMARIES = [
   { group: 'spindle', parts: [{ names: ['$32'], on: true }, { names: ['$30'], unit: 'rpm' }] },
   // Inversions and timings only: neither a switch nor a limit.
   { group: 'signals', parts: [] },
-  // Reporting in inches on or off; nothing to top.
-  { group: 'motion', parts: [{ names: ['$13'], on: true }] },
+  // Nothing: `$13` (reporting in inches) was here, and the panel does not use
+  // it — the server converts (review note, 2026-09-29: *"ta informacja jest
+  // zbędna"*). The group says how many settings it has.
+  { group: 'motion', parts: [] },
 ];
 
 /**

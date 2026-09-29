@@ -48,7 +48,8 @@ describe('groupSummaries', () => {
       { group: 'limits', parts: [{ names: ['$21'], on: true }, { names: ['$20'], on: true }] },
       { group: 'spindle', parts: [{ names: ['$32'], on: false }, { names: ['$30'], unit: 'rpm', values: [24000] }] },
       { group: 'signals', parts: [] },
-      { group: 'motion', parts: [{ names: ['$13'], on: false }] },
+      // Not $13: the panel does not use it, the server converts (2026-09-29).
+      { group: 'motion', parts: [] },
     ]);
   });
 

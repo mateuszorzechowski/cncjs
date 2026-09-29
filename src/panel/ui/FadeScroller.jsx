@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { edgesOf, thumbOf, MIN_THUMB, TRACK_INSET } from './scrollMetrics';
+import { useIsPhone } from './shell';
+import { thumbFace, useScrollGrab } from './scrollGrab';
 
 /**
  * The panel's one way of scrolling something inside it.
@@ -22,8 +24,11 @@ import { edgesOf, thumbOf, MIN_THUMB, TRACK_INSET } from './scrollMetrics';
  *     scrolls at all*, and says it all the time — *"pasek scrolla i scroll
  *     zawsze widoczne"* (Mateusz, 2026-09-24). It used to appear only while
  *     moving, the way a phone's does, which left a list that had not been
- *     touched yet looking like all there was. Never draggable — a 4px drag
- *     target beside a jog pad is a mis-tap waiting to happen.
+ *     touched yet looking like all there was. It was never draggable, for
+ *     fear of a 4px target beside a jog pad; now it is, by a mouse or a
+ *     finger, on a strip wider than it, and it widens into the accent while
+ *     held (review note, 2026-09-29: *"skrol mogę chwycić … dla każdego
+ *     skrolla"*) — see `scrollGrab`.
  *
  * The geometry is set as custom properties on the thumb rather than as a
  * `style` prop: Tailwind cannot see a class assembled at runtime, and the
@@ -113,6 +118,23 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
   const [edges, setEdges] = useState({ top: false, bottom: false });
   const [scrolls, setScrolls] = useState(false);
   const thumb = useRef(null);
+  const phone = useIsPhone();
+  // Taken hold of and dragged, by a mouse or a finger (`scrollGrab`).
+  const strip = useRef(null);
+  const [held, hot] = useScrollGrab(strip, () => {
+    if (!scroller) {
+      return null;
+    }
+    const tail = parseFloat(getComputedStyle(scroller).getPropertyValue('--trackTail')) || 0;
+    const at = thumbOf(scroller, MIN_THUMB, TRACK_INSET, tail);
+    return at && {
+      top: at.top - TRACK_INSET,
+      height: at.height,
+      track: scroller.clientHeight - (2 * TRACK_INSET) - tail,
+      hidden: scroller.scrollHeight - scroller.clientHeight,
+      scroller,
+    };
+  });
 
   const measure = useCallback(() => {
     const at = edgesOf(scroller);
@@ -161,7 +183,29 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
     // scroller becomes scrollable while it is being looked at.
     node.style.setProperty('--thumbH', `${bar ? bar.height : 0}px`);
     node.style.setProperty('--thumbY', `${bar ? bar.top : 0}px`);
-  }, [scroller, frame, gapBelow]);
+
+    /*
+     * On a phone, beside the card, in the screen's margin — always (review
+     * note, 2026-09-29: *"na telefonie raz jest w karcie raz obok niej —
+     * docelowo obok, żeby nie zajmować miejsca"*). Wherever the scroller
+     * stands, the thumb is put two pixels inside the content area's right
+     * edge, measured, rather than in the gutter of whatever holds it. Not in
+     * a sheet, which has no margin beside it, nor in a list floating over the
+     * page. Wider, the gutter decides:
+     * the screen's margin for a scroller that is the screen, a card's own
+     * padding for a card among others that scrolls by itself.
+     */
+    const wrapper = scroller?.parentElement;
+    // Not a list that floats over the page and keeps its thumb inside it
+    // (`data-thumb-inside`: the MDI line's suggestions).
+    const main = phone && !scroller?.closest('[data-thumb-inside]') ? scroller?.closest('main') : null;
+    if (wrapper && main) {
+      const beside = main.getBoundingClientRect().right - wrapper.getBoundingClientRect().right;
+      wrapper.style.setProperty('--thumbRight', `${2 - beside}px`);
+    } else {
+      wrapper?.style.removeProperty('--thumbRight');
+    }
+  }, [scroller, frame, gapBelow, phone]);
 
   /*
    * Measured on arrival, on scroll, and whenever the content changes --- not
@@ -269,7 +313,7 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
       <span
         aria-hidden="true"
         className={[
-          'pointer-events-none absolute right-[calc(2px-var(--thumbGutter,var(--pad)))] top-1.5 bottom-[calc(0.375rem+var(--trackTail))] w-1 rounded-full bg-line',
+          'pointer-events-none absolute right-[var(--thumbRight,calc(2px-var(--thumbGutter,var(--pad))))] top-1.5 bottom-[calc(0.375rem+var(--trackTail))] w-1 rounded-full bg-line',
           scrolls ? '' : 'hidden',
         ].join(' ')}
       />
@@ -277,8 +321,20 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
         ref={thumb}
         aria-hidden="true"
         className={[
-          'pointer-events-none absolute right-[calc(2px-var(--thumbGutter,var(--pad)))] top-0 w-1 rounded-full bg-mut',
+          'pointer-events-none absolute right-[var(--thumbRight,calc(2px-var(--thumbGutter,var(--pad))))] top-0 rounded-full transition-[width,background-color] duration-100',
+          thumbFace(held, hot),
           'h-[var(--thumbH,0px)] translate-y-[var(--thumbY,0px)]',
+          scrolls ? '' : 'hidden',
+        ].join(' ')}
+      />
+      {/* What is pressed: the track's length, wider than it for a finger,
+        * centred on it. No touch panning, so a drag moves the thumb. */}
+      <span
+        ref={strip}
+        data-scroll-grab=""
+        aria-hidden="true"
+        className={[
+          'absolute right-[calc(var(--thumbRight,calc(2px-var(--thumbGutter,var(--pad))))-8px)] top-1.5 bottom-[calc(0.375rem+var(--trackTail))] w-5 cursor-pointer touch-none',
           scrolls ? '' : 'hidden',
         ].join(' ')}
       />

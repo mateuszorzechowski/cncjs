@@ -22,11 +22,4 @@ export const scrollMarks = (found, track, { markHeight = 3 } = {}) => {
   return [...rows.values()].sort((a, b) => a.y - b.y);
 };
 
-/** The scroll offset a press at `y` on a track of `track` pixels asks for. */
-export const scrollAt = (y, track, scrollHeight, clientHeight) => {
-  const hidden = Math.max(0, scrollHeight - clientHeight);
-  const at = track > 0 ? Math.min(1, Math.max(0, y / track)) : 0;
-  return Math.round(at * hidden);
-};
-
 export default scrollMarks;
