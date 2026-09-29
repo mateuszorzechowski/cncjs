@@ -1483,7 +1483,6 @@
       "zero": "zapis zera"
     },
     "cycle": {
-      "pick": "Kliknij pole, aby zobaczyć, gdzie jest używane",
       "maxZ": "Szybki zjazd: maksymalna droga szukania",
       "fast": "Szybki zjazd do styku",
       "retract": "Styk · odjazd przed pomiarem",

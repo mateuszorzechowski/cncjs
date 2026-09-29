@@ -1,5 +1,5 @@
 import {
-  CYCLE_MS, FIGURES, PLATE_TOP, figureOfPhase, gapAt, sceneAt,
+  CYCLE_MS, CYCLE_ORDER, FIGURES, PLATE_TOP, STOP_MS, cycleAt, figureOfPhase, gapAt, sceneAt,
 } from '../probeCycle';
 
 const at = (fraction) => fraction * CYCLE_MS;
@@ -47,5 +47,21 @@ describe('what the machine is doing, as a part of the cycle', () => {
   ])('%s plays %s, stage %i', (phase, figure, stage) => {
     expect(figureOfPhase(phase)).toBe(figure);
     expect(FIGURES[figure].stage).toBe(stage);
+  });
+});
+
+describe('the whole cycle, with no figure in hand', () => {
+  const span = CYCLE_MS + STOP_MS;
+
+  test('plays each part in the order the machine runs them, and starts again', () => {
+    expect(CYCLE_ORDER.map((_, i) => cycleAt(i * span + 10).name)).toEqual(['fast', 'retract', 'slow', 'plateThickness', 'lift']);
+    expect(cycleAt(CYCLE_ORDER.length * span + 10).name).toBe('fast');
+  });
+
+  test('stops on the last frame of each part before the next', () => {
+    const end = sceneAt('fast', CYCLE_MS - 1).gap;
+
+    expect(cycleAt(CYCLE_MS + STOP_MS / 2).scene.gap).toBe(end);
+    expect(cycleAt(CYCLE_MS + STOP_MS / 2).name).toBe('fast');
   });
 });

@@ -1483,7 +1483,6 @@
       "zero": "setting zero"
     },
     "cycle": {
-      "pick": "Pick a field to see where its figure is used",
       "maxZ": "Fast approach: the furthest it looks for the plate",
       "fast": "Fast approach to the touch",
       "retract": "Touch · back off before measuring",

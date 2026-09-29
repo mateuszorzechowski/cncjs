@@ -80,6 +80,27 @@ export const sceneAt = (name, ms) => {
 };
 
 /*
+ * The whole cycle, when no figure is being set (Mateusz, 2026-09-29: *"jak
+ * żaden input nie ma fokusa to pokazuj całą animację z przystankami"*): each
+ * part in the order the machine runs them, played once and then held for a
+ * moment, so the stages read one at a time.
+ */
+export const CYCLE_ORDER = ['fast', 'retract', 'slow', 'plateThickness', 'lift'];
+
+/** How long each part is held at its end before the next begins. */
+export const STOP_MS = 800;
+
+/** The part of the whole cycle at `ms`, and the drawing for it. */
+export const cycleAt = (ms) => {
+  const span = CYCLE_MS + STOP_MS;
+  const at = ms % (span * CYCLE_ORDER.length);
+  const name = CYCLE_ORDER[Math.floor(at / span)];
+  const into = at % span;
+  // Held on its last frame through the stop.
+  return { name, scene: sceneAt(name, Math.min(into, CYCLE_MS - 1)) };
+};
+
+/*
  * What the machine is doing, as the figure whose part of the cycle it is —
  * the server's step names (`services/probe/moves`), so the measurement
  * screen plays the part the machine is in.
