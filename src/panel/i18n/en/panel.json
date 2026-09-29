@@ -226,6 +226,7 @@
     "noteAny": "Sets the work zero at the current machine position.",
     "noWcs": "The controller has not reported a coordinate system (G54–G59).",
     "wcs": "Coordinate system",
+    "wcsAt": "X {{x}} · Y {{y}} · Z {{z}} {{unit}}",
     "help": {
       "open": "What zeroing does",
       "title": "Zeroing",
