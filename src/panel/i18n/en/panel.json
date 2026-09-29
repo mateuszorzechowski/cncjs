@@ -264,6 +264,7 @@
   "settings": {
     "connection": "Connection",
     "preferences": "Preferences",
+    "device": "Device",
     "install": "Install",
     "locked": "Locked",
     "scope": {
@@ -284,6 +285,13 @@
     "comfortable": "Comfortable",
     "compact": "Compact",
     "note": "Compact has smaller gaps and lower readouts, so more fits on the screen."
+  },
+  "textSize": {
+    "label": "Text",
+    "small": "Small",
+    "normal": "Normal",
+    "large": "Large",
+    "note": "The size of words on this device. Readings keep theirs — density sets those."
   },
   "numFont": {
     "label": "Number face",
