@@ -1,3 +1,4 @@
+import KeyRow from './KeyRow';
 import Sheet from './Sheet';
 import JogTiming from './JogTiming';
 import { t } from '../i18n';
@@ -17,22 +18,6 @@ import { useUnits } from './units';
  * before it is pressed on a machine. They are live: change the step on the
  * card and this says the new one.
  */
-const Row = ({ keys, does, value }) => (
-  <div className="flex items-baseline gap-3 border-b border-line py-2 last:border-b-0">
-    <span className="flex shrink-0 gap-1">
-      {keys.map((key) => (
-        <kbd
-          key={key}
-          className="rounded-ctl border border-line bg-field px-2 py-1 font-num text-note text-ink"
-        >
-          {key}
-        </kbd>
-      ))}
-    </span>
-    <span className="min-w-0 flex-1 text-base text-mut">{does}</span>
-    {value ? <span className="shrink-0 font-num text-base text-ink">{value}</span> : null}
-  </div>
-);
 
 /**
  * How far the machine will go after the key comes up, in millimetres.
@@ -65,28 +50,28 @@ const ShortcutHelp = ({
   return (
     <Sheet title={t('shortcuts.title')} onClose={onClose}>
       <div className="flex flex-col">
-        <Row
+        <KeyRow
           keys={[t('shortcuts.key.left'), t('shortcuts.key.right')]}
           does={t('shortcuts.jogX')}
           value={t('units.quantity', { value: xyStep, unit: units.length })}
         />
-        <Row
+        <KeyRow
           keys={[t('shortcuts.key.up'), t('shortcuts.key.down')]}
           does={t('shortcuts.jogY')}
           value={t('units.quantity', { value: xyStep, unit: units.length })}
         />
-        <Row
+        <KeyRow
           keys={[t('shortcuts.key.pageUp'), t('shortcuts.key.pageDown')]}
           does={t('shortcuts.jogZ')}
           value={t('units.quantity', { value: zStep, unit: units.length })}
         />
-        <Row
+        <KeyRow
           keys={[t('shortcuts.key.shift'), t('shortcuts.key.andDirection')]}
           does={t('shortcuts.coarse')}
           value={t('shortcuts.coarseSteps', { xy: xyCoarse, z: zCoarse, unit: units.length })}
         />
-        <Row keys={[t('shortcuts.key.hold')]} does={t('shortcuts.held')} />
-        <Row
+        <KeyRow keys={[t('shortcuts.key.hold')]} does={t('shortcuts.held')} />
+        <KeyRow
           keys={[t('shortcuts.key.onRelease')]}
           does={t('shortcuts.stop')}
           value={[
@@ -94,8 +79,8 @@ const ShortcutHelp = ({
             stopText({ timing, settings, feedrate: zSpeedMm, axes: ['z'], linkMs, units }),
           ].filter(Boolean).join(' · ') || null}
         />
-        <Row keys={[t('shortcuts.key.escape')]} does={t('shortcuts.close')} />
-        <Row keys={[t('shortcuts.key.help')]} does={t('shortcuts.help')} />
+        <KeyRow keys={[t('shortcuts.key.escape')]} does={t('shortcuts.close')} />
+        <KeyRow keys={[t('shortcuts.key.help')]} does={t('shortcuts.help')} />
       </div>
       {/* Where that last figure comes from, part by part. It was a sentence
         * here and it outgrew one — see `JogTiming`. */}

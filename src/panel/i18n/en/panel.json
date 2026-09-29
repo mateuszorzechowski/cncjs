@@ -309,10 +309,20 @@
     "help": {
       "open": "What MDI does",
       "title": "MDI",
-      "what": "One line at a time, straight to the controller: a G-code block or one of Grbl's $ commands. It goes through the server's queue like any other line and is kept in the journal. Nothing asks for confirmation — the line is yours.",
-      "keys": "Enter sends. Up and down bring back what this device sent before. While typing, suggestions offer the codes and letters with what they do — pick one with the arrows and Enter, or keep typing.",
+      "what": "One line at a time, straight to the controller: a G-code block or one of Grbl's $ commands. It goes through the server's queue like any other line and is kept in the journal. Nothing asks for confirmation.",
       "console": "Above the line is the machine's console: every line sent to the controller, from any device, and every answer, each with its time. An error or an alarm shows its meaning beside the code.",
-      "alarm": "In alarm the controller takes only $ commands — $X to unlock, $H to home. Any other line is refused and stays in the console struck through. While a program runs the line is off."
+      "alarm": "In alarm the controller takes only $ commands — $X to unlock, $H to home. Any other line is refused and stays in the console struck through. While a program runs the line is off.",
+      "key": {
+        "enter": "Enter",
+        "suggest": "Ctrl+Space"
+      },
+      "send": "Sends the line",
+      "history": "The line sent before, and back — this device's, until the page is reloaded",
+      "suggest": "Opens the suggestions; they also open by themselves as you type a word",
+      "pick": "With the suggestions open: choose one and put it in the line",
+      "dismiss": "Closes the suggestions",
+      "sendButton": "Sends the line, as Enter does",
+      "clearButton": "Empties the console on this device; the journal keeps everything"
     }
   },
   "settings": {
@@ -342,10 +352,8 @@
   },
   "textSize": {
     "label": "Text",
-    "small": "Small",
-    "normal": "Normal",
-    "large": "Large",
-    "note": "The size of words on this device. Readings keep theirs — density sets those."
+    "note": "The size of words on this device, in per cent. Readings keep theirs — density sets those.",
+    "unit": "%"
   },
   "numFont": {
     "label": "Number face",
@@ -353,7 +361,8 @@
     "jetbrains": "JetBrains",
     "plex": "Plex",
     "segment": "Segment",
-    "note": "The face of the readouts, the step and feed values and the G-code editor."
+    "note": "The face of the readouts, the step and feed values and the G-code editor.",
+    "sample": "X 1234.567 · Y −890.010 · Z 0.100"
   },
   "app": {
     "install": "Install on this device",
