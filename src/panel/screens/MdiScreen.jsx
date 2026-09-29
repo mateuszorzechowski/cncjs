@@ -5,6 +5,7 @@ import ConsoleRow from '../ui/ConsoleRow';
 import FadeScroller from '../ui/FadeScroller';
 import MdiHelp from '../ui/MdiHelp';
 import { useHeaderHelp } from '../ui/headerSlot';
+import { useIsWide } from '../ui/shell';
 import MdiLine from '../editor/MdiLine';
 import { suggestions } from '../editor/assist';
 import { fetchWords } from '../editor/words';
@@ -36,6 +37,8 @@ import { t } from '../i18n';
  */
 const MdiScreen = ({ machine }) => {
   const { connected, held, alarmed } = machine;
+  // No pointer below a PC's width: the suggestions at a finger's size.
+  const wide = useIsWide();
   const lines = useConsoleLines();
   const [text, setText] = useState('');
   const [history, setHistory] = useState([]);
@@ -57,7 +60,7 @@ const MdiScreen = ({ machine }) => {
   const settings = useRef(machine.settings);
   settings.current = machine.settings;
   const help = useMemo(
-    () => (words ? suggestions(words, () => settings.current, { blocks: false }) : null),
+    () => (words ? suggestions(words, () => settings.current, { blocks: false, above: true }) : null),
     [words]
   );
 
@@ -127,6 +130,7 @@ const MdiScreen = ({ machine }) => {
           label={t('mdi.line')}
           hint={t('mdi.placeholder')}
           help={help}
+          touch={!wide}
         />
         <Button tone="primary" disabled={!canSend || !text.trim()} onClick={send} className="h-chiph">
           {t('mdi.send')}
