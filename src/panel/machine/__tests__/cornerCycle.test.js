@@ -18,6 +18,16 @@ describe('the L plate on the drawing', () => {
     expect(cornerAt(0.44).top[0]).toBeLessThan(90);
   });
 
+  test('knows which way the tool is going, so an arrow cannot point elsewhere', () => {
+    // Down onto the plate; back up off it; out past the X wall; in to it; up at the end.
+    expect(cornerAt(0.08).moving.side).toEqual([0, 1]);
+    expect(cornerAt(0.13).moving.side).toEqual([0, -1]);
+    expect(cornerAt(0.25).moving.top).toEqual([-1, 0]);
+    expect(cornerAt(0.38).moving.top).toEqual([1, 0]);
+    expect(cornerAt(0.87).moving.side).toEqual([0, -1]);
+    expect(cornerAt(0.95).moving).toEqual({ top: null, side: null });
+  });
+
   test('the tabs follow: Z, X, Y', () => {
     expect([0.1, 0.4, 0.8].map((p) => cornerAt(p).stage)).toEqual([1, 2, 3]);
   });

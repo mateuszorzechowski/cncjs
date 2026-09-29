@@ -76,11 +76,20 @@ export const cornerAt = (p) => {
   const [to, topB, ringB, sideB] = FRAMES[i + 1] || FRAMES[i];
   const u = to > from ? (p - from) / (to - from) : 0;
   const touch = TOUCHES.find((one) => one.at.some(([a, b]) => p >= a && p < b)) || null;
+  // Which way the tool is going, in each view, from the frames themselves — so
+  // an arrow can only ever point the way it moves (review note, 2026-09-29).
+  // A drift of a few pixels on the way (out past the wall, 165 to 170) is not a direction.
+  const along = (d) => (Math.abs(d) > 6 ? Math.sign(d) : 0);
+  const way = (a, b) => {
+    const d = [along(b[0] - a[0]), along(b[1] - a[1])];
+    return d[0] || d[1] ? d : null;
+  };
   return {
     p,
     top: lerp(topA, topB, u),
     ring: lerp(ringA, ringB, u),
     side: lerp(sideA, sideB, u),
+    moving: { top: way(topA, topB), side: way(sideA, sideB) },
     touch,
     stage: CORNER_STAGES.find((stage) => p < stage.until).n,
     zero: p >= ZERO_FROM,
