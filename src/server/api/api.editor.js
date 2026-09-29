@@ -39,6 +39,19 @@ export const PARAMS = {
   M4: ['S'],
 };
 
+/**
+ * Grbl's own `$` commands, for a line typed at the MDI screen (review note,
+ * 2026-09-29: *"w MDI brakuje podpowiedzi $"*). The ones that read, unlock,
+ * home, check, sleep and jog. Not `$RST=`, `$N0=` or `$I=`: they rewrite the
+ * controller's memory wholesale, and a suggestion is no place to meet one.
+ * `$x=` settings are suggested from the machine's own list, by the panel.
+ * `args`, what may follow `$J=`: the jog's modes and words.
+ */
+export const SYSTEM = {
+  commands: ['$$', '$#', '$G', '$I', '$N', '$C', '$X', '$H', '$SLP', '$J='],
+  jog: ['G91', 'G90', 'G53', 'G21', 'G20', ...AXES, 'F'],
+};
+
 /** The top of Z on the machine that is connected, in its own coordinates — or null. */
 const zTop = () => {
   const controllers = store.get('controllers') || {};
@@ -79,6 +92,7 @@ export const words = (req, res) => {
     builtins: [BUILTIN_COMMAND_WAIT, BUILTIN_COMMAND_MSG],
     maxLine: MAX_LINE,
     params: PARAMS,
+    system: SYSTEM,
     blocks: readyBlocks(zTop()),
   });
 };
