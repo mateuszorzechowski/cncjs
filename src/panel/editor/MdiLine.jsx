@@ -33,6 +33,7 @@ const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help,
   const view = useRef(null);
   const locking = useRef(new Compartment());
   const helping = useRef(new Compartment());
+  const sizing = useRef(new Compartment());
   // Read through refs, so the editor is built once and never rebuilt for a
   // new handler.
   const heard = useRef({ onChange, onSend, onWalk });
@@ -55,7 +56,7 @@ const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help,
           history(),
           keymap.of([...defaultKeymap, ...historyKeymap]),
           gcodeLine,
-          touch ? touchPopups : [],
+          sizing.current.of(touch ? touchPopups : []),
           placeholder(hint),
           helping.current.of(help ?? []),
           locking.current.of(locked(disabled)),
@@ -93,6 +94,11 @@ const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help,
   useEffect(() => {
     view.current?.dispatch({ effects: helping.current.reconfigure(help ?? []) });
   }, [help]);
+
+  // The shell is measured after the first render, so a touch screen is known a moment late.
+  useEffect(() => {
+    view.current?.dispatch({ effects: sizing.current.reconfigure(touch ? touchPopups : []) });
+  }, [touch]);
 
   return (
     <div
