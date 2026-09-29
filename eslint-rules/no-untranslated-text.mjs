@@ -41,9 +41,8 @@ const NOT_DISPLAYED = new Set([
   'scope',
   // What a settings summary's tap does, `sheet` or `view`: a chevron's direction.
   'opens',
-  // Which keyboard a phone raises for a field (`decimal`), and how it
-  // behaves: the MDI line's `off`, `characters` and `send` (2026-09-29).
-  'inputMode', 'autoComplete', 'autoCapitalize', 'enterKeyHint',
+  // Which keyboard a phone raises for a field (`decimal`).
+  'inputMode',
   // Which files a file picker offers (`.txt,text/plain`).
   'accept',
   // SVG geometry and paint, which are drawing instructions.

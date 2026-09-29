@@ -59,11 +59,11 @@ const blockOption = (block) => ({
  * `G54`…`G59` say where each system is; and asked for on a blank line
  * (Ctrl+Space), ready blocks — a header, a retract, a tool change, an end.
  */
-const suggest = (words, machine) => (context) => {
+const suggest = (words, machine, { blocks = true } = {}) => (context) => {
   const word = context.matchBefore(/[A-Za-z%][\w.]*/);
   const line = context.state.doc.lineAt(context.pos);
   const before = line.text.slice(0, context.pos - line.from);
-  if (!word && context.explicit && !before.trim() && words.blocks?.length) {
+  if (blocks && !word && context.explicit && !before.trim() && words.blocks?.length) {
     return { from: context.pos, options: words.blocks.filter((b) => BLOCK_KEYS[b.id]).map(blockOption) };
   }
   if (!word || (word.from === word.to && !context.explicit)) {
@@ -151,13 +151,22 @@ const byServer = ({ onFindings, units, fixes = false } = {}) => async (view) => 
 };
 
 /**
+ * The suggestions alone. `blocks` off for one line, where a ready block of
+ * several lines has nowhere to go — the MDI line (review note, 2026-09-29:
+ * *"autocomplete?"*).
+ */
+export const suggestions = (words, machine, options) => autocompletion({
+  override: [suggest(words, machine, options)], activateOnTyping: true,
+});
+
+/**
  * The editor's help, from the server's words: suggestions, and a check in two
  * speeds — each line as it is typed, and the whole program by the server's
  * own file check a moment after typing stops. Both underline in place and
  * mark the gutter; the message is on the mark and under the pointer.
  */
 export const assist = (words, size, { machine = () => null, onFindings, units } = {}) => [
-  autocompletion({ override: [suggest(words, machine)], activateOnTyping: true }),
+  suggestions(words, machine),
   ...findings(words, size, { onFindings, units, fixes: true }),
 ];
 
