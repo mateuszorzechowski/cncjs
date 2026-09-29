@@ -3,7 +3,7 @@ import { storage } from './theme';
 /**
  * Two more of the drawing's four axes as this device's settings: the density
  * and the face numbers are drawn in (decided 2026-09-21: they belong to
- * Settings; built 2026-09-29).
+ * Settings; built 2026-09-29) — and the panel's own third, the text size.
  *
  * The token sheet has switched both by attribute on the root since the first
  * day — `[data-density='compact']`, `[data-num='plex']` — and nothing ever
@@ -14,8 +14,7 @@ import { storage } from './theme';
  * Unlike the theme there is no `system` source and nothing outside to follow,
  * so the attribute is simply the setting.
  */
-const makeLook = ({ key, attribute, values }) => {
-  const [fallback] = values;
+const makeLook = ({ key, attribute, values, fallback = values[0] }) => {
   const normalize = (value) => (values.includes(value) ? value : fallback);
   const listeners = new Set();
 
@@ -58,8 +57,16 @@ export const DENSITY = makeLook({ key: 'panel.density', attribute: 'density', va
 /** Azeret Mono is the drawing's default; the other three its switch blocks. */
 export const NUM_FONT = makeLook({ key: 'panel.numFont', attribute: 'num', values: ['azeret', 'jetbrains', 'plex', 'segment'] });
 
-/** Both, before the first render — see `startTheme`. */
+/**
+ * How big words are drawn, on this device (Mateusz, 2026-09-29: *"czy można
+ * dodać rozmiar czcionki?"* — *"tak"*). In the order read, the middle one the
+ * drawing's own.
+ */
+export const TEXT_SIZE = makeLook({ key: 'panel.textSize', attribute: 'text', values: ['small', 'normal', 'large'], fallback: 'normal' });
+
+/** All three, before the first render — see `startTheme`. */
 export const startLook = () => {
   DENSITY.start();
   NUM_FONT.start();
+  TEXT_SIZE.start();
 };

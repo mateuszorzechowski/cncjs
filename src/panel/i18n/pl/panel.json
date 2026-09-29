@@ -244,6 +244,7 @@
   "settings": {
     "connection": "Połączenie",
     "preferences": "Preferencje",
+    "device": "Urządzenie",
     "install": "Instalacja",
     "locked": "Zablokowane",
     "scope": {
@@ -264,6 +265,13 @@
     "comfortable": "Wygodna",
     "compact": "Zwarta",
     "note": "Zwarta ma mniejsze odstępy i niższe odczyty, więc więcej mieści się na ekranie."
+  },
+  "textSize": {
+    "label": "Tekst",
+    "small": "Mały",
+    "normal": "Normalny",
+    "large": "Duży",
+    "note": "Wielkość napisów na tym urządzeniu. Odczyty zostają — ich wielkość ustawia gęstość."
   },
   "numFont": {
     "label": "Krój cyfr",

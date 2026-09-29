@@ -15,6 +15,11 @@
  * in a component. If a value is needed and is not here, it belongs in the
  * token sheet first.
  */
+// A size of the type scale on this device: the drawing's pixels times the
+// text scale, on a whole pixel (see `fontSize`).
+const px = (size) => `round(${size}px * var(--textScale), 1px)`;
+const scaled = (size, line, rest = {}) => [px(size), { lineHeight: px(line), ...rest }];
+
 module.exports = {
   content: ['./src/panel/**/*.{js,jsx,html}'],
   // The mockup switches with an attribute, not a class.
@@ -205,11 +210,16 @@ module.exports = {
         // hovered and the other once it is not, so cards and lists moved a
         // pixel whenever the pointer left a row or a button (review note 7,
         // 2026-09-28).
-        label: ['10px', { lineHeight: '15px', letterSpacing: '0.14em' }],
-        cap: ['11px', { lineHeight: '16px', letterSpacing: '0.08em' }],
-        note: ['12px', { lineHeight: '18px' }],
-        base: ['13px', { lineHeight: '20px' }],
-        lead: ['15px', { lineHeight: '21px' }],
+        //
+        // The words' sizes times this device's text scale (`--textScale`,
+        // Settings → Urządzenie → Tekst), rounded to a whole pixel for the same
+        // reason. Not the readings and not STOP below: those are measured
+        // against the boxes they stand in, and density is their setting.
+        label: scaled(10, 15, { letterSpacing: '0.14em' }),
+        cap: scaled(11, 16, { letterSpacing: '0.08em' }),
+        note: scaled(12, 18),
+        base: scaled(13, 20),
+        lead: scaled(15, 21),
         // The one word on the panel that has to be read from across the
         // room without looking for it. The drawing sets the stop at 22px
         // and everything else well below that.
