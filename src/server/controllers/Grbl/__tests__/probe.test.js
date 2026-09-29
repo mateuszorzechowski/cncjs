@@ -63,11 +63,14 @@ describe('probe:start', () => {
     controller.runner.parse('[PRB:0.000,0.000,-7.000:1]');
     controller.runner.parse('ok');
     controller.runner.parse('ok');
+    controller.runner.parse('ok');
     controller.runner.parse('[PRB:0.000,0.000,-7.100:1]');
     controller.runner.parse('ok');
     controller.runner.parse('ok');
     expect(sent().slice(1)).toEqual([
       'G90 G21 G53 G0 Z-5',
+      // A clip still touching as the tool backs off would fail the slow touch.
+      'G4 P0.5',
       'G90 G21 G38.2 Z21 F25',
       'G90 G21 G53 G0 Z-5.1',
       // The modes it found, put back.
@@ -85,7 +88,7 @@ describe('probe:start', () => {
   test('writes nothing to the offsets until the operator confirms', () => {
     const { controller, sent } = setup();
     controller.command('probe:start', { method: 'z' });
-    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok']) {
+    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok']) {
       controller.runner.parse(line);
     }
 
@@ -109,6 +112,17 @@ describe('probe:start', () => {
     expect(sent()).toHaveLength(1);
     controller.command('probe:apply');
     expect(sent()).toHaveLength(1);
+  });
+
+  test('an alarm that sends no ok — a soft limit — ends it all the same', () => {
+    const { controller, probeStates } = setup();
+    controller.command('probe:start', { method: 'z' });
+
+    // COM3, 2026-09-29: a start above the soft limits, and nothing after this.
+    controller.runner.parse('ALARM:2');
+
+    expect(probeStates().pop()).toMatchObject({ state: 'failed', failure: { code: 'ALARM:2' } });
+    expect(controller.clientRefusal('jogStart')).toBeNull();
   });
 
   test('a reset in the middle ends it', () => {

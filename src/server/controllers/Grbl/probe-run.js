@@ -10,9 +10,14 @@
  * Measured on COM3, 2026-09-29, and what the answers below rest on:
  * - a touch: `[PRB:x,y,z:1]`, then `ok`;
  * - `G38.3` touching nothing: `[PRB:…:0]`, then `ok` — no alarm;
- * - `G38.2` touching nothing: `ALARM:5`, `[PRB:…:0]`, then **still `ok`**.
+ * - `G38.2` touching nothing: `ALARM:5`, `[PRB:…:0]`, then still `ok`.
  *   The position in a `:0` report is not where the tool stopped, so a miss
- *   leaves the tool at the target, not at the report.
+ *   leaves the tool at the target, not at the report;
+ * - a target past the soft limits: `ALARM:2` and **no `ok` at all** — Grbl
+ *   waits for a reset. So an alarm ends the run where it is said; an `ok`
+ *   that does follow falls through to the empty feeder, as the `$#` one at
+ *   port open does. Waiting for it left the machine held as by a program
+ *   (2026-09-29, a start at Z+225 with limits of -150..0).
  *
  * Every line is `G90 G21`: targets are absolute, so a failure that ends in an
  * alarm leaves the parser absolute rather than relative for whatever is typed
@@ -36,6 +41,7 @@ const toWork = (target, wco) => Object.fromEntries(
 /** The line for each kind of step. */
 const LINE = {
   move: (step, target) => `G90 G21 G53 G0 ${words(target)}`,
+  dwell: (step) => `G4 P${fmt(step.seconds)}`,
   touch: (step, target, wco) => `G90 G21 G38.2 ${words(toWork(target, wco))} F${fmt(step.feed)}`,
   clear: (step, target, wco) => `G90 G21 G38.3 ${words(toWork(target, wco))} F${fmt(step.feed)}`,
 };
@@ -43,6 +49,7 @@ const LINE = {
 /** Why a step's answer is a failure, or null. `prb` is the report, if one came. */
 const OUTCOME = {
   move: () => null,
+  dwell: () => null,
   touch: (prb) => (prb?.result === 1 ? null : 'no-touch'),
   // Contact on the way down beside a wall is the top of the plate.
   clear: (prb) => (prb?.result === 1 ? 'touched' : null),
@@ -115,9 +122,6 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
     ok() {
       if (phase === 'stepping') {
         answered();
-      } else if (phase === 'alarmed') {
-        // The `ok` Grbl still sends for the line the alarm ended.
-        finish(failed());
       } else if (phase === 'restoring') {
         finish(failure ? failed() : { seen });
       }
@@ -135,9 +139,9 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
 
     /** Nothing more can be sent in alarm, the modes included. */
     alarm(code) {
-      if (phase === 'stepping') {
-        failure = code;
-        phase = 'alarmed';
+      if (phase === 'stepping' || phase === 'restoring') {
+        failure = failure || code;
+        finish(failed());
       }
     },
 
