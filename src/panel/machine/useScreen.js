@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { pathOf, routeFrom } from './route';
+import { backScreen } from '../ui/backStack';
 import { showSettingsTab } from '../screens/SettingsScreen';
 
 /*
@@ -56,34 +57,20 @@ const useScreen = (isScreen) => {
   }, [screen]);
 
   /*
-   * The address follows the screen, one step of history per screen, and the
-   * browser's back — a button, a phone's gesture — goes back a screen
-   * (Mateusz, 2026-09-28). The bare `/panel/` is written over with the
-   * screen it opened, rather than stepped from. The settings screen writes
-   * its tab into the same step (`SettingsScreen`); an open sheet has a step
-   * of its own (`Sheet`), and going back from it only closes it.
+   * The address follows the screen, in place: it names the screen (and the
+   * settings screen its tab), so a reload or a bookmark opens it, but it is
+   * not a step of history. Back does not walk through the screens visited;
+   * it goes home on a fixed path (Mateusz, 2026-09-29) — see `backStack`,
+   * told here which screen is open and how to reach the dashboard.
    */
   useEffect(() => {
     if (routeFrom(window.location.pathname)?.screen !== screen) {
       window.history.replaceState(window.history.state, '', pathOf(screen, null, window.location.search));
     }
-    const back = () => {
-      const route = routeFrom(window.location.pathname);
-      if (route && isScreen(route.screen)) {
-        if (route.tab) {
-          showSettingsTab(route.tab);
-        }
-        setScreen(route.screen);
-      }
-    };
-    window.addEventListener('popstate', back);
-    return () => window.removeEventListener('popstate', back);
-    // Once: after that, `go` moves the address with the screen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    backScreen(screen, () => setScreen('dashboard'));
+  }, [screen]);
   const go = (next) => {
     if (next !== screen) {
-      window.history.pushState(null, '', pathOf(next, null, window.location.search));
       setScreen(next);
     }
   };
