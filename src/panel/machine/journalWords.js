@@ -173,7 +173,9 @@ const BY_EVENT = {
   startup: ({ data }) => ({ text: data?.text }),
   sent: ({ data }) => ({ text: data?.line }),
   received: ({ data }) => ({ text: data?.line }),
-  refused: ({ code }) => (REFUSAL_KEYS[code] ? keyed(REFUSAL_KEYS[code]) : null),
+  // With the command it refused: `Ten serwer nie zna komendy {{cmd}}` read
+  // back as a literal `{{cmd}}` until 2026-09-29.
+  refused: ({ code, data }) => (REFUSAL_KEYS[code] ? keyed(REFUSAL_KEYS[code], { cmd: data?.cmd ?? '' }) : null),
   program: ({ code, data, program }) => {
     const key = code === 'pause' ? PAUSE[data?.reason] : PROGRAM[code];
     return key ? keyed(key, { name: program?.name ?? '', line: program?.line ?? 0, total: program?.total ?? 0 }) : null;

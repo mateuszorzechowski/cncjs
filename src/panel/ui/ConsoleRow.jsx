@@ -1,4 +1,5 @@
 import { tokensOf } from '../editor/tokens';
+import { dateFormat } from './dates';
 import { t } from '../i18n';
 
 /**
@@ -30,7 +31,7 @@ const WORDS = {
   meta: 'text-mut',
 };
 
-const clock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const clock = dateFormat({ hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
 const Coloured = ({ text }) => tokensOf(text).map((piece, i) => (
   // Pieces of one fixed line, never reordered: the index is their identity.
