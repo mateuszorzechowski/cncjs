@@ -38,6 +38,10 @@
  * looked like a reading (point 9). `unit` is what says an option is a
  * quantity.
  *
+ * `tall`, with `columns`: tiles as tall as what they hold, for a second line
+ * under the name — the zeroing card's systems with where each one's zero is
+ * (review note, 2026-09-29).
+ *
  * `was`, the option held before an unsaved change: an amber dot on it, so
  * what the change replaces stays on screen without the row growing (the
  * controller settings design, 2026-09-26, decision 6).
@@ -49,7 +53,7 @@ export const WasDot = () => <span aria-hidden="true" className="size-1.5 shrink-
 
 const SegmentedChoice = ({
   options, value, onChange, format = String, label, unit, disabled, compact = false, isOn, covers, counts, columns, joined = false, fitWide = false,
-  was,
+  was, tall = false,
 }) => (
   <div
     className={[
@@ -88,7 +92,9 @@ const SegmentedChoice = ({
             joined && chosen ? 'z-10' : '',
             // Two chosen side by side would read as one wide button.
             joined && chosen && index > 0 && on(options[index - 1]) ? 'border-l-panel' : '',
-            columns ? 'h-chiph justify-between px-3' : 'h-full justify-center',
+            columns && !tall ? 'h-chiph justify-between px-3' : '',
+            columns && tall ? 'min-h-chiph justify-between px-3 py-1.5 text-left' : '',
+            !columns ? 'h-full justify-center' : '',
             !columns && compact ? 'shrink-0 px-3' : '',
             !columns && !compact ? 'min-w-0 flex-1 basis-0 px-1' : '',
             fitWide ? '@3xl/shell:flex-none @3xl/shell:basis-auto @3xl/shell:px-5' : '',
