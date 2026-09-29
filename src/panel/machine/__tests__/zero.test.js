@@ -76,14 +76,8 @@ describe('zero on a controller whose server side cannot compose it', () => {
 describe('choosing a coordinate system', () => {
   beforeEach(() => controller.command.mockClear());
 
-  test('offers G54 to G57', () => {
-    expect(wcsChoices({ wcs: 'G55' })).toEqual(['G54', 'G55', 'G56', 'G57']);
-    expect(wcsChoices({})).toEqual(['G54', 'G55', 'G56', 'G57']);
-  });
-
-  test('adds the one the machine is in when a console put it outside them', () => {
-    // A row with nothing chosen would say the machine is in no system at all.
-    expect(wcsChoices({ wcs: 'G59' })).toEqual(['G54', 'G55', 'G56', 'G57', 'G59']);
+  test('offers all six systems Grbl has', () => {
+    expect(wcsChoices()).toEqual(['G54', 'G55', 'G56', 'G57', 'G58', 'G59']);
   });
 
   test('sends the intention on Grbl', () => {

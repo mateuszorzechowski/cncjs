@@ -100,8 +100,10 @@ const ZeroScreen = ({ machine }) => {
   const zeroing = (...axes) => () => zero({ type, modal, axes });
 
   /*
-   * Which system, as chips where the marker stood (DESIGN.md, planned since
-   * 2026-09-21). A press sends `G55` and nothing else: no offset is written
+   * Which system, as a grid of all six under the readings (review note,
+   * 2026-09-29: *"przyciski układu pod osią 2×2"*; it began as four chips in
+   * the card's header, where six did not fit a phone). Two columns, as wide
+   * as a settings column at most, so on a desk they stay a block of keys. A press sends `G55` and nothing else: no offset is written
    * and nothing moves, so no confirmation — but every move after it lands
    * somewhere else, so it answers to alarm and to a running program exactly
    * as the zero buttons do. The chip that lights is the machine's reply, not
@@ -114,19 +116,19 @@ const ZeroScreen = ({ machine }) => {
       onChange={(next) => selectWcs({ type, wcs: next })}
       label={t('zero.wcs')}
       disabled={!(connected && mayZero && status.known)}
-      compact
-      joined
+      columns={2}
     />
   );
 
   return (
     <Card
       label={t('zero.title')}
-      aside={choosing}
       className="min-h-0 flex-1"
       bodyClassName="gap-4"
     >
       <DroStack position={position} machinePosition={machinePosition} />
+
+      <div className="w-full shrink-0 @3xl/shell:max-w-[var(--setcol)]">{choosing}</div>
 
       {/*
         * What the buttons will do, and nothing about what zeroing *is*.
