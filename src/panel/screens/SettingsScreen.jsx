@@ -102,6 +102,11 @@ const SettingsScreen = ({ machine }) => {
     // The tab in the address, in the same step of history as the screen: back goes back a screen, not a tab.
     window.history.replaceState(window.history.state, '', pathOf('settings', tab, window.location.search));
   }, [tab]);
+  // The chosen tab into view, in a row that scrolls on a phone.
+  const tabRow = useRef(null);
+  useEffect(() => {
+    tabRow.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [tab]);
   useEffect(() => {
     tabWatchers.add(setTab);
     return () => tabWatchers.delete(setTab);
@@ -109,10 +114,16 @@ const SettingsScreen = ({ machine }) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-gap">
-      <div className="flex flex-col gap-2 @3xl/shell:flex-row @3xl/shell:items-center @3xl/shell:justify-between">
+      {/*
+        * Five tabs are wider than a phone once the words are large: the row
+        * scrolls sideways, each tab as wide as its name, rather than squeezing
+        * the names into each other (2026-09-29, with the Urządzenie tab and
+        * the text size).
+        */}
+      <div ref={tabRow} className="scroll-quiet flex shrink-0 overflow-x-auto">
         <SegmentedChoice
           joined
-          fitWide
+          compact
           label={t('nav.settings')}
           options={TABS}
           value={tab}
