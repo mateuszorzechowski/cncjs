@@ -79,8 +79,9 @@ export const createConsole = (keep = KEEP) => {
   let pending = null;
   const listeners = new Set();
 
+  // `at`, when: the console's clock (review note, 2026-09-29: *"godzina wykonania?"*).
   const push = (line) => {
-    lines = [...lines, { ...line, id: next }].slice(-keep);
+    lines = [...lines, { ...line, id: next, at: Date.now() }].slice(-keep);
     next += 1;
     listeners.forEach((listener) => listener());
   };

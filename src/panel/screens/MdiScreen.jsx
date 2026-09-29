@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import ConsoleRow from '../ui/ConsoleRow';
 import FadeScroller from '../ui/FadeScroller';
-import TextField from '../ui/TextField';
+import MdiLine from '../editor/MdiLine';
+import { suggestions } from '../editor/assist';
+import { fetchWords } from '../editor/words';
 import { sendLine } from '../machine/commands';
 import { recall, remember } from '../machine/mdi';
 import { machineConsole } from '../machine/console';
@@ -26,7 +28,8 @@ import { t } from '../i18n';
  * that only Grbl's own `$` commands will go.
  *
  * Enter sends; up and down walk back through what this device sent, as a
- * shell does. The history is this page's and goes with a reload — the
+ * shell does. The line is coloured and suggested as in the editor
+ * (`MdiLine`). The history is this page's and goes with a reload — the
  * journal is the record.
  */
 const MdiScreen = ({ machine }) => {
@@ -37,6 +40,23 @@ const MdiScreen = ({ machine }) => {
   const [at, setAt] = useState(0);
   const end = useRef(null);
 
+  // The editor's suggestions, once the server's words are in; the machine
+  // read when one is asked for, as the editor reads it.
+  const [words, setWords] = useState(null);
+  useEffect(() => {
+    let live = true;
+    fetchWords().then((got) => live && setWords(got)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const settings = useRef(machine.settings);
+  settings.current = machine.settings;
+  const help = useMemo(
+    () => (words ? suggestions(words, () => settings.current, { blocks: false }) : null),
+    [words]
+  );
+
   // The newest line in view, as a console keeps it. `nearest`, so a phone
   // scrolls the log and not the whole screen under the keyboard.
   useEffect(() => {
@@ -46,8 +66,7 @@ const MdiScreen = ({ machine }) => {
   const running = held === 'program-running';
   const canSend = connected && !running;
 
-  const send = (event) => {
-    event.preventDefault();
+  const send = () => {
     const line = text.trim();
     if (!line || !canSend) {
       return;
@@ -59,12 +78,8 @@ const MdiScreen = ({ machine }) => {
     setText('');
   };
 
-  const walk = (event) => {
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
-      return;
-    }
-    event.preventDefault();
-    const index = recall(history, at, event.key === 'ArrowUp' ? -1 : 1);
+  const walk = (step) => {
+    const index = recall(history, at, step);
     setAt(index);
     setText(history[index] ?? '');
   };
@@ -98,25 +113,21 @@ const MdiScreen = ({ machine }) => {
 
       {note ? <p className="m-0 shrink-0 text-note text-mut">{note}</p> : null}
 
-      <form className="flex shrink-0 gap-2" onSubmit={send}>
-        <TextField
-          code
-          label={t('mdi.line')}
-          placeholder={t('mdi.placeholder')}
+      <div className="flex shrink-0 gap-2">
+        <MdiLine
           value={text}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={walk}
+          onChange={setText}
+          onSend={send}
+          onWalk={walk}
           disabled={!canSend}
-          autoComplete="off"
-          autoCapitalize="characters"
-          spellCheck={false}
-          enterKeyHint="send"
-          className="flex-1"
+          label={t('mdi.line')}
+          hint={t('mdi.placeholder')}
+          help={help}
         />
-        <Button tone="primary" type="submit" disabled={!canSend || !text.trim()} className="h-chiph">
+        <Button tone="primary" disabled={!canSend || !text.trim()} onClick={send} className="h-chiph">
           {t('mdi.send')}
         </Button>
-      </form>
+      </div>
     </Card>
   );
 };
