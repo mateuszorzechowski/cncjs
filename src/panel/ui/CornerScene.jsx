@@ -170,7 +170,10 @@ const TopMove = ({ at }) => {
   }
   const [x, y] = at.top;
   const [tx, ty] = at.target.top;
-  return <Move from={[x + way[0] * 12, y + way[1] * 12]} to={[tx + way[0] * 12, ty + way[1] * 12]} />;
+  // Along the move's own axis: out past the wall drifts 5 px in Y on the way,
+  // and aimed at that the arrow came out as a crooked stroke (review note, 2026-09-30).
+  const to = [way[0] ? tx + way[0] * 12 : x, way[1] ? ty + way[1] * 12 : y];
+  return <Move from={[x + way[0] * 12, y + way[1] * 12]} to={to} />;
 };
 
 // From the side: up and down beside the bit, from the tip's height to where it
