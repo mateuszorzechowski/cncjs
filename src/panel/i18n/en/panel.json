@@ -298,10 +298,8 @@
   },
   "textSize": {
     "label": "Text",
-    "small": "Small",
-    "normal": "Normal",
-    "large": "Large",
-    "note": "The size of words on this device. Readings keep theirs — density sets those."
+    "note": "The size of words on this device, in per cent. Readings keep theirs — density sets those.",
+    "unit": "%"
   },
   "numFont": {
     "label": "Number face",
@@ -309,7 +307,8 @@
     "jetbrains": "JetBrains",
     "plex": "Plex",
     "segment": "Segment",
-    "note": "The face of the readouts, the step and feed values and the G-code editor."
+    "note": "The face of the readouts, the step and feed values and the G-code editor.",
+    "sample": "X 1234.567 · Y −890.010 · Z 0.100"
   },
   "app": {
     "install": "Install on this device",
