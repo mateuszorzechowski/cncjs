@@ -56,14 +56,15 @@ const DiskRoom = ({ disk }) => {
   return (
     <div className="flex shrink-0 flex-col gap-2">
       {/*
-        * What the rest of the computer uses in grey, cncjs's own files in the
+        * What the rest of the computer uses in a quiet blue — grey read as a
+        * scroll track (review note, 2026-09-29) — cncjs's own files in the
         * accent at the end of it — *"czy tutaj mozemy pokazac tez zajete
         * miejsce przez cnc panel innym kolorem?"* (2026-09-25). Red for the
         * rest when the disk is nearly full, which is the warning below.
         */}
       <Meter
         percent={diskUsed(disk)}
-        tone={low ? 'bg-red' : 'bg-mut'}
+        tone={low ? 'bg-red' : 'bg-accM'}
         part={{ percent: diskLibrary(disk), tone: 'bg-acc' }}
         label={t('files.disk.label')}
       />
