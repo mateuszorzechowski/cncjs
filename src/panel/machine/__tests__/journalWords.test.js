@@ -30,6 +30,11 @@ describe('what an entry says', () => {
       .toEqual({ key: 'journal.command.line', params: { line: 'G10 L20 P1 Z0', wcs: '' } });
   });
 
+  test('an offset that moved, with its axes before and after', () => {
+    expect(describeEntry(entry({ event: 'offset', code: 'G54', data: { axes: 'X Y', from: '-518.728 · -309.044', to: '0.000 · 0.000' } })))
+      .toEqual({ key: 'journal.offset.changed', params: { code: 'G54', axes: 'X Y', from: '-518.728 · -309.044', to: '0.000 · 0.000' } });
+  });
+
   test('a change of coordinate system, with the system', () => {
     expect(describeEntry(entry({ event: 'command', code: 'wcs', data: { wcs: 'G55' } })))
       .toEqual({ key: 'journal.command.wcs', params: { line: '', wcs: 'G55' } });

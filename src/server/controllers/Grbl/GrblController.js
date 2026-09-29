@@ -54,7 +54,7 @@ import { MAX_IN_FLIGHT, SEGMENT_SECONDS, jogSegmentLine, jogStepLine, stopSecond
 import { hasStopped, holdSeconds, slowestAcceleration } from './stop';
 import { activeWcsNumber, isWcs, zeroLine } from './zero';
 import { isHomingLine, losesPosition } from './homing';
-import { changesWorkOffsets } from './offsets';
+import { JOURNALED, changesWorkOffsets, offsetChange } from './offsets';
 import { machineEnvelope, programOverrun } from './envelope';
 import { checkLines, createCheckRun } from './check-run';
 import library from '../../services/library';
@@ -205,6 +205,15 @@ class GrblController {
      * goes out. See `offsets.js`.
      */
     offsetsStale = false;
+
+    /*
+     * Each journaled offset as last read, and the device whose line last moved
+     * one — for the journal's before and after (`offsets.offsetChange`). Empty
+     * for a new port: its first `$#` is the reference, not a change.
+     */
+    knownOffsets = {};
+
+    offsetsChangedBy = null;
 
     /**
      * The box this machine can reach, or null until it has said.
@@ -1138,6 +1147,21 @@ class GrblController {
         this.emit('serialport:read', res.raw);
 
         const { name, value } = res;
+
+        if (JOURNALED.has(name)) {
+          const change = offsetChange(this.knownOffsets[name], value);
+          if (change) {
+            this.note({
+              level: 'info',
+              source: 'controller',
+              event: 'offset',
+              code: name,
+              data: change,
+              ...(this.offsetsChangedBy ? { device: this.offsetsChangedBy } : {}),
+            });
+          }
+          this.knownOffsets[name] = value;
+        }
 
         /*
          * `PRB` is the last of the eleven lines `$#` answers with, so it is
@@ -2402,6 +2426,7 @@ class GrblController {
     noteOffsetChange(line) {
       if (changesWorkOffsets(line)) {
         this.offsetsStale = true;
+        this.offsetsChangedBy = this.commandSocket?.device ?? null;
       }
       // The same three paths carry a `$H` — the panel's, a console's, a macro's.
       if (isHomingLine(line)) {

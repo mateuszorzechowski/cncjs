@@ -43,4 +43,32 @@ export const changesWorkOffsets = (line) => (
   typeof line === 'string' && line.length > 0 && CHANGES_OFFSETS.test(line)
 );
 
+/**
+ * The offsets whose every change the journal keeps: the six coordinate
+ * systems, the two stored positions and `G92`.
+ */
+export const JOURNALED = new Set(['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G28', 'G30', 'G92']);
+
+/**
+ * What changed between two readings of one offset, for the journal — the
+ * axes that moved, and their values before and after as Grbl reported them
+ * (review, 2026-09-29: an offset zeroed from a phone left no trace of what it
+ * had been). Null for the first reading, which is where the port started,
+ * and for a reading that changed nothing.
+ */
+export const offsetChange = (from, to) => {
+  if (!from || !to) {
+    return null;
+  }
+  const axes = Object.keys(to).filter((axis) => Number(from[axis]) !== Number(to[axis]));
+  if (!axes.length) {
+    return null;
+  }
+  return {
+    axes: axes.map((axis) => axis.toUpperCase()).join(' '),
+    from: axes.map((axis) => from[axis]).join(' · '),
+    to: axes.map((axis) => to[axis]).join(' · '),
+  };
+};
+
 export default changesWorkOffsets;

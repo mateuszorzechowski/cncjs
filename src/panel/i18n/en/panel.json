@@ -614,7 +614,8 @@
       "fileCheck": "Check",
       "file": "File",
       "settings": "Settings",
-      "setting": "Setting"
+      "setting": "Setting",
+      "offset": "Offset"
     },
     "program": {
       "start": "Started {{name}}",
@@ -712,6 +713,9 @@
     "setting": {
       "changed": "{{name}}: {{from}} → {{to}}",
       "described": "{{title}}: {{from}} → {{to}}"
+    },
+    "offset": {
+      "changed": "{{code}} {{axes}}: {{from}} → {{to}}"
     }
   },
   "grbl": {

@@ -36,6 +36,24 @@ afterEach(() => {
 });
 
 describe('what the controller says', () => {
+  test('an offset that moved, with before and after and whose line moved it; the first reading is not a change', () => {
+    const controller = setup();
+    const from = mark();
+
+    controller.runner.parse('[G54:-518.728,-309.044,-71.468]');
+    controller.commandSocket = { device: 'phone', emit: () => {} };
+    controller.command('zero', { axes: ['x', 'y'] });
+    controller.commandSocket = null;
+    controller.runner.parse('[G54:0.000,0.000,-71.468]');
+
+    expect(recordedSince(from).filter((entry) => entry.event === 'offset')).toEqual([
+      expect.objectContaining({
+        level: 'info', event: 'offset', code: 'G54', device: 'phone',
+        data: { axes: 'X Y', from: '-518.728 · -309.044', to: '0.000 · 0.000' },
+      }),
+    ]);
+  });
+
   test('an alarm is an error, with its code', () => {
     const controller = setup();
     const from = mark();
