@@ -28,18 +28,16 @@ const WCS_TO_P = {
 export const activeWcsNumber = (modal = {}) => WCS_TO_P[modal.wcs] || 0;
 
 /**
- * The systems the zeroing card offers, plus the one the machine is in.
+ * The systems the zeroing card offers: all six Grbl has.
  *
- * G54–G57 as decided on 2026-09-21: four is what a hobby table uses, and six
- * chips do not fit beside the card's title on a phone. G58 or G59 set from a
- * console still shows, chosen, so the row never claims a system the machine
- * is not in.
+ * G54–G57 at first (2026-09-21), because six chips did not fit beside the
+ * card's title on a phone. Under the readings, as a grid, they do (review
+ * note, 2026-09-29: *"przyciski układu pod osią 2×2"* — *"a co z G58 i
+ * G59?"*), so nothing is left to reach only from a console.
  */
-const OFFERED = ['G54', 'G55', 'G56', 'G57'];
+const OFFERED = Object.keys(WCS_TO_P);
 
-export const wcsChoices = (modal = {}) => (
-  WCS_TO_P[modal.wcs] && !OFFERED.includes(modal.wcs) ? [...OFFERED, modal.wcs] : OFFERED
-);
+export const wcsChoices = () => OFFERED;
 
 /**
  * Work in another coordinate system from here on.

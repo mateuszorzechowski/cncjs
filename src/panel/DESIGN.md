@@ -118,8 +118,9 @@ urządzeniach, zrzuty.
 ### Zerowanie (`zero`) — zrzuty `zero-*`
 - **Cel:** ustawić zero robocze (`G10 L20`) dla osi lub ich zestawu.
 - **Główna akcja:** X / Y / Z (wypełnione), XY / XYZ (obrys).
-- **Układ:** jeden na każdej szerokości. Karta z DRO, chipami układu G54–G57,
-  notą „ustawia zero układu G54…” i rzędem 5 przycisków.
+- **Układ:** jeden na każdej szerokości. Karta z DRO, pod nim siatka 2 × 3
+  układów G54–G59 (na szerszych najwyżej `--setcol`), nota „ustawia zero
+  układu G54…” i rząd 5 przycisków.
 - **Na PC** cyfry lądują ~1700 px od etykiet osi, a środek ekranu jest pusty
   (patrz §6).
 - **Zasady:**
