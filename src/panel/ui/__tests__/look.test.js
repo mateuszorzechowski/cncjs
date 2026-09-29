@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { DENSITY, NUM_FONT, TEXT_SIZE } from '../look';
+import { DENSITY, NUM_FONT, TEXT_SCALE } from '../look';
 
 describe('the looks this device keeps', () => {
   test('anything unknown reads as the drawing\'s default', () => {
@@ -8,8 +8,6 @@ describe('the looks this device keeps', () => {
     expect(DENSITY.normalize(null)).toBe('comfortable');
     expect(NUM_FONT.normalize('comic')).toBe('azeret');
     expect(NUM_FONT.normalize('segment')).toBe('segment');
-    // The middle size is the default, not the first offered.
-    expect(TEXT_SIZE.normalize('huge')).toBe('normal');
   });
 
   test('with no browser to remember it, the default, and no throw', () => {
@@ -33,6 +31,15 @@ describe('the looks this device keeps', () => {
     const css = fs.readFileSync(path.join(__dirname, '../../styles/tokens.css'), 'utf8');
     DENSITY.values.slice(1).forEach((value) => expect(css).toContain(`[data-density='${value}']`));
     NUM_FONT.values.slice(1).forEach((value) => expect(css).toContain(`[data-num='${value}']`));
-    TEXT_SIZE.values.filter((value) => value !== 'normal').forEach((value) => expect(css).toContain(`[data-text='${value}']`));
+  });
+
+  test('the text scale is a per cent, in tens, within its range', () => {
+    expect(TEXT_SCALE.normalize('130')).toBe(130);
+    expect(TEXT_SCALE.normalize(134)).toBe(130);
+    expect(TEXT_SCALE.normalize(500)).toBe(140);
+    expect(TEXT_SCALE.normalize(10)).toBe(80);
+    // Nothing stored, or nonsense: the drawing's own sizes.
+    expect(TEXT_SCALE.normalize(null)).toBe(100);
+    expect(TEXT_SCALE.normalize('big')).toBe(100);
   });
 });

@@ -255,10 +255,20 @@
     "help": {
       "open": "Czym jest MDI",
       "title": "MDI",
-      "what": "Jedna linia naraz, prosto do sterownika: blok G-code albo polecenie $ Grbla. Idzie kolejką serwera jak każda inna linia i trafia do dziennika. Nic nie pyta o potwierdzenie — linia jest Twoja.",
-      "keys": "Enter wysyła. Strzałki w górę i w dół przywracają to, co to urządzenie wysłało wcześniej. W trakcie pisania podpowiedzi pokazują kody i litery z opisem — wybierz strzałkami i Enterem albo pisz dalej.",
+      "what": "Jedna linia naraz, prosto do sterownika: blok G-code albo polecenie $ Grbla. Idzie kolejką serwera jak każda inna linia i trafia do dziennika. Nic nie pyta o potwierdzenie.",
       "console": "Nad linią jest konsola maszyny: każda linia wysłana do sterownika, z dowolnego urządzenia, i każda odpowiedź, z godziną. Przy błędzie i alarmie obok kodu stoi jego znaczenie.",
-      "alarm": "W alarmie sterownik przyjmuje tylko polecenia $ — $X odblokowuje, $H bazuje. Inna linia jest odrzucana i zostaje w konsoli przekreślona. W trakcie programu linia jest wyłączona."
+      "alarm": "W alarmie sterownik przyjmuje tylko polecenia $ — $X odblokowuje, $H bazuje. Inna linia jest odrzucana i zostaje w konsoli przekreślona. W trakcie programu linia jest wyłączona.",
+      "key": {
+        "enter": "Enter",
+        "suggest": "Ctrl+Spacja"
+      },
+      "send": "Wysyła linię",
+      "history": "Poprzednio wysłana linia i z powrotem — tego urządzenia, do przeładowania strony",
+      "suggest": "Otwiera podpowiedzi; otwierają się też same w trakcie pisania słowa",
+      "pick": "Przy otwartych podpowiedziach: wybór i wstawienie do linii",
+      "dismiss": "Zamyka podpowiedzi",
+      "sendButton": "Wysyła linię, jak Enter",
+      "clearButton": "Czyści konsolę na tym urządzeniu; dziennik trzyma wszystko"
     }
   },
   "settings": {
@@ -288,10 +298,8 @@
   },
   "textSize": {
     "label": "Tekst",
-    "small": "Mały",
-    "normal": "Normalny",
-    "large": "Duży",
-    "note": "Wielkość napisów na tym urządzeniu. Odczyty zostają — ich wielkość ustawia gęstość."
+    "note": "Wielkość napisów na tym urządzeniu, w procentach. Odczyty zostają — ich wielkość ustawia gęstość.",
+    "unit": "%"
   },
   "numFont": {
     "label": "Krój cyfr",
@@ -299,7 +307,8 @@
     "jetbrains": "JetBrains",
     "plex": "Plex",
     "segment": "Segment",
-    "note": "Krój odczytów, wartości kroków i posuwów oraz edytora G-code."
+    "note": "Krój odczytów, wartości kroków i posuwów oraz edytora G-code.",
+    "sample": "X 1234.567 · Y −890.010 · Z 0.100"
   },
   "app": {
     "install": "Zainstaluj na tym urządzeniu",

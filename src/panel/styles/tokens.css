@@ -233,8 +233,8 @@
 
   /*
    * How big this device draws words: the type scale's pixels are multiplied
-   * by it (`tailwind.panel.config.js`). The panel's own, set in Settings →
-   * Urządzenie → Tekst (Mateusz, 2026-09-29).
+   * by it (`tailwind.panel.config.js`). The panel's own, set on the root by
+   * Settings → Urządzenie → Tekst (`ui/look`, Mateusz, 2026-09-29).
    */
   --textScale: 1;
 }
@@ -268,6 +268,10 @@
   --val: 34px;
 }
 
+/* The default again, as a block: the Settings chips show each face in
+ * itself by carrying its attribute, and Azeret's chip must not inherit the
+ * face chosen on the root. */
+[data-num='azeret'] { --num: 'Azeret Mono', 'IBM Plex Mono', monospace; }
 [data-num='jetbrains'] { --num: 'JetBrains Mono', monospace; }
 [data-num='segment'] { --num: 'Share Tech Mono', monospace; }
 [data-num='plex'] { --num: 'IBM Plex Mono', monospace; }
@@ -306,9 +310,6 @@
  * from 132px to 60 — smaller than at 1024. The same proportions as the
  * drawing's step from `:root` to compact, on the full-HD values.
  */
-[data-text='small'] { --textScale: 0.9; }
-[data-text='large'] { --textScale: 1.15; }
-
 [data-target='fullhd'][data-density='compact'] {
   --pad: 18px;
   --gap: 12px;
