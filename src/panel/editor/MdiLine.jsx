@@ -3,7 +3,7 @@ import { completionStatus } from '@codemirror/autocomplete';
 import { Compartment, EditorState, Prec } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { gcodeLine } from './gcode';
+import { gcodeLine, touchPopups } from './gcode';
 
 /*
  * One line: a newline typed or pasted is not taken. Enter sends instead.
@@ -28,7 +28,7 @@ const locked = (disabled) => [
  * `help` is the suggestions extension, handed in once the server's words
  * have arrived.
  */
-const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help }) => {
+const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help, touch = false }) => {
   const host = useRef(null);
   const view = useRef(null);
   const locking = useRef(new Compartment());
@@ -55,6 +55,7 @@ const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help 
           history(),
           keymap.of([...defaultKeymap, ...historyKeymap]),
           gcodeLine,
+          touch ? touchPopups : [],
           placeholder(hint),
           helping.current.of(help ?? []),
           locking.current.of(locked(disabled)),
