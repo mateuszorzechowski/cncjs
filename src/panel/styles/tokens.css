@@ -230,6 +230,13 @@
    * not settled.
    */
   --num: 'Azeret Mono', 'IBM Plex Mono', monospace;
+
+  /*
+   * How big this device draws words: the type scale's pixels are multiplied
+   * by it (`tailwind.panel.config.js`). The panel's own, set in Settings →
+   * Urządzenie → Tekst (Mateusz, 2026-09-29).
+   */
+  --textScale: 1;
 }
 
 [data-target='fullhd'] {
@@ -299,6 +306,9 @@
  * from 132px to 60 — smaller than at 1024. The same proportions as the
  * drawing's step from `:root` to compact, on the full-HD values.
  */
+[data-text='small'] { --textScale: 0.9; }
+[data-text='large'] { --textScale: 1.15; }
+
 [data-target='fullhd'][data-density='compact'] {
   --pad: 18px;
   --gap: 12px;

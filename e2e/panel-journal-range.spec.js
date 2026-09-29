@@ -49,7 +49,7 @@ test.describe('the journal window', () => {
 test.describe('this device\'s name', () => {
   test.use({ viewport: { width: 1024, height: 768 } });
 
-  test('is set in the preferences, beside the language and the theme, not with the connection', async ({ cncjs }) => {
+  test('is set in the device tab, beside the language and the theme, not with the connection or the preferences', async ({ cncjs }) => {
     const { page } = cncjs;
     await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
     await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Ustawienia' }).click();
@@ -58,6 +58,10 @@ test.describe('this device\'s name', () => {
     await expect(page.getByRole('heading', { name: /^Nazwa tego urządzenia/ })).toHaveCount(0);
 
     await page.getByText('Preferencje', { exact: true }).first().click();
+    await expect(page.getByRole('heading', { name: /^Nazwa tego urządzenia/ })).toHaveCount(0);
+
+    // Its own tab since 2026-09-29, with the language and the theme.
+    await page.getByText('Urządzenie', { exact: true }).first().click();
     await expect(page.getByRole('heading', { name: /^Nazwa tego urządzenia/ })).toBeVisible();
     cncjs.expectNoPageErrors();
   });
