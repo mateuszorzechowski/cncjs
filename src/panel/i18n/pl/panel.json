@@ -226,6 +226,7 @@
     "noteAny": "Ustawia zero robocze w aktualnej pozycji maszynowej.",
     "noWcs": "Sterownik nie podał układu współrzędnych (G54–G59).",
     "wcs": "Układ współrzędnych",
+    "wcsAt": "X {{x}} · Y {{y}} · Z {{z}} {{unit}}",
     "help": {
       "open": "Czym jest zerowanie",
       "title": "Zerowanie",
