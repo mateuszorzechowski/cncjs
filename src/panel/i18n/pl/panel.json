@@ -252,7 +252,6 @@
       "not": "Nie"
     },
     "facts": "Ustawienia bazowania",
-    "note": "Każda oś jedzie do swojej krańcówki, potem odjeżdża o odskok. Maszyna rusza z prędkościami bazowania — trzymaj rękę przy STOP.",
     "all": "Bazuj wszystkie osie",
     "axisX": "Bazuj X",
     "axisY": "Bazuj Y",
