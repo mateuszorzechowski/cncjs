@@ -153,12 +153,10 @@ const byServer = ({ onFindings, units, fixes = false } = {}) => async (view) => 
 /**
  * The suggestions alone. `blocks` off for one line, where a ready block of
  * several lines has nowhere to go — the MDI line (review note, 2026-09-29:
- * *"autocomplete?"*). `above`, for a line at the foot of the screen: the list
- * opens over it rather than off the bottom (*"podpowiedzi wchodzą pod
- * ekran"*).
+ * *"autocomplete?"*).
  */
-export const suggestions = (words, machine, { above = false, ...options } = {}) => autocompletion({
-  override: [suggest(words, machine, options)], activateOnTyping: true, aboveCursor: above,
+export const suggestions = (words, machine, options) => autocompletion({
+  override: [suggest(words, machine, options)], activateOnTyping: true,
 });
 
 /**
