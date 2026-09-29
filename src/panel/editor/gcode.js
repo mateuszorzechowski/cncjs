@@ -148,3 +148,14 @@ const lineFrame = EditorView.theme({
 export const gcodeEditing = [gcode, syntaxHighlighting(colours), frame, popups];
 
 export const gcodeLine = [gcode, syntaxHighlighting(colours), popups, lineFrame];
+
+/*
+ * The list of suggestions at a finger's size, where there is no pointer — a
+ * tablet or a phone (review note, 2026-09-29: *"na tablecie i telefonie są
+ * małe i ciężko kliknąć"*): rows 44px tall, the text at the panel's body size.
+ */
+export const touchPopups = EditorView.theme({
+  '.cm-tooltip-autocomplete>ul': { maxHeight: '60vh' },
+  '.cm-tooltip-autocomplete>ul>li': { display: 'flex', alignItems: 'center', minHeight: '44px', padding: '0 12px', fontSize: '15px' },
+  '.cm-completionDetail': { fontSize: '13px' },
+});
