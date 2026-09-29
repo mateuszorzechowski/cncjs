@@ -23,15 +23,23 @@ const TONES = {
   off: 'border-line bg-panel/85 text-ink hover:border-acc hover:text-acc',
 };
 
-const IconBar = ({ groups, className = '' }) => (
-  <div className={`flex flex-col gap-1.5 ${className}`}>
+/*
+ * `large`, on a tablet: squares a finger can hit (44px, the touch target the
+ * platforms ask for) where a pointer is not the thing pressing them
+ * (Mateusz, 2026-09-29: *"na tablecie większe przyciski"*). At that size the
+ * eleven do not fit down the jog screen's preview, so the groups stand side
+ * by side — the first against the edge — and the tallest is five.
+ */
+const IconBar = ({ groups, large = false, className = '' }) => (
+  <div className={`flex items-start ${large ? 'flex-row-reverse gap-2' : 'flex-col gap-1.5'} ${className}`}>
     {groups.map((group, index) => (
       <div
         key={group.label}
         className={[
           'flex flex-col gap-1',
-          // A hairline above every group but the first.
-          index > 0 ? 'mt-1 border-t border-line pt-2' : '',
+          // A hairline between groups: above each in a column, beside each in a row.
+          index > 0 && !large ? 'mt-1 border-t border-line pt-2' : '',
+          index > 0 && large ? 'border-r border-line pr-2' : '',
         ].join(' ')}
         role="group"
         aria-label={group.label}
@@ -46,13 +54,14 @@ const IconBar = ({ groups, className = '' }) => (
             title={item.note ? `${item.label} — ${item.note}` : item.label}
             onClick={item.onSelect}
             className={[
-              'flex size-7 shrink-0 items-center justify-center rounded-ctl border',
+              'flex shrink-0 items-center justify-center rounded-ctl border',
+              large ? 'size-11' : 'size-7',
               'transition-colors disabled:opacity-40 disabled:hover:border-line',
               'disabled:hover:text-ink',
               item.pressed ? TONES.on : TONES.off,
             ].join(' ')}
           >
-            <Icon name={item.icon} className="size-4" />
+            <Icon name={item.icon} className={large ? 'size-5' : 'size-4'} />
           </button>
         ))}
       </div>

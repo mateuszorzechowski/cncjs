@@ -1,6 +1,6 @@
 import HazardFrame from './HazardFrame';
-import IconBar from './IconBar';
 import Scene from '../scene/Scene';
+import StageOptions from './StageOptions';
 import StageReadout from './StageReadout';
 import { VIEWS, VIEW_IDS } from '../scene/views';
 import { t } from '../i18n';
@@ -119,10 +119,10 @@ const PathStage = ({
       />
       ) : null}
 
-      <IconBar
-        className="absolute right-2 top-2"
+      {/* A column of glyphs on a PC, a button and a sheet below it — see `StageOptions`. */}
+      <StageOptions
         groups={[
-          { label: t('stage.view'), items: viewItems(view, onView, free) },
+          { label: t('stage.view'), items: viewItems(view, onView, free), closes: true },
           /*
            * Its own group, below the views and above the layers, because it
            * is neither. The views are four destinations and exactly one of
@@ -133,6 +133,7 @@ const PathStage = ({
            */
           {
             label: t('stage.frame'),
+            closes: true,
             items: [{
               id: 'fit',
               icon: 'fit',
