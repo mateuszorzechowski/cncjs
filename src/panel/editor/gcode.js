@@ -101,6 +101,9 @@ const frame = EditorView.theme({
  * alike: panel surfaces, panel words.
  */
 const popups = EditorView.theme({
+  // The suggestions are the panel's own list (`suggestionList`, `LineChoices`),
+  // in the MDI line and the editor alike; CodeMirror still works them out.
+  '.cm-tooltip-autocomplete': { display: 'none' },
   '.cm-tooltip': {
     backgroundColor: 'var(--panel)',
     color: 'var(--ink)',
@@ -108,10 +111,6 @@ const popups = EditorView.theme({
     borderRadius: 'var(--r-ctl)',
     fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
   },
-  '.cm-tooltip-autocomplete>ul>li': { padding: '2px 8px', fontFamily: 'var(--num)' },
-  '.cm-tooltip-autocomplete>ul>li[aria-selected]': { backgroundColor: 'var(--acc)', color: '#ffffff' },
-  // Muted by weight rather than by colour, so a selected row's white carries.
-  '.cm-completionDetail': { marginLeft: '12px', fontStyle: 'normal', opacity: '0.7', fontFamily: "'IBM Plex Sans', system-ui, sans-serif" },
   // Narrow enough to stay over the card, the words wrapping; the fix in it
   // a panel button rather than CodeMirror's dark default.
   '.cm-tooltip-lint': { maxWidth: '360px' },
@@ -143,9 +142,6 @@ const lineFrame = EditorView.theme({
   '.cm-line': { padding: '0' },
   '.cm-cursor': { borderLeftColor: 'var(--acc)' },
   '.cm-placeholder': { color: 'var(--mut)' },
-  // Its suggestions are the panel's own list, over the field (`MdiLine`);
-  // CodeMirror still works them out and moves through them.
-  '.cm-tooltip-autocomplete': { display: 'none' },
 });
 
 export const gcodeEditing = [gcode, syntaxHighlighting(colours), frame, popups];
