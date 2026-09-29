@@ -535,5 +535,17 @@ export const readMachine = ({
     alarm: connected && active?.word === ALARM ? (alarm ?? null) : null,
     // When the machine was last homed, or null: not since it lost its position.
     homedAt: connected ? (homedAt ?? null) : null,
+    /*
+     * What the controller's inputs and outputs say, for the diagnostics
+     * screen: Grbl's `Pn:` (the triggered pins), `A:` (spindle and coolant)
+     * and `Bf:` (free planner blocks and serial bytes), as the server parsed
+     * them. Null field by field when the firmware does not report it — `''`
+     * is an answer (nothing triggered), null is not.
+     */
+    inputs: connected ? {
+      pins: typeof state?.status?.pinState === 'string' ? state.status.pinState : null,
+      accessories: typeof state?.status?.accessoryState === 'string' ? state.status.accessoryState : null,
+      buffer: state?.status?.buf ?? null,
+    } : null,
   };
 };

@@ -414,6 +414,20 @@ test.describe('panel, disconnected', () => {
     cncjs.expectNoPageErrors();
   });
 
+  test('the diagnostics screen has every input in its place, unread with no machine', async ({ cncjs }) => {
+    await openPanel(cncjs.page);
+    await rail(cncjs.page).getByRole('button', { name: 'Diagnostyka' }).click();
+
+    // Unread is a dash, not "open": no controller has said anything.
+    const inputs = cncjs.page.locator('section', { hasText: 'Wejścia sterownika' });
+    for (const name of ['Krańcówka X', 'Krańcówka Y', 'Krańcówka Z', 'Sonda']) {
+      await expect(inputs.getByText(name, { exact: true })).toBeVisible();
+    }
+    await expect(inputs.getByText('Spoczynek')).toHaveCount(0);
+
+    cncjs.expectNoPageErrors();
+  });
+
   test('can be installed as an application, and every icon it names exists', async ({ cncjs }) => {
     /*
      * The pendant is meant to live on a phone's home screen, which means the

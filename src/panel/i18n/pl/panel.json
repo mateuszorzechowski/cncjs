@@ -260,6 +260,41 @@
     "axes": "Grbl bazuje wszystkie osie naraz ($H). Pojedyncza oś — tylko sterowniki, które to umieją.",
     "settings": "Ustawienia bazowania"
   },
+  "diag": {
+    "inputs": "Wejścia sterownika",
+    "inputsNote": "Na żywo, tak jak czyta je sterownik. Wyzwól krańcówkę albo sondę ręką — jej kafel się zapali.",
+    "pin": {
+      "x": "Krańcówka X",
+      "y": "Krańcówka Y",
+      "z": "Krańcówka Z",
+      "probe": "Sonda",
+      "door": "Drzwi",
+      "hold": "Wstrzymanie",
+      "reset": "Reset",
+      "start": "Start cyklu",
+      "on": "Wyzwolone",
+      "off": "Spoczynek"
+    },
+    "spindle": {
+      "label": "Wrzeciono",
+      "off": "Wył.",
+      "cw": "Wł., w prawo",
+      "ccw": "Wł., w lewo"
+    },
+    "flood": "Chłodzenie zalewowe",
+    "mist": "Mgła",
+    "out": {
+      "on": "Wł.",
+      "off": "Wył."
+    },
+    "buffer": "Wolny bufor",
+    "bufferValue": "{{planner}} bloków · {{rx}} B",
+    "bufferOff": "Sterownik nie raportuje bufora ($10).",
+    "installation": "Sterownik i panel",
+    "controller": "Sterownik",
+    "port": "Port",
+    "panel": "Panel"
+  },
   "mdi": {
     "title": "MDI",
     "log": "Konsola maszyny",
@@ -518,7 +553,7 @@
     "machine": "Maszyna"
   },
   "timings": {
-    "title": "Ta instalacja",
+    "title": "Zatrzymanie jogu · ta instalacja",
     "ms": "{{ms}} ms",
     "link": "Łącze",
     "linkNote": "w jedną stronę do serwera, dolicza się do wszystkiego poniżej",
@@ -531,7 +566,7 @@
     "brakingNote": "własne maszyny, z jej przyspieszenia — tego nie skróci żaden szybszy komputer",
     "panel": "Pulpit",
     "panelNote": "najgorsza przerwa między potwierdzeniami tego panelu; decyduje, jak daleko pojedzie maszyna, gdy ta strona przestanie odpowiadać z wciśniętym klawiszem",
-    "atFeed": "drogi przy {{feedrate}} {{unit}}"
+    "atFeed": "droga po puszczeniu klawisza jogu przy {{feedrate}} {{unit}}"
   },
   "journal": {
     "title": "Dziennik",

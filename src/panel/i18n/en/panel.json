@@ -260,6 +260,41 @@
     "axes": "Grbl homes every axis at once ($H). One axis at a time only on controllers that can.",
     "settings": "Homing settings"
   },
+  "diag": {
+    "inputs": "Controller inputs",
+    "inputsNote": "Live, as the controller reads them. Trigger a limit switch or the probe by hand and its tile lights.",
+    "pin": {
+      "x": "Limit X",
+      "y": "Limit Y",
+      "z": "Limit Z",
+      "probe": "Probe",
+      "door": "Door",
+      "hold": "Feed hold",
+      "reset": "Reset",
+      "start": "Cycle start",
+      "on": "Triggered",
+      "off": "Open"
+    },
+    "spindle": {
+      "label": "Spindle",
+      "off": "Off",
+      "cw": "On, CW",
+      "ccw": "On, CCW"
+    },
+    "flood": "Flood coolant",
+    "mist": "Mist coolant",
+    "out": {
+      "on": "On",
+      "off": "Off"
+    },
+    "buffer": "Free buffer",
+    "bufferValue": "{{planner}} blocks · {{rx}} B",
+    "bufferOff": "The controller does not report its buffer ($10).",
+    "installation": "Controller and panel",
+    "controller": "Controller",
+    "port": "Port",
+    "panel": "Panel"
+  },
   "mdi": {
     "title": "MDI",
     "log": "Machine console",
@@ -518,7 +553,7 @@
     "machine": "Machine"
   },
   "timings": {
-    "title": "This installation",
+    "title": "Jog stop · this installation",
     "ms": "{{ms}} ms",
     "link": "Link",
     "linkNote": "one way to the server, added to everything below",
@@ -531,7 +566,7 @@
     "brakingNote": "the machine's own, from its acceleration — the part no faster computer removes",
     "panel": "Pendant",
     "panelNote": "the worst gap between this panel's own confirmations; it decides how far the machine goes if this page stops responding with a key down",
-    "atFeed": "distances at {{feedrate}} {{unit}}"
+    "atFeed": "distances when a jog key is let go at {{feedrate}} {{unit}}"
   },
   "journal": {
     "title": "Journal",

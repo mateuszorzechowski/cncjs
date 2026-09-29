@@ -23,6 +23,7 @@ import { useKeepAwake } from './ui/keepAwake';
 import Dashboard from './screens/Dashboard';
 import JogScreen from './screens/JogScreen';
 import FilesScreen from './screens/FilesScreen';
+import DiagnosticsScreen from './screens/DiagnosticsScreen';
 import HomingScreen from './screens/HomingScreen';
 import JournalScreen from './screens/JournalScreen';
 import MdiScreen from './screens/MdiScreen';
@@ -53,7 +54,7 @@ const DESTINATIONS = [
   { id: 'files', key: 'nav.files', ready: true },
   { id: 'path', key: 'nav.path', ready: true },
   { id: 'probe', key: 'nav.probe', ready: false },
-  { id: 'diag', key: 'nav.diag', ready: false },
+  { id: 'diag', key: 'nav.diag', ready: true },
   // What happened, in place of the alarm list it was drawn as (2026-09-24).
   { id: 'journal', key: 'nav.journal', ready: true },
   { id: 'homing', key: 'nav.homing', ready: true },
@@ -117,6 +118,7 @@ const PHONE_REST = DESTINATIONS
  * it is also the fallback, and because it is the only screen that navigates.
  */
 const SCREENS = {
+  diag: DiagnosticsScreen,
   files: FilesScreen,
   jog: JogScreen,
   homing: HomingScreen,
