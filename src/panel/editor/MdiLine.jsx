@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  acceptCompletion, completionStatus, currentCompletions, selectedCompletionIndex, setSelectedCompletion,
-} from '@codemirror/autocomplete';
+import { useEffect, useRef } from 'react';
+import { completionStatus } from '@codemirror/autocomplete';
 import { Compartment, EditorState, Prec } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import FadeScroller from '../ui/FadeScroller';
 import LineChoices from './LineChoices';
+import { takeSuggestion, useSuggestionList } from './suggestionList';
 import { gcodeLine } from './gcode';
 
 /*
@@ -20,14 +19,6 @@ const locked = (disabled) => [
   EditorView.editable.of(!disabled),
   EditorView.contentAttributes.of({ 'aria-disabled': String(disabled) }),
 ];
-
-// What the list shows: the suggestions CodeMirror worked out, and which is chosen.
-const listOf = (state) => (completionStatus(state) === 'active'
-  ? { options: currentCompletions(state).map(({ label, detail }) => ({ label, detail })), selected: selectedCompletionIndex(state) }
-  : { options: [], selected: null });
-
-const sameList = (a, b) => a.selected === b.selected && a.options.length === b.options.length &&
-  a.options.every((option, i) => option.label === b.options[i].label && option.detail === b.options[i].detail);
 
 /**
  * The line typed at the MDI screen: the editor's colours and suggestions in
@@ -56,7 +47,7 @@ const MdiLine = ({
   const view = useRef(null);
   const locking = useRef(new Compartment());
   const helping = useRef(new Compartment());
-  const [list, setList] = useState({ options: [], selected: null });
+  const [list, listening] = useSuggestionList();
   // Read through refs, so the editor is built once and never rebuilt for a
   // new handler.
   const heard = useRef({ onChange, onSend, onWalk });
@@ -85,12 +76,11 @@ const MdiLine = ({
           EditorView.contentAttributes.of({
             'aria-label': label, enterkeyhint: 'send', autocapitalize: 'characters', autocorrect: 'off', spellcheck: 'false',
           }),
+          listening,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               heard.current.onChange(update.state.doc.toString());
             }
-            const next = listOf(update.state);
-            setList((now) => (sameList(now, next) ? now : next));
           }),
         ],
       }),
@@ -120,12 +110,7 @@ const MdiLine = ({
   }, [help]);
 
   // A tap takes the suggestion, as Enter on it would, and typing goes on.
-  const take = (index) => {
-    const editor = view.current;
-    editor.dispatch({ effects: setSelectedCompletion(index) });
-    acceptCompletion(editor);
-    editor.focus();
-  };
+  const take = (index) => takeSuggestion(view.current, index);
 
   // Drawn by whoever asked for them instead — a phone's sheet — with the way to take one.
   const listed = useRef(onList);
