@@ -10,7 +10,12 @@ import { gcodeLine } from './gcode';
  */
 const oneLine = EditorState.transactionFilter.of((tr) => (tr.newDoc.lines > 1 ? [] : tr));
 
-const locked = (disabled) => [EditorState.readOnly.of(disabled), EditorView.editable.of(!disabled)];
+// Dead as a disabled input is, and said so to whatever reads the field.
+const locked = (disabled) => [
+  EditorState.readOnly.of(disabled),
+  EditorView.editable.of(!disabled),
+  EditorView.contentAttributes.of({ 'aria-disabled': String(disabled) }),
+];
 
 /**
  * The line typed at the MDI screen: the editor's colours and suggestions in
