@@ -539,7 +539,7 @@
     "machine": "Machine"
   },
   "timings": {
-    "title": "This installation",
+    "title": "Jog stop · this installation",
     "ms": "{{ms}} ms",
     "link": "Link",
     "linkNote": "one way to the server, added to everything below",
@@ -552,7 +552,7 @@
     "brakingNote": "the machine's own, from its acceleration — the part no faster computer removes",
     "panel": "Pendant",
     "panelNote": "the worst gap between this panel's own confirmations; it decides how far the machine goes if this page stops responding with a key down",
-    "atFeed": "distances at {{feedrate}} {{unit}}"
+    "atFeed": "distances when a jog key is let go at {{feedrate}} {{unit}}"
   },
   "journal": {
     "title": "Journal",
