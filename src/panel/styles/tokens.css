@@ -222,6 +222,8 @@
    * way, so it keeps following the key when a target changes the size.
    */
   --r-jcorner: calc(var(--jbtnh) / 3);
+  /* How tall a list of suggestions over a field may grow (the MDI line). */
+  --listMax: min(60vh, 460px);
 
   /*
    * Machine numbers get their own face. It is switchable because the mockup
