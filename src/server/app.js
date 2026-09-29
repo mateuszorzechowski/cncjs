@@ -480,6 +480,10 @@ const appMain = () => {
     app.get(urljoin(settings.route, 'api/units'), api.units.read);
     app.put(urljoin(settings.route, 'api/units'), api.units.update);
 
+    // Probe
+    app.get(urljoin(settings.route, 'api/probe'), api.probe.read);
+    app.put(urljoin(settings.route, 'api/probe'), api.probe.update);
+
     // Who opens the port unasked
     app.get(urljoin(settings.route, 'api/connection/auto'), api.connection.readAuto);
     app.put(urljoin(settings.route, 'api/connection/auto'), api.connection.updateAuto);
