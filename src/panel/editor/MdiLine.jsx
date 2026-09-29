@@ -6,6 +6,7 @@ import { Compartment, EditorState, Prec } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import FadeScroller from '../ui/FadeScroller';
+import LineChoices from './LineChoices';
 import { gcodeLine } from './gcode';
 
 /*
@@ -45,14 +46,16 @@ const sameList = (a, b) => a.selected === b.selected && a.options.length === b.o
  * *"customowy scroll"*, *"dropdown na całą szerokość inputa"*). CodeMirror
  * still works the suggestions out and moves the choice; this draws them over
  * the field, as wide as it, in a `FadeScroller`, rows a finger's height
- * where there is no pointer (`touch`).
+ * where there is no pointer (`touch`). With `onList` the list is handed
+ * out instead — the phone's sheet draws it above the line (`MdiSheet`).
  */
-const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help, touch = false }) => {
+const MdiLine = ({
+  value, onChange, onSend, onWalk, disabled, label, hint, help, touch = false, onList, autoFocus = false,
+}) => {
   const host = useRef(null);
   const view = useRef(null);
   const locking = useRef(new Compartment());
   const helping = useRef(new Compartment());
-  const chosen = useRef(null);
   const [list, setList] = useState({ options: [], selected: null });
   // Read through refs, so the editor is built once and never rebuilt for a
   // new handler.
@@ -116,11 +119,6 @@ const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help,
     view.current?.dispatch({ effects: helping.current.reconfigure(help ?? []) });
   }, [help]);
 
-  // The chosen suggestion kept in view as the arrows move through them.
-  useEffect(() => {
-    chosen.current?.scrollIntoView?.({ block: 'nearest' });
-  }, [list.selected]);
-
   // A tap takes the suggestion, as Enter on it would, and typing goes on.
   const take = (index) => {
     const editor = view.current;
@@ -129,36 +127,29 @@ const MdiLine = ({ value, onChange, onSend, onWalk, disabled, label, hint, help,
     editor.focus();
   };
 
+  // Drawn by whoever asked for them instead — a phone's sheet — with the way to take one.
+  const listed = useRef(onList);
+  listed.current = onList;
+  useEffect(() => {
+    listed.current?.(list, take);
+    // `take` reads the view through a ref and never changes what it does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+
+  // Ready to type the moment it is shown — the phone's sheet opens for exactly that.
+  useEffect(() => {
+    if (autoFocus) {
+      view.current?.focus();
+    }
+  }, [autoFocus]);
+
   return (
     <div className="relative flex min-w-0 flex-1">
-      {list.options.length ? (
+      {list.options.length && !onList ? (
         // Its thumb inside it, wherever the phone puts other thumbs (`FadeScroller`).
         <div data-thumb-inside="" className="absolute inset-x-0 bottom-full z-20 mb-2 flex max-h-[var(--listMax)] flex-col rounded-ctl border border-line bg-panel py-1 [--thumbGutter:0px]">
           <FadeScroller>
-            <ul className="m-0 list-none p-0" role="listbox" aria-label={label}>
-              {list.options.map((option, index) => {
-                const on = index === list.selected;
-                return (
-                  <li
-                    key={option.label}
-                    ref={on ? chosen : undefined}
-                    role="option"
-                    aria-selected={on}
-                    // Pressing a row must not take the focus from the line.
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => take(index)}
-                    className={[
-                      'flex cursor-pointer gap-3 px-3',
-                      touch ? 'min-h-11 items-center' : 'items-baseline py-1.5',
-                      on ? 'bg-acc text-white' : 'text-ink hover:bg-accS',
-                    ].join(' ')}
-                  >
-                    <span className="shrink-0 font-num text-base">{option.label}</span>
-                    {option.detail ? <span className={`min-w-0 truncate text-note ${on ? '' : 'text-mut'}`}>{option.detail}</span> : null}
-                  </li>
-                );
-              })}
-            </ul>
+            <LineChoices options={list.options} selected={list.selected} onPick={take} touch={touch} label={label} />
           </FadeScroller>
         </div>
       ) : null}
