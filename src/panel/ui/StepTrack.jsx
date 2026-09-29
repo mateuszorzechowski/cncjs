@@ -1,8 +1,7 @@
-import Icon from './Icon';
-
 /**
  * Where a wizard is: every step in a row, centred, a mark over its name,
- * arrows between them (review notes, 2026-09-29).
+ * nothing between them — rules first, then arrows, and then neither
+ * (review notes, 2026-09-29).
  *
  * Three states, three fills: the steps behind in a quiet accent with a tick,
  * the one it is on in the full accent and larger, the ones ahead grey and
@@ -15,18 +14,11 @@ const MARKS = {
   ahead: 'scale-90 bg-mutS text-mut',
 };
 
-// Between two steps, the way the wizard goes. On the mark's line, not the name's.
-const Arrow = () => (
-  <li aria-hidden="true" className="flex h-chiph items-center">
-    <Icon name="chevron" className="size-3 -rotate-90 text-mut @3xl/shell:size-4" weight={2} />
-  </li>
-);
-
 const StepTrack = ({ steps, current, label }) => {
   const at = steps.findIndex((step) => step.id === current);
   return (
     <div className="flex shrink-0 flex-col items-center gap-2">
-      <ol aria-label={label} className="m-0 flex list-none items-start justify-center gap-1 p-0 @3xl/shell:gap-2">
+      <ol aria-label={label} className="m-0 flex list-none items-start justify-center gap-3 p-0 @3xl/shell:gap-6">
         {steps.map((step, index) => {
           let state = 'ahead';
           if (index < at) {
@@ -34,15 +26,14 @@ const StepTrack = ({ steps, current, label }) => {
           } else if (index === at) {
             state = 'now';
           }
-          return [
-            index > 0 ? <Arrow key={`${step.id}-arrow`} /> : null,
+          return (
             <li key={step.id} aria-current={state === 'now' ? 'step' : undefined} className="flex min-w-0 flex-col items-center gap-1">
               <span className={`flex size-chiph shrink-0 items-center justify-center rounded-full font-num text-base font-semibold ${MARKS[state]}`}>
                 {state === 'done' ? '✓' : index + 1}
               </span>
               <span className={`hidden text-note @3xl/shell:inline ${state === 'now' ? 'font-semibold text-ink' : 'text-mut'}`}>{step.name}</span>
-            </li>,
-          ];
+            </li>
+          );
         })}
       </ol>
       <p aria-hidden="true" className="m-0 text-base font-semibold text-ink @3xl/shell:hidden">{steps[at]?.name}</p>
