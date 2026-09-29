@@ -61,7 +61,7 @@ const LookSettings = () => (
           segment: inFace('segment', t('numFont.segment')),
         }}
       />
-      <span className="font-num text-read tabular-nums text-ink">{t('numFont.sample')}</span>
+      <span className="whitespace-nowrap font-num text-[length:var(--numSample)] leading-tight tabular-nums text-ink">{t('numFont.sample')}</span>
     </SettingRow>
   </>
 );
