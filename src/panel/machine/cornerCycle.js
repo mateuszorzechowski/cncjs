@@ -187,20 +187,54 @@ export const windowOfPhase = (phase) => PHASE_WINDOW[phase] || 'zFast';
  * for a moment before it starts again: the short ones — a back-off is three
  * hundredths of the loop — flickered past as a jump (review note,
  * 2026-09-29: *"animacja ruchu po zaznaczonym fokusie inputa powinna być
- * wolniejsza"*). The whole loop plays at its own pace.
+ * wolniejsza"*).
  */
 export const PART_MS = 3000;
 export const PART_STOP_MS = 700;
 
+/*
+ * The whole loop, played part by part like the Z plate's: each at half the
+ * loop's own pace and never quicker than `WHOLE_PART_MS`, a short stop after
+ * each, a long one on the zero at the end (review note, the same day:
+ * *"animacja trwa za szybko, nie widać co się na niej dzieje"*).
+ */
+export const WHOLE_PART_MS = 1600;
+export const WHOLE_STOP_MS = 400;
+export const ZERO_STOP_MS = 2000;
+
+const TIMELINE = (() => {
+  const parts = [[0, 0.04], ...Object.values(PARTS).map(({ at }) => at)];
+  let t = 0;
+  return parts.map(([from, to], i) => {
+    const plays = Math.max(WHOLE_PART_MS, (to - from) * CORNER_MS * 2);
+    const stop = i === parts.length - 1 ? ZERO_STOP_MS : WHOLE_STOP_MS;
+    const part = { from, to, begins: t, plays };
+    t += plays + stop;
+    return part;
+  });
+})();
+
+/** How long the whole loop takes, played part by part. */
+export const WHOLE_MS = (() => {
+  const last = TIMELINE[TIMELINE.length - 1];
+  return last.begins + last.plays + ZERO_STOP_MS;
+})();
+
+const wholeAt = (ms) => {
+  const t = ms % WHOLE_MS;
+  const part = [...TIMELINE].reverse().find(({ begins }) => t >= begins);
+  // Held just short of its end through the stop, which is where the next part begins.
+  return part.from + Math.min(0.999, (t - part.begins) / part.plays) * (part.to - part.from);
+};
+
 /** Where in the whole loop `ms` into playing part `name` over and over is. */
 export const loopIn = (name, ms, length = CORNER_MS) => {
-  const [from, to] = SPANS[name] || SPANS.whole;
   if (name === 'whole' || !SPANS[name]) {
-    return from + ((ms % length) / length) * (to - from);
+    return wholeAt(ms);
   }
+  const [from, to] = SPANS[name];
   const plays = Math.max(PART_MS, (to - from) * length);
   const into = ms % (plays + PART_STOP_MS);
-  // Held just short of its end, which is where the next part begins.
   return from + Math.min(0.999, into / plays) * (to - from);
 };
 

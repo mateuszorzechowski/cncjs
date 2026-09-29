@@ -1,5 +1,5 @@
 import {
-  BEFORE_MM, CORNER_MS, PART_MS, PART_STOP_MS, ZERO_FROM, cornerAt, cornerReadout, cornerSides, figureAt, loopIn, windowOfPhase,
+  BEFORE_MM, CORNER_MS, PART_MS, PART_STOP_MS, WHOLE_MS, WHOLE_PART_MS, WHOLE_STOP_MS, ZERO_FROM, cornerAt, cornerReadout, cornerSides, figureAt, loopIn, windowOfPhase,
 } from '../cornerCycle';
 import { methodOf, stepBeside, stepsOf } from '../probe';
 
@@ -123,5 +123,18 @@ describe('the corner\'s steps', () => {
     expect(stepsOf(corner)[1].key).toBe('probe.step.corner');
     expect(stepBeside(corner, 'method', 1)).toBe('choose');
     expect(stepBeside(corner, 'prepare', -1)).toBe('choose');
+  });
+});
+
+describe('the whole loop, part by part', () => {
+  test('is slow enough to follow: every part at least 1.6 s, and a stop after each', () => {
+    expect(WHOLE_MS).toBeGreaterThan(30000);
+    // The first part — waiting over the plate — then the fast touch starting.
+    expect(loopIn('whole', 100)).toBeLessThan(0.04);
+    expect(loopIn('whole', WHOLE_PART_MS + WHOLE_STOP_MS + 100)).toBeGreaterThan(0.04);
+  });
+
+  test('ends on the zero, held', () => {
+    expect(cornerAt(loopIn('whole', WHOLE_MS - 500)).zero).toBe(true);
   });
 });
