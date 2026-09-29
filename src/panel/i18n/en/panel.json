@@ -1030,6 +1030,18 @@
     "builtin": {
       "wait": "cncjs: wait until the machine has stopped",
       "msg": "cncjs: show a message"
+    },
+    "system": {
+      "settings": "All the controller's settings",
+      "offsets": "Coordinate systems, G28/G30, probe",
+      "parser": "Parser state (modes)",
+      "info": "Firmware version and options",
+      "startup": "Startup blocks",
+      "check": "Check mode on/off (no motion)",
+      "unlock": "Unlock the alarm",
+      "home": "Home all axes",
+      "sleep": "Sleep",
+      "jog": "Jog: $J=G91 X… F…"
     }
   },
   "keepAwake": {
@@ -1058,6 +1070,8 @@
   "editor": {
     "forCode": "{{what}} — for {{code}}",
     "machine": "this machine’s top figure ({{setting}})",
+    "setting": "{{what}} — now {{value}}",
+    "settingNow": "now {{value}}",
     "wcsAt": "{{what}} — now at X {{x}} Y {{y}} Z {{z}}",
     "block": {
       "header": "Program header",

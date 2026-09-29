@@ -1030,6 +1030,18 @@
     "builtin": {
       "wait": "cncjs: czekaj, aż maszyna się zatrzyma",
       "msg": "cncjs: pokaż komunikat"
+    },
+    "system": {
+      "settings": "Wszystkie ustawienia sterownika",
+      "offsets": "Układy współrzędnych, G28/G30, sonda",
+      "parser": "Stan parsera (tryby)",
+      "info": "Wersja i opcje firmware",
+      "startup": "Bloki startowe",
+      "check": "Tryb sprawdzania wł./wył. (bez ruchu)",
+      "unlock": "Odblokuj alarm",
+      "home": "Bazuj wszystkie osie",
+      "sleep": "Uśpienie",
+      "jog": "Jog: $J=G91 X… F…"
     }
   },
   "keepAwake": {
@@ -1058,6 +1070,8 @@
   "editor": {
     "forCode": "{{what}} — dla {{code}}",
     "machine": "najwyższa wartość tej maszyny ({{setting}})",
+    "setting": "{{what}} — teraz {{value}}",
+    "settingNow": "teraz {{value}}",
     "wcsAt": "{{what}} — teraz X {{x}} Y {{y}} Z {{z}}",
     "block": {
       "header": "Nagłówek programu",
