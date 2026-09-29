@@ -237,6 +237,13 @@
    * Settings → Urządzenie → Tekst (`ui/look`, Mateusz, 2026-09-29).
    */
   --textScale: 1;
+
+  /*
+   * The number face's sample in Settings: a reading's size, and smaller when
+   * its row is narrower than the 31 characters at that size — one line
+   * always (review note, 2026-09-29). `cqw` is the settings row's width.
+   */
+  --numSample: min(19px, 4.4cqw);
 }
 
 [data-target='fullhd'] {
