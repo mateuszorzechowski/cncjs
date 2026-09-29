@@ -64,4 +64,12 @@ describe('the whole cycle, with no figure in hand', () => {
     expect(cycleAt(CYCLE_MS + STOP_MS / 2).scene.gap).toBe(end);
     expect(cycleAt(CYCLE_MS + STOP_MS / 2).name).toBe('fast');
   });
+
+  test('shows the arrow of every move, the short back-off too', () => {
+    const into = CYCLE_ORDER.indexOf('retract') * span + CYCLE_MS * 0.4;
+
+    expect(sceneAt('retract', CYCLE_MS * 0.4).arrow).toBeNull();
+    // Up, from the plate, lengthened to be read.
+    expect(cycleAt(into).scene.arrow).toEqual({ from: PLATE_TOP, to: PLATE_TOP - 24 });
+  });
 });

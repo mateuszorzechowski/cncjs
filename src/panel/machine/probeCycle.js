@@ -36,6 +36,9 @@ export const STAGES = [
   { n: 3, key: 'probe.stage.zero' },
 ];
 
+// The shortest arrow the whole cycle draws, in the drawing's pixels.
+const ARROW_MIN = 24;
+
 const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - ((-2 * u + 2) ** 3) / 2);
 
 /** The tool's height above the plate at `p`, a fraction of one loop. */
@@ -57,7 +60,7 @@ export const gapAt = (frames, p) => {
  * amber dot of a contact, and for the plate's thickness how far the Z0 line
  * has come in.
  */
-export const sceneAt = (name, ms) => {
+export const sceneAt = (name, ms, { arrows = false } = {}) => {
   const figure = FIGURES[name];
   if (!figure) {
     return { gap: 84, arrow: null, contact: false, zero: 0 };
@@ -68,10 +71,19 @@ export const sceneAt = (name, ms) => {
   const start = (frames[1] || frames[0])[0];
   const [end, target] = frames[2] || frames[frames.length - 1];
   let arrow = null;
-  if (figure.arrow && p >= start && p < end) {
+  if (figure.arrow && !arrows && p >= start && p < end) {
+    // Shrinking as the tool closes in, gone once shorter than its head.
     const from = PLATE_TOP - gap;
     const to = PLATE_TOP - target;
     arrow = Math.abs(to - from) > 10 ? { from, to } : null;
+  } else if (arrows && p >= start && p < end) {
+    // The whole move's direction, held. A short one — the 14px back-off — is
+    // lengthened upwards, away from the plate, to be long enough to read.
+    const begin = PLATE_TOP - (frames[1] || frames[0])[1];
+    const finish = PLATE_TOP - target;
+    const bottom = Math.max(begin, finish);
+    const top = Math.min(begin, finish, bottom - ARROW_MIN);
+    arrow = finish > begin ? { from: top, to: bottom } : { from: bottom, to: top };
   }
   if (figure.zero) {
     return { gap, arrow, contact: p % 0.5 < 0.3, zero: Math.min(1, Math.max(0, (p - 0.25) / 0.2)) };
@@ -83,7 +95,8 @@ export const sceneAt = (name, ms) => {
  * The whole cycle, when no figure is being set (Mateusz, 2026-09-29: *"jak
  * żaden input nie ma fokusa to pokazuj całą animację z przystankami"*): each
  * part in the order the machine runs them, played once and then held for a
- * moment, so the stages read one at a time.
+ * moment, so the stages read one at a time — every move with its arrow
+ * (*"pokazuj jeszcze strzałki kierunku i wartości na rysunku"*).
  */
 export const CYCLE_ORDER = ['fast', 'retract', 'slow', 'plateThickness', 'lift'];
 
@@ -97,7 +110,7 @@ export const cycleAt = (ms) => {
   const name = CYCLE_ORDER[Math.floor(at / span)];
   const into = at % span;
   // Held on its last frame through the stop.
-  return { name, scene: sceneAt(name, Math.min(into, CYCLE_MS - 1)) };
+  return { name, scene: sceneAt(name, Math.min(into, CYCLE_MS - 1), { arrows: true }) };
 };
 
 /*

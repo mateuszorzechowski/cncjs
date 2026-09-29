@@ -16,9 +16,6 @@ const numberOf = (text) => Number(String(text).replace(',', '.'));
 // A field the server would not take, framed in red.
 const BAD = 'bad';
 
-// The figure whose part draws the Z0 line.
-const ZERO = 'plateThickness';
-
 /** A figure as its badge on the drawing says it: a rate as `F100`, a length with its unit. */
 const said = (name, text, units) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${text} ${fieldUnit(name, units.rule)}`);
 
@@ -60,15 +57,14 @@ const ZPlateParams = ({ fields, texts, onText, bad }) => {
   const shown = picked || whole.name;
   const figure = FIGURES[shown];
   const scene = picked ? sceneAt(picked, ms) : whole.scene;
-  // Its value and dimension for the figure being set; in the whole cycle only the zero's line.
-  const badge = picked ? { x: figure.badge[0], y: figure.badge[1], text: said(picked, texts[picked] ?? '', units) } : null;
-  const marks = picked || (shown === ZERO ? ZERO : null);
+  // The value of the part shown, and its dimension where the design draws one.
+  const badge = { x: figure.badge[0], y: figure.badge[1], text: said(shown, texts[shown] ?? '', units) };
 
   return (
     <div className="grid gap-4 @3xl/shell:grid-cols-2">
       <div className="flex min-w-0 flex-col self-start overflow-hidden rounded-ctl border border-line bg-panel">
         <CycleStages stage={figure?.stage} />
-        <ZPlateScene {...scene} marks={marks} badge={badge} label={t('probe.method.z')} className="w-full" />
+        <ZPlateScene {...scene} marks={shown} badge={badge} label={t('probe.method.z')} className="w-full" />
         <div className="flex flex-col items-center justify-center gap-1 border-t border-line px-2 py-2 text-center">
           <span className="text-note font-semibold text-ink">{t(CAPTIONS[shown])}</span>
           <span className="font-num text-cap text-mut">{lineOf(shown, texts)}</span>
