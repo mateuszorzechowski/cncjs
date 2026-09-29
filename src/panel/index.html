@@ -15,8 +15,14 @@
 
       `viewport-fit=cover` so the frame reaches under a notch rather than
       leaving the system's letterbox colour in the corners of a fullscreen app.
+
+      `interactive-widget=resizes-content` so a phone's keyboard shrinks the
+      page rather than covering it: a sheet standing on the bottom edge — the
+      MDI line with its last commands and suggestions — then stands on the
+      keyboard (review note, 2026-09-29: *"na telefonie to jest przykrywane
+      przez klawiaturę"*). Chrome on Android reads it; others ignore it.
     -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 
     <title>CNCjs Panel</title>
 
