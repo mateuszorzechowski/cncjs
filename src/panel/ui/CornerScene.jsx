@@ -142,42 +142,50 @@ const DIMENSIONS = {
 };
 
 /*
- * The tool's move, as the Z plate's: a thick arrow beside the tool pointing
- * the way it goes, in the view the move is seen in — from above across the
- * table, from the side up and down (and across). `way` is `[dx, dy]` from
- * the frames, so the arrow cannot point anywhere the tool is not going.
+ * The tool's move, as the Z plate's (Mateusz, 2026-09-29: *"strzałka
+ * kierunku ruchu pokazuje się jedynie przy ruchu i skraca się wraz z drogą
+ * do celu"*): only while the tool moves, from the tool to where the move
+ * ends, shrinking as it gets there and gone once shorter than its head — in
+ * the view the move is seen in. `at.target` is where the move ends.
  */
-const Move = ({ from, to }) => (
-  <>
-    <path d={`M${from[0]} ${from[1]} L${to[0] - Math.sign(to[0] - from[0]) * 9} ${to[1] - Math.sign(to[1] - from[1]) * 9}`} className="stroke-acc" strokeWidth={3} strokeLinecap="round" />
-    <Head x={to[0]} y={to[1]} dx={Math.sign(to[0] - from[0])} dy={Math.sign(to[1] - from[1])} len={11} half={6} />
-  </>
-);
+const Move = ({ from, to }) => {
+  const dx = Math.sign(to[0] - from[0]);
+  const dy = Math.sign(to[1] - from[1]);
+  if (Math.hypot(to[0] - from[0], to[1] - from[1]) <= 12) {
+    return null;
+  }
+  return (
+    <>
+      <path d={`M${from[0]} ${from[1]} L${to[0] - dx * 9} ${to[1] - dy * 9}`} className="stroke-acc" strokeWidth={3} strokeLinecap="round" />
+      <Head x={to[0]} y={to[1]} dx={dx} dy={dy} len={11} half={6} />
+    </>
+  );
+};
 
+// From above: from the tool's leading edge to where that edge will be.
 const TopMove = ({ at }) => {
   const way = at.moving.top;
   if (!way) {
     return null;
   }
   const [x, y] = at.top;
-  const off = at.ring + 6;
-  return <Move from={[x + way[0] * off, y + way[1] * off]} to={[x + way[0] * (off + 30), y + way[1] * (off + 30)]} />;
+  const [tx, ty] = at.target.top;
+  return <Move from={[x + way[0] * 12, y + way[1] * 12]} to={[tx + way[0] * 12, ty + way[1] * 12]} />;
 };
 
+// From the side: up and down beside the bit, from the tip's height to where it
+// is going; across, above the tip, from the bit to where it is going.
 const SideMove = ({ at }) => {
   const way = at.moving.side;
   if (!way) {
     return null;
   }
   const [x, tip] = at.side;
+  const [tx, ttip] = at.target.side;
   if (way[1]) {
-    // Up or down: beside the bit, its length along the tip.
-    const near = tip - 6;
-    const far = tip - 42;
-    return way[1] > 0 ? <Move from={[x + 22, far]} to={[x + 22, near]} /> : <Move from={[x + 22, near]} to={[x + 22, far]} />;
+    return <Move from={[x + 22, tip]} to={[x + 22, ttip]} />;
   }
-  // Across: above the tip, the way it goes.
-  return <Move from={[x + way[0] * 14, tip - 60]} to={[x + way[0] * 44, tip - 60]} />;
+  return <Move from={[x + way[0] * 12, tip - 60]} to={[tx + way[0] * 12, tip - 60]} />;
 };
 
 const Badge = ({ x, y, text }) => (
@@ -195,7 +203,7 @@ const placed = (badge, flipX, flipY) => (ANCHORS[badge.name] || []).map(([view, 
   return { view, x: mx, y: my };
 });
 
-const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
+const CornerScene = ({ corner, at, badge = null, moves = true, label, className = '' }) => {
   const id = useId().replace(/:/g, '');
   const { flipX, flipY } = cornerSides(corner);
   // Mirrors, in the scaled views' own coordinates: the work's middle is x 255,
@@ -233,7 +241,7 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
           {touch ? <Contact at={touch.top} /> : null}
           {at.zero ? <path d="M102 210 H118 M110 202 V218" className="stroke-acc" strokeWidth={2} /> : null}
           {marks('top')}
-          <TopMove at={at} />
+          {moves ? <TopMove at={at} /> : null}
         </g>
         {at.zero ? (
           <text x={cornerX + (flipX ? 14 : -14)} y={cornerY + (flipY ? -10 : 22)} textAnchor={flipX ? START : END} className="fill-acc font-num text-cap font-semibold">
@@ -256,7 +264,7 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
           </g>
           {touch?.side ? <Contact at={touch.side} /> : null}
           {marks('side')}
-          <SideMove at={at} />
+          {moves ? <SideMove at={at} /> : null}
         </g>
         {at.zero ? (
           <>

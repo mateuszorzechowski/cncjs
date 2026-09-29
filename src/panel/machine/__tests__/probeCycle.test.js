@@ -65,12 +65,15 @@ describe('the whole cycle, with no figure in hand', () => {
     expect(cycleAt(CYCLE_MS + STOP_MS / 2).name).toBe('fast');
   });
 
-  test('shows the arrow of every move, the short back-off too', () => {
-    const into = CYCLE_ORDER.indexOf('retract') * span + CYCLE_MS * 0.4;
+  test('shows the arrow of a move while it moves, shrinking to where it goes', () => {
+    const at = (fraction) => cycleAt(CYCLE_ORDER.indexOf('lift') * span + CYCLE_MS * fraction).scene.arrow;
+    const length = (arrow) => Math.abs(arrow.to - arrow.from);
 
-    expect(sceneAt('retract', CYCLE_MS * 0.4).arrow).toBeNull();
-    // Up, from the plate, lengthened to be read.
-    expect(cycleAt(into).scene.arrow).toEqual({ from: PLATE_TOP, to: PLATE_TOP - 24 });
+    expect(at(0.25).to).toBe(PLATE_TOP - 56);
+    expect(length(at(0.25))).toBeGreaterThan(length(at(0.45)));
+    // Nearly there, and before it moves: no arrow.
+    expect(at(0.58)).toBeNull();
+    expect(at(0.1)).toBeNull();
   });
 });
 

@@ -91,6 +91,8 @@ export const cornerAt = (p) => {
     ring: lerp(ringA, ringB, u),
     side: lerp(sideA, sideB, u),
     moving: { top: way(topA, topB), side: way(sideA, sideB) },
+    // Where the move under way ends, for its arrow to point to.
+    target: { top: topB, side: sideB },
     touch,
     stage: CORNER_STAGES.find((stage) => p < stage.until).n,
     zero: p >= ZERO_FROM,
@@ -138,6 +140,12 @@ export const figureAt = (p) => {
   const part = Object.values(PARTS).find(({ at }) => p >= at[0] && p < at[1]);
   return part ? part.figure : null;
 };
+
+/*
+ * The figures that are a thing's size rather than a move: set, they play
+ * their part with no arrow — an arrow is only ever a move under way.
+ */
+export const STILL_FIGURES = ['cornerThickness', 'wallX', 'wallY', 'toolDiameter'];
 
 /** The figures the corner uses, each to the part of the loop it acts in. */
 export const FIELD_WINDOW = {

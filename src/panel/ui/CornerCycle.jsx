@@ -2,7 +2,7 @@ import CornerScene from './CornerScene';
 import CycleStages from './CycleStages';
 import useTicker from './useTicker';
 import {
-  CORNER_MS, CORNER_STAGES, FIELD_WINDOW, cornerAt, cornerReadout, figureAt, loopIn, windowOfPhase,
+  CORNER_MS, CORNER_STAGES, FIELD_WINDOW, STILL_FIGURES, cornerAt, cornerReadout, figureAt, loopIn, windowOfPhase,
 } from '../machine/cornerCycle';
 import { figureSaid } from '../machine/probe';
 import { inMm } from '../machine/units';
@@ -51,7 +51,7 @@ const CornerCycle = ({
   return (
     <div className={`flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel ${className}`}>
       <CycleStages stage={at.stage} names={AXES} />
-      <CornerScene corner={corner} at={at} badge={badge} label={t('probe.method.corner')} className="w-full" />
+      <CornerScene corner={corner} at={at} badge={badge} moves={!STILL_FIGURES.includes(field)} label={t('probe.method.corner')} className="w-full" />
       {readout ? (
         <div className={`flex flex-wrap items-baseline justify-center gap-x-4 gap-y-1 border-t border-line px-2 py-2 font-num ${readout.after ? 'bg-accS text-acc' : 'text-ink'}`}>
           <span className="text-cap text-mut">
