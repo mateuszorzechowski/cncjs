@@ -281,7 +281,9 @@ const NavTabs = ({ items, rest, current, onSelect, className = '' }) => {
         <div
           className={[
             'absolute inset-x-0 top-0 flex flex-col transition-transform duration-200',
-            open ? '-translate-y-navHidden' : 'translate-y-0',
+            // Raised, it casts a shadow up the screen: the shape of the mound
+            // and the bar's edge, since the filter follows what is drawn.
+            open ? '-translate-y-navHidden [filter:drop-shadow(var(--menuShadow))]' : 'translate-y-0',
           ].join(' ')}
         >
           {/*
