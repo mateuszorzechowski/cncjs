@@ -70,8 +70,6 @@ const HomingScreen = ({ machine, onGo }) => {
         {connected && !facts.length ? <StatTile label={t('homing.facts')} value={NO_READING} /> : null}
       </div>
 
-      <p className="m-0 shrink-0 text-note text-mut">{t('homing.note')}</p>
-
       {/* The action on a row of its own: beside the three dead keys it wrapped
         * into three lines on a phone. */}
       <Button tone="primary" disabled={!canHome} onClick={() => home(controller)} className="h-ctl w-full shrink-0">

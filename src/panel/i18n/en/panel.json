@@ -252,7 +252,6 @@
       "not": "No"
     },
     "facts": "Homing settings",
-    "note": "Every axis runs to its limit switch, then backs off by the pull-off. The machine moves at the homing rates — keep a hand near STOP.",
     "all": "Home all axes",
     "axisX": "Home X",
     "axisY": "Home Y",
