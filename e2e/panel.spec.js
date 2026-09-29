@@ -580,3 +580,19 @@ test.describe('panel, disconnected', () => {
     cncjs.expectNoPageErrors();
   });
 });
+
+test.describe('MDI on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  // Mateusz, 2026-09-29: on a phone the line is typed in a sheet, the last
+  // commands and the suggestions above it. With no machine there is nothing
+  // to type at, so the field that opens it is dead.
+  test('the line is a field that opens a sheet, dead with no machine', async ({ cncjs }) => {
+    const { page } = cncjs;
+    await page.goto('/panel/mdi?lng=pl', { waitUntil: 'domcontentloaded' });
+    const field = page.getByRole('button', { name: 'Linia do wysłania' });
+    await expect(field).toBeDisabled();
+    await expect(page.getByRole('textbox', { name: 'Linia do wysłania' })).toHaveCount(0);
+    cncjs.expectNoPageErrors();
+  });
+});

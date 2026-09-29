@@ -287,6 +287,11 @@
       "dismiss": "Zamyka podpowiedzi",
       "sendButton": "Wysyła linię, jak Enter",
       "clearButton": "Czyści konsolę na tym urządzeniu; dziennik trzyma wszystko"
+    },
+    "sheet": {
+      "recent": "Ostatnie polecenia",
+      "suggestions": "Podpowiedzi",
+      "empty": "Wpisz linię G-code albo polecenie $. Tu pojawią się podpowiedzi w trakcie pisania, a wysłane linie zostaną tu do ponownego użycia."
     }
   },
   "settings": {
