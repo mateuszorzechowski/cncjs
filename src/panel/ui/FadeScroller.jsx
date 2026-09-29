@@ -331,6 +331,7 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
         * centred on it. No touch panning, so a drag moves the thumb. */}
       <span
         ref={strip}
+        data-scroll-grab=""
         aria-hidden="true"
         className={[
           'absolute right-[calc(var(--thumbRight,calc(2px-var(--thumbGutter,var(--pad))))-8px)] top-1.5 bottom-[calc(0.375rem+var(--trackTail))] w-5 cursor-pointer touch-none',

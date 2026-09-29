@@ -3,6 +3,14 @@ import { useEffect, useRef } from 'react';
 /** How far a finger has to travel sideways before it is a swipe, in pixels. */
 export const SWIPE_PIXELS = 60;
 
+/*
+ * A touch that starts on a scroll track is a drag of that track, and none of
+ * the gestures here may take it: a sheet closed, a page turned or the menu
+ * lifted while somebody was dragging a scrollbar (review note, 2026-09-29:
+ * *"trzymanie i skrolowanie ma konflikt z zamykaniem karty"*). See `scrollGrab`.
+ */
+const onTrack = (event) => Boolean(event.target.closest?.('[data-scroll-grab]'));
+
 /**
  * Which way a finger's travel turns the page: `1` to the next, `-1` to the
  * one before, `0` for none — too short, or more up and down than across,
@@ -31,7 +39,7 @@ export const useSwipe = (ref, onTurn) => {
     }
     let from = null;
     const start = (event) => {
-      const touch = event.touches.length === 1 ? event.touches[0] : null;
+      const touch = event.touches.length === 1 && !onTrack(event) ? event.touches[0] : null;
       from = touch ? { x: touch.clientX, y: touch.clientY } : null;
     };
     const end = (event) => {
@@ -79,7 +87,7 @@ export const useLift = (ref, onLift) => {
     }
     let from = null;
     const start = (event) => {
-      const touch = event.touches.length === 1 ? event.touches[0] : null;
+      const touch = event.touches.length === 1 && !onTrack(event) ? event.touches[0] : null;
       from = touch ? { x: touch.clientX, y: touch.clientY } : null;
     };
     const end = (event) => {
@@ -150,7 +158,7 @@ export const useDragToClose = (ref, onClose, enabled = true, around = null) => {
     };
     const start = (event) => {
       const touch = event.touches.length === 1 ? event.touches[0] : null;
-      if (!touch || event.target.closest('canvas')) {
+      if (!touch || event.target.closest('canvas') || onTrack(event)) {
         drag = null;
         return;
       }
