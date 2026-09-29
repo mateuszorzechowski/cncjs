@@ -6,6 +6,8 @@ import SegmentedChoice from '../ui/SegmentedChoice';
 import ZeroHelp from '../ui/ZeroHelp';
 import { useHeaderHelp } from '../ui/headerSlot';
 import { zero, activeWcsNumber, wcsChoices, selectWcs } from '../machine/zero';
+import { NO_READING } from '../machine/readings';
+import { useUnits } from '../ui/units';
 import { t } from '../i18n';
 
 /**
@@ -100,6 +102,18 @@ const ZeroScreen = ({ machine }) => {
   const zeroing = (...axes) => () => zero({ type, modal, axes });
 
   /*
+   * Where each system's zero is, in machine coordinates, under its name
+   * (review note, 2026-09-29: *"czy do przycisku można dodać koordynaty
+   * układu?"*). From `$#`, which the server asks again whenever an offset
+   * moves; as sizes, without spare zeros, so three fit a phone's tile.
+   */
+  const units = useUnits();
+  const zeroOf = (id) => {
+    const at = machine.settings?.parameters?.[id];
+    return at ? ['x', 'y', 'z'].map((axis) => units.figure(Number(at[axis]), 'extent')).join(' · ') : NO_READING;
+  };
+
+  /*
    * Which system, as a grid of all six under the readings (review note,
    * 2026-09-29: *"przyciski układu pod osią 2×2"*; it began as four chips in
    * the card's header, where six did not fit a phone). Two columns, as wide
@@ -117,6 +131,13 @@ const ZeroScreen = ({ machine }) => {
       label={t('zero.wcs')}
       disabled={!(connected && mayZero && status.known)}
       columns={2}
+      tall
+      format={(id) => (
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span>{id}</span>
+          <span className="truncate font-num text-cap font-normal opacity-75">{zeroOf(id)}</span>
+        </span>
+      )}
     />
   );
 
@@ -128,7 +149,9 @@ const ZeroScreen = ({ machine }) => {
     >
       <DroStack position={position} machinePosition={machinePosition} />
 
-      <div className="w-full shrink-0 @3xl/shell:max-w-[var(--setcol)]">{choosing}</div>
+      {/* The card's width up to a tablet (review note: *"na tablecie na całą
+        * szerokość"*); a settings column's on a PC, where it would be a strip. */}
+      <div className="w-full shrink-0 @6xl/shell:max-w-[var(--setcol)]">{choosing}</div>
 
       {/*
         * What the buttons will do, and nothing about what zeroing *is*.
