@@ -242,6 +242,24 @@
     "xy": "Zeruj XY",
     "xyz": "Zeruj XYZ"
   },
+  "homing": {
+    "title": "Bazowanie",
+    "state": {
+      "label": "Zbazowano",
+      "unknown": "—",
+      "off": "Wyłączone ($22)",
+      "homed": "{{when}}",
+      "lock": "Blokada bazowania",
+      "not": "Nie"
+    },
+    "facts": "Ustawienia bazowania",
+    "all": "Bazuj wszystkie osie",
+    "axisX": "Bazuj X",
+    "axisY": "Bazuj Y",
+    "axisZ": "Bazuj Z",
+    "axes": "Grbl bazuje wszystkie osie naraz ($H). Pojedyncza oś — tylko sterowniki, które to umieją.",
+    "settings": "Ustawienia bazowania"
+  },
   "mdi": {
     "title": "MDI",
     "log": "Konsola maszyny",

@@ -284,6 +284,10 @@ export const useMachine = () => {
       'controller:alarm': (code) => {
         setSnapshot((previous) => ({ ...previous, alarm: code ?? null }));
       },
+      // When the machine was last homed; the server keeps it (Grbl cannot say).
+      'controller:homing': (at) => {
+        setSnapshot((previous) => ({ ...previous, homedAt: at ?? null }));
+      },
       /**
        * Whether a program is running.
        *
@@ -413,6 +417,7 @@ export const useMachine = () => {
           motion: null,
           workflow: 'idle',
           alarm: null,
+          homedAt: null,
         }));
       },
     };

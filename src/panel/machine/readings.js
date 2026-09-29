@@ -288,7 +288,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
-  envelope, motion, workflow, device, alarm, fileCheck, fits, units, machineSettings, settingsPreview, settingsPending,
+  envelope, motion, workflow, device, alarm, fileCheck, fits, units, machineSettings, settingsPreview, settingsPending, homedAt,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -533,5 +533,7 @@ export const readMachine = ({
      */
     canCheckFile: connected && (workflow || 'idle') === 'idle' && active?.word === 'Idle' && !fileCheck,
     alarm: connected && active?.word === ALARM ? (alarm ?? null) : null,
+    // When the machine was last homed, or null: not since it lost its position.
+    homedAt: connected ? (homedAt ?? null) : null,
   };
 };

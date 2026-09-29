@@ -398,6 +398,22 @@ test.describe('panel, disconnected', () => {
     cncjs.expectNoPageErrors();
   });
 
+  test('the homing screen offers nothing to press with no machine, and leads to its settings', async ({ cncjs }) => {
+    await openPanel(cncjs.page);
+    await rail(cncjs.page).getByRole('button', { name: 'Bazowanie' }).click();
+
+    await expect(cncjs.page.getByRole('button', { name: 'Bazuj wszystkie osie' })).toBeDisabled();
+    // One axis at a time is drawn and dead: the server has one homing, the whole machine.
+    for (const name of ['Bazuj X', 'Bazuj Y', 'Bazuj Z']) {
+      await expect(cncjs.page.getByRole('button', { name, exact: true })).toBeDisabled();
+    }
+
+    await cncjs.page.getByRole('button', { name: 'Ustawienia bazowania' }).click();
+    await expect(cncjs.page).toHaveURL(/\/panel\/settings\/controller/);
+
+    cncjs.expectNoPageErrors();
+  });
+
   test('can be installed as an application, and every icon it names exists', async ({ cncjs }) => {
     /*
      * The pendant is meant to live on a phone's home screen, which means the

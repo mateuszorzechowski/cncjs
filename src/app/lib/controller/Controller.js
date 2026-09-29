@@ -223,6 +223,15 @@ class Controller {
          * @param {number|null} code
          */
         'controller:alarm': [],
+        /**
+         * When the machine was last homed, in ms since the epoch, or null
+         * when it has not been since it lost its position. Replayed to a
+         * client that attaches later.
+         *
+         * @event controller:homing
+         * @param {number|null} at
+         */
+        'controller:homing': [],
         'message': [],
         'watchdir:change': [],
 

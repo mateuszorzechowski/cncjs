@@ -1,4 +1,4 @@
-import { canHome } from '../homing';
+import { canHome, homingState } from '../homing';
 
 /**
  * Whether the panel may offer to send a machine home.
@@ -36,5 +36,27 @@ describe('canHome', () => {
   test('says no when there is no controller at all', () => {
     expect(canHome('', { settings: { $22: '1' } })).toBe(false);
     expect(canHome(undefined, undefined)).toBe(false);
+  });
+});
+
+describe('what the Bazowanie screen says', () => {
+  const at = 1759097700000;
+
+  test('nothing, with no machine', () => {
+    expect(homingState({ connected: false, homedAt: at })).toEqual({ key: 'homing.state.unknown', tone: null });
+  });
+
+  test('homing switched off wins over everything else', () => {
+    // `$22=0`: there is nothing to have homed.
+    expect(homingState({ connected: true, placed: false, homedAt: at }).key).toBe('homing.state.off');
+  });
+
+  test('homed, when the server saw a $H succeed since the position was last lost', () => {
+    expect(homingState({ connected: true, placed: true, homedAt: at })).toEqual({ key: 'homing.state.homed', tone: null });
+  });
+
+  test('the lock of a hard reset, and otherwise simply not homed', () => {
+    expect(homingState({ connected: true, placed: true, homedAt: null, lock: true }).key).toBe('homing.state.lock');
+    expect(homingState({ connected: true, placed: true, homedAt: null, lock: false })).toEqual({ key: 'homing.state.not', tone: 'warn' });
   });
 });

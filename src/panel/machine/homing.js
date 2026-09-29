@@ -47,3 +47,30 @@ export const canHome = (type, settings) => {
 export const home = (controller) => controller.command('homing');
 
 export default canHome;
+
+/**
+ * What the Bazowanie screen says about the machine's homing, as a key and a
+ * tone. The server decides the facts — whether homing is on at all
+ * (`envelope.placed`, from `$22`) and when a `$H` last succeeded (`homedAt`,
+ * forgotten when the position is lost); this only picks the sentence.
+ *
+ * `lock` is the homing lock of a hard reset: an alarm with no number.
+ */
+export const homingState = ({ connected, placed, homedAt, lock }) => {
+  if (!connected) {
+    return { key: 'homing.state.unknown', tone: null };
+  }
+  if (placed === false) {
+    return { key: 'homing.state.off', tone: 'warn' };
+  }
+  if (homedAt) {
+    return { key: 'homing.state.homed', tone: null };
+  }
+  if (lock) {
+    return { key: 'homing.state.lock', tone: 'warn' };
+  }
+  return { key: 'homing.state.not', tone: 'warn' };
+};
+
+/** The settings a homing cycle runs by, in the order it uses them. */
+export const HOMING_FACTS = ['$25', '$24', '$27'];

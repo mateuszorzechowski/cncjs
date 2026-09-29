@@ -242,6 +242,24 @@
     "xy": "Zero XY",
     "xyz": "Zero XYZ"
   },
+  "homing": {
+    "title": "Homing",
+    "state": {
+      "label": "Homed",
+      "unknown": "—",
+      "off": "Off ($22)",
+      "homed": "{{when}}",
+      "lock": "Homing lock",
+      "not": "No"
+    },
+    "facts": "Homing settings",
+    "all": "Home all axes",
+    "axisX": "Home X",
+    "axisY": "Home Y",
+    "axisZ": "Home Z",
+    "axes": "Grbl homes every axis at once ($H). One axis at a time only on controllers that can.",
+    "settings": "Homing settings"
+  },
   "mdi": {
     "title": "MDI",
     "log": "Machine console",
