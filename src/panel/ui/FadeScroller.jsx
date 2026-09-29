@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { edgesOf, thumbOf, MIN_THUMB, TRACK_INSET } from './scrollMetrics';
+import { useIsPhone } from './shell';
 
 /**
  * The panel's one way of scrolling something inside it.
@@ -113,6 +114,7 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
   const [edges, setEdges] = useState({ top: false, bottom: false });
   const [scrolls, setScrolls] = useState(false);
   const thumb = useRef(null);
+  const phone = useIsPhone();
 
   const measure = useCallback(() => {
     const at = edgesOf(scroller);
@@ -161,7 +163,26 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
     // scroller becomes scrollable while it is being looked at.
     node.style.setProperty('--thumbH', `${bar ? bar.height : 0}px`);
     node.style.setProperty('--thumbY', `${bar ? bar.top : 0}px`);
-  }, [scroller, frame, gapBelow]);
+
+    /*
+     * On a phone, beside the card, in the screen's margin — always (review
+     * note, 2026-09-29: *"na telefonie raz jest w karcie raz obok niej —
+     * docelowo obok, żeby nie zajmować miejsca"*). Wherever the scroller
+     * stands, the thumb is put two pixels inside the content area's right
+     * edge, measured, rather than in the gutter of whatever holds it. Not in
+     * a sheet, which has no margin beside it. Wider, the gutter decides:
+     * the screen's margin for a scroller that is the screen, a card's own
+     * padding for a card among others that scrolls by itself.
+     */
+    const wrapper = scroller?.parentElement;
+    const main = phone ? scroller?.closest('main') : null;
+    if (wrapper && main) {
+      const beside = main.getBoundingClientRect().right - wrapper.getBoundingClientRect().right;
+      wrapper.style.setProperty('--thumbRight', `${2 - beside}px`);
+    } else {
+      wrapper?.style.removeProperty('--thumbRight');
+    }
+  }, [scroller, frame, gapBelow, phone]);
 
   /*
    * Measured on arrival, on scroll, and whenever the content changes --- not
@@ -269,7 +290,7 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
       <span
         aria-hidden="true"
         className={[
-          'pointer-events-none absolute right-[calc(2px-var(--thumbGutter,var(--pad)))] top-1.5 bottom-[calc(0.375rem+var(--trackTail))] w-1 rounded-full bg-line',
+          'pointer-events-none absolute right-[var(--thumbRight,calc(2px-var(--thumbGutter,var(--pad))))] top-1.5 bottom-[calc(0.375rem+var(--trackTail))] w-1 rounded-full bg-line',
           scrolls ? '' : 'hidden',
         ].join(' ')}
       />
@@ -277,7 +298,7 @@ const FadeScroller = ({ className = '', frame = false, gapBelow = false, childre
         ref={thumb}
         aria-hidden="true"
         className={[
-          'pointer-events-none absolute right-[calc(2px-var(--thumbGutter,var(--pad)))] top-0 w-1 rounded-full bg-mut',
+          'pointer-events-none absolute right-[var(--thumbRight,calc(2px-var(--thumbGutter,var(--pad))))] top-0 w-1 rounded-full bg-mut',
           'h-[var(--thumbH,0px)] translate-y-[var(--thumbY,0px)]',
           scrolls ? '' : 'hidden',
         ].join(' ')}
