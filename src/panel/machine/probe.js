@@ -41,6 +41,8 @@ export const EDGES = [
  */
 const THROUGH_PROBE = ['method', 'prepare', 'wire', 'position', 'measure', 'result'];
 const BY_HAND = ['method', 'prepare', 'position', 'measure', 'result'];
+// The corner is chosen first, on a step of its own (Mateusz, 2026-09-29: *"wybór narożnika 2a, jako 1. krok"*).
+const CHOOSE_FIRST = ['method', 'choose', 'prepare', 'wire', 'position', 'measure', 'result'];
 
 /*
  * The methods the wizard offers, in its order. `choice` is the one thing
@@ -56,8 +58,8 @@ export const METHODS = [
   },
   {
     id: 'corner', key: 'probe.method.corner', note: 'probe.method.cornerNote', how: 'probe.how.corner', place: 'probe.place.corner',
-    start: 'probe.position.start', steps: THROUGH_PROBE, touches: true,
-    choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', columns: 2 },
+    start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true,
+    choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', columns: 2, step: 'probe.step.corner' },
   },
   {
     id: 'paper', key: 'probe.method.paper', note: 'probe.method.paperNote', how: 'probe.how.paper', place: 'probe.place.paper',
@@ -116,7 +118,8 @@ const STEPS = [
 /** The steps a method goes through, named — every step until one is picked. */
 export const stepsOf = (method) => {
   const ids = method?.steps ?? THROUGH_PROBE;
-  return STEPS.filter((step) => ids.includes(step.id));
+  // A choice with a step of its own is named for what it chooses.
+  return ids.map((id) => (id === 'choose' ? { id, key: method.choice.step } : STEPS.find((step) => step.id === id)));
 };
 
 /** The step before or after `id` for this method (`by` -1 or 1). */

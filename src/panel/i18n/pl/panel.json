@@ -1391,7 +1391,15 @@
       "backLeft": "Tył lewy",
       "backRight": "Tył prawy",
       "frontLeft": "Przód lewy",
-      "frontRight": "Przód prawy"
+      "frontRight": "Przód prawy",
+      "zeroXY": "X0 Y0",
+      "zeroX": "X0",
+      "fromAbove": "z góry",
+      "fromSide": "z boku",
+      "work": "materiał",
+      "chosen": "Narożnik: {{name}}",
+      "dirs": "{{x}} · {{y}} · Z−",
+      "pickHow": "Stuknij jeden z czterech narożników. Płytka przeskakuje w wybrany róg, strzałki pokazują kierunki sondowania."
     },
     "field": {
       "plateThickness": "Grubość płytki",
@@ -1411,6 +1419,7 @@
     },
     "step": {
       "method": "Metoda",
+      "corner": "Narożnik",
       "prepare": "Przygotowanie",
       "wire": "Przewód",
       "position": "Ustawienie",

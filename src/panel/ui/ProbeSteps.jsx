@@ -6,6 +6,8 @@ import SegmentedChoice from './SegmentedChoice';
 import StatTile from './StatTile';
 import TextField from './TextField';
 import WcsBadge from './WcsBadge';
+import CornerCycle from './CornerCycle';
+import CornerParams from './CornerParams';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
@@ -34,8 +36,11 @@ const signed = (text) => (text.startsWith('-') || text === NO_READING ? text : `
  * the figures set on the drawing, the measurement played on it, the zero
  * shown on it. The others keep their plain picture and fields for now.
  */
-const EDITORS = { z: ZPlateParams };
-const CYCLES = { z: ZPlateCycle };
+const EDITORS = { z: ZPlateParams, corner: CornerParams };
+const CYCLES = {
+  z: ZPlateCycle,
+  corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
+};
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
 
@@ -44,6 +49,8 @@ const OUTCOMES = {
   z: ({ plate }) => (
     <ZPlateScene gap={56} marks={THICKNESS} zero={1} badge={{ x: 304, y: 191, text: `T ${plate}` }} label={t('probe.method.z')} className="mx-auto w-full max-w-md" />
   ),
+  // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
+  corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} still={0.97} className="mx-auto w-full max-w-md" />,
 };
 
 /** The buttons at the foot of a step: back on the left, the way on at the right. */
@@ -82,6 +89,7 @@ export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, b
         onText={onText}
         bad={bad}
         wcs={wcs}
+        corner={chosen}
         intro={(
           <>
             <p className="m-0 text-base text-ink">{t(method.how)}</p>
@@ -158,7 +166,7 @@ export const MeasureStep = ({ probe }) => {
       {Cycle ? (
         <>
           <span className="text-note text-mut">{step ? t('probe.measure.stepOf', { n: step.index + 1, total: step.total }) : null}</span>
-          <Cycle phase={step?.phase} words={words} />
+          <Cycle phase={step?.phase} words={words} probe={probe} />
         </>
       ) : (
         <StatTile
@@ -190,7 +198,7 @@ export const ResultStep = ({ probe, plate }) => {
         <span className="text-base text-ink">{t('probe.result.into')}</span>
         <WcsBadge wcs={probe?.wcs} />
       </div>
-      {Outcome ? <Outcome plate={plate} /> : null}
+      {Outcome ? <Outcome plate={plate} probe={probe} /> : null}
       <div className="grid gap-2 @3xl/shell:grid-cols-3">
         {['x', 'y', 'z'].filter((axis) => axis in shift).map((axis) => (
           <StatTile

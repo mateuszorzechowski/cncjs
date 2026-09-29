@@ -1391,7 +1391,15 @@
       "backLeft": "Back left",
       "backRight": "Back right",
       "frontLeft": "Front left",
-      "frontRight": "Front right"
+      "frontRight": "Front right",
+      "zeroXY": "X0 Y0",
+      "zeroX": "X0",
+      "fromAbove": "from above",
+      "fromSide": "from the side",
+      "work": "work",
+      "chosen": "Corner: {{name}}",
+      "dirs": "{{x}} · {{y}} · Z−",
+      "pickHow": "Tap one of the four corners. The plate jumps to it; the arrows show which way each probe goes."
     },
     "field": {
       "plateThickness": "Plate thickness",
@@ -1411,6 +1419,7 @@
     },
     "step": {
       "method": "Method",
+      "corner": "Corner",
       "prepare": "Setup",
       "wire": "Wire",
       "position": "Position",

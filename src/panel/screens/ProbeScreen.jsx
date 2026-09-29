@@ -4,6 +4,8 @@ import Card from '../ui/Card';
 import Notice from '../ui/Notice';
 import ProbePicture from '../ui/ProbePicture';
 import ZPlatePosition from '../ui/ZPlatePosition';
+import CornerChooser from '../ui/CornerChooser';
+import CornerCycle from '../ui/CornerCycle';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
@@ -17,6 +19,16 @@ import {
 import { useIsPhone } from '../ui/shell';
 import { useUnits } from '../ui/units';
 import { t } from '../i18n';
+
+// The methods that show the move into place rather than a picture of it.
+const MOVES = {
+  z: ZPlatePosition,
+  // The tool over the plate, where 1f starts.
+  corner: ({ choice }) => <CornerCycle corner={choice} still={0} className="w-full max-w-md self-center" />,
+};
+
+// The methods whose one choice is a step of its own, and what it is picked on.
+const CHOOSERS = { corner: CornerChooser };
 
 /**
  * Sonda: a wizard, one step after another, across the whole screen
@@ -32,8 +44,6 @@ import { t } from '../i18n';
  * (*"pamiętaj parametry, przypominaj"*). The travel limit among them is the
  * fence: a probe that touches nothing goes that far and stops in an alarm.
  */
-const MOVES = { z: ZPlatePosition };
-
 const ProbeScreen = ({ machine }) => {
   const units = useUnits();
   const phone = useIsPhone();
@@ -71,7 +81,8 @@ const ProbeScreen = ({ machine }) => {
     setPicked(id);
     setTexts(Object.fromEntries(uses.map((name) => [name, fieldText(kept.params[name], name, units.rule)])));
     setBad(null);
-    setLocal('prepare');
+    // The corner's own step first, where a method has one.
+    setLocal(stepBeside(methodOf(id), 'method', 1));
   };
 
   const confirmFigures = () => {
@@ -127,7 +138,7 @@ const ProbeScreen = ({ machine }) => {
           <Card className="min-w-0 shrink-0 @4xl/shell:flex-1" bodyClassName="gap-3">
             {Moving ? (
               <>
-                <Moving />
+                <Moving choice={choice} />
                 <p className="m-0 text-base text-ink">{t(method.place)}</p>
               </>
             ) : (
@@ -154,6 +165,14 @@ const ProbeScreen = ({ machine }) => {
   let foot = null;
   if (step === 'method') {
     body = <MethodStep onPick={pick} />;
+  } else if (step === 'choose') {
+    const Chooser = CHOOSERS[method.id];
+    body = <Chooser value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;
+    foot = (
+      <Foot back={() => go(-1)}>
+        <Button tone="primary" onClick={() => go(1)} className="h-ctl">{t('probe.next')}</Button>
+      </Foot>
+    );
   } else if (step === 'prepare') {
     body = (
       <PrepareStep
