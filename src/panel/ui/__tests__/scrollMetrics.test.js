@@ -1,4 +1,4 @@
-import { MIN_THUMB, edgesOf, thumbOf } from '../scrollMetrics';
+import { MIN_THUMB, edgesOf, thumbOf, scrollForThumb } from '../scrollMetrics';
 
 /** Just enough of an element to be measured. */
 const scroller = (scrollTop, clientHeight, scrollHeight) => ({
@@ -86,5 +86,19 @@ describe('thumbOf', () => {
     // more than the maximum at the bottom.
     expect(thumbOf(scroller(-30, 400, 800)).top).toBe(0);
     expect(thumbOf(scroller(900, 400, 800)).top).toBe(200);
+  });
+});
+
+describe('a thumb dragged along its track', () => {
+  // A 400px track with a 100px thumb: 300px of travel for 4000px of scroll.
+  test('is the scroll its place on the track stands for, the ends included', () => {
+    expect(scrollForThumb(0, 400, 100, 4000)).toBe(0);
+    expect(scrollForThumb(150, 400, 100, 4000)).toBe(2000);
+    expect(scrollForThumb(300, 400, 100, 4000)).toBe(4000);
+  });
+
+  test('stops at the ends when dragged past them', () => {
+    expect(scrollForThumb(-50, 400, 100, 4000)).toBe(0);
+    expect(scrollForThumb(900, 400, 100, 4000)).toBe(4000);
   });
 });
