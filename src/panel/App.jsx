@@ -387,7 +387,11 @@ const Panel = ({ machine, screen, onScreen }) => {
           advice={adviceFor(machine)}
           error={machine.error}
           onGo={() => { setAlerting(false); onScreen('settings'); }}
-          onHelp={() => { setAlerting(false); setHelping(true); }}
+          // The help opens over the state sheet, which stays under it: back
+          // closes the help and returns to it (Mateusz, 2026-09-29: *"arkusz
+          // otwarty z arkusza powinien zamknąć się pierwszy, wracając do
+          // pierwszego"*).
+          onHelp={() => setHelping(true)}
           onClose={() => setAlerting(false)}
         />
       ) : null}
