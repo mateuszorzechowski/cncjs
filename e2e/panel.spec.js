@@ -217,6 +217,11 @@ test.describe('panel, disconnected', () => {
     const layers = cncjs.page.getByRole('group', { name: 'Warstwy' });
     await expect(layers).toBeVisible();
 
+    // At this height (1280 × 720) the tablet's column of large keys folds:
+    // the layers are one key until it is tapped, and then the views fold.
+    await layers.getByRole('button', { name: 'Warstwy', exact: true }).click();
+    await expect(cncjs.page.getByRole('group', { name: 'Rzut' }).getByRole('button')).toHaveCount(1);
+
     // No program is loaded and no controller has reported a travel or a
     // coordinate system, so there is nothing these could draw. A button that
     // looked pressable here would draw nothing and say nothing about why.
