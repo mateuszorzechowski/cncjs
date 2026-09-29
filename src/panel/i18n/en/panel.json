@@ -1434,7 +1434,8 @@
       "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",
       "notNow": "The machine has to stand idle, with no program, to measure.",
       "start": "Measure",
-      "here": "Here"
+      "here": "Here",
+      "few": "a few mm"
     },
     "measure": {
       "stepOf": "Step {{n}} of {{total}}",

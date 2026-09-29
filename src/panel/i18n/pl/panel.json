@@ -1434,7 +1434,8 @@
       "clipOn": "Wejście sondy świeci: płytka dotyka freza albo przewód jest zwarty. Usuń to przed pomiarem.",
       "notNow": "Do pomiaru maszyna musi stać bezczynnie, bez programu.",
       "start": "Mierz",
-      "here": "Tu"
+      "here": "Tu",
+      "few": "kilka mm"
     },
     "measure": {
       "stepOf": "Krok {{n}} z {{total}}",

@@ -1,4 +1,4 @@
-import { PLATE_TOP } from '../machine/probeCycle';
+import { OVER_PX, PLATE_TOP } from '../machine/probeCycle';
 import { t } from '../i18n';
 
 /**
@@ -8,7 +8,7 @@ import { t } from '../i18n';
  * (Mateusz: the tool need not be chosen, and *"v 60 stopni"*).
  *
  * Everything that moves comes in: `gap`, the tool's height over the plate in
- * the drawing's pixels; `arrow`, the move under way; `contact`, the amber dot
+ * the drawing's pixels, and `shift` how far to the side of it; `arrow`, the move under way; `contact`, the amber dot
  * of a touch; `marks`, which figure's dimension is drawn, with `zero` how far
  * the Z0 line has come in; `badge`, the figure's value where the design puts
  * it.
@@ -39,6 +39,8 @@ const Dimension = ({ x, top, bottom, ticks, outside = false }) => (
 );
 
 const MARKS = {
+  // A few millimetres between the tip and the plate, before measuring.
+  clearance: () => <Dimension x={178} top={PLATE_TOP - OVER_PX} bottom={PLATE_TOP} ticks={[170, 210]} outside />,
   maxZ: () => <Dimension x={196} top={PLATE_TOP - 84} bottom={PLATE_TOP} ticks={[186, 210]} />,
   retract: () => <Dimension x={178} top={PLATE_TOP - 14} bottom={PLATE_TOP} ticks={[170, 210]} outside />,
   plateThickness: ({ zero }) => (
@@ -69,14 +71,16 @@ const Readout = ({ name, value, when, after }) => (
   </g>
 );
 
-const ZPlateScene = ({ gap = 84, arrow = null, contact = false, marks = null, zero = 0, badge = null, readout = null, label, className = '' }) => {
+const ZPlateScene = ({
+  gap = 84, shift = 0, arrow = null, contact = false, marks = null, zero = 0, badge = null, readout = null, label, className = '',
+}) => {
   const Mark = MARKS[marks];
   return (
     <svg viewBox="0 0 440 242" role="img" aria-label={label} className={`block ${className}`}>
       <rect x={-2} y={210} width={444} height={32} className="fill-mutS stroke-line" strokeWidth={1.5} />
       <rect x={180} y={PLATE_TOP} width={80} height={18} className="fill-accS stroke-acc" strokeWidth={2} />
       {Mark ? <Mark zero={zero} /> : null}
-      <g transform={`translate(0 ${-gap})`}>
+      <g transform={`translate(${shift} ${-gap})`}>
         {/* A 60° V bit: the point is its half-width over tan 30° long. */}
         <path d="M210 100 H230 V174.7 L220 192 L210 174.7 Z" className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" />
       </g>

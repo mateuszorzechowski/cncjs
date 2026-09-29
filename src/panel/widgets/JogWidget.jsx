@@ -20,6 +20,7 @@ import { useHeaderHelp } from '../ui/headerSlot';
 import useHoldToJog from '../ui/useHoldToJog';
 import useJogKeys from '../ui/useJogKeys';
 import useJogStream from '../ui/useJogStream';
+import useFolds from '../ui/useFolds';
 import { t } from '../i18n';
 
 /**
@@ -219,13 +220,49 @@ const JogWidget = ({ machine, className = '' }) => {
 
   const open = editing === 'xy' ? xy : (editing === 'z' ? z : null);
 
+  // Where both groups do not fit under the pad at the panel, they fold as on a phone.
+  const folds = useFolds();
+
+  // XY and Z as a line each, which opens a sheet: a phone's, and a panel's short of room.
+  const summaries = (
+    <>
+      <SettingSummary
+        title={xy.title}
+        values={[
+          { value: xyStep, unit: units.length },
+          { value: xySpeed, unit: units.feed },
+        ]}
+        onOpen={() => setEditing('xy')}
+        disabled={!connected}
+      />
+      <SettingSummary
+        title={z.title}
+        values={[
+          { value: zStep, unit: units.length },
+          { value: zSpeed, unit: units.feed },
+        ]}
+        onOpen={() => setEditing('z')}
+        disabled={!connected}
+      />
+    </>
+  );
+
   return (
     <Card className={`group relative min-h-0 overflow-hidden ${className}`} bodyClassName="gap-0">
       {/* At the panel: the keys at their drawn size, both groups open below
         * them, nothing folded away. */}
       {phone ? null : (
+        <div ref={folds.room} className="flex min-h-0 flex-1 flex-col">
+        {folds.folded ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-gap">
+            <div className="shrink-0">
+              <JogPad {...keys} />
+            </div>
+            {summaries}
+          </div>
+        ) : (
         <FadeScroller className="flex flex-col gap-gap">
-
+        <div ref={folds.content} className="flex min-h-full shrink-0 flex-col gap-gap">
         <div className="shrink-0">
           <JogPad {...keys} />
         </div>
@@ -241,7 +278,10 @@ const JogWidget = ({ machine, className = '' }) => {
             <AxisControls {...xy} />
             <AxisControls {...z} />
           </div>
+        </div>
         </FadeScroller>
+        )}
+        </div>
       )}
 
       {/* On a phone: the keys take the height, the settings take a line each.
@@ -253,24 +293,7 @@ const JogWidget = ({ machine, className = '' }) => {
       {phone ? (
         <div className="flex min-h-0 flex-1 flex-col gap-gap">
         <JogPadTall {...keys} />
-        <SettingSummary
-          title={xy.title}
-          values={[
-            { value: xyStep, unit: units.length },
-            { value: xySpeed, unit: units.feed },
-          ]}
-          onOpen={() => setEditing('xy')}
-          disabled={!connected}
-        />
-        <SettingSummary
-          title={z.title}
-          values={[
-            { value: zStep, unit: units.length },
-            { value: zSpeed, unit: units.feed },
-          ]}
-          onOpen={() => setEditing('z')}
-          disabled={!connected}
-        />
+        {summaries}
         </div>
       ) : null}
 

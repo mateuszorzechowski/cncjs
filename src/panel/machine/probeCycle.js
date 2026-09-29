@@ -143,6 +143,31 @@ export const readoutAt = (name, gap, mm) => {
 };
 
 /*
+ * Getting the tool into place before measuring (review note, 2026-09-29: the
+ * position step as the machine moving over the plate): from off to the side
+ * and high, across until it is over the plate, then down to a few
+ * millimetres above it, and a moment there before it starts again.
+ */
+export const POSITION_MS = 4000;
+const ASIDE_PX = -150;
+const HIGH_PX = 90;
+export const OVER_PX = 30;
+
+export const positionAt = (ms) => {
+  const p = (ms % POSITION_MS) / POSITION_MS;
+  const across = Math.min(1, Math.max(0, (p - 0.15) / 0.35));
+  const down = Math.min(1, Math.max(0, (p - 0.55) / 0.25));
+  const gap = HIGH_PX + (OVER_PX - HIGH_PX) * ease(down);
+  const descending = down > 0 && down < 1;
+  return {
+    shift: ASIDE_PX * (1 - ease(across)),
+    gap,
+    arrow: descending ? { from: PLATE_TOP - HIGH_PX, to: PLATE_TOP - OVER_PX } : null,
+    over: down >= 1,
+  };
+};
+
+/*
  * What the machine is doing, as the figure whose part of the cycle it is —
  * the server's step names (`services/probe/moves`), so the measurement
  * screen plays the part the machine is in.

@@ -3,6 +3,7 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import Notice from '../ui/Notice';
 import ProbePicture from '../ui/ProbePicture';
+import ZPlatePosition from '../ui/ZPlatePosition';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
@@ -31,6 +32,8 @@ import { t } from '../i18n';
  * (*"pamiętaj parametry, przypominaj"*). The travel limit among them is the
  * fence: a probe that touches nothing goes that far and stops in an alarm.
  */
+const MOVES = { z: ZPlatePosition };
+
 const ProbeScreen = ({ machine }) => {
   const units = useUnits();
   const phone = useIsPhone();
@@ -115,15 +118,24 @@ const ProbeScreen = ({ machine }) => {
   );
 
   if (step === 'position') {
+    // The methods that show the move into place rather than a picture of it.
+    const Moving = MOVES[method.id];
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-gap">
         {track}
         <div className="flex min-h-0 flex-1 flex-col gap-gap @4xl/shell:flex-row">
           <Card className="min-w-0 shrink-0 @4xl/shell:flex-1" bodyClassName="gap-3">
-            <div className="flex items-start gap-4">
-              <ProbePicture method={method.id} choice={choice} label={t(method.key)} className="h-24 w-32" />
-              <p className="m-0 text-base text-ink">{t(method.place)}</p>
-            </div>
+            {Moving ? (
+              <>
+                <Moving />
+                <p className="m-0 text-base text-ink">{t(method.place)}</p>
+              </>
+            ) : (
+              <div className="flex items-start gap-4">
+                <ProbePicture method={method.id} choice={choice} label={t(method.key)} className="h-24 w-32" />
+                <p className="m-0 text-base text-ink">{t(method.place)}</p>
+              </div>
+            )}
             {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
             {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
             <Foot back={() => go(-1)}>
