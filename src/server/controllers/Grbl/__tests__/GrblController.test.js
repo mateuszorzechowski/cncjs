@@ -1613,6 +1613,16 @@ describe('intent commands', () => {
       expect(writes.map(write => write.data)).toEqual(['G56\n']);
     });
 
+    test('says the new system at once rather than after the next $G', () => {
+      const { controller, socketEvents } = setup();
+
+      controller.command('wcs', { wcs: 'G57' });
+
+      const said = socketEvents.filter(({ event }) => event === 'controller:state');
+      expect(said.map(({ args }) => args[1].parserstate.modal.wcs)).toEqual(['G57']);
+      expect(controller.runner.state.parserstate.modal.wcs).toBe('G57');
+    });
+
     test('refuses in alarm instead of being swallowed by the feeder', () => {
       const { controller, writes } = setup();
       const refusals = asking(controller);
