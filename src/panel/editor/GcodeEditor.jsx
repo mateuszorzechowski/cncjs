@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
 import { forceLinting } from '@codemirror/lint';
 import { EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
@@ -7,6 +7,10 @@ import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/sea
 import { gcodeEditing } from './gcode';
 import EditorScrollbar from './EditorScrollbar';
 import { headAt } from './declarations';
+import FadeScroller from '../ui/FadeScroller';
+import LineChoices from './LineChoices';
+import { takeSuggestion, useSuggestionList } from './suggestionList';
+import { useIsWide } from '../ui/shell';
 
 /**
  * A G-code file, to read and to change — CodeMirror, in the panel's colours.
@@ -39,6 +43,11 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
   // The view once built, and a count of its changes, for the scrollbar.
   const [built, setBuilt] = useState(null);
   const [tick, setTick] = useState(0);
+  // The suggestions, drawn by the panel as the MDI line's are (`suggestionList`).
+  const [list, listening] = useSuggestionList();
+  const frame = useRef(null);
+  const floating = useRef(null);
+  const touch = !useIsWide();
 
   useEffect(() => {
     const state = EditorState.create({
@@ -52,6 +61,7 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
         highlightSelectionMatches(),
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         gcodeEditing,
+        listening,
         helping.current.of(extensions),
         locking.current.of(locked(readOnly)),
         EditorView.contentAttributes.of({ 'aria-label': label }),
@@ -130,10 +140,41 @@ const GcodeEditor = ({ initial, extensions = [], readOnly = false, onDirty, labe
     },
   }), [initial]);
 
+  /*
+   * The list stands under the cursor's line, or over it when there is more
+   * room above — the editor is a card, and a list running out of it would be
+   * cut by its edge. As tall as the room it has, at most the list's own cap.
+   * Set as custom properties on the element, not as a style prop.
+   */
+  useLayoutEffect(() => {
+    const box = frame.current?.getBoundingClientRect();
+    const el = floating.current;
+    if (!box || !el || !list.line) {
+      return;
+    }
+    const below = box.bottom - list.line.bottom;
+    const above = list.line.top - box.top;
+    const down = below >= above;
+    el.style.setProperty('--listTop', down ? `${list.line.bottom - box.top + 4}px` : 'auto');
+    el.style.setProperty('--listBottom', down ? 'auto' : `${box.bottom - list.line.top + 4}px`);
+    el.style.setProperty('--listRoom', `${Math.max(down ? below : above, 0) - 12}px`);
+  }, [list]);
+
   return (
-    <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-ctl border border-line">
+    <div ref={frame} className="relative flex min-h-0 flex-1 overflow-hidden rounded-ctl border border-line">
       <div ref={host} className="min-h-0 min-w-0 flex-1" />
       {built ? <EditorScrollbar view={built} tick={tick} /> : null}
+      {list.options.length && list.line ? (
+        <div
+          ref={floating}
+          data-thumb-inside=""
+          className="absolute left-2 right-9 top-[var(--listTop,auto)] bottom-[var(--listBottom,auto)] z-20 flex max-h-[min(var(--listMax),var(--listRoom,var(--listMax)))] flex-col rounded-ctl border border-line bg-panel py-1 [--thumbGutter:0px]"
+        >
+          <FadeScroller>
+            <LineChoices options={list.options} selected={list.selected} onPick={(index) => takeSuggestion(view.current, index)} touch={touch} label={label} />
+          </FadeScroller>
+        </div>
+      ) : null}
       {/* Laid over the foot of the text, clear of the scrollbar's strip:
         * a note that comes and goes without moving the editor. In the
         * bottom right corner, where editors put such notes (Mateusz,
