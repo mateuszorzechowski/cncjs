@@ -43,7 +43,21 @@ const Pill = ({ x, closed, text }) => (
   </>
 );
 
-const ProbeWire = ({ lit }) => {
+/*
+ * The plate the lead goes to, its top at `y`: flat for the Z plate, and for
+ * the L plate its top with the wall hanging down at the end (review note,
+ * 2026-09-29: *"czy obrazek odpowiada pomiarowi płytka L?"*).
+ */
+const PLATES = {
+  flat: (x, y) => `M${x} ${y} H${x + 80} V${y + 16} H${x} Z`,
+  l: (x, y) => `M${x} ${y} H${x + 80} V${y + 16} H${x + 12} V${y + 36} H${x} Z`,
+};
+
+const Plate = ({ kind, x, y }) => (
+  <path d={(PLATES[kind] || PLATES.flat)(x, y)} className="fill-accS stroke-acc" strokeWidth={2} strokeLinejoin="round" />
+);
+
+const ProbeWire = ({ lit, plate = 'flat' }) => {
   // Unknown reads as neither: both halves as drawn.
   const open = lit === null ? '' : (lit ? 'opacity-30' : '');
   const closed = lit === null ? '' : (lit ? '' : 'opacity-30');
@@ -52,7 +66,7 @@ const ProbeWire = ({ lit }) => {
       <path d="M220.5 0 V280" className="stroke-line" strokeWidth={1} />
       <g className={open}>
         <path d="M62 178 C 48 178, 44 202, 30 202 C 14 202, 10 182, 14 152 C 18 120, 12 100, 22 90 C 30 82, 44 78, 58 78" className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        <rect x={70} y={170} width={80} height={16} className="fill-accS stroke-acc" strokeWidth={2} />
+        <Plate kind={plate} x={70} y={170} />
         <Tool x={100} />
         <Clip x={100} />
         <rect x={62} y={174} width={8} height={8} rx={1} className="fill-field stroke-ink" strokeWidth={2} />
@@ -61,7 +75,7 @@ const ProbeWire = ({ lit }) => {
       </g>
       <g className={closed}>
         <path d="M282 128 C 266 128, 262 152, 248 152 C 232 152, 230 132, 234 112 C 238 96, 240 88, 250 83 C 258 79, 266 78, 278 78" className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        <rect x={290} y={120} width={80} height={16} className="fill-accS stroke-acc" strokeWidth={2} />
+        <Plate kind={plate} x={290} y={120} />
         <Tool x={320} />
         <Clip x={320} />
         <rect x={282} y={124} width={8} height={8} rx={1} className="fill-field stroke-ink" strokeWidth={2} />

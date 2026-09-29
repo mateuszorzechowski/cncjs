@@ -87,11 +87,14 @@ const CornerChooser = ({ value, onChange }) => {
           );
         })}
       </svg>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-note font-semibold text-ink">{t('probe.corner.chosen', { name: name ? t(name.key) : '' })}</span>
-        <span className="font-num text-note text-acc">{t('probe.corner.dirs', { x: dirs[0], y: dirs[1] })}</span>
-      </div>
-      <p className="m-0 text-note text-mut">{t('probe.corner.pickHow')}</p>
+      {/* The corner and its directions together, under the drawing they describe
+        * (review note, 2026-09-29: the directions far off at the right read as
+        * something else). */}
+      <p className="m-0 flex flex-wrap items-baseline justify-center gap-x-3 text-center">
+        <span className="text-base font-semibold text-ink">{t('probe.corner.chosen', { name: name ? t(name.key) : '' })}</span>
+        <span className="font-num text-base font-semibold text-acc">{t('probe.corner.dirs', { x: dirs[0], y: dirs[1] })}</span>
+      </p>
+      <p className="m-0 text-center text-note text-mut">{t('probe.corner.pickHow')}</p>
     </div>
   );
 };

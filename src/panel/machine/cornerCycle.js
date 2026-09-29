@@ -2,132 +2,179 @@
  * The L plate's cycle as the design draws it — 1f, the same loop from above
  * and from the side (`Sondowanie - plytka L`, chosen 2026-09-29).
  *
- * The design animates one corner, front-left, with SMIL; its keyframes are
- * carried over as they are and played against a clock here, so the panel can
- * pick the part to play — a figure being set, the machine's own step — and
- * mirror it to any corner. Coordinates are the design's, before its 0.8
- * scale: from above the work spans x 110–400, y 60–210; from the side the
- * work's top is at 170 and the plate's at 150.
+ * The design animates one corner, front-left, with SMIL, touching each wall
+ * once; the machine touches each twice — fast to find it, back off, slow for
+ * the figure that counts (review note, the same day: *"czy w tym pomiarze nie
+ * ma dojazdu szybkiego i dokładnego?"*). So the keyframes are the design's
+ * with a back-off and a slow touch at every wall, played against a clock
+ * here: a field being set plays the part it acts in, the machine's step
+ * plays what it is doing, and the drawing mirrors to any corner.
+ *
+ * Coordinates are the design's, before its 0.8 scale: from above the work
+ * spans x 110–400, y 60–210, the plate's walls stand 10 outside it; from the
+ * side the work's top is at 170 and the plate's at 150.
  */
 
 /** One loop of the whole cycle, in milliseconds. */
-export const CORNER_MS = 8000;
-
-const TIMES = [0, 0.06, 0.18, 0.26, 0.36, 0.44, 0.54, 0.6, 0.7, 0.8, 0.86, 0.94, 1];
-
-// From above: where the tool is, and the ring round it that says its height.
-const TOP = [[145, 165], [145, 165], [145, 165], [145, 165], [60, 170], [60, 170], [90, 170], [60, 170], [60, 252], [140, 252], [140, 252], [140, 222], [140, 252]];
-const RING = [18, 18, 10, 18, 18, 10, 10, 10, 18, 18, 10, 10, 18];
-// From the side: across and the height of the tip.
-const SIDE = [[145, 110], [145, 110], [145, 150], [145, 110], [60, 110], [60, 186], [90, 186], [60, 186], [60, 110], [140, 110], [140, 186], [140, 186], [140, 110]];
+export const CORNER_MS = 10000;
 
 /*
- * The three touches — where the contact lights on each view, and for how
- * long — and the three stages the tabs name.
+ * The loop, a row per moment: when, the tool from above [x, y], the ring
+ * round it that says its height, and from the side [x, tip].
  */
+const FRAMES = [
+  [0, [145, 165], 18, [145, 110]],
+  [0.04, [145, 165], 18, [145, 110]],
+  [0.12, [145, 165], 10, [145, 150]], // Z, fast touch
+  [0.15, [145, 165], 13, [145, 140]], // back off
+  [0.18, [145, 165], 10, [145, 150]], // Z, slow touch
+  [0.21, [145, 165], 18, [145, 110]],
+  [0.28, [60, 170], 18, [60, 110]], // out past the X wall
+  [0.34, [60, 170], 10, [60, 186]], // down beside it
+  [0.41, [90, 170], 10, [90, 186]], // X, fast touch
+  [0.44, [82, 170], 10, [82, 186]],
+  [0.47, [90, 170], 10, [90, 186]], // X, slow touch
+  [0.5, [60, 170], 10, [60, 186]],
+  [0.56, [60, 252], 18, [60, 110]], // up, and round to the front
+  [0.63, [140, 252], 18, [140, 110]],
+  [0.68, [140, 252], 10, [140, 186]], // down beside the Y wall
+  [0.75, [140, 222], 10, [140, 186]], // Y, fast touch
+  [0.78, [140, 230], 10, [140, 186]],
+  [0.81, [140, 222], 10, [140, 186]], // Y, slow touch
+  [0.84, [140, 252], 10, [140, 186]],
+  [0.9, [140, 252], 18, [140, 110]], // lift
+  [1, [140, 252], 18, [140, 110]],
+];
+
+// Where each touch lights, and when: from above, and from the side where it shows.
 const TOUCHES = [
-  { axis: 'z', from: 0.18, to: 0.26, top: [145, 165], side: [145, 150] },
-  { axis: 'x', from: 0.54, to: 0.6, top: [100, 170], side: [100, 186] },
-  { axis: 'y', from: 0.94, to: 0.99, top: [140, 212], side: null },
+  { axis: 'z', at: [[0.12, 0.14], [0.18, 0.2]], top: [145, 165], side: [145, 150] },
+  { axis: 'x', at: [[0.41, 0.43], [0.47, 0.49]], top: [100, 170], side: [100, 186] },
+  { axis: 'y', at: [[0.75, 0.77], [0.81, 0.83]], top: [140, 212], side: null },
 ];
 
 export const CORNER_STAGES = [
-  { n: 1, axis: 'Z', until: 0.3 },
-  { n: 2, axis: 'X', until: 0.64 },
+  { n: 1, axis: 'Z', until: 0.24 },
+  { n: 2, axis: 'X', until: 0.56 },
   { n: 3, axis: 'Y', until: 1.01 },
 ];
 
-const lerp = (list, p) => {
-  for (let i = 0; i < TIMES.length - 1; i++) {
-    if (p >= TIMES[i] && p <= TIMES[i + 1]) {
-      const u = (p - TIMES[i]) / Math.max(1e-6, TIMES[i + 1] - TIMES[i]);
-      const a = list[i];
-      const b = list[i + 1];
-      return Array.isArray(a) ? a.map((v, k) => v + (b[k] - v) * u) : a + (b - a) * u;
-    }
-  }
-  return list[list.length - 1];
-};
+/** From here on the zero is written, and the drawing says so. */
+export const ZERO_FROM = 0.9;
+
+const lerp = (a, b, u) => (Array.isArray(a) ? a.map((v, k) => v + (b[k] - v) * u) : a + (b - a) * u);
 
 /**
  * The drawing at `p`, a fraction of the whole loop: the tool from above and
  * from the side, which touch is lit, which stage is playing, whether the
- * zero has come in, and whether the side view has faded (the Y touch happens
- * in front of the plate, where the side view says nothing).
+ * zero has come in, and whether the side view has faded (the Y touches
+ * happen in front of the plate, where the side view says nothing).
  */
 export const cornerAt = (p) => {
-  const touch = TOUCHES.find((one) => p >= one.from && p < one.to) || null;
+  const i = Math.max(0, FRAMES.findIndex((frame, k) => k < FRAMES.length - 1 && p >= frame[0] && p <= FRAMES[k + 1][0]));
+  const [from, topA, ringA, sideA] = FRAMES[i];
+  const [to, topB, ringB, sideB] = FRAMES[i + 1] || FRAMES[i];
+  const u = to > from ? (p - from) / (to - from) : 0;
+  const touch = TOUCHES.find((one) => one.at.some(([a, b]) => p >= a && p < b)) || null;
   return {
-    top: lerp(TOP, p),
-    ring: lerp(RING, p),
-    side: lerp(SIDE, p),
+    p,
+    top: lerp(topA, topB, u),
+    ring: lerp(ringA, ringB, u),
+    side: lerp(sideA, sideB, u),
     touch,
     stage: CORNER_STAGES.find((stage) => p < stage.until).n,
-    zero: p >= 0.955,
-    sideFaded: p >= 0.68 && p < 0.98,
+    zero: p >= ZERO_FROM,
+    sideFaded: p >= 0.56 && p < ZERO_FROM,
   };
 };
 
 /*
- * Parts of the loop, by what they are — so a figure being set plays where it
- * is used, and the machine's step plays what it is doing.
+ * The loop's parts, by what they are, each with the figure it shows — so a
+ * field being set plays where it is used, the machine's step plays what it
+ * is doing, and the whole loop shows each part's value as it passes.
  */
-const WINDOWS = {
-  z: [0.06, 0.26],
-  xOut: [0.26, 0.36],
-  xDown: [0.36, 0.44],
-  x: [0.44, 0.6],
-  xUp: [0.6, 0.7],
-  yOut: [0.7, 0.8],
-  yDown: [0.8, 0.86],
-  y: [0.86, 1],
+const PARTS = {
+  zFast: { at: [0.04, 0.12], figure: 'fast' },
+  zBack: { at: [0.12, 0.15], figure: 'retract' },
+  zSlow: { at: [0.15, 0.18], figure: 'slow' },
+  zUp: { at: [0.18, 0.21], figure: 'cornerThickness' },
+  xOut: { at: [0.21, 0.28], figure: 'clear' },
+  xDown: { at: [0.28, 0.34], figure: 'depth' },
+  xFast: { at: [0.34, 0.41], figure: 'wallX' },
+  xBack: { at: [0.41, 0.44], figure: 'retract' },
+  xSlow: { at: [0.44, 0.5], figure: 'slow' },
+  xUp: { at: [0.5, 0.56], figure: null },
+  yOut: { at: [0.56, 0.63], figure: 'clear' },
+  yDown: { at: [0.63, 0.68], figure: 'depth' },
+  yFast: { at: [0.68, 0.75], figure: 'wallY' },
+  yBack: { at: [0.75, 0.78], figure: 'retract' },
+  ySlow: { at: [0.78, 0.84], figure: 'slow' },
+  lift: { at: [0.84, 1], figure: 'lift' },
+};
+
+const SPANS = {
+  ...Object.fromEntries(Object.entries(PARTS).map(([name, { at }]) => [name, at])),
+  z: [0.04, 0.21],
+  x: [0.34, 0.5],
+  y: [0.68, 0.84],
   whole: [0, 1],
+};
+
+/** The figure whose value the drawing shows at `p` in the whole loop. */
+export const figureAt = (p) => {
+  if (p >= ZERO_FROM) {
+    return 'cornerThickness';
+  }
+  const part = Object.values(PARTS).find(({ at }) => p >= at[0] && p < at[1]);
+  return part ? part.figure : null;
 };
 
 /** The figures the corner uses, each to the part of the loop it acts in. */
 export const FIELD_WINDOW = {
   cornerThickness: 'z',
-  maxZ: 'z',
+  maxZ: 'zFast',
+  fast: 'zFast',
+  retract: 'zBack',
+  slow: 'zSlow',
   wallX: 'x',
   wallY: 'y',
   toolDiameter: 'x',
   clear: 'xOut',
   depth: 'xDown',
-  maxXY: 'x',
-  retract: 'z',
-  fast: 'z',
-  slow: 'z',
-  lift: 'whole',
+  maxXY: 'xFast',
+  lift: 'lift',
 };
 
 // The server's step names (`services/probe/strategies/corner`) to their part.
 const PHASE_WINDOW = {
+  'z-fast': 'zFast',
+  'z-back': 'zBack',
+  'z-settle': 'zBack',
+  z: 'zSlow',
   'x-out': 'xOut',
   'x-down': 'xDown',
+  'x-fast': 'xFast',
+  'x-back': 'xBack',
+  'x-settle': 'xBack',
+  x: 'xSlow',
   'x-up': 'xUp',
   'x-return': 'yOut',
   'y-out': 'yOut',
   'y-down': 'yDown',
-  'y-up': 'y',
-  'y-return': 'y',
+  'y-fast': 'yFast',
+  'y-back': 'yBack',
+  'y-settle': 'yBack',
+  y: 'ySlow',
+  'y-up': 'lift',
+  'y-return': 'lift',
+  lift: 'lift',
 };
 
-export const windowOfPhase = (phase) => {
-  if (!phase) {
-    return 'z';
-  }
-  if (PHASE_WINDOW[phase]) {
-    return PHASE_WINDOW[phase];
-  }
-  if (phase === 'lift') {
-    return 'whole';
-  }
-  return phase.charAt(0);
-};
+export const windowOfPhase = (phase) => PHASE_WINDOW[phase] || 'zFast';
 
 /** Where in the whole loop `ms` into playing part `name` over and over is. */
 export const loopIn = (name, ms, length = CORNER_MS) => {
-  const [from, to] = WINDOWS[name] || WINDOWS.whole;
+  const [from, to] = SPANS[name] || SPANS.whole;
   const span = (to - from) * length;
   return from + ((ms % span) / span) * (to - from);
 };
@@ -144,3 +191,26 @@ const SIDES = {
 };
 
 export const cornerSides = (corner) => SIDES[corner] || SIDES['front-left'];
+
+/*
+ * The tool's X, Y and Z in the coordinate system through the loop, for the
+ * example it is (review note, 2026-09-29: the Z plate showed one, the corner
+ * did not). The drawing's walls are 10 across and the plate 20 over the
+ * work, so a pixel is taken as the figures typed make it; the old zero is an
+ * example, `BEFORE_MM` away. After the zero is written the corner of the
+ * work reads 0, 0, 0.
+ */
+export const BEFORE_MM = { x: 123.456, y: 78.9, z: 37.482 };
+
+export const cornerReadout = (at, corner, mm) => {
+  const { flipX, flipY } = cornerSides(corner);
+  const after = {
+    x: (flipX ? -1 : 1) * (at.top[0] - 110) * (mm.wallX / 10),
+    y: (flipY ? -1 : 1) * (210 - at.top[1]) * (mm.wallY / 10),
+    z: (170 - at.side[1]) * (mm.cornerThickness / 20),
+  };
+  if (at.zero) {
+    return { ...after, after: true };
+  }
+  return { x: after.x + BEFORE_MM.x, y: after.y + BEFORE_MM.y, z: after.z + BEFORE_MM.z, after: false };
+};

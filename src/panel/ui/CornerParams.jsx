@@ -17,13 +17,13 @@ const BAD = 'bad';
  * left with `intro` under it, the fields in two columns on the right. The
  * whole loop plays; the field being set plays the part it acts in.
  */
-const CornerParams = ({ fields, texts, onText, bad, corner, intro = null }) => {
+const CornerParams = ({ fields, texts, onText, bad, corner, wcs, intro = null }) => {
   const units = useUnits();
   const [picked, setPicked] = useState(null);
   return (
     <div className="grid gap-4 @3xl/shell:grid-cols-2">
       <div className="flex min-w-0 flex-col gap-3 self-start">
-        <CornerCycle corner={corner} field={picked} />
+        <CornerCycle corner={corner} field={picked} texts={texts} wcs={wcs} />
         {intro}
       </div>
       <div className="grid min-w-0 content-start gap-2 self-start @xl/shell:grid-cols-2">

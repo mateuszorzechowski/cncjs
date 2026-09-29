@@ -192,7 +192,7 @@ const ProbeScreen = ({ machine }) => {
       </Foot>
     );
   } else if (step === 'wire') {
-    body = <WireStep lit={lit} touched={touched} />;
+    body = <WireStep lit={lit} touched={touched} plate={method.plate} />;
     foot = (
       <Foot back={() => go(-1)}>
         <Button tone="primary" disabled={!touched || lit !== false} onClick={() => go(1)} className="h-ctl">

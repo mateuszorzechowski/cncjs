@@ -3,7 +3,7 @@ import CycleStages from './CycleStages';
 import TextField from './TextField';
 import ZPlateScene from './ZPlateScene';
 import useTicker from './useTicker';
-import { FIELDS, fieldUnit } from '../machine/probe';
+import { FIELDS, fieldUnit, figureSaid } from '../machine/probe';
 import { FIGURES, cycleAt, readoutAt, sceneAt } from '../machine/probeCycle';
 import { inMm } from '../machine/units';
 import { useUnits } from './units';
@@ -16,9 +16,6 @@ const numberOf = (text) => Number(String(text).replace(',', '.'));
 
 // A field the server would not take, framed in red.
 const BAD = 'bad';
-
-/** A figure as its badge on the drawing says it: a rate as `F100`, a length with its unit. */
-const said = (name, text, units) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${text} ${fieldUnit(name, units.rule)}`);
 
 /*
  * The line each figure goes into, as a reminder of what it does. Written
@@ -60,7 +57,7 @@ const ZPlateParams = ({ fields, texts, onText, bad, wcs, intro = null }) => {
   const figure = FIGURES[shown];
   const scene = picked ? sceneAt(picked, ms) : whole.scene;
   // The value of the part shown, and its dimension where the design draws one.
-  const badge = { x: figure.badge[0], y: figure.badge[1], text: said(shown, texts[shown] ?? '', units) };
+  const badge = { x: figure.badge[0], y: figure.badge[1], text: figureSaid(shown, texts[shown] ?? '', units.rule) };
   // In the whole cycle, the tool's Z in the system before and after the zero is written.
   const mm = Object.fromEntries(['retract', 'lift', 'plateThickness'].map((name) => [name, inMm(numberOf(texts[name]), units.rule) ?? 0]));
   const read = picked ? null : readoutAt(shown, scene.gap, mm);

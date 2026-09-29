@@ -137,7 +137,7 @@ export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, b
   );
 };
 
-export const WireStep = ({ lit, touched }) => {
+export const WireStep = ({ lit, touched, plate }) => {
   let state = t('probe.wire.waiting');
   if (lit === null) {
     state = NO_READING;
@@ -149,7 +149,7 @@ export const WireStep = ({ lit, touched }) => {
   return (
     <div className="flex flex-col gap-3">
       <p className="m-0 text-base text-ink">{t('probe.wire.how')}</p>
-      <ProbeWire lit={lit} />
+      <ProbeWire lit={lit} plate={plate} />
       <StatTile label={t('diag.pin.probe')} value={state} tone={lit ? 'warn' : undefined} />
       {lit === null ? <p className="m-0 text-note text-mut">{t('probe.wire.unknown')}</p> : null}
     </div>

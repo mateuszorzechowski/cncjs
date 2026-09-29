@@ -58,7 +58,7 @@ export const METHODS = [
   },
   {
     id: 'corner', key: 'probe.method.corner', note: 'probe.method.cornerNote', how: 'probe.how.corner', place: 'probe.place.corner',
-    start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true,
+    start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true, plate: 'l',
     choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', columns: 2, step: 'probe.step.corner' },
   },
   {
@@ -100,6 +100,9 @@ export const fieldText = (mm, name, rule) => {
 
 /** The unit a field is typed in. */
 export const fieldUnit = (name, rule) => settingFigure(0, FIELDS[name].kind, rule).unit;
+
+/** A figure as a drawing's badge says it: a rate as `F100`, a length with its unit. */
+export const figureSaid = (name, text, rule) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${text} ${fieldUnit(name, rule)}`);
 
 /*
  * Where the wizard is. The first four are the operator's own, one after

@@ -1504,6 +1504,7 @@
     "z0": "Z0",
     "readout": {
       "name": "Z · {{wcs}}",
+      "system": "{{wcs}} · {{when}}",
       "before": "before",
       "after": "after"
     }
