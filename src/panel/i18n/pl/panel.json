@@ -1491,6 +1491,11 @@
       "lift": "Powrót nad płytkę",
       "zeroSum": "Z0 = styk − {{t}}"
     },
-    "z0": "Z0"
+    "z0": "Z0",
+    "readout": {
+      "name": "Z · {{wcs}}",
+      "before": "przed",
+      "after": "po"
+    }
   }
 }

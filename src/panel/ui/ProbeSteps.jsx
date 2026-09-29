@@ -71,7 +71,7 @@ export const MethodStep = ({ onPick }) => (
   </div>
 );
 
-export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, bad }) => {
+export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, bad, wcs }) => {
   const units = useUnits();
   const Editor = EDITORS[method.id];
   if (Editor) {
@@ -79,7 +79,7 @@ export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, b
       <div className="flex flex-col gap-3">
         <p className="m-0 text-base text-ink">{t(method.how)}</p>
         <p className="m-0 text-note text-mut">{t('probe.remember')}</p>
-        <Editor fields={fields} texts={texts} onText={onText} bad={bad} />
+        <Editor fields={fields} texts={texts} onText={onText} bad={bad} wcs={wcs} />
       </div>
     );
   }

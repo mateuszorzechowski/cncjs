@@ -1,5 +1,5 @@
 import {
-  CYCLE_MS, CYCLE_ORDER, FIGURES, PLATE_TOP, STOP_MS, cycleAt, figureOfPhase, gapAt, sceneAt,
+  BEFORE_MM, CYCLE_MS, CYCLE_ORDER, FIGURES, PLATE_TOP, STOP_MS, cycleAt, figureOfPhase, gapAt, readoutAt, sceneAt,
 } from '../probeCycle';
 
 const at = (fraction) => fraction * CYCLE_MS;
@@ -71,5 +71,19 @@ describe('the whole cycle, with no figure in hand', () => {
     expect(sceneAt('retract', CYCLE_MS * 0.4).arrow).toBeNull();
     // Up, from the plate, lengthened to be read.
     expect(cycleAt(into).scene.arrow).toEqual({ from: PLATE_TOP, to: PLATE_TOP - 24 });
+  });
+});
+
+describe('the Z the example reads, before and after the zero', () => {
+  const mm = { retract: 2, lift: 10, plateThickness: 10 };
+
+  test('against the old zero while it is being found', () => {
+    expect(readoutAt('fast', 0, mm)).toEqual({ z: BEFORE_MM, after: false });
+    expect(readoutAt('retract', 14, mm).z).toBeCloseTo(BEFORE_MM + 2, 6);
+  });
+
+  test('against the new one once written: the plate at the touch, and the lift above it', () => {
+    expect(readoutAt('plateThickness', 0, mm)).toEqual({ z: 10, after: true });
+    expect(readoutAt('lift', 56, mm).z).toBeCloseTo(20, 6);
   });
 });

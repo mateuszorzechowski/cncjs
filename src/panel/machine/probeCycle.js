@@ -114,6 +114,35 @@ export const cycleAt = (ms) => {
 };
 
 /*
+ * The tool's Z in the coordinate system through the whole cycle, for the
+ * example it is (Mateusz, 2026-09-29: *"pozycję Z dla układu w przykładowej
+ * animacji przed i po"*). Before the zero is written it reads against the
+ * old zero — an example figure, `BEFORE_MM` at the touch; after, against the
+ * new one, where the touch is the plate's thickness. Each part moves it by
+ * its own distance, in step with the drawing: the approach by `APPROACH_MM`,
+ * the back-off and the slow touch by `retract`, the lift by `lift`.
+ */
+export const BEFORE_MM = 37.482;
+export const APPROACH_MM = 5;
+
+const TRAVEL = {
+  fast: () => APPROACH_MM,
+  retract: (mm) => mm.retract,
+  slow: (mm) => mm.retract,
+  plateThickness: () => 0,
+  lift: (mm) => mm.lift,
+};
+
+/** `{ z, after }` — the tool's Z in millimetres for part `name` at `gap`, and whether the new zero is written. */
+export const readoutAt = (name, gap, mm) => {
+  const figure = FIGURES[name];
+  const after = figure.stage === 3;
+  const most = Math.max(...figure.frames.map(([, px]) => px));
+  const travel = most > 0 ? (gap / most) * TRAVEL[name](mm) : 0;
+  return { z: (after ? mm.plateThickness : BEFORE_MM) + travel, after };
+};
+
+/*
  * What the machine is doing, as the figure whose part of the cycle it is —
  * the server's step names (`services/probe/moves`), so the measurement
  * screen plays the part the machine is in.

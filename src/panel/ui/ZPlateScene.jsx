@@ -57,7 +57,19 @@ const Badge = ({ x, y, text }) => (
   </g>
 );
 
-const ZPlateScene = ({ gap = 84, arrow = null, contact = false, marks = null, zero = 0, badge = null, label, className = '' }) => {
+/*
+ * The tool's Z in the coordinate system, in the top left corner: muted
+ * against the old zero, in the accent once the new one is written.
+ */
+const Readout = ({ name, value, when, after }) => (
+  <g>
+    <rect x={12} y={12} width={150} height={52} rx={4} className={after ? 'fill-accS stroke-acc' : 'fill-panel stroke-line'} strokeWidth={1.5} />
+    <text x={24} y={32} className="fill-mut text-cap">{`${name} · ${when}`}</text>
+    <text x={24} y={54} className={`font-num text-lead font-semibold ${after ? 'fill-acc' : 'fill-ink'}`}>{value}</text>
+  </g>
+);
+
+const ZPlateScene = ({ gap = 84, arrow = null, contact = false, marks = null, zero = 0, badge = null, readout = null, label, className = '' }) => {
   const Mark = MARKS[marks];
   return (
     <svg viewBox="0 0 440 242" role="img" aria-label={label} className={`block ${className}`}>
@@ -77,6 +89,7 @@ const ZPlateScene = ({ gap = 84, arrow = null, contact = false, marks = null, ze
       ) : null}
       {contact ? <circle cx={220} cy={PLATE_TOP} r={4.5} className="fill-amb" /> : null}
       {badge ? <Badge x={badge.x} y={badge.y} text={badge.text} /> : null}
+      {readout ? <Readout {...readout} /> : null}
     </svg>
   );
 };

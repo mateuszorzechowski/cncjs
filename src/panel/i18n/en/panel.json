@@ -1491,6 +1491,11 @@
       "lift": "Up over the plate",
       "zeroSum": "Z0 = touch − {{t}}"
     },
-    "z0": "Z0"
+    "z0": "Z0",
+    "readout": {
+      "name": "Z · {{wcs}}",
+      "before": "before",
+      "after": "after"
+    }
   }
 }

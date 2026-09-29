@@ -152,6 +152,7 @@ const ProbeScreen = ({ machine }) => {
         texts={texts}
         onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}
         bad={bad}
+        wcs={machine.modal?.wcs}
       />
     );
     foot = (
