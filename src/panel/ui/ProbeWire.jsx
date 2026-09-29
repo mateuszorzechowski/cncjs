@@ -44,18 +44,27 @@ const Pill = ({ x, closed, text }) => (
 );
 
 /*
- * The plate the lead goes to, its top at `y`: flat for the Z plate, and for
- * the L plate its top with the wall hanging down at the end (review note,
- * 2026-09-29: *"czy obrazek odpowiada pomiarowi płytka L?"*).
+ * The plate the lead goes to, its top at `y`: flat for the Z plate; for the
+ * L plate the design's side view (1f) — a block, and dashed inside it the
+ * corner of the work it sits over (review notes, 2026-09-29).
  */
-const PLATES = {
-  flat: (x, y) => `M${x} ${y} H${x + 80} V${y + 16} H${x} Z`,
-  l: (x, y) => `M${x} ${y} H${x + 80} V${y + 16} H${x + 12} V${y + 36} H${x} Z`,
-};
-
-const Plate = ({ kind, x, y }) => (
-  <path d={(PLATES[kind] || PLATES.flat)(x, y)} className="fill-accS stroke-acc" strokeWidth={2} strokeLinejoin="round" />
+const FlatPlate = ({ x, y }) => (
+  <rect x={x} y={y} width={80} height={16} className="fill-accS stroke-acc" strokeWidth={2} />
 );
+
+const LPlate = ({ x, y }) => (
+  <>
+    <rect x={x} y={y} width={80} height={36} className="fill-accS stroke-acc" strokeWidth={2} />
+    <path d={`M${x + 80} ${y + 16} H${x + 9} V${y + 36}`} className="stroke-acc" fill="none" strokeWidth={1.5} strokeDasharray="5 4" />
+  </>
+);
+
+const PLATES = { flat: FlatPlate, l: LPlate };
+
+const Plate = ({ kind, x, y }) => {
+  const Shape = PLATES[kind] || FlatPlate;
+  return <Shape x={x} y={y} />;
+};
 
 const ProbeWire = ({ lit, plate = 'flat' }) => {
   // Unknown reads as neither: both halves as drawn.
@@ -80,9 +89,9 @@ const ProbeWire = ({ lit, plate = 'flat' }) => {
         <Clip x={320} />
         <rect x={282} y={124} width={8} height={8} rx={1} className="fill-field stroke-ink" strokeWidth={2} />
         <circle cx={330} cy={120} r={4.5} className="fill-grn" />
-        <path d="M330 178 V154" className="stroke-acc" strokeWidth={2.5} />
-        <path d="M322 155 H338 L330 142 Z" className="fill-acc stroke-acc" strokeWidth={1.5} strokeLinejoin="round" />
-        <text x={344} y={168} className="fill-acc text-cap">{t('probe.wire.touch')}</text>
+        <path d="M330 204 V176" className="stroke-acc" strokeWidth={2.5} />
+        <path d="M322 177 H338 L330 164 Z" className="fill-acc stroke-acc" strokeWidth={1.5} strokeLinejoin="round" />
+        <text x={344} y={194} className="fill-acc text-cap">{t('probe.wire.touch')}</text>
         <Pill x={244} closed text={t('probe.wire.closed')} />
         <text x={330} y={270} textAnchor={MIDDLE} className="fill-mut text-note">{t('probe.wire.after')}</text>
       </g>
