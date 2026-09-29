@@ -65,6 +65,13 @@ describe('what the editor offers after a code, and ready blocks', () => {
     expect(body.params.G3).toContain('R');
     expect(body.blocks[0].id).toBe('header');
   });
+
+  test('Grbl\'s $ commands are in it, and none that rewrites the controller\'s memory wholesale', async () => {
+    const { body } = await call(words, {});
+    expect(body.system.commands).toEqual(expect.arrayContaining(['$$', '$X', '$H', '$J=']));
+    expect(body.system.commands.some((command) => /^\$(RST|N\d|I)=/.test(command))).toBe(false);
+    expect(body.system.jog).toEqual(expect.arrayContaining(['G91', 'X', 'F']));
+  });
 });
 
 describe('checking text that has not been saved', () => {
