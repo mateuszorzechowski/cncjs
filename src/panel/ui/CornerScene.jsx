@@ -35,7 +35,7 @@ const WALL_X_AT = [['top', 124, 226], ['side', 30, 212]];
 
 const ANCHORS = {
   fast: [['side', 190, 84]],
-  maxZ: [['side', 190, 84]],
+  maxZ: [['side', 52, 118]],
   slow: [['side', 190, 84]],
   retract: [['side', 190, 150]],
   lift: [['side', 190, 118]],
@@ -43,7 +43,7 @@ const ANCHORS = {
   depth: [['side', 16, 194]],
   clear: [['top', 26, 114]],
   wallX: WALL_X_AT,
-  maxXY: WALL_X_AT,
+  maxXY: [['top', 4, 116], ['side', 0, 206]],
   toolDiameter: [['top', 160, 96]],
   wallY: [['top', 218, 202]],
 };
@@ -129,7 +129,14 @@ const DIMENSIONS = {
   retract: [['side', () => <Vertical x={180} top={128} bottom={150} from={150} to={188} />]],
   clear: [['top', () => <Horizontal y={150} left={60} right={145} from={142} to={158} />]],
   wallX: WALL_X,
-  maxXY: WALL_X,
+  // The furthest a probe may go, as the Z plate's travel limit is drawn: from
+  // where the tool sets off to what it is meant to touch (review note,
+  // 2026-09-29 — it had the X wall's thickness).
+  maxXY: [
+    ['top', () => <Horizontal y={148} left={60} right={90} from={140} to={160} />],
+    ['side', () => <Horizontal y={198} left={60} right={90} from={188} to={206} />],
+  ],
+  maxZ: [['side', () => <Vertical x={120} top={110} bottom={150} from={112} to={150} />]],
   wallY: [['top', () => <Vertical x={206} top={210} bottom={220} from={192} to={214} />]],
   toolDiameter: [['top', ({ at }) => <Horizontal y={at.top[1] - 22} left={at.top[0] - 10} right={at.top[0] + 10} from={at.top[1] - 28} to={at.top[1] - 6} />]],
 };
