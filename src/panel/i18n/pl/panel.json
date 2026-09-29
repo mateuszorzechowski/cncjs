@@ -270,7 +270,15 @@
     "clear": "Wyczyść",
     "offline": "Brak połączenia ze sterownikiem.",
     "running": "W trakcie programu MDI jest wyłączone.",
-    "alarm": "Alarm: sterownik przyjmie teraz tylko polecenia $ (np. $X — odblokuj, $H — bazuj)."
+    "alarm": "Alarm: sterownik przyjmie teraz tylko polecenia $ (np. $X — odblokuj, $H — bazuj).",
+    "help": {
+      "open": "Czym jest MDI",
+      "title": "MDI",
+      "what": "Jedna linia naraz, prosto do sterownika: blok G-code albo polecenie $ Grbla. Idzie kolejką serwera jak każda inna linia i trafia do dziennika. Nic nie pyta o potwierdzenie — linia jest Twoja.",
+      "keys": "Enter wysyła. Strzałki w górę i w dół przywracają to, co to urządzenie wysłało wcześniej. W trakcie pisania podpowiedzi pokazują kody i litery z opisem — wybierz strzałkami i Enterem albo pisz dalej.",
+      "console": "Nad linią jest konsola maszyny: każda linia wysłana do sterownika, z dowolnego urządzenia, i każda odpowiedź, z godziną. Przy błędzie i alarmie obok kodu stoi jego znaczenie.",
+      "alarm": "W alarmie sterownik przyjmuje tylko polecenia $ — $X odblokowuje, $H bazuje. Inna linia jest odrzucana i zostaje w konsoli przekreślona. W trakcie programu linia jest wyłączona."
+    }
   },
   "settings": {
     "connection": "Połączenie",
