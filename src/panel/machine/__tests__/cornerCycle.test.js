@@ -1,5 +1,5 @@
 import {
-  BEFORE_MM, CORNER_MS, ZERO_FROM, cornerAt, cornerReadout, cornerSides, figureAt, loopIn, windowOfPhase,
+  BEFORE_MM, CORNER_MS, PART_MS, PART_STOP_MS, ZERO_FROM, cornerAt, cornerReadout, cornerSides, figureAt, loopIn, windowOfPhase,
 } from '../cornerCycle';
 import { methodOf, stepBeside, stepsOf } from '../probe';
 
@@ -7,7 +7,7 @@ jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.f
 
 describe('the L plate on the drawing', () => {
   test('touches each wall twice, fast and then slow, Z then X then Y', () => {
-    const lit = [0.13, 0.19, 0.42, 0.48, 0.76, 0.82].map((p) => cornerAt(p).touch?.axis);
+    const lit = [0.125, 0.185, 0.415, 0.475, 0.755, 0.815].map((p) => cornerAt(p).touch?.axis);
 
     expect(lit).toEqual(['z', 'z', 'x', 'x', 'y', 'y']);
     expect(cornerAt(0.15).touch).toBeNull();
@@ -62,6 +62,13 @@ describe('the part that plays', () => {
     ['lift', 'lift'],
   ])('the machine\'s %s plays %s', (phase, part) => {
     expect(windowOfPhase(phase)).toBe(part);
+  });
+
+  test('a short part played on its own is slowed to be seen, and stops at its end', () => {
+    // The back-off is 0.12–0.15 of the loop: 300 ms at the loop's own pace.
+    expect(loopIn('zBack', PART_MS / 2)).toBeCloseTo(0.135, 6);
+    expect(loopIn('zBack', PART_MS + PART_STOP_MS / 2)).toBeCloseTo(0.15, 3);
+    expect(loopIn('zBack', PART_MS + PART_STOP_MS + 1)).toBeCloseTo(0.12, 3);
   });
 
   test('loops inside its part', () => {

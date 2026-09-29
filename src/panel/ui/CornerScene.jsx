@@ -29,20 +29,23 @@ const TOP_W = 510;
 const SIDE_W = 520;
 
 // Where each figure's value stands, drawn for front-left, in its view's own
-// units: beside its dimension, never on it (review note, 2026-09-29).
+// units: beside its dimension, never on it, and by every dimension it has —
+// the X wall's in both views (review notes, 2026-09-29).
+const WALL_X_AT = [['top', 124, 226], ['side', 30, 212]];
+
 const ANCHORS = {
-  fast: ['side', 190, 84],
-  maxZ: ['side', 190, 84],
-  slow: ['side', 190, 84],
-  retract: ['side', 190, 150],
-  lift: ['side', 190, 118],
-  cornerThickness: ['side', 218, 148],
-  depth: ['side', 16, 194],
-  clear: ['top', 26, 114],
-  wallX: ['top', 124, 226],
-  maxXY: ['top', 124, 226],
-  toolDiameter: ['top', 160, 96],
-  wallY: ['top', 218, 202],
+  fast: [['side', 190, 84]],
+  maxZ: [['side', 190, 84]],
+  slow: [['side', 190, 84]],
+  retract: [['side', 190, 150]],
+  lift: [['side', 190, 118]],
+  cornerThickness: [['side', 218, 148]],
+  depth: [['side', 16, 194]],
+  clear: [['top', 26, 114]],
+  wallX: WALL_X_AT,
+  maxXY: WALL_X_AT,
+  toolDiameter: [['top', 160, 96]],
+  wallY: [['top', 218, 202]],
 };
 
 const Contact = ({ at }) => <circle cx={at[0]} cy={at[1]} r={4.5} className="fill-amb" />;
@@ -123,7 +126,7 @@ const DIMENSIONS = {
   cornerThickness: [['side', () => <Vertical x={206} top={150} bottom={170} from={192} to={214} />]],
   depth: [['side', () => <Vertical x={36} top={150} bottom={186} from={28} to={100} />]],
   lift: [['side', () => <Vertical x={180} top={110} bottom={150} from={150} to={188} />]],
-  retract: [['side', () => <Vertical x={180} top={142} bottom={150} from={150} to={188} />]],
+  retract: [['side', () => <Vertical x={180} top={128} bottom={150} from={150} to={188} />]],
   clear: [['top', () => <Horizontal y={150} left={60} right={145} from={142} to={158} />]],
   wallX: WALL_X,
   maxXY: WALL_X,
@@ -177,17 +180,13 @@ const Badge = ({ x, y, text }) => (
   </g>
 );
 
-/** A figure's value where it acts, mirrored with its corner; the text itself stays upright. */
-const placed = (badge, flipX, flipY) => {
-  const [view, x, y] = ANCHORS[badge.name] || [];
-  if (!view) {
-    return null;
-  }
+/** A figure's value where it acts, in each view, mirrored with its corner; the text itself stays upright. */
+const placed = (badge, flipX, flipY) => (ANCHORS[badge.name] || []).map(([view, x, y]) => {
   const w = badge.text.length * 8 + 18;
   const mx = flipX ? (view === 'top' ? TOP_W : SIDE_W) - x - w : x;
   const my = flipY && view === 'top' ? 270 - y - 24 : y;
   return { view, x: mx, y: my };
-};
+});
 
 const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
   const id = useId().replace(/:/g, '');
@@ -201,7 +200,8 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
   const cornerY = flipY ? 60 : 210;
   const hatch = `hatch-${id}`;
   const touch = at.touch;
-  const shown = badge ? placed(badge, flipX, flipY) : null;
+  const shown = badge ? placed(badge, flipX, flipY) : [];
+  const badges = (view) => shown.filter((one) => one.view === view).map((one) => <Badge key={view} x={one.x} y={one.y} text={badge.text} />);
   const dimensions = (badge && DIMENSIONS[badge.name]) || [];
   const marks = (view) => dimensions.filter(([where]) => where === view).map(([, Mark], k) => <Mark key={k} at={at} />);
 
@@ -233,7 +233,7 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
             {t('probe.corner.zeroXY')}
           </text>
         ) : null}
-        {shown?.view === 'top' ? <Badge x={shown.x} y={shown.y} text={badge.text} /> : null}
+        {badges('top')}
       </g>
 
       <path d="M0 246.5 H440" className="stroke-line" strokeWidth={1} />
@@ -257,7 +257,7 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
             <text x={flipX ? 404 : 116} y={238} textAnchor={flipX ? END : START} className="fill-acc font-num text-cap font-semibold">{t('probe.corner.zeroX')}</text>
           </>
         ) : null}
-        {shown?.view === 'side' ? <Badge x={shown.x} y={shown.y} text={badge.text} /> : null}
+        {badges('side')}
       </g>
 
       <text x={12} y={14} className="fill-mut text-cap">{t('probe.corner.fromAbove')}</text>

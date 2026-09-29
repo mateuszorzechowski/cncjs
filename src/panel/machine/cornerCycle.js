@@ -26,31 +26,32 @@ const FRAMES = [
   [0, [145, 165], 18, [145, 110]],
   [0.04, [145, 165], 18, [145, 110]],
   [0.12, [145, 165], 10, [145, 150]], // Z, fast touch
-  [0.15, [145, 165], 13, [145, 140]], // back off
+  [0.15, [145, 165], 14, [145, 128]], // back off, far enough to see
   [0.18, [145, 165], 10, [145, 150]], // Z, slow touch
   [0.21, [145, 165], 18, [145, 110]],
   [0.28, [60, 170], 18, [60, 110]], // out past the X wall
   [0.34, [60, 170], 10, [60, 186]], // down beside it
   [0.41, [90, 170], 10, [90, 186]], // X, fast touch
-  [0.44, [82, 170], 10, [82, 186]],
+  [0.44, [70, 170], 10, [70, 186]],
   [0.47, [90, 170], 10, [90, 186]], // X, slow touch
   [0.5, [60, 170], 10, [60, 186]],
   [0.56, [60, 252], 18, [60, 110]], // up, and round to the front
   [0.63, [140, 252], 18, [140, 110]],
   [0.68, [140, 252], 10, [140, 186]], // down beside the Y wall
   [0.75, [140, 222], 10, [140, 186]], // Y, fast touch
-  [0.78, [140, 230], 10, [140, 186]],
+  [0.78, [140, 240], 10, [140, 186]],
   [0.81, [140, 222], 10, [140, 186]], // Y, slow touch
   [0.84, [140, 252], 10, [140, 186]],
   [0.9, [140, 252], 18, [140, 110]], // lift
   [1, [140, 252], 18, [140, 110]],
 ];
 
-// Where each touch lights, and when: from above, and from the side where it shows.
+// Where each touch lights, and when — a flash, not the back-off after it — from
+// above, and from the side where it shows.
 const TOUCHES = [
-  { axis: 'z', at: [[0.12, 0.14], [0.18, 0.2]], top: [145, 165], side: [145, 150] },
-  { axis: 'x', at: [[0.41, 0.43], [0.47, 0.49]], top: [100, 170], side: [100, 186] },
-  { axis: 'y', at: [[0.75, 0.77], [0.81, 0.83]], top: [140, 212], side: null },
+  { axis: 'z', at: [[0.12, 0.13], [0.18, 0.19]], top: [145, 165], side: [145, 150] },
+  { axis: 'x', at: [[0.41, 0.42], [0.47, 0.48]], top: [100, 170], side: [100, 186] },
+  { axis: 'y', at: [[0.75, 0.76], [0.81, 0.82]], top: [140, 212], side: null },
 ];
 
 export const CORNER_STAGES = [
@@ -181,11 +182,26 @@ const PHASE_WINDOW = {
 
 export const windowOfPhase = (phase) => PHASE_WINDOW[phase] || 'zFast';
 
+/*
+ * A part played on its own lasts at least this long, and stops at its end
+ * for a moment before it starts again: the short ones — a back-off is three
+ * hundredths of the loop — flickered past as a jump (review note,
+ * 2026-09-29: *"animacja ruchu po zaznaczonym fokusie inputa powinna być
+ * wolniejsza"*). The whole loop plays at its own pace.
+ */
+export const PART_MS = 3000;
+export const PART_STOP_MS = 700;
+
 /** Where in the whole loop `ms` into playing part `name` over and over is. */
 export const loopIn = (name, ms, length = CORNER_MS) => {
   const [from, to] = SPANS[name] || SPANS.whole;
-  const span = (to - from) * length;
-  return from + ((ms % span) / span) * (to - from);
+  if (name === 'whole' || !SPANS[name]) {
+    return from + ((ms % length) / length) * (to - from);
+  }
+  const plays = Math.max(PART_MS, (to - from) * length);
+  const into = ms % (plays + PART_STOP_MS);
+  // Held just short of its end, which is where the next part begins.
+  return from + Math.min(0.999, into / plays) * (to - from);
 };
 
 /*
