@@ -21,16 +21,13 @@
  *
  * A figure (`inputMode="decimal"`) stands at the right, digits under digits
  * down a column of fields — panel v2 of the same design.
- *
- * `code`, a line of G-code typed at the MDI screen: in the figures face too,
- * where a `0` and an `O` are told apart.
  */
 const FRAMES = {
   changed: 'border-amb bg-ambS',
   bad: 'border-red bg-redS',
 };
 
-const TextField = ({ label, unit, was, state, code = false, className = '', ...rest }) => {
+const TextField = ({ label, unit, was, state, className = '', ...rest }) => {
   const figure = rest.inputMode === 'decimal';
   return (
     <label
@@ -47,7 +44,7 @@ const TextField = ({ label, unit, was, state, code = false, className = '', ...r
             'min-w-0 self-stretch bg-transparent text-note text-ink outline-none placeholder:text-mut',
             was === undefined ? 'h-full' : 'leading-tight',
             // A figure with a unit reads in the panel's figures face.
-            unit || figure || code ? 'font-num' : '',
+            unit || figure ? 'font-num' : '',
             figure ? 'text-right' : '',
           ].join(' ')}
           {...rest}
