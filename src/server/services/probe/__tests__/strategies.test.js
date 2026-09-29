@@ -103,10 +103,10 @@ describe('the Z plate', () => {
     close(zero, { z: -60 });
   });
 
-  test('leaves the tool above the plate and the modes as they were', () => {
+  test('lifts the tool clear of the plate and leaves the modes as they were', () => {
     const { sent, pos } = measure({ method: 'z', params, boxes, start: { x: 0, y: 0, z: -40 } });
 
-    expect(pos.z).toBeCloseTo(-47.5 + params.retract, 6);
+    expect(pos.z).toBeCloseTo(-47.5 + params.lift, 6);
     expect(sent[sent.length - 1]).toBe('G90 G21');
   });
 

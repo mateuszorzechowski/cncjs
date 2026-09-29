@@ -1,4 +1,4 @@
-import { clearDown, move, touch } from '../moves';
+import { clearDown, liftOver, move, touch } from '../moves';
 
 /**
  * An L-shaped plate on a corner of the work: a top on the work and two walls
@@ -29,7 +29,7 @@ const wall = (axis, sign, params) => [
 ];
 
 export default {
-  fields: ['cornerThickness', 'wallX', 'wallY', 'toolDiameter', 'clear', 'depth', 'maxZ', 'maxXY', 'retract', 'fast', 'slow'],
+  fields: ['cornerThickness', 'wallX', 'wallY', 'toolDiameter', 'clear', 'depth', 'maxZ', 'maxXY', 'retract', 'fast', 'slow', 'lift'],
   options: { corner: Object.keys(CORNERS) },
   touches: true,
 
@@ -39,6 +39,7 @@ export default {
     ...touch('z', -1, params.maxZ, 'z', params),
     ...wall('x', CORNERS[corner].x, params),
     ...wall('y', CORNERS[corner].y, params),
+    liftOver('z', params.lift),
   ],
 
   zero: (params, { corner }, seen) => {

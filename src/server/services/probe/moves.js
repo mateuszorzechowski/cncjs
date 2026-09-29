@@ -25,6 +25,9 @@ export const move = (phase, to) => ({ kind: 'move', phase, to });
  */
 export const SETTLE_SECONDS = 0.5;
 
+/** Up to `lift` over the top a touch kept as `key` found — the last move of a plate method. */
+export const liftOver = (key, lift) => move('lift', (here, seen) => ({ z: seen[key].z + lift }));
+
 /** Stand still. */
 export const dwell = (phase, seconds) => ({ kind: 'dwell', phase, seconds, to: () => ({}) });
 

@@ -84,6 +84,7 @@ export const FIELDS = {
   maxZ: { key: 'probe.field.maxZ', kind: 'length' },
   maxXY: { key: 'probe.field.maxXY', kind: 'length' },
   retract: { key: 'probe.field.retract', kind: 'length' },
+  lift: { key: 'probe.field.lift', kind: 'length' },
   fast: { key: 'probe.field.fast', kind: 'feed' },
   slow: { key: 'probe.field.slow', kind: 'feed' },
 };

@@ -34,6 +34,9 @@ export const FIELDS = {
   maxXY: { value: 15, min: 1, max: 100 },
   // Back off between the fast touch and the slow one.
   retract: { value: 2, min: 0.5, max: 20 },
+  // Up over the plate once measured, so it can be taken out from under the
+  // tool (the design's "powrót po pomiarze", 2026-09-29).
+  lift: { value: 10, min: 0, max: 100 },
   fast: { value: 100, min: 10, max: 2000 },
   slow: { value: 25, min: 1, max: 500 },
 };

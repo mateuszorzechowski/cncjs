@@ -1406,7 +1406,8 @@
       "retract": "Odjazd",
       "fast": "Szybki dotyk",
       "slow": "Wolny dotyk",
-      "paperThickness": "Grubość kartki"
+      "paperThickness": "Grubość kartki",
+      "lift": "Powrót po pomiarze"
     },
     "step": {
       "method": "Metoda",
@@ -1421,7 +1422,13 @@
       "waiting": "Czekam na dotyk",
       "touching": "Dotyk",
       "ok": "Działa",
-      "unknown": "Sterownik nie podaje stanu wejść, więc przewodu nie da się tu sprawdzić."
+      "unknown": "Sterownik nie podaje stanu wejść, więc przewodu nie da się tu sprawdzić.",
+      "picture": "Krokodylek na frezie, płytka z dala od niego i dotykająca go",
+      "open": "SONDA · otwarta",
+      "closed": "SONDA · zwarta",
+      "before": "przed dotknięciem",
+      "after": "płytka dotyka frezu",
+      "touch": "dotknij"
     },
     "position": {
       "clipOn": "Wejście sondy świeci: płytka dotyka freza albo przewód jest zwarty. Usuń to przed pomiarem.",
@@ -1468,6 +1475,23 @@
       "xRight": "Prawy bok (X)",
       "yFront": "Przedni bok (Y)",
       "yBack": "Tylny bok (Y)"
-    }
+    },
+    "stage": {
+      "label": "{{n}} · {{name}}",
+      "search": "szukanie",
+      "measure": "dokładny pomiar",
+      "zero": "zapis zera"
+    },
+    "cycle": {
+      "pick": "Kliknij pole, aby zobaczyć, gdzie jest używane",
+      "maxZ": "Szybki zjazd: maksymalna droga szukania",
+      "fast": "Szybki zjazd do styku",
+      "retract": "Styk · odjazd przed pomiarem",
+      "slow": "Wolny, dokładny pomiar",
+      "plateThickness": "Zapis zera: grubość płytki pod stykiem",
+      "lift": "Powrót nad płytkę",
+      "zeroSum": "Z0 = styk − {{t}}"
+    },
+    "z0": "Z0"
   }
 }

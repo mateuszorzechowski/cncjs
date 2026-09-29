@@ -1406,7 +1406,8 @@
       "retract": "Back-off",
       "fast": "Fast touch",
       "slow": "Slow touch",
-      "paperThickness": "Paper thickness"
+      "paperThickness": "Paper thickness",
+      "lift": "Lift after measuring"
     },
     "step": {
       "method": "Method",
@@ -1421,7 +1422,13 @@
       "waiting": "Waiting for a touch",
       "touching": "Touching",
       "ok": "Works",
-      "unknown": "The controller does not report its inputs, so the wire cannot be checked here."
+      "unknown": "The controller does not report its inputs, so the wire cannot be checked here.",
+      "picture": "The clip on the tool, and the plate apart from it and touching it",
+      "open": "PROBE · open",
+      "closed": "PROBE · closed",
+      "before": "before the touch",
+      "after": "plate touching the tool",
+      "touch": "touch"
     },
     "position": {
       "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",
@@ -1468,6 +1475,23 @@
       "xRight": "Right side (X)",
       "yFront": "Front side (Y)",
       "yBack": "Back side (Y)"
-    }
+    },
+    "stage": {
+      "label": "{{n}} · {{name}}",
+      "search": "finding",
+      "measure": "measuring",
+      "zero": "setting zero"
+    },
+    "cycle": {
+      "pick": "Pick a field to see where its figure is used",
+      "maxZ": "Fast approach: the furthest it looks for the plate",
+      "fast": "Fast approach to the touch",
+      "retract": "Touch · back off before measuring",
+      "slow": "Slow, exact measurement",
+      "plateThickness": "Zero: the plate’s thickness under the touch",
+      "lift": "Up over the plate",
+      "zeroSum": "Z0 = touch − {{t}}"
+    },
+    "z0": "Z0"
   }
 }
