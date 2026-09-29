@@ -233,7 +233,7 @@
       "what": "The work zero is the point a program counts from. Zeroing puts it where the tool is standing — usually after jogging down onto the corner of the stock.",
       "moves": "The machine does not move. Only the work reading changes; the machine position stays what it was.",
       "system": "The panel sends G10 L20 P<n>, where <n> is the active coordinate system: G54 is 1, G59 is 6. It will not guess that number — zeroing the wrong system gives no sign at all, and shows up when a tool moves to the wrong place under power.",
-      "choose": "The chips beside the title switch the coordinate system the machine works in (G54–G57). Switching moves nothing and writes nothing to the controller's memory — each system keeps its own zero. A reset puts Grbl back in G54.",
+      "choose": "The keys under the readings switch the coordinate system the machine works in (G54–G59). Switching moves nothing and writes nothing to the controller's memory — each system keeps its own zero. A reset puts Grbl back in G54.",
       "dead": "The buttons are dimmed for two reasons: the controller has not reported a coordinate system, or the machine is in alarm — in alarm the server drops every G-code line before it reaches the cable."
     },
     "x": "Zero X",
