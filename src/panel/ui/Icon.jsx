@@ -89,6 +89,12 @@ const GLYPHS = {
   // The machine's own reach, which is a wall, so it is drawn closed.
   machine: <path d="M4 5.5 20 5.5 20 18.5 4 18.5Z" />,
 
+  /*
+   * The layers as one button: three sheets stacked in perspective, the head
+   * of the group on a tablet's folding column (`IconBar`).
+   */
+  layers: <path d="M12 4 20 8 12 12 4 8ZM4 12 12 16 20 12M4 16 12 20 20 16" />,
+
   // A zero somebody set: the arms, and a dot on the point they were set at.
   axes: (
     <>

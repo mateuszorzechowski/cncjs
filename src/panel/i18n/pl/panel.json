@@ -180,6 +180,7 @@
   },
   "stage": {
     "view": "Rzut",
+    "options": "Widok",
     "frame": "Kadr",
     "fit": "Wypełnij kadr obiektem",
     "layers": "Warstwy",

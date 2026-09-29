@@ -139,4 +139,40 @@ export const fitWithRulers = (camera, box, direction, rulerPixels) => {
   return target;
 };
 
+/**
+ * The frame made smaller by what stands over the drawing, and the drawing
+ * centred in what is left (review note, 2026-09-29: *"kadr wyśrodkowany ale
+ * z uwzględnieniem przycisków z boku i na dole"*).
+ *
+ * `insets` are pixels the options column, the go-to readout and the phone's
+ * buttons take from each edge of a canvas `width` × `height`. The fit filled
+ * the whole canvas; this zooms out by what the free rectangle lacks and slides
+ * the camera across its own plane, so the middle of the drawing lands in the
+ * middle of that rectangle. An orthographic camera is a pixel per `1 / zoom`
+ * — which is how a shift on screen becomes one in the world. Returns the
+ * point looked at, moved with the camera.
+ */
+export const makeRoom = (camera, target, { width, height }, insets = {}) => {
+  const { top = 0, right = 0, bottom = 0, left = 0 } = insets;
+  const freeWidth = width - left - right;
+  const freeHeight = height - top - bottom;
+  if (!(top || right || bottom || left) || freeWidth <= 0 || freeHeight <= 0) {
+    return target;
+  }
+  camera.zoom *= Math.min(freeWidth / width, freeHeight / height);
+  camera.updateProjectionMatrix();
+
+  camera.updateMatrixWorld();
+  const across = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+  // The camera moves the opposite way to where the drawing should go.
+  const shift = across.multiplyScalar((right - left) / 2 / camera.zoom)
+    .add(up.multiplyScalar((top - bottom) / 2 / camera.zoom));
+  camera.position.add(shift);
+  const moved = target.clone().add(shift);
+  camera.lookAt(moved);
+  camera.updateMatrixWorld();
+  return moved;
+};
+
 export default fitToBounds;

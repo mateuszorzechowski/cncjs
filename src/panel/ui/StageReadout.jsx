@@ -1,4 +1,5 @@
 import Icon from './Icon';
+import { useIsWide } from './shell';
 import { t } from '../i18n';
 import { useUnits } from './units';
 
@@ -78,43 +79,54 @@ const Row = ({ point, className }) => {
   );
 };
 
+/*
+ * Its two buttons at a finger's size wherever there is no pointer — a tablet
+ * and a phone (review note, 2026-09-29: *"te przyciski też większe"*), as the
+ * options column is. `data-stage-inset`: it stands on the drawing's bottom
+ * edge, and the frame keeps clear of it (`scene/insets`).
+ */
 const StageReadout = ({
   hover, point, onGo, canGo, note, clickDrives, onClickDrives, offset,
-}) => (
-  <div className="absolute bottom-2 left-2 flex items-center gap-2 rounded-ctl bg-wash py-1 pl-2 pr-1">
-    <span className="flex flex-col gap-1">
-      <Row point={inWork(hover, offset)} className="text-mut" />
-      {/* The weight is constant and only the colour changes: switching to
-        * semibold when a point appeared altered the line's metrics and nudged
-        * the buttons down by six pixels. */}
-      <Row point={inWork(point, offset)} className={`font-semibold ${point ? 'text-ink' : 'text-mut'}`} />
-    </span>
-    <button
-      type="button"
-      onClick={onClickDrives}
-      aria-pressed={clickDrives}
-      aria-label={t('stage.clickDrives')}
-      title={t(clickDrives ? 'stage.clickDrivesOn' : 'stage.clickDrivesOff')}
-      className={[
-        'flex size-7 shrink-0 items-center justify-center rounded-ctl border transition-colors',
-        clickDrives
-          ? 'border-acc bg-acc text-white'
-          : 'border-line bg-wash text-ink hover:border-acc hover:text-acc',
-      ].join(' ')}
-    >
-      <Icon name="cursor" className="size-4" />
-    </button>
-    <button
-      type="button"
-      onClick={onGo}
-      disabled={!canGo}
-      aria-label={t('stage.goToPoint')}
-      title={note || t('stage.goToPointNote')}
-      className="flex size-7 shrink-0 items-center justify-center rounded-ctl border border-line bg-wash text-ink transition-colors hover:border-acc hover:text-acc disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink"
-    >
-      <Icon name="goPoint" className="size-4" />
-    </button>
-  </div>
-);
+}) => {
+  const large = !useIsWide();
+  const key = large ? 'size-11' : 'size-7';
+  const glyph = large ? 'size-5' : 'size-4';
+  return (
+    <div data-stage-inset="bottom" className="absolute bottom-2 left-2 flex items-center gap-2 rounded-ctl bg-wash py-1 pl-2 pr-1">
+      <span className="flex flex-col gap-1">
+        <Row point={inWork(hover, offset)} className="text-mut" />
+        {/* The weight is constant and only the colour changes: switching to
+          * semibold when a point appeared altered the line's metrics and nudged
+          * the buttons down by six pixels. */}
+        <Row point={inWork(point, offset)} className={`font-semibold ${point ? 'text-ink' : 'text-mut'}`} />
+      </span>
+      <button
+        type="button"
+        onClick={onClickDrives}
+        aria-pressed={clickDrives}
+        aria-label={t('stage.clickDrives')}
+        title={t(clickDrives ? 'stage.clickDrivesOn' : 'stage.clickDrivesOff')}
+        className={[
+          `flex ${key} shrink-0 items-center justify-center rounded-ctl border transition-colors`,
+          clickDrives
+            ? 'border-acc bg-acc text-white'
+            : 'border-line bg-wash text-ink hover:border-acc hover:text-acc',
+        ].join(' ')}
+      >
+        <Icon name="cursor" className={glyph} />
+      </button>
+      <button
+        type="button"
+        onClick={onGo}
+        disabled={!canGo}
+        aria-label={t('stage.goToPoint')}
+        title={note || t('stage.goToPointNote')}
+        className={`flex ${key} shrink-0 items-center justify-center rounded-ctl border border-line bg-wash text-ink transition-colors hover:border-acc hover:text-acc disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink`}
+      >
+        <Icon name="goPoint" className={glyph} />
+      </button>
+    </div>
+  );
+};
 
 export default StageReadout;

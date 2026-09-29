@@ -180,6 +180,7 @@
   },
   "stage": {
     "view": "View",
+    "options": "View",
     "frame": "Frame",
     "fit": "Fit the object in the frame",
     "layers": "Layers",

@@ -217,6 +217,11 @@ test.describe('panel, disconnected', () => {
     const layers = cncjs.page.getByRole('group', { name: 'Warstwy' });
     await expect(layers).toBeVisible();
 
+    // At this height (1280 × 720) the tablet's column of large keys folds:
+    // the layers are one key until it is tapped, and then the views fold.
+    await layers.getByRole('button', { name: 'Warstwy', exact: true }).click();
+    await expect(cncjs.page.getByRole('group', { name: 'Rzut' }).getByRole('button')).toHaveCount(1);
+
     // No program is loaded and no controller has reported a travel or a
     // coordinate system, so there is nothing these could draw. A button that
     // looked pressable here would draw nothing and say nothing about why.
@@ -592,6 +597,28 @@ test.describe('panel, disconnected', () => {
     await openPanel(cncjs.page, 'pl');
     await expect(rail(cncjs.page)).toBeVisible();
 
+    cncjs.expectNoPageErrors();
+  });
+});
+
+test.describe('the 3D view\'s options on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  // Mateusz, 2026-09-29: on a phone a sheet, on a tablet bigger buttons.
+  test('are one button on the drawing that opens them, named, in a sheet', async ({ cncjs }) => {
+    const { page } = cncjs;
+    await page.goto('/panel/path?lng=pl', { waitUntil: 'domcontentloaded' });
+
+    // No column of glyphs: the views are not on the drawing itself.
+    await expect(page.getByRole('button', { name: 'GÓRA', exact: true })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Widok' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Widok' });
+    await expect(sheet.getByRole('button', { name: 'GÓRA' })).toBeVisible();
+
+    // A view is where you want to look, so choosing one closes the sheet.
+    await sheet.getByRole('button', { name: 'GÓRA' }).click();
+    await expect(sheet).toHaveCount(0);
     cncjs.expectNoPageErrors();
   });
 });
