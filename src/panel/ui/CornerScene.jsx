@@ -46,6 +46,84 @@ const ANCHORS = {
 
 const Contact = ({ at }) => <circle cx={at[0]} cy={at[1]} r={4.5} className="fill-amb" />;
 
+/*
+ * Dimensions, the Z plate's style (review note, 2026-09-29: *"nie pokazujesz
+ * na animacji odległości, grubości jak dla płytki Z"*): extension lines, and
+ * the arrows pointing in — from outside where the gap is too small for them
+ * to fit between.
+ */
+// An arrowhead with its tip at (x, y), pointing along (dx, dy).
+const Head = ({ x, y, dx = 0, dy = 0 }) => (
+  <path
+    d={`M${x - dx * 9 - dy * 5} ${y - dy * 9 - dx * 5} L${x} ${y} L${x - dx * 9 + dy * 5} ${y - dy * 9 + dx * 5} Z`}
+    className="fill-acc"
+  />
+);
+
+/** Between two heights `top` and `bottom` at `x`, extension lines from `from` to `to`. */
+const Vertical = ({ x, top, bottom, from, to }) => {
+  const inside = bottom - top > 24;
+  return (
+    <>
+      <path d={`M${from} ${top} H${to} M${from} ${bottom} H${to}`} className="stroke-acc" fill="none" strokeWidth={1} />
+      {inside ? (
+        <>
+          <path d={`M${x} ${top + 9} V${bottom - 9}`} className="stroke-acc" strokeWidth={2} />
+          <Head x={x} y={top} dy={-1} />
+          <Head x={x} y={bottom} dy={1} />
+        </>
+      ) : (
+        <>
+          <path d={`M${x} ${top - 18} V${top} M${x} ${bottom} V${bottom + 18}`} className="stroke-acc" strokeWidth={2} />
+          <Head x={x} y={top} dy={1} />
+          <Head x={x} y={bottom} dy={-1} />
+        </>
+      )}
+    </>
+  );
+};
+
+/** Between two places `left` and `right` across at `y`, extension lines from `from` to `to`. */
+const Horizontal = ({ y, left, right, from, to }) => {
+  const inside = right - left > 24;
+  return (
+    <>
+      <path d={`M${left} ${from} V${to} M${right} ${from} V${to}`} className="stroke-acc" fill="none" strokeWidth={1} />
+      {inside ? (
+        <>
+          <path d={`M${left + 9} ${y} H${right - 9}`} className="stroke-acc" strokeWidth={2} />
+          <Head x={left} y={y} dx={-1} />
+          <Head x={right} y={y} dx={1} />
+        </>
+      ) : (
+        <>
+          <path d={`M${left - 18} ${y} H${left} M${right} ${y} H${right + 18}`} className="stroke-acc" strokeWidth={2} />
+          <Head x={left} y={y} dx={1} />
+          <Head x={right} y={y} dx={-1} />
+        </>
+      )}
+    </>
+  );
+};
+
+/*
+ * Each figure's dimension, drawn for front-left in its view's own units and
+ * mirrored with the corner: from above the plate's walls stand 100–110 and
+ * 210–220 about a work edged at 110 and 210; from the side its top is at
+ * 150, the work's at 170.
+ */
+const DIMENSIONS = {
+  cornerThickness: ['side', () => <Vertical x={204} top={150} bottom={170} from={192} to={214} />],
+  depth: ['side', () => <Vertical x={36} top={150} bottom={186} from={28} to={100} />],
+  lift: ['side', () => <Vertical x={176} top={110} bottom={150} from={150} to={186} />],
+  retract: ['side', () => <Vertical x={176} top={142} bottom={150} from={150} to={186} />],
+  clear: ['top', () => <Horizontal y={150} left={60} right={145} from={142} to={158} />],
+  wallX: ['top', () => <Horizontal y={236} left={100} right={110} from={222} to={244} />],
+  maxXY: ['top', () => <Horizontal y={236} left={100} right={110} from={222} to={244} />],
+  wallY: ['top', () => <Vertical x={206} top={210} bottom={220} from={192} to={214} />],
+  toolDiameter: ['top', ({ at }) => <Horizontal y={at.top[1] - 22} left={at.top[0] - 10} right={at.top[0] + 10} from={at.top[1] - 28} to={at.top[1] - 6} />],
+};
+
 const Badge = ({ x, y, text }) => (
   <g>
     <rect x={x} y={y} width={text.length * 8 + 18} height={24} rx={4} className="fill-accS stroke-acc" strokeWidth={1.5} />
@@ -78,6 +156,7 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
   const hatch = `hatch-${id}`;
   const touch = at.touch;
   const shown = badge ? placed(badge, flipX, flipY) : null;
+  const [dimView, Dimension] = (badge && DIMENSIONS[badge.name]) || [];
 
   return (
     <svg viewBox="0 0 440 446" role="img" aria-label={label} className={`block ${className}`}>
@@ -99,6 +178,7 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
           </g>
           {touch ? <Contact at={touch.top} /> : null}
           {at.zero ? <path d="M102 210 H118 M110 202 V218" className="stroke-acc" strokeWidth={2} /> : null}
+          {dimView === 'top' ? <Dimension at={at} /> : null}
         </g>
         {at.zero ? (
           <text x={cornerX + (flipX ? 14 : -14)} y={cornerY + (flipY ? -10 : 22)} textAnchor={flipX ? START : END} className="fill-acc font-num text-cap font-semibold">
@@ -120,7 +200,7 @@ const CornerScene = ({ corner, at, badge = null, label, className = '' }) => {
             <path d={BIT} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" />
           </g>
           {touch?.side ? <Contact at={touch.side} /> : null}
-          {at.zero ? <path d="M110 170 H410 M110 120 V230" className="stroke-acc" strokeWidth={2} strokeDasharray="5 4" /> : null}
+          {dimView === 'side' ? <Dimension at={at} /> : null}
         </g>
         {at.zero ? (
           <>

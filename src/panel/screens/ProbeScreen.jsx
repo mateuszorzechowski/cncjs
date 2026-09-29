@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import FadeScroller from '../ui/FadeScroller';
 import Notice from '../ui/Notice';
 import ProbePicture from '../ui/ProbePicture';
 import ZPlatePosition from '../ui/ZPlatePosition';
@@ -231,10 +232,20 @@ const ProbeScreen = ({ machine }) => {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-gap">
       {choosing ? null : track}
-      <Card scrolls label={choosing ? t('probe.title') : null} className="min-h-0 flex-1" bodyClassName="gap-3 pt-1">
-        {body}
-        {foot}
-      </Card>
+      {/*
+        * The card scrolls whole, its top edge too, and fades into the page as
+        * it goes under the steps — an open shadow, the Diagnostyka screen's —
+        * rather than its contents sliding under its own standing edge
+        * (review note, 2026-09-29: *"na górze cień otwarty"*).
+        */}
+      <FadeScroller>
+        <div className="flex min-h-full flex-col">
+          <Card label={choosing ? t('probe.title') : null} className="flex-1" bodyClassName="gap-3">
+            {body}
+            {foot}
+          </Card>
+        </div>
+      </FadeScroller>
     </div>
   );
 };
