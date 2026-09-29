@@ -2741,6 +2741,23 @@ class GrblController {
           }
 
           this.command('gcode', wcs);
+
+          /*
+           * Said at once, not after the next `$G`. The chips waited for the
+           * parser state, asked at most every half second and passed on at the
+           * next tick, and a press took the better part of a second to light
+           * (review note, 2026-09-29: *"czemu przełączanie trwa tak wolno?"*).
+           * Idle and out of alarm — the only case this line is sent in — Grbl
+           * takes a G54-G59 without fail; the next `$G` confirms it, and would
+           * put it right if it did not.
+           */
+          const { parserstate } = this.runner.state;
+          this.runner.state = {
+            ...this.runner.state,
+            parserstate: { ...parserstate, modal: { ...parserstate.modal, wcs } },
+          };
+          this.state = this.runner.state;
+          this.emit('controller:state', GRBL, this.state);
         },
         /**
          * Back to the work zero, Z first, without crossing the work at depth.
