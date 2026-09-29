@@ -5,7 +5,8 @@ import ConsoleRow from '../ui/ConsoleRow';
 import FadeScroller from '../ui/FadeScroller';
 import MdiHelp from '../ui/MdiHelp';
 import { useHeaderHelp } from '../ui/headerSlot';
-import { useIsWide } from '../ui/shell';
+import MdiSheet from '../ui/MdiSheet';
+import { useIsPhone, useIsWide } from '../ui/shell';
 import MdiLine from '../editor/MdiLine';
 import { suggestions } from '../editor/assist';
 import { fetchWords } from '../editor/words';
@@ -39,6 +40,9 @@ const MdiScreen = ({ machine }) => {
   const { connected, held, alarmed } = machine;
   // No pointer below a PC's width: the suggestions at a finger's size.
   const wide = useIsWide();
+  // On a phone the line is typed in a sheet (`MdiSheet`).
+  const phone = useIsPhone();
+  const [typing, setTyping] = useState(false);
   const lines = useConsoleLines();
   const [text, setText] = useState('');
   const [history, setHistory] = useState([]);
@@ -120,6 +124,21 @@ const MdiScreen = ({ machine }) => {
 
       {note ? <p className="m-0 shrink-0 text-note text-mut">{note}</p> : null}
 
+      {phone ? (
+        /*
+         * A phone shows the line as a field that opens the sheet: typed
+         * there, with the last commands and the suggestions above it.
+         */
+        <button
+          type="button"
+          disabled={!canSend}
+          onClick={() => setTyping(true)}
+          aria-label={t('mdi.line')}
+          className={`flex h-chiph shrink-0 items-center rounded-ctl border border-line bg-field px-3 text-left font-num text-note disabled:opacity-45 ${text ? 'text-ink' : 'text-mut'}`}
+        >
+          {text || t('mdi.placeholder')}
+        </button>
+      ) : (
       <div className="flex shrink-0 gap-2">
         <MdiLine
           value={text}
@@ -136,6 +155,20 @@ const MdiScreen = ({ machine }) => {
           {t('mdi.send')}
         </Button>
       </div>
+      )}
+
+      {typing && phone ? (
+        <MdiSheet
+          value={text}
+          onChange={setText}
+          onSend={send}
+          onWalk={walk}
+          help={help}
+          history={history}
+          canSend={canSend}
+          onClose={() => setTyping(false)}
+        />
+      ) : null}
 
       {helping ? <MdiHelp onClose={() => setHelping(false)} /> : null}
     </Card>

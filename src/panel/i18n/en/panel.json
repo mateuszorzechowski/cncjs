@@ -322,6 +322,11 @@
       "dismiss": "Closes the suggestions",
       "sendButton": "Sends the line, as Enter does",
       "clearButton": "Empties the console on this device; the journal keeps everything"
+    },
+    "sheet": {
+      "recent": "Last commands",
+      "suggestions": "Suggestions",
+      "empty": "Type a G-code line or a $ command. Suggestions appear here as you type, and the lines you send are kept here to use again."
     }
   },
   "settings": {
