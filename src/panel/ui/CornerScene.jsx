@@ -12,7 +12,8 @@ import { t } from '../i18n';
  *
  * Each view has room round it for the tool on every side, so a back corner —
  * whose Y probe comes from above the work — is not cut off (review note, the
- * same day). `badge`, `{ name, text }`, is a figure's value where it acts.
+ * same day). `badge`, `{ name, text }`, is a figure's value where it acts;
+ * `note`, the same, for a second value — a move's bound by its dimension.
  */
 
 // SVG's words for text anchored at its start and its end, and for the hatching.
@@ -35,7 +36,7 @@ const WALL_X_AT = [['top', 124, 226], ['side', 30, 212]];
 
 const ANCHORS = {
   fast: [['side', 190, 84]],
-  maxZ: [['side', 52, 118]],
+  maxZ: [['side', 4, 118]],
   slow: [['side', 190, 84]],
   retract: [['side', 190, 150]],
   lift: [['side', 190, 118]],
@@ -215,7 +216,9 @@ const placed = (badge, flipX, flipY) => (ANCHORS[badge.name] || []).map(([view, 
   return { view, x: mx, y: my };
 });
 
-const CornerScene = ({ corner, at, badge = null, moves = true, label, className = '' }) => {
+const CornerScene = ({
+  corner, at, badge = null, note = null, moves = true, label, className = '',
+}) => {
   const id = useId().replace(/:/g, '');
   const { flipX, flipY } = cornerSides(corner);
   // Mirrors, in the scaled views' own coordinates: the work's middle is x 255,
@@ -228,7 +231,11 @@ const CornerScene = ({ corner, at, badge = null, moves = true, label, className 
   const hatch = `hatch-${id}`;
   const touch = at.touch;
   const shown = badge ? placed(badge, flipX, flipY) : [];
-  const badges = (view) => shown.filter((one) => one.view === view).map((one) => <Badge key={view} x={one.x} y={one.y} text={badge.text} />);
+  const noted = note ? placed(note, flipX, flipY) : [];
+  const badges = (view) => [
+    ...shown.filter((one) => one.view === view).map((one) => <Badge key={`badge-${view}`} x={one.x} y={one.y} text={badge.text} />),
+    ...noted.filter((one) => one.view === view).map((one) => <Badge key={`note-${view}`} x={one.x} y={one.y} text={note.text} />),
+  ];
   const dimensions = (badge && DIMENSIONS[badge.name]) || [];
   const marks = (view) => dimensions.filter(([where]) => where === view).map(([, Mark], k) => <Mark key={k} at={at} />);
 

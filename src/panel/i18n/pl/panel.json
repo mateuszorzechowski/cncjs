@@ -1500,7 +1500,8 @@
       "plateThickness": "Zapis zera: grubość płytki pod stykiem",
       "lift": "Powrót nad płytkę",
       "zeroSum": "Z0 = styk − {{t}}",
-      "alarm": "ALARM:5 · brak dotyku"
+      "alarm": "ALARM:5 · brak dotyku",
+      "upTo": "maks. {{v}}"
     },
     "z0": "Z0",
     "readout": {

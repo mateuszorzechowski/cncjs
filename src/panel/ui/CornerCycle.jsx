@@ -11,6 +11,9 @@ import { t } from '../i18n';
 
 const AXES = CORNER_STAGES.map(({ axis }) => axis);
 
+// The figure that bounds a move's way: the fast touch goes as far as the travel limit.
+const BOUNDS = { fast: 'maxZ' };
+
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 
 /**
@@ -42,6 +45,9 @@ const CornerCycle = ({
   const badge = texts && shownField && texts[shownField] !== undefined
     ? { name: shownField, text: figureSaid(shownField, texts[shownField], units.rule) }
     : null;
+  // A move whose way is bounded by another figure says that bound by its dimension (review note, 2026-09-30).
+  const bound = texts && BOUNDS[shownField];
+  const note = bound ? { name: bound, text: t('probe.cycle.upTo', { v: figureSaid(bound, texts[bound] ?? '', units.rule) }) } : null;
   let readout = null;
   if (texts) {
     const mm = Object.fromEntries(['wallX', 'wallY', 'cornerThickness'].map((name) => [name, inMm(numberOf(texts[name]), units.rule) ?? 0]));
@@ -51,7 +57,7 @@ const CornerCycle = ({
   return (
     <div className={`flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel ${className}`}>
       <CycleStages stage={at.stage} names={AXES} />
-      <CornerScene corner={corner} at={at} badge={badge} moves={!STILL_FIGURES.includes(field)} label={t('probe.method.corner')} className="w-full" />
+      <CornerScene corner={corner} at={at} badge={badge} note={note} moves={!STILL_FIGURES.includes(field)} label={t('probe.method.corner')} className="w-full" />
       {readout ? (
         <div className={`flex flex-wrap items-baseline justify-center gap-x-4 gap-y-1 border-t border-line px-2 py-2 font-num ${readout.after ? 'bg-accS text-acc' : 'text-ink'}`}>
           <span className="text-cap text-mut">

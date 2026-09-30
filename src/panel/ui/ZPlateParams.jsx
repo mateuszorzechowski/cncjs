@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import CycleStages from './CycleStages';
 import TextField from './TextField';
-import ZPlateScene from './ZPlateScene';
+import ZPlateScene, { badgeWidth } from './ZPlateScene';
 import useTicker from './useTicker';
 import { FIELDS, fieldUnit, figureSaid } from '../machine/probe';
 import { FIGURES, cycleAt, readoutAt, sceneAt } from '../machine/probeCycle';
@@ -13,6 +13,9 @@ import { t } from '../i18n';
 const figureOnly = (text) => text.replace(/[^0-9.,]/g, '');
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
+
+// The figure that bounds a move's way: the fast touch goes as far as the travel limit.
+const BOUNDS = { fast: 'maxZ' };
 
 // A field the server would not take, framed in red.
 const BAD = 'bad';
@@ -58,6 +61,11 @@ const ZPlateParams = ({ fields, texts, onText, bad, wcs, intro = null }) => {
   const scene = picked ? sceneAt(picked, ms) : whole.scene;
   // The value of the part shown, and its dimension where the design draws one.
   const badge = { x: figure.badge[0], y: figure.badge[1], text: figureSaid(shown, texts[shown] ?? '', units.rule) };
+  // A move whose way is bounded by another figure says that bound by its dimension (review note, 2026-09-30).
+  const bound = BOUNDS[shown];
+  const noteText = bound ? t('probe.cycle.upTo', { v: figureSaid(bound, texts[bound] ?? '', units.rule) }) : '';
+  // Ending short of the dimension's line at x 196, as wide as its words are.
+  const note = bound ? { x: 188 - badgeWidth(noteText), y: 140, text: noteText } : null;
   // In the whole cycle, the tool's Z in the system before and after the zero is written.
   const mm = Object.fromEntries(['retract', 'lift', 'plateThickness'].map((name) => [name, inMm(numberOf(texts[name]), units.rule) ?? 0]));
   const read = picked ? null : readoutAt(shown, scene.gap, mm);
@@ -75,7 +83,7 @@ const ZPlateParams = ({ fields, texts, onText, bad, wcs, intro = null }) => {
       <div className="flex min-w-0 flex-col gap-3 self-start">
       <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
         <CycleStages stage={figure?.stage} />
-        <ZPlateScene {...scene} marks={shown} badge={badge} readout={readout} label={t('probe.method.z')} className="w-full" />
+        <ZPlateScene {...scene} marks={shown} badge={badge} note={note} readout={readout} label={t('probe.method.z')} className="w-full" />
         <div className="flex flex-col items-center justify-center gap-1 border-t border-line px-2 py-2 text-center">
           <span className="text-note font-semibold text-ink">{t(CAPTIONS[shown])}</span>
           <span className="font-num text-cap text-mut">{lineOf(shown, texts)}</span>

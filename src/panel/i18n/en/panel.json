@@ -1500,7 +1500,8 @@
       "plateThickness": "Zero: the plate’s thickness under the touch",
       "lift": "Up over the plate",
       "zeroSum": "Z0 = touch − {{t}}",
-      "alarm": "ALARM:5 · no touch"
+      "alarm": "ALARM:5 · no touch",
+      "upTo": "up to {{v}}"
     },
     "z0": "Z0",
     "readout": {

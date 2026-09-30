@@ -10,7 +10,8 @@ import { t } from '../i18n';
  * Everything that moves comes in: `gap`, the tool's height over the plate in
  * the drawing's pixels, and `shift` how far to the side of it; `arrow`, the move under way; `contact`, the amber dot
  * of a touch; `marks`, which figure's dimension is drawn, with `zero` how far
- * the Z0 line has come in; `badge`, the figure's value where the design puts
+ * the Z0 line has come in; `note`, a second value — a distance by its
+ * dimension; `badge`, the figure's value where the design puts
  * it.
  */
 
@@ -56,9 +57,12 @@ const MARKS = {
   ),
 };
 
+// A badge as wide as its words in the drawing's figures face.
+export const badgeWidth = (text) => text.length * 8.5 + 18;
+
 const Badge = ({ x, y, text }) => (
   <g>
-    <rect x={x} y={y} width={text.length * 7 + 16} height={20} rx={4} className="fill-accS stroke-acc" strokeWidth={1.5} />
+    <rect x={x} y={y} width={badgeWidth(text)} height={20} rx={4} className="fill-accS stroke-acc" strokeWidth={1.5} />
     <text x={x + 8} y={y + 14} className="fill-acc font-num text-cap font-semibold">{text}</text>
   </g>
 );
@@ -93,7 +97,7 @@ const Alarm = () => {
 };
 
 const ZPlateScene = ({
-  gap = 84, shift = 0, arrow = null, contact = false, marks = null, zero = 0, badge = null, readout = null, ghost = false, alarm = false,
+  gap = 84, shift = 0, arrow = null, contact = false, marks = null, zero = 0, badge = null, note = null, readout = null, ghost = false, alarm = false,
   label, className = '',
 }) => {
   const Mark = MARKS[marks];
@@ -120,6 +124,7 @@ const ZPlateScene = ({
       ) : null}
       {contact ? <circle cx={220} cy={PLATE_TOP} r={4.5} className="fill-amb" /> : null}
       {badge ? <Badge x={badge.x} y={badge.y} text={badge.text} /> : null}
+      {note ? <Badge x={note.x} y={note.y} text={note.text} /> : null}
       {readout ? <Readout {...readout} /> : null}
       {alarm ? <Alarm /> : null}
     </svg>
