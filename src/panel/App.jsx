@@ -15,7 +15,6 @@ import StatusSheet from './ui/StatusSheet';
 import RefusalNotice from './ui/RefusalNotice';
 import StateHelp from './ui/StateHelp';
 import NoHomingSheet from './ui/NoHomingSheet';
-import ProbeJogSheet from './ui/ProbeJogSheet';
 import { buildName, isUpdateReady, servedBuild, watchUpdate } from './machine/update';
 import { useAutoConnect } from './machine/autoConnect';
 import useScreen from './machine/useScreen';
@@ -163,14 +162,17 @@ const Panel = ({ machine, screen, onScreen }) => {
   // Not homed: the amber mark in the top bar and what it says (`NoHomingSheet`).
   const unhomed = machine.envelope?.placed === false;
   const [cautioning, setCautioning] = useState(false);
-  // A probe wizard waiting on the operator's hands, on any device: its jog, on a phone (`ProbeJogSheet`).
-  const [probeJogging, setProbeJogging] = useState(false);
+  /*
+   * A probe wizard, on this device or another, waiting on the operator's
+   * hands: on a phone, a way from any other screen to its step here (review
+   * notes, 2026-09-30: *"żeby szybko przejść do tej samej karty sondowania na
+   * telefonie, z otwartym arkuszem joga"*) — into place, with the jog open;
+   * the paper felt for, its measuring card, whose buttons are the jog
+   * (*"albo na jog, albo na ekran pomiaru, w zależności od sytuacji"*). The
+   * ask is taken once, so coming to the screen the usual way opens nothing.
+   */
+  const [jogAsk, setJogAsk] = useState(false);
   const probeWaits = Boolean(machine.probeStage);
-  useEffect(() => {
-    if (!probeWaits) {
-      setProbeJogging(false);
-    }
-  }, [probeWaits]);
   const Screen = SCREENS[screen];
 
   /*
@@ -215,7 +217,10 @@ const Panel = ({ machine, screen, onScreen }) => {
         caution={unhomed}
         onCaution={() => setCautioning(true)}
         help={screenHelp}
-        onProbeJog={phone && probeWaits ? () => setProbeJogging(true) : null}
+        onProbeJog={phone && probeWaits && screen !== 'probe' ? () => {
+          setJogAsk(machine.probeStage.step === 'position');
+          onScreen('probe');
+        } : null}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -385,7 +390,7 @@ const Panel = ({ machine, screen, onScreen }) => {
           <HeaderHelpProvider value={setScreenHelp}>
             <FooterSlotProvider value={setFooter}>
               {Screen
-                ? <Screen machine={machine} onGo={onScreen} />
+                ? <Screen machine={machine} onGo={onScreen} jogAsk={jogAsk} onJogAsked={() => setJogAsk(false)} />
                 : <Dashboard machine={machine} onGo={onScreen} />}
             </FooterSlotProvider>
           </HeaderHelpProvider>
@@ -410,7 +415,6 @@ const Panel = ({ machine, screen, onScreen }) => {
 
       {helping ? <StateHelp machine={machine} onClose={() => setHelping(false)} /> : null}
 
-      {probeJogging && probeWaits ? <ProbeJogSheet machine={machine} onClose={() => setProbeJogging(false)} /> : null}
       {cautioning && unhomed ? (
         <NoHomingSheet
           onSettings={() => {

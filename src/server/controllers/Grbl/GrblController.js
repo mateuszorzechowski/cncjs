@@ -240,9 +240,13 @@ class GrblController {
      * `{ method, options, step }`, `step` being `position` (the tool into
      * place) or `measure` (the paper felt for). Said by the device the wizard
      * is open on and sent to every device, so a phone can jog and go on from
-     * wherever it is (review note, 2026-09-30). A measurement starting ends it.
+     * wherever it is (review note, 2026-09-30). A measurement starting ends it,
+     * and so does the device the wizard was begun on going away
+     * (`probeStageSocket`) — its wizard went with it.
      */
     probeStage = null;
+
+    probeStageSocket = null;
 
     // Message Slot
     messageSlot = null;
@@ -2118,6 +2122,13 @@ class GrblController {
       this.sockets[socket.id] = undefined;
       delete this.sockets[socket.id];
 
+      // The wizard waiting on the operator was on this device: nobody is left to go on with it.
+      if (this.probeStage && this.probeStageSocket === socket.id) {
+        this.probeStage = null;
+        this.probeStageSocket = null;
+        this.emit('probe:stage', null);
+      }
+
       /*
        * And a held jog ends with the client, because nobody is left to let go.
        *
@@ -3080,14 +3091,24 @@ class GrblController {
           }
 
           this.probeStage = null;
+          this.probeStageSocket = null;
           this.emit('probe:stage', null);
           this.startProbe(method, options);
         },
-        /** Where the wizard waits on the operator's hands, for every device; null when it no longer does. */
+        /**
+         * Where the wizard waits on the operator's hands, for every device; null
+         * when it no longer does. `own`: said by the device the wizard was begun
+         * on, whose going away ends it.
+         */
         'probe:stage': () => {
           const [stage = null] = args;
           const known = stage && STRATEGIES[stage.method] && ['position', 'measure'].includes(stage.step);
           this.probeStage = known ? { method: stage.method, options: stage.options || {}, step: stage.step } : null;
+          if (!this.probeStage) {
+            this.probeStageSocket = null;
+          } else if (stage.own) {
+            this.probeStageSocket = this.commandSocket?.id ?? null;
+          }
           this.emit('probe:stage', this.probeStage);
         },
         /** Write the zero the last measurement found, into the system it was measured in. */

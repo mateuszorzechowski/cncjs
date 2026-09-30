@@ -1599,9 +1599,7 @@
       "side": "Z boku"
     },
     "jog": {
-      "title": "Sonda · {{method}}",
-      "open": "Jog sondy",
-      "where": "Jog i dalszy krok: ikona jogu u góry ekranu — działa z każdego ekranu telefonu."
+      "open": "Sonda czeka — jog"
     }
   }
 }

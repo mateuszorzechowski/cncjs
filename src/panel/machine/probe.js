@@ -182,10 +182,12 @@ export const saveProbe = async (texts, rule) => {
 
 /**
  * Tell every device where this wizard waits on the operator's hands —
- * `{ method, options, step }` — or, null, that it no longer does.
+ * `{ method, options, step }` — or, null, that it no longer does. `own`:
+ * this is the device the wizard was begun on, so the server ends the stage
+ * if it goes away.
  */
-export const sayProbeStage = (stage) => {
-  controller.command('probe:stage', stage);
+export const sayProbeStage = (stage, own = false) => {
+  controller.command('probe:stage', stage && own ? { ...stage, own: true } : stage);
 };
 
 export const startProbe = (method, options = {}) => {

@@ -277,6 +277,21 @@ describe('probe:stage', () => {
     expect(controller.probeStage).toBeNull();
   });
 
+  test('ends with the device the wizard was begun on, not with one that joined it', () => {
+    const { controller } = watched();
+
+    controller.commandSocket = { id: 'pc', emit: () => {} };
+    controller.command('probe:stage', { method: 'z', step: 'position', own: true });
+    controller.commandSocket = { id: 'phone', emit: () => {} };
+    controller.command('probe:stage', { method: 'z', step: 'position' });
+
+    controller.removeConnection({ id: 'phone' });
+    expect(controller.probeStage).toEqual({ method: 'z', options: {}, step: 'position' });
+    controller.removeConnection({ id: 'pc' });
+    expect(controller.probeStage).toBeNull();
+    expect(stages(controller).pop()).toBeNull();
+  });
+
   test('is said while a program runs: it reaches no machine', () => {
     expect(programRefusal('probe:stage', { workflow: 'running', firmware: 'Run' })).toBeNull();
   });

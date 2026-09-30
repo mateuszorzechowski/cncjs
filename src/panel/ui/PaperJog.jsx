@@ -19,11 +19,10 @@ const way = (axis, sign) => `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`;
  * The paper's measuring: the one axis the surface is felt on, a step at a
  * time towards it and away, where that axis stands now, and "here" — the
  * drag found. A step goes as the jog pad's do (`machine/jog`), in the units
- * shown; "here" is the method's start. `named` false in a sheet that says
- * the axis in its own title.
+ * shown; "here" is the method's start.
  */
 const PaperJog = ({
-  machine, edge, onHere, named = true, className = '',
+  machine, edge, onHere, className = '',
 }) => {
   const units = useUnits();
   const { axis, sign } = surfaceOf(edge);
@@ -48,7 +47,7 @@ const PaperJog = ({
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
       <div className="flex items-baseline justify-between gap-3 border-b border-line pb-2">
-        {named ? <span className="text-cap font-semibold uppercase tracking-[0.08em] text-mut">{t('probe.paper.jogTitle', { axis: axis.toUpperCase() })}</span> : <span />}
+        <span className="text-cap font-semibold uppercase tracking-[0.08em] text-mut">{t('probe.paper.jogTitle', { axis: axis.toUpperCase() })}</span>
         <span className="font-num text-lead font-semibold text-ink">{units.figure(at)}</span>
       </div>
       <span className="text-note text-mut">{t('probe.paper.toward')}</span>

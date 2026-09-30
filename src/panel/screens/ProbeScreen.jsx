@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
 import CornerChooser from '../ui/CornerChooser';
 import PaperChooser from '../ui/PaperChooser';
+import useProbeStage from '../ui/useProbeStage';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
@@ -12,7 +13,7 @@ import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, sayProbeStage, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
+  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
@@ -36,7 +37,7 @@ const CHOOSERS = { corner: CornerChooser, paper: PaperChooser };
  * (*"pamiętaj parametry, przypominaj"*). The travel limit among them is the
  * fence: a probe that touches nothing goes that far and stops in an alarm.
  */
-const ProbeScreen = ({ machine }) => {
+const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
   const units = useUnits();
   const phone = useIsPhone();
   const { probe } = machine;
@@ -48,6 +49,8 @@ const ProbeScreen = ({ machine }) => {
   const [texts, setTexts] = useState({});
   const [bad, setBad] = useState(null);
   const [touched, setTouched] = useState(false);
+  // The jog's sheet open, on a phone.
+  const [jogging, setJogging] = useState(false);
 
   useEffect(() => {
     fetchProbe().then(setKept).catch(() => setKept(null));
@@ -64,35 +67,25 @@ const ProbeScreen = ({ machine }) => {
   // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
   const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
 
-  /*
-   * Where this wizard waits on the operator's hands, said to every device, so
-   * a phone can jog and go on from any screen (review note, 2026-09-30) — and
-   * taken back only by the device that said it.
-   */
-  const waiting = step === 'position' || feeling ? step : null;
-  const stage = waiting ? JSON.stringify({ method: method.id, options: optionsFor(method, choice), step: waiting }) : null;
-  const said = useRef(false);
+  const owner = useProbeStage({
+    machine, method, choice, step, feeling, joined: Boolean(picked || probe),
+    onJoin: (stage) => {
+      const joined = methodOf(stage.method);
+      setPicked(stage.method);
+      if (joined?.choice) {
+        setChosen((now) => ({ ...now, [stage.method]: stage.options?.[joined.choice.option] }));
+      }
+      setLocal(stage.step);
+    },
+    onFollow: setLocal,
+  });
+  // The top bar's way here asks for the jog open.
   useEffect(() => {
-    if (stage) {
-      said.current = true;
-      sayProbeStage(JSON.parse(stage));
-    } else if (said.current) {
-      said.current = false;
-      sayProbeStage(null);
+    if (jogAsk) {
+      setJogging(true);
+      onJogAsked();
     }
-  }, [stage]);
-  useEffect(() => () => {
-    if (said.current) {
-      sayProbeStage(null);
-    }
-  }, []);
-  // Gone on from another device — the phone's Dalej: follow it.
-  const shared = machine.probeStage;
-  useEffect(() => {
-    if (shared && waiting && shared.method === method?.id && shared.step !== waiting) {
-      setLocal(shared.step);
-    }
-  }, [shared?.step, shared?.method]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jogAsk]);
 
   useEffect(() => {
     if (step === 'wire' && lit) {
@@ -102,6 +95,7 @@ const ProbeScreen = ({ machine }) => {
 
   const pick = (id) => {
     const uses = kept?.methods?.[id]?.fields ?? [];
+    owner.current = true;
     setPicked(id);
     setTexts(Object.fromEntries(uses.map((name) => [name, fieldText(kept.params[name], name, units.rule)])));
     setBad(null);
@@ -174,6 +168,8 @@ const ProbeScreen = ({ machine }) => {
           choice={choice}
           feeling={feeling}
           lit={lit}
+          jogging={jogging}
+          onJogging={setJogging}
           onBack={() => go(-1)}
           onNext={() => go(1)}
           onMeasure={measure}
