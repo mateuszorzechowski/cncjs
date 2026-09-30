@@ -1536,6 +1536,22 @@
       "lift": "Z · lift",
       "miss": "No plate: down to the limit"
     },
+    "paper": {
+      "coarse": "{{axis}} · approach in 1 mm steps",
+      "fine": "{{axis}} · 0.1 mm steps, the sheet still slides",
+      "here": "The sheet drags — “Here”",
+      "stop": "The hand stops, then lets go — the sheet lies flat",
+      "zero": "{{axis}}0 written",
+      "step1": "1 mm step",
+      "step01": "0.1 mm step",
+      "drag": "friction",
+      "held": "resists",
+      "stopped": "stop",
+      "loose": "loose",
+      "barCoarse": "coarse",
+      "barFine": "fine",
+      "byHand": "no machine move"
+    },
     "bar": {
       "measure": "measure",
       "zero": "zero"
@@ -1546,7 +1562,8 @@
       "reach": "Reach",
       "moves": "Moves",
       "tool": "Tool",
-      "measureAll": "Measuring · every axis"
+      "measureAll": "Measuring · every axis",
+      "paper": "Paper"
     },
     "play": {
       "pause": "Pause",

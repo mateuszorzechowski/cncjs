@@ -1536,6 +1536,22 @@
       "lift": "Z · odjazd w górę",
       "miss": "Brak płytki: zjazd do limitu"
     },
+    "paper": {
+      "coarse": "{{axis}} · dojazd krokiem 1 mm",
+      "fine": "{{axis}} · krok 0,1 mm, kartka jeszcze się przesuwa",
+      "here": "Kartka stawia opór — „Tu”",
+      "stop": "Ręka staje, potem puszcza — kartka leży płasko",
+      "zero": "Zapis zera {{axis}}0",
+      "step1": "krok 1 mm",
+      "step01": "krok 0,1 mm",
+      "drag": "tarcie",
+      "held": "opór",
+      "stopped": "stop",
+      "loose": "luźno",
+      "barCoarse": "zgrubnie",
+      "barFine": "dokładnie",
+      "byHand": "bez ruchu maszyny"
+    },
     "bar": {
       "measure": "pomiar",
       "zero": "zero"
@@ -1546,7 +1562,8 @@
       "reach": "Dojazd",
       "moves": "Przejazdy",
       "tool": "Frez",
-      "measureAll": "Pomiar · wszystkie osie"
+      "measureAll": "Pomiar · wszystkie osie",
+      "paper": "Kartka"
     },
     "play": {
       "pause": "Pauza",

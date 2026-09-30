@@ -12,7 +12,9 @@
 export const NS = 'non-scaling-stroke';
 export const DASH = '5 4';
 // A tag's face, named for what it marks.
-export const FACE = { plain: 'plain', hot: 'hot', rapid: 'rapid', alarm: 'alarm' };
+export const FACE = {
+  plain: 'plain', hot: 'hot', rapid: 'rapid', alarm: 'alarm', ink: 'ink', touch: 'touch', quiet: 'quiet',
+};
 
 /** Label and arrowhead sizes, in the drawing's units, for scale `k`. */
 // Arrowheads small on thin lines, every arrow alike (review note, 2026-09-30).
@@ -23,6 +25,10 @@ const TAG_FACES = {
   hot: { box: 'fill-accS stroke-acc', line: 1.5, text: 'fill-acc' },
   rapid: { box: 'fill-surf stroke-line', line: 1, text: 'fill-rapid' },
   alarm: { box: 'fill-redS stroke-red', line: 1.5, text: 'fill-red' },
+  // The jog's words, in the colour of its arrow; a touch's, and a state that is not one.
+  ink: { box: 'fill-surf stroke-line', line: 1, text: 'fill-ink' },
+  touch: { box: 'fill-surf stroke-line', line: 1, text: 'fill-grn' },
+  quiet: { box: 'fill-surf stroke-line', line: 1, text: 'fill-mut' },
 };
 
 // A figure's words a little under the drawing's, and lighter (review note, 2026-09-30).
@@ -124,6 +130,33 @@ export const Motion = ({
       <path d={line} className={stroke} fill="none" strokeWidth={1.25} vectorEffect={NS} strokeDasharray={rapid ? DASH : undefined} />
       <path d={tick} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />
       <Head x={v ? at : to} y={v ? to : at} dir={dir} size={size} className={fill} />
+    </g>
+  );
+};
+
+const DOWN = 'down';
+
+/*
+ * A jog, the operator's own move (paper proposal, 2026-09-30): solid in the
+ * text's colour, a tick where it set off and one every step since, `every`
+ * apart; down the drawing from `from` to `to` at `at`.
+ */
+export const Jog = ({
+  at, from, to, every = null, size,
+}) => {
+  const ticks = [];
+  if (every) {
+    for (let y = from; y < to - 1e-6; y += every) {
+      ticks.push(`M${at - 6} ${y} H${at + 6}`);
+    }
+  } else {
+    ticks.push(`M${at - 6} ${from} H${at + 6}`);
+  }
+  return (
+    <g>
+      <path d={`M${at} ${from} V${to - size.hh}`} className="stroke-ink" fill="none" strokeWidth={1.25} vectorEffect={NS} />
+      <path d={ticks.join(' ')} className="stroke-ink" fill="none" strokeWidth={1} vectorEffect={NS} />
+      <Head x={at} y={to} dir={DOWN} size={size} className="fill-ink" />
     </g>
   );
 };
