@@ -20,6 +20,13 @@ class SerialBridge {
     async start() {
         console.log('Grbl Simulator - Serial Bridge');
 
+        // Windows has no pty: the virtual port is one end of a com0com pair
+        // (e.g. COM20 <-> COM21); the bridge opens this end, cncjs the other.
+        if (/^COM\d+$/i.test(this.serialPath)) {
+            this.bridgeComPort();
+            return;
+        }
+
         // Check if socat is installed
         try {
             await this.checkSocat();
@@ -78,6 +85,25 @@ class SerialBridge {
         process.on('SIGTERM', () => {
             this.stop();
         });
+    }
+
+    bridgeComPort() {
+        const { SerialPort } = require('serialport');
+        const port = new SerialPort({ path: this.serialPath, baudRate: 115200 });
+        const socket = net.connect(this.tcpPort, 'localhost');
+
+        port.on('open', () => console.log(`Connected "${this.serialPath}" to localhost:${this.tcpPort}`));
+        port.on('data', (data) => socket.write(data));
+        socket.on('data', (data) => port.write(data));
+
+        const fail = (what) => (err) => {
+            console.error(`${what}: ${err ? err.message : 'closed'}`);
+            process.exit(1);
+        };
+        port.on('error', fail(this.serialPath));
+        port.on('close', fail(this.serialPath));
+        socket.on('error', fail(`localhost:${this.tcpPort}`));
+        socket.on('close', fail(`localhost:${this.tcpPort}`));
     }
 
     checkSocat() {
