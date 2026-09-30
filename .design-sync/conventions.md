@@ -53,7 +53,7 @@ all of it verified present:
 | States | amber `bg-amb` `bg-ambS` `text-ambT` `border-amb` (changed, warning); red `bg-red` `bg-redS` `text-red` (stop, error); green `bg-grn` `bg-grnS` `text-grn` (running, ok); `bg-mutS` |
 | Lines, radii | `border-line`, `rounded-ctl` (controls), `rounded-card` |
 | Spacing | `p-pad` (card), `gap-gap`, `gap-2` `gap-3` `gap-4` |
-| Sizes | `h-ctl` (a button), `h-chiph` (a chip/field), `w-full`, `w-side`, `w-[360px]`, `h-full`, `h-60`, `h-[340px]`, `h-[32rem]`, `max-w-[1180px]` |
+| Sizes | `h-ctl` (a button), `h-chiph` (a chip/field), `w-full`, `w-side`, `max-w-sm` `max-w-md` `max-w-lg` (with `w-full`: a phone-wide column), `h-full`, `h-60`, `h-[32rem]` |
 | Layout | `flex` `flex-col` `flex-1` `min-w-0` `items-center` `justify-between` `grid` `grid-cols-2` `grid-cols-3` |
 
 Colours are CSS custom properties defined on `:root` (light) and

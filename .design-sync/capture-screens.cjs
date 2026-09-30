@@ -53,7 +53,8 @@ const state = (activeState) => ({
 });
 
 // Each shot: the screen kept in localStorage, and optionally a settings tab
-// to open or a text to press (a file in the list).
+// to open, a text to press (a file in the list), or buttons to press in turn
+// (`clicks`, the probe wizard's steps).
 const SHOTS = [
   { name: 'dashboard', screen: 'dashboard' },
   { name: 'jog', screen: 'jog' },
@@ -66,6 +67,11 @@ const SHOTS = [
   { name: 'settings-controller', screen: 'settings', tab: 'Sterownik' },
   { name: 'settings-preferences', screen: 'settings', tab: 'Preferencje' },
   { name: 'settings-install', screen: 'settings', tab: 'Instalacja' },
+  // Sonda: the wizard's method cards, each method's Setup step, and the wire test.
+  { name: 'probe-method', screen: 'probe' },
+  { name: 'probe-z-setup', screen: 'probe', clicks: [/Płytka Z/] },
+  { name: 'probe-corner-setup', screen: 'probe', clicks: [/Narożnik XYZ/, 'Dalej'] },
+  { name: 'probe-z-wire', screen: 'probe', clicks: [/Płytka Z/, 'Dalej'] },
 ];
 
 const open = async (browser, device, shot) => {
@@ -122,6 +128,10 @@ const open = async (browser, device, shot) => {
   }
   if (shot.tab) {
     await page.getByRole('button', { name: shot.tab, exact: true }).first().click();
+  }
+  for (const name of shot.clicks || []) {
+    await page.getByRole('button', typeof name === 'string' ? { name, exact: true } : { name }).first().click();
+    await page.waitForTimeout(600);
   }
   // The scene draws on demand; give it and the fades a moment.
   await page.waitForTimeout(2500);

@@ -1,6 +1,7 @@
 import {
-  FIELDS, METHODS, failureKey, fieldText, fieldUnit, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, wizardStep,
+  METHODS, failureKey, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, wizardStep,
 } from '../probe';
+import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
 

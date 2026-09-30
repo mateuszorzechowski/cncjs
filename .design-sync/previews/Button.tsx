@@ -30,7 +30,7 @@ export const Disabled = () => (
 
 export const PairInSheet = () => (
   // Equal halves of a sheet's foot, as every confirmation lays them out.
-  <div className="flex w-[360px] gap-2">
+  <div className="flex w-full max-w-sm gap-2">
     <Button className="h-ctl flex-1">Anuluj</Button>
     <Button tone="stop" className="h-ctl flex-1">Zatrzymaj</Button>
   </div>

@@ -20,7 +20,7 @@ const REST = [
 
 // At the foot of a phone screen; the rows below its edge stay hidden.
 const Phone = ({ current }) => (
-  <div className="flex h-60 w-[360px] flex-col overflow-hidden bg-bg">
+  <div className="flex h-60 w-full max-w-sm flex-col overflow-hidden bg-bg">
     <div className="flex-1" />
     <NavTabs items={ITEMS} rest={REST} current={current} onSelect={() => {}} />
   </div>

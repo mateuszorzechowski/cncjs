@@ -17,7 +17,7 @@ export const ToolAndSpindle = () => (
 export const CompactFileStats = () => (
   // Compact: label and reading on one line, four of them under the file
   // preview on Pliki, where the drawing needs the room.
-  <div className="grid w-[360px] grid-cols-2 gap-2">
+  <div className="grid w-full max-w-sm grid-cols-2 gap-2">
     <StatTile compact label="linie" value="18432" />
     <StatTile compact label="czas" value="1 h 12 min" />
     <StatTile compact label="narzędzia" value="T1, T3" />

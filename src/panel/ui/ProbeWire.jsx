@@ -1,3 +1,4 @@
+import { Contact } from './probeDraw';
 import { t } from '../i18n';
 
 /**
@@ -71,7 +72,7 @@ const ProbeWire = ({ lit, plate = 'flat' }) => {
   const open = lit === null ? '' : (lit ? 'opacity-30' : '');
   const closed = lit === null ? '' : (lit ? '' : 'opacity-30');
   return (
-    <svg viewBox="0 0 440 280" role="img" aria-label={t('probe.wire.picture')} className="mx-auto block w-full max-w-md rounded-ctl border border-line bg-panel">
+    <svg viewBox="0 0 440 280" role="img" aria-label={t('probe.wire.picture')} className="mx-auto block w-full max-w-sm rounded-ctl border border-line bg-panel">
       <path d="M220.5 0 V280" className="stroke-line" strokeWidth={1} />
       <g className={open}>
         <path d="M62 178 C 48 178, 44 202, 30 202 C 14 202, 10 182, 14 152 C 18 120, 12 100, 22 90 C 30 82, 44 78, 58 78" className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -88,7 +89,7 @@ const ProbeWire = ({ lit, plate = 'flat' }) => {
         <Tool x={320} />
         <Clip x={320} />
         <rect x={282} y={124} width={8} height={8} rx={1} className="fill-field stroke-ink" strokeWidth={2} />
-        <circle cx={330} cy={120} r={4.5} className="fill-grn" />
+        <Contact x={330} y={120} r={4.5} />
         <path d="M330 204 V176" className="stroke-acc" strokeWidth={2.5} />
         <path d="M322 177 H338 L330 164 Z" className="fill-acc stroke-acc" strokeWidth={1.5} strokeLinejoin="round" />
         <text x={344} y={194} className="fill-acc text-cap">{t('probe.wire.touch')}</text>

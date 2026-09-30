@@ -51,7 +51,7 @@ const groupsFor = ({ view, layers, onView, onLayers, program = true, envelope = 
 
 // Over the drawing, as PathStage places it.
 const Stage = ({ children }) => (
-  <div className="relative h-[32rem] w-[360px] rounded-card border border-line bg-field">
+  <div className="relative h-[32rem] w-full max-w-sm rounded-card border border-line bg-field">
     {children}
   </div>
 );

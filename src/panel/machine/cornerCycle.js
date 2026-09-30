@@ -1,254 +1,254 @@
 /**
- * The L plate's cycle as the design draws it — 1f, the same loop from above
- * and from the side (`Sondowanie - plytka L`, chosen 2026-09-29).
+ * The L plate's cycle as its drawings move through it (Claude Design,
+ * `templates/probe-corner-proposal`, 2026-09-30, the "podział" layout): the
+ * corner from above and from the side at once, one move after another — Z
+ * touched on the plate's top, then each wall: set up beside it, touch fast,
+ * back off, touch slow — and the zero written, then the lift.
  *
- * The design animates one corner, front-left, with SMIL, touching each wall
- * once; the machine touches each twice — fast to find it, back off, slow for
- * the figure that counts (review note, the same day: *"czy w tym pomiarze nie
- * ma dojazdu szybkiego i dokładnego?"*). So the keyframes are the design's
- * with a back-off and a slow touch at every wall, played against a clock
- * here: a field being set plays the part it acts in, the machine's step
- * plays what it is doing, and the drawing mirrors to any corner.
- *
- * Coordinates are the design's, before its 0.8 scale: from above the work
- * spans x 110–400, y 60–210, the plate's walls stand 10 outside it; from the
- * side the work's top is at 170 and the plate's at 150.
+ * Positions are the front-left corner's in the drawing's units; the others
+ * are mirrors of it (`cornerSides`). A position is `[x, y, level]`: x and y
+ * from above, `level` the tool's height between beside the wall, below the
+ * work's top (0), and a back-off over the plate's top (1). What a move says —
+ * its figures and G-code — is made from the figures typed and matches the
+ * steps the server runs (`services/probe/strategies/corner`).
  */
 
-/** One loop of the whole cycle, in milliseconds. */
-export const CORNER_MS = 10000;
+import { C0, MOVES } from './cornerMoves';
+import { frameAt, layOut, totalOf } from './timeline';
+
+export { C0, LIFTED, XO } from './cornerMoves';
+
+// From the side: the plate's top, and the tip at each level.
+export const TOP = 146;
+export const tipOf = (level) => 134 + (1 - level) * 48;
+
+// A move is played for its run, then held; a set-up a second a leg.
+export const SPAN_MS = 2600;
+export const HOLD_MS = 600;
+const LEG_MS = 1000;
+// A move looped on its own holds its end the same long while for every move (as the Z plate's).
+export const LOOP_HOLD_MS = 2500;
+// A figure's loop plays its part of the move over this long.
+const FIELD_RUN_MS = 2400;
+
+const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - ((-2 * u + 2) ** 3) / 2);
+const lerp = (a, b, u) => a + (b - a) * u;
+
+/** Where the tool is at `p` through `[at, [x, y], level]` keyframes, eased between them. */
+export const positionOf = (frames, p) => {
+  for (let i = 0; i < frames.length - 1; i++) {
+    const [t0, [x0, y0], z0] = frames[i];
+    const [t1, [x1, y1], z1] = frames[i + 1];
+    if (p >= t0 && p <= t1) {
+      const u = ease((p - t0) / Math.max(1e-6, t1 - t0));
+      return [lerp(x0, x1, u), lerp(y0, y1, u), lerp(z0, z1, u)];
+    }
+  }
+  const [, [x, y], z] = frames[frames.length - 1];
+  return [x, y, z];
+};
+
+export const CORNER_ORDER = ['zFast', 'zBack', 'zSlow', 'xSet', 'xFast', 'xBack', 'xSlow', 'ySet', 'yFast', 'yBack', 'ySlow', 'zero', 'lift'];
+
+export const CORNER_GROUPS = [
+  { id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow'] }] },
+  { id: 'x', name: 'X', subs: [{ key: 'probe.stage.search', moves: ['xSet', 'xFast'] }, { key: 'probe.bar.measure', moves: ['xBack', 'xSlow'] }] },
+  { id: 'y', name: 'Y', subs: [{ key: 'probe.stage.search', moves: ['ySet', 'yFast'] }, { key: 'probe.bar.measure', moves: ['yBack', 'ySlow'] }] },
+  // Named only folded: open, its one step names it (review notes, 2026-09-30).
+  { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
+];
 
 /*
- * The loop, a row per moment: when, the tool from above [x, y], the ring
- * round it that says its height, and from the side [x, tip].
+ * The figures by what they are about (proposal; its "Przejazdy X/Y" renamed
+ * "Przejazdy" — the lift is a move in Z, review of 2026-09-30).
  */
-const FRAMES = [
-  [0, [145, 165], 18, [145, 110]],
-  [0.04, [145, 165], 18, [145, 110]],
-  [0.12, [145, 165], 10, [145, 150]], // Z, fast touch
-  [0.15, [145, 165], 14, [145, 128]], // back off, far enough to see
-  [0.18, [145, 165], 10, [145, 150]], // Z, slow touch
-  [0.21, [145, 165], 18, [145, 110]],
-  [0.28, [60, 170], 18, [60, 110]], // out past the X wall
-  [0.34, [60, 170], 10, [60, 186]], // down beside it
-  [0.41, [90, 170], 10, [90, 186]], // X, fast touch
-  [0.44, [70, 170], 10, [70, 186]],
-  [0.47, [90, 170], 10, [90, 186]], // X, slow touch
-  [0.5, [60, 170], 10, [60, 186]],
-  [0.56, [60, 252], 18, [60, 110]], // up, and round to the front
-  [0.63, [140, 252], 18, [140, 110]],
-  [0.68, [140, 252], 10, [140, 186]], // down beside the Y wall
-  [0.75, [140, 222], 10, [140, 186]], // Y, fast touch
-  [0.78, [140, 240], 10, [140, 186]],
-  [0.81, [140, 222], 10, [140, 186]], // Y, slow touch
-  [0.84, [140, 252], 10, [140, 186]],
-  [0.9, [140, 252], 18, [140, 110]], // lift
-  [1, [140, 252], 18, [140, 110]],
+export const CORNER_PARAMS = [
+  { id: 'plate', key: 'probe.group.plate', fields: ['cornerThickness', 'wallX', 'wallY'] },
+  { id: 'tool', key: 'probe.group.tool', fields: ['toolDiameter'] },
+  { id: 'measure', key: 'probe.group.measureAll', fields: ['fast', 'slow', 'retract'] },
+  { id: 'reach', key: 'probe.group.reach', fields: ['maxZ', 'maxXY'] },
+  { id: 'moves', key: 'probe.group.moves', fields: ['clear', 'depth', 'lift'] },
 ];
 
-// Where each touch lights, and when — a flash, not the back-off after it — from
-// above, and from the side where it shows.
-const TOUCHES = [
-  { axis: 'z', at: [[0.12, 0.13], [0.18, 0.19]], top: [145, 165], side: [145, 150] },
-  { axis: 'x', at: [[0.41, 0.42], [0.47, 0.48]], top: [100, 170], side: [100, 186] },
-  { axis: 'y', at: [[0.75, 0.76], [0.81, 0.82]], top: [140, 212], side: null },
-];
+/*
+ * A figure being set loops the move it changes, over the part of it that
+ * shows the figure (`window`), with its part of the drawing lit: `dim` its
+ * dimension, `feed` the arrow's figure, `tool` the tool's diameter, `thick`
+ * the plate's top, `wallX`/`wallY` a wall, `clear` the gap before the
+ * descent, `rise` the lift.
+ */
+const EDIT = {
+  cornerThickness: ['zero', 'thick', [0, 0.45]],
+  maxZ: ['zFast', 'dim'],
+  fast: ['zFast', 'feed'],
+  retract: ['zBack', 'dim'],
+  slow: ['zSlow', 'feed'],
+  wallX: ['zero', 'wallX', [0.6, 1]],
+  wallY: ['zero', 'wallY', [0.6, 1]],
+  toolDiameter: ['xSlow', 'tool'],
+  clear: ['xSet', 'clear', [0, 0.66]],
+  depth: ['depth', 'dim'],
+  maxXY: ['xFast', 'dim'],
+  lift: ['lift', 'rise'],
+};
 
-export const CORNER_STAGES = [
-  { n: 1, axis: 'Z', until: 0.24 },
-  { n: 2, axis: 'X', until: 0.56 },
-  { n: 3, axis: 'Y', until: 1.01 },
-];
+export const moveOf = (name) => MOVES[name];
 
-/** From here on the zero is written, and the drawing says so. */
-export const ZERO_FROM = 0.9;
+/*
+ * The zero is seen from the side, then from above — on a phone one after the
+ * other, turning at TURN — so it plays three times as long, the side held
+ * about as long as a loop's end (review note, 2026-09-30: the turn came too soon).
+ */
+export const TURN = 0.5;
 
-const lerp = (a, b, u) => (Array.isArray(a) ? a.map((v, k) => v + (b[k] - v) * u) : a + (b - a) * u);
+const spanOf = (name) => {
+  if (MOVES[name].legs) {
+    return LEG_MS * MOVES[name].legs.length + HOLD_MS;
+  }
+  return MOVES[name].walls ? SPAN_MS * 3 : SPAN_MS;
+};
+
+/*
+ * Where through its run a move stops changing: a Z touch's way ends at 0.75,
+ * a set-up's last leg at its end, a move by its last keyframe that moves, the
+ * zero once its lines are in.
+ */
+export const motionEnd = (name) => {
+  const move = MOVES[name];
+  if (move.gap) {
+    return 0.75;
+  }
+  if (move.legs) {
+    return 1;
+  }
+  let end = 0;
+  move.frames.forEach(([at, [x, y], level], i) => {
+    const [, [px, py], pl] = i ? move.frames[i - 1] : move.frames[0];
+    if (i && (x !== px || y !== py || level !== pl)) {
+      end = at;
+    }
+  });
+  if (move.walls) {
+    // Looped alone it turns to the top before the loop's hold.
+    return TURN;
+  }
+  return move.zero && !move.zeroAt ? Math.max(end, 0.15) : end;
+};
+
+// The view a move starts and ends in, on a phone that shows one: the zero turns from the side to the top, the lift is seen rising.
+const viewAt = (name, end) => {
+  const move = MOVES[name];
+  if (move.view !== 'both') {
+    return move.view;
+  }
+  return end && !move.rise ? 'top' : 'side';
+};
+
+/*
+ * The cycle on its clock, for the Setup's player: each move its span, and
+ * its segments on the bar — a set-up's legs, the zero's two views on a
+ * phone, or one up to where the move stops changing. `apart`, one view at a
+ * time (a phone): a move whose next is seen from the other side holds as
+ * long as a loop does, so the turn is not lost (review note, 2026-09-30).
+ */
+export const cornerTimeline = ({ apart = false } = {}) => layOut(CORNER_ORDER, {
+  spanOf: (name, i) => {
+    const next = CORNER_ORDER[(i + 1) % CORNER_ORDER.length];
+    return apart && viewAt(name, true) !== viewAt(next, false) ? spanOf(name) - HOLD_MS + LOOP_HOLD_MS : spanOf(name);
+  },
+  runOf: (name) => spanOf(name) - HOLD_MS,
+  partsOf: (name) => {
+    const move = MOVES[name];
+    if (move.legs) {
+      return move.legs.map(([from, to]) => [from, to]);
+    }
+    return apart && move.walls ? [[0, TURN], [TURN, 1]] : [[0, motionEnd(name)]];
+  },
+});
 
 /**
- * The drawing at `p`, a fraction of the whole loop: the tool from above and
- * from the side, which touch is lit, which stage is playing, whether the
- * zero has come in, and whether the side view has faded (the Y touches
- * happen in front of the plate, where the side view says nothing).
+ * Which move plays at `ms` and how far into it (`p`, 0–1 over its run): the
+ * whole cycle, or `pinned` alone — the machine's step on the measurement
+ * screen — or, a figure being set, its loop, held longer; `still` shows each
+ * move's end. `span` is how long the move lasts, `run` how long it moves.
  */
-export const cornerAt = (p) => {
-  const i = Math.max(0, FRAMES.findIndex((frame, k) => k < FRAMES.length - 1 && p >= frame[0] && p <= FRAMES[k + 1][0]));
-  const [from, topA, ringA, sideA] = FRAMES[i];
-  const [to, topB, ringB, sideB] = FRAMES[i + 1] || FRAMES[i];
-  const u = to > from ? (p - from) / (to - from) : 0;
-  const touch = TOUCHES.find((one) => one.at.some(([a, b]) => p >= a && p < b)) || null;
-  // Which way the tool is going, in each view, from the frames themselves — so
-  // an arrow can only ever point the way it moves (review note, 2026-09-29).
-  // A drift of a few pixels on the way (out past the wall, 165 to 170) is not a direction.
-  const along = (d) => (Math.abs(d) > 6 ? Math.sign(d) : 0);
-  const way = (a, b) => {
-    const d = [along(b[0] - a[0]), along(b[1] - a[1])];
-    return d[0] || d[1] ? d : null;
-  };
-  return {
-    p,
-    top: lerp(topA, topB, u),
-    ring: lerp(ringA, ringB, u),
-    side: lerp(sideA, sideB, u),
-    moving: { top: way(topA, topB), side: way(sideA, sideB) },
-    // Where the move under way ends, for its arrow to point to.
-    target: { top: topB, side: sideB },
-    touch,
-    stage: CORNER_STAGES.find((stage) => p < stage.until).n,
-    zero: p >= ZERO_FROM,
-    sideFaded: p >= 0.56 && p < ZERO_FROM,
-  };
-};
-
-/*
- * The loop's parts, by what they are, each with the figure it shows — so a
- * field being set plays where it is used, the machine's step plays what it
- * is doing, and the whole loop shows each part's value as it passes.
- */
-const PARTS = {
-  zFast: { at: [0.04, 0.12], figure: 'fast' },
-  zBack: { at: [0.12, 0.15], figure: 'retract' },
-  zSlow: { at: [0.15, 0.18], figure: 'slow' },
-  zUp: { at: [0.18, 0.21], figure: 'cornerThickness' },
-  xOut: { at: [0.21, 0.28], figure: 'clear' },
-  xDown: { at: [0.28, 0.34], figure: 'depth' },
-  xFast: { at: [0.34, 0.41], figure: 'wallX' },
-  xBack: { at: [0.41, 0.44], figure: 'retract' },
-  xSlow: { at: [0.44, 0.5], figure: 'slow' },
-  xUp: { at: [0.5, 0.56], figure: null },
-  yOut: { at: [0.56, 0.63], figure: 'clear' },
-  yDown: { at: [0.63, 0.68], figure: 'depth' },
-  yFast: { at: [0.68, 0.75], figure: 'wallY' },
-  yBack: { at: [0.75, 0.78], figure: 'retract' },
-  ySlow: { at: [0.78, 0.84], figure: 'slow' },
-  lift: { at: [0.84, 1], figure: 'lift' },
-};
-
-const SPANS = {
-  ...Object.fromEntries(Object.entries(PARTS).map(([name, { at }]) => [name, at])),
-  z: [0.04, 0.21],
-  x: [0.34, 0.5],
-  y: [0.68, 0.84],
-  whole: [0, 1],
-};
-
-/** The figure whose value the drawing shows at `p` in the whole loop. */
-export const figureAt = (p) => {
-  if (p >= ZERO_FROM) {
-    return 'cornerThickness';
+export const playAt = (ms, { pinned = null, field = null, still = false } = {}) => {
+  if (field && EDIT[field]) {
+    const [name, focus, [from, to] = [0, 1]] = EDIT[field];
+    const run = FIELD_RUN_MS;
+    // Its part moves until the move stops changing, then holds.
+    const moves = Math.max(0, Math.min(1, (motionEnd(name) - from) / (to - from)));
+    const span = run * moves + LOOP_HOLD_MS;
+    const into = ms % span;
+    const u = still ? 1 : Math.min(1, into / run);
+    return {
+      name, focus, p: from + (to - from) * u, span, run: run * moves, into,
+    };
   }
-  const part = Object.values(PARTS).find(({ at }) => p >= at[0] && p < at[1]);
-  return part ? part.figure : null;
+  if (pinned) {
+    const run = spanOf(pinned) - HOLD_MS;
+    const span = run * motionEnd(pinned) + LOOP_HOLD_MS;
+    const into = ms % span;
+    return {
+      name: pinned, focus: null, p: still ? 1 : Math.min(1, into / run), span, run: run * motionEnd(pinned), into,
+    };
+  }
+  const items = cornerTimeline();
+  const frame = frameAt(items, ms % totalOf(items));
+  return { ...frame, focus: null, p: still ? 1 : frame.p };
 };
 
-/*
- * The figures that are a thing's size rather than a move: set, they play
- * their part with no arrow — an arrow is only ever a move under way.
- */
-export const STILL_FIGURES = ['cornerThickness', 'wallX', 'wallY', 'toolDiameter'];
-
-/** The figures the corner uses, each to the part of the loop it acts in. */
-export const FIELD_WINDOW = {
-  cornerThickness: 'z',
-  maxZ: 'zFast',
-  fast: 'zFast',
-  retract: 'zBack',
-  slow: 'zSlow',
-  wallX: 'x',
-  wallY: 'y',
-  toolDiameter: 'x',
-  clear: 'xOut',
-  depth: 'xDown',
-  maxXY: 'xFast',
-  lift: 'lift',
-};
-
-// The server's step names (`services/probe/strategies/corner`) to their part.
-const PHASE_WINDOW = {
-  'z-fast': 'zFast',
-  'z-back': 'zBack',
-  'z-settle': 'zBack',
-  z: 'zSlow',
-  'x-out': 'xOut',
-  'x-down': 'xDown',
-  'x-fast': 'xFast',
-  'x-back': 'xBack',
-  'x-settle': 'xBack',
-  x: 'xSlow',
-  'x-up': 'xUp',
-  'x-return': 'yOut',
-  'y-out': 'yOut',
-  'y-down': 'yDown',
-  'y-fast': 'yFast',
-  'y-back': 'yBack',
-  'y-settle': 'yBack',
-  y: 'ySlow',
-  'y-up': 'lift',
-  'y-return': 'lift',
-  lift: 'lift',
-};
-
-export const windowOfPhase = (phase) => PHASE_WINDOW[phase] || 'zFast';
-
-/*
- * A part played on its own lasts at least this long, and stops at its end
- * for a moment before it starts again: the short ones — a back-off is three
- * hundredths of the loop — flickered past as a jump (review note,
- * 2026-09-29: *"animacja ruchu po zaznaczonym fokusie inputa powinna być
- * wolniejsza"*).
- */
-export const PART_MS = 3000;
-export const PART_STOP_MS = 700;
-
-/*
- * The whole loop, played part by part like the Z plate's: each at half the
- * loop's own pace and never quicker than `WHOLE_PART_MS`, a short stop after
- * each, a long one on the zero at the end (review note, the same day:
- * *"animacja trwa za szybko, nie widać co się na niej dzieje"*).
- */
-export const WHOLE_PART_MS = 1600;
-export const WHOLE_STOP_MS = 400;
-export const ZERO_STOP_MS = 2000;
-
-const TIMELINE = (() => {
-  const parts = [[0, 0.04], ...Object.values(PARTS).map(({ at }) => at)];
-  let t = 0;
-  return parts.map(([from, to], i) => {
-    const plays = Math.max(WHOLE_PART_MS, (to - from) * CORNER_MS * 2);
-    const stop = i === parts.length - 1 ? ZERO_STOP_MS : WHOLE_STOP_MS;
-    const part = { from, to, begins: t, plays };
-    t += plays + stop;
-    return part;
+/** Which leg of a set-up is under way at `p`. */
+export const legAt = (move, p) => {
+  // A leg's end is its own, not the next one's start: a leg looped or paused holds on it.
+  let now = 0;
+  move.legs.forEach(([from], i) => {
+    if (p > from) {
+      now = i;
+    }
   });
-})();
-
-/** How long the whole loop takes, played part by part. */
-export const WHOLE_MS = (() => {
-  const last = TIMELINE[TIMELINE.length - 1];
-  return last.begins + last.plays + ZERO_STOP_MS;
-})();
-
-const wholeAt = (ms) => {
-  const t = ms % WHOLE_MS;
-  const part = [...TIMELINE].reverse().find(({ begins }) => t >= begins);
-  // Held just short of its end through the stop, which is where the next part begins.
-  return part.from + Math.min(0.999, (t - part.begins) / part.plays) * (part.to - part.from);
-};
-
-/** Where in the whole loop `ms` into playing part `name` over and over is. */
-export const loopIn = (name, ms, length = CORNER_MS) => {
-  if (name === 'whole' || !SPANS[name]) {
-    return wholeAt(ms);
-  }
-  const [from, to] = SPANS[name];
-  const plays = Math.max(PART_MS, (to - from) * length);
-  const into = ms % (plays + PART_STOP_MS);
-  return from + Math.min(0.999, into / plays) * (to - from);
+  return now;
 };
 
 /*
- * The corner turns the drawing: right corners mirror across, back corners
- * mirror top to bottom, about the middle of the work as each view draws it.
+ * The move's G-code, and for a set-up the leg under way alone, with its own
+ * short word (`leg`) — the whole set-up said at once did not fit (review
+ * note, 2026-09-30).
+ */
+export const cornerCode = (name, p, texts, wcs = 1) => {
+  const move = MOVES[name];
+  if (move.legs) {
+    const leg = move.legs[legAt(move, p)];
+    return { parts: [leg[4](texts)], now: -1, leg: leg[5] };
+  }
+  return { parts: move.code(texts, wcs), now: -1, leg: null };
+};
+
+// How far into a Z touch's way the tool is at `p`: still, moving, arrived.
+const eased = (p) => {
+  if (p < 0.15) {
+    return 0;
+  }
+  return p > 0.75 ? 1 : ease((p - 0.15) / 0.6);
+};
+
+/** A Z touch's height over the plate's top at `p`, in the drawing's units. */
+export const gapAt = (move, p) => move.gap[0] + (move.gap[1] - move.gap[0]) * eased(p);
+
+/*
+ * How far the zero has come in at `p`: Z0, X0 and Y0 and the thicknesses
+ * under them together, in both views, over the move's first sixth (review
+ * note, 2026-09-30: the walls' labels came in at once, the plate's was there).
+ */
+export const zeroShown = (move, p) => move.zeroAt ?? Math.min(1, Math.max(0, p / 0.15));
+
+/** The level of a tip `gap` over the plate's top — past 1 above a back-off. */
+export const levelOfGap = (gap) => 0.75 + gap / 48;
+
+/*
+ * Which way each axis points for a corner: `flipX` the right-hand corners,
+ * `flipY` the back ones — the drawing mirrored to match the corner chosen —
+ * and `dirs`, the way the tool touches each wall (`strategies/corner`).
  */
 const SIDES = {
   'front-left': { flipX: false, flipY: false, dirs: ['X+', 'Y+'] },
@@ -259,68 +259,74 @@ const SIDES = {
 
 export const cornerSides = (corner) => SIDES[corner] || SIDES['front-left'];
 
-/*
- * Getting the tool into place before measuring, as the Z plate's position
- * step shows it (review note, 2026-09-30): from off the work and high,
- * across until it is over the plate, then down to a few millimetres above it,
- * and a moment there before it starts again. The same frames as the cycle's
- * — [when, from above, ring, from the side] — so the same drawing plays it.
- */
-export const POSITION_MS = 4500;
-
-const INTO_PLACE = [
-  [0, [40, 96], 26, [40, 100]],
-  [0.12, [40, 96], 26, [40, 100]],
-  [0.5, [145, 165], 26, [145, 100]], // across, high
-  [0.8, [145, 165], 16, [145, 130]], // down to a few millimetres over the plate
-  [1, [145, 165], 16, [145, 130]],
-];
-
-/** The frame of the move into place at `ms`, as `cornerAt` gives one; `over` once it is there. */
-export const positionAt = (ms) => {
-  const p = (ms % POSITION_MS) / POSITION_MS;
-  const i = Math.max(0, INTO_PLACE.findIndex((frame, k) => k < INTO_PLACE.length - 1 && p >= frame[0] && p <= INTO_PLACE[k + 1][0]));
-  const [from, topA, ringA, sideA] = INTO_PLACE[i];
-  const [to, topB, ringB, sideB] = INTO_PLACE[i + 1] || INTO_PLACE[i];
-  const u = to > from ? (p - from) / (to - from) : 0;
-  const way = (a, b) => {
-    const d = [Math.sign(b[0] - a[0]), Math.sign(b[1] - a[1])];
-    return d[0] || d[1] ? d : null;
-  };
-  return {
-    p,
-    top: lerp(topA, topB, u),
-    ring: lerp(ringA, ringB, u),
-    side: lerp(sideA, sideB, u),
-    moving: { top: way(topA, topB), side: way(sideA, sideB) },
-    target: { top: topB, side: sideB },
-    touch: null,
-    stage: 1,
-    zero: false,
-    sideFaded: false,
-    over: p >= 0.8,
-  };
-};
-
-/*
- * The tool's X, Y and Z in the coordinate system through the loop, for the
- * example it is (review note, 2026-09-29: the Z plate showed one, the corner
- * did not). The drawing's walls are 10 across and the plate 20 over the
- * work, so a pixel is taken as the figures typed make it; the old zero is an
- * example, `BEFORE_MM` away. After the zero is written the corner of the
- * work reads 0, 0, 0.
- */
+// An example tool position against the old zero.
 export const BEFORE_MM = { x: 123.456, y: 78.9, z: 37.482 };
 
-export const cornerReadout = (at, corner, mm) => {
-  const { flipX, flipY } = cornerSides(corner);
-  const after = {
-    x: (flipX ? -1 : 1) * (at.top[0] - 110) * (mm.wallX / 10),
-    y: (flipY ? -1 : 1) * (210 - at.top[1]) * (mm.wallY / 10),
-    z: (170 - at.side[1]) * (mm.cornerThickness / 20),
-  };
-  if (at.zero) {
-    return { ...after, after: true };
+/*
+ * The tool's X, Y and Z as the readout says them: the example against the old
+ * zero, then against the new one — where the tool touched the Y wall, a
+ * radius and a wall off X0 and Y0, and the plate's top over Z0 — held through
+ * the moves, as the Z plate's.
+ */
+export const cornerReadout = (name, corner, mm) => {
+  if (!MOVES[name].after) {
+    return { ...BEFORE_MM, after: false };
   }
-  return { x: after.x + BEFORE_MM.x, y: after.y + BEFORE_MM.y, z: after.z + BEFORE_MM.z, after: false };
+  const { flipX, flipY } = cornerSides(corner);
+  const radius = mm.toolDiameter / 2;
+  return {
+    x: (flipX ? 1 : -1) * (radius + mm.wallX),
+    y: (flipY ? 1 : -1) * (radius + mm.wallY),
+    z: mm.cornerThickness,
+    after: true,
+  };
 };
+
+/*
+ * Getting the tool into place before measuring: from off to the side and
+ * high, across over the plate near the corner, then down to a few
+ * millimetres over it, and a while there — as the Z plate's position step.
+ */
+export const POSITION_MS = 7000;
+
+export const positionAt = (ms) => {
+  const p = (ms % POSITION_MS) / POSITION_MS;
+  const across = ease(Math.min(1, Math.max(0, (p - 0.1) / 0.3)));
+  const down = ease(Math.min(1, Math.max(0, (p - 0.45) / 0.2)));
+  return {
+    at: [lerp(60, C0[0], across), lerp(200, C0[1], across)],
+    level: lerp(2, 1, down),
+    over: down >= 1,
+    moving: (p > 0.1 && p < 0.4) || (p > 0.45 && p < 0.65),
+  };
+};
+
+/*
+ * What the machine is doing, as the move whose part it is — the server's
+ * step names (`services/probe/strategies/corner`), so the measurement screen
+ * plays the move the machine is in.
+ */
+const PHASE_MOVE = {
+  'z-fast': 'zFast',
+  'z-back': 'zBack',
+  'z-settle': 'zBack',
+  z: 'zSlow',
+  'x-out': 'xSet',
+  'x-down': 'xSet',
+  'x-fast': 'xFast',
+  'x-back': 'xBack',
+  'x-settle': 'xBack',
+  x: 'xSlow',
+  'x-up': 'ySet',
+  'x-return': 'ySet',
+  'y-out': 'ySet',
+  'y-down': 'ySet',
+  'y-fast': 'yFast',
+  'y-back': 'yBack',
+  'y-settle': 'yBack',
+  y: 'ySlow',
+  lift: 'lift',
+  corner: 'lift',
+};
+
+export const moveOfPhase = (phase) => PHASE_MOVE[phase] || 'zFast';

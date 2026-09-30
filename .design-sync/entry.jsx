@@ -6,7 +6,7 @@
 export { default as Button } from '../src/panel/ui/Button';
 export { default as Card } from '../src/panel/ui/Card';
 export { default as ConfirmSheet } from '../src/panel/ui/ConfirmSheet';
-export { default as DateTimeField } from '../src/panel/ui/DateTimeField';
+export { default as DateRangeField } from '../src/panel/ui/DateRangeField';
 export { default as DroStack } from '../src/panel/ui/DroStack';
 export { default as DroStrip } from '../src/panel/ui/DroStrip';
 export { default as FadeScroller } from '../src/panel/ui/FadeScroller';
@@ -30,6 +30,16 @@ export { default as StepRow } from '../src/panel/ui/StepRow';
 export { default as TextField } from '../src/panel/ui/TextField';
 export { default as ToggleChips } from '../src/panel/ui/ToggleChips';
 export { default as WcsBadge } from '../src/panel/ui/WcsBadge';
+
+// Sonda (probing): the wizard's drawings and their parts, animated.
+export { default as CornerCycle } from '../src/panel/ui/CornerCycle';
+export { default as CornerParams } from '../src/panel/ui/CornerParams';
+export { default as ProbePicture } from '../src/panel/ui/ProbePicture';
+export { default as ProbeReadout } from '../src/panel/ui/ProbeReadout';
+export { default as ProbeWire } from '../src/panel/ui/ProbeWire';
+export { default as StepTrack } from '../src/panel/ui/StepTrack';
+export { default as ZPlateCycle } from '../src/panel/ui/ZPlateCycle';
+export { default as ZPlateParams } from '../src/panel/ui/ZPlateParams';
 
 // ---------------------------------------------------------------------------
 // PanelRoot: the panel's shell, as App.jsx sets it up around every screen —

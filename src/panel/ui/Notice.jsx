@@ -49,6 +49,9 @@ export const Triangle = ({ className = 'size-4' }) => (
  * `lapsing`: the notice goes by itself, and a thin bar along its foot runs
  * out as it does (`animate-lapse`, the same six seconds as `SHOWN_FOR`).
  */
+// A zero-width space: a line's height and nothing to see.
+const LINE = '​';
+
 const Notice = ({ children, action, lapsing = false, className = '' }) => (
   <div
     role="note"
@@ -56,7 +59,14 @@ const Notice = ({ children, action, lapsing = false, className = '' }) => (
     className={`relative flex shrink-0 gap-3 overflow-hidden rounded-ctl border border-amb bg-ambS px-4 py-3 ${action ? 'items-center' : 'items-start'} ${className}`}
   >
     {lapsing ? <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1 origin-left animate-lapse bg-amb opacity-60" /> : null}
-    <span className={`text-amb ${action ? '' : 'pt-0.5'}`}>
+    {/*
+      * As tall as a line of the words, the triangle centred in it: with a
+      * nudge down instead, one line of words sat a pixel over the middle
+      * and the triangle one under (review note, 2026-09-30: *"ikona i tekst
+      * nie wyśrodkowane wertykalnie"*). The empty mark gives it the line.
+      */}
+    <span className="flex items-center text-base text-amb">
+      {LINE}
       <Triangle className="size-5" />
     </span>
     <div className="flex min-w-0 flex-1 flex-col gap-2 text-base text-ambT">{children}</div>

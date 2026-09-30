@@ -5,7 +5,7 @@
   "globalName": "CncPanel",
   "entry": ".design-sync/entry.jsx",
   "srcDir": "src/panel/ui",
-  "buildCmd": "npx tailwindcss -c tailwind.panel.config.js -i src/panel/styles/base.css -o .design-sync/.cache/panel.css",
+  "buildCmd": "npx tailwindcss -c tailwind.panel.config.js -i src/panel/styles/base.css -o .design-sync/.cache/panel.css && node -e \"const fs=require('fs');const f='.design-sync/.cache/panel.css';fs.writeFileSync(f,fs.readFileSync(f,'utf8').split('~@fontsource/').join('../../node_modules/@fontsource/'))\"",
   "cssEntry": ".design-sync/.cache/panel.css",
   "provider": {
     "component": "PanelRoot"
@@ -14,7 +14,6 @@
     "Button": "src/panel/ui/Button.jsx",
     "Card": "src/panel/ui/Card.jsx",
     "ConfirmSheet": "src/panel/ui/ConfirmSheet.jsx",
-    "DateTimeField": "src/panel/ui/DateTimeField.jsx",
     "DroStack": "src/panel/ui/DroStack.jsx",
     "DroStrip": "src/panel/ui/DroStrip.jsx",
     "FadeScroller": "src/panel/ui/FadeScroller.jsx",
@@ -37,7 +36,16 @@
     "StepRow": "src/panel/ui/StepRow.jsx",
     "TextField": "src/panel/ui/TextField.jsx",
     "ToggleChips": "src/panel/ui/ToggleChips.jsx",
-    "WcsBadge": "src/panel/ui/WcsBadge.jsx"
+    "WcsBadge": "src/panel/ui/WcsBadge.jsx",
+    "CornerCycle": "src/panel/ui/CornerCycle.jsx",
+    "CornerParams": "src/panel/ui/CornerParams.jsx",
+    "ProbePicture": "src/panel/ui/ProbePicture.jsx",
+    "ProbeReadout": "src/panel/ui/ProbeReadout.jsx",
+    "ProbeWire": "src/panel/ui/ProbeWire.jsx",
+    "StepTrack": "src/panel/ui/StepTrack.jsx",
+    "ZPlateCycle": "src/panel/ui/ZPlateCycle.jsx",
+    "ZPlateParams": "src/panel/ui/ZPlateParams.jsx",
+    "DateRangeField": "src/panel/ui/DateRangeField.jsx"
   },
   "overrides": {
     "ConfirmSheet": {
@@ -59,9 +67,6 @@
       "cardMode": "column"
     },
     "Card": {
-      "cardMode": "column"
-    },
-    "DateTimeField": {
       "cardMode": "column"
     },
     "DroStack": {
@@ -116,6 +121,33 @@
       "cardMode": "column"
     },
     "StepRow": {
+      "cardMode": "column"
+    },
+    "CornerCycle": {
+      "cardMode": "column"
+    },
+    "CornerParams": {
+      "cardMode": "column"
+    },
+    "ProbePicture": {
+      "cardMode": "column"
+    },
+    "ProbeReadout": {
+      "cardMode": "column"
+    },
+    "ProbeWire": {
+      "cardMode": "column"
+    },
+    "StepTrack": {
+      "cardMode": "column"
+    },
+    "ZPlateCycle": {
+      "cardMode": "column"
+    },
+    "ZPlateParams": {
+      "cardMode": "column"
+    },
+    "DateRangeField": {
       "cardMode": "column"
     }
   },

@@ -1,113 +1,112 @@
-import { useState } from 'react';
-import CycleStages from './CycleStages';
-import TextField from './TextField';
-import ZPlateScene, { badgeWidth } from './ZPlateScene';
-import useTicker from './useTicker';
-import { FIELDS, fieldUnit, figureSaid } from '../machine/probe';
-import { FIGURES, cycleAt, readoutAt, sceneAt } from '../machine/probeCycle';
+import { useMemo, useState } from 'react';
+import MoveBar, { namedGroups } from './MoveBar';
+import PlayControls from './PlayControls';
+import ProbeReadout from './ProbeReadout';
+import { figureColumns } from './ProbeSections';
+import ZPlateScene from './ZPlateScene';
+import { useClock, useReducedMotion } from './useClock';
+import usePlayer from './usePlayer';
+import { figureSaid } from '../machine/probeFields';
+import {
+  LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, moveOf, plateCode, plateReadout, plateScene, plateTimeline, playAt,
+} from '../machine/probeCycle';
+import {
+  fillsAt, frameAt, rangeOf, timeAt,
+} from '../machine/timeline';
 import { inMm } from '../machine/units';
+import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
 
-// A figure and nothing else, a comma taken as a point — the jog steps' mask.
-const figureOnly = (text) => text.replace(/[^0-9.,]/g, '');
-
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 
-// The figure that bounds a move's way: the fast touch goes as far as the travel limit.
-const BOUNDS = { fast: 'maxZ' };
+// The one axis the plate measures, named in its readout.
+const Z_AXIS = 'z';
 
-// A field the server would not take, framed in red.
-const BAD = 'bad';
+// The move a figure's own loop plays, as the bar names it.
+const BAR_OF = { miss: 'fast' };
 
-/*
- * The line each figure goes into, as a reminder of what it does. Written
- * with the figures typed, so it changes with them; the plate's thickness
- * goes into no line of its own and says its sum instead.
- */
-const lineOf = (name, v) => ({
-  maxZ: `G38.2 Z-${v.maxZ} F${v.fast}`,
-  fast: `G38.2 Z-${v.maxZ} F${v.fast}`,
-  retract: `G0 Z+${v.retract}`,
-  slow: `G38.2 Z-${numberOf(v.retract) * 2} F${v.slow}`,
-  plateThickness: t('probe.cycle.zeroSum', { t: v.plateThickness }),
-  lift: `G0 Z+${v.lift}`,
-}[name]);
-
-const CAPTIONS = {
-  maxZ: 'probe.cycle.maxZ',
-  fast: 'probe.cycle.fast',
-  retract: 'probe.cycle.retract',
-  slow: 'probe.cycle.slow',
-  plateThickness: 'probe.cycle.plateThickness',
-  lift: 'probe.cycle.lift',
-};
+// The coordinate system's number in G10 L20 P…: G54 is 1.
+const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53;
 
 /**
- * The Z plate's figures beside their drawing (design 1l, laid out as a form
- * at Mateusz's word, 2026-09-29: *"rysunek z lewej"*). The drawing on the
- * left with `intro` under it, the fields on the right in two columns from the
- * top (review notes, the same day); the field being set plays the part
- * of the cycle it is used in, with only its value on the drawing. With no
- * field in hand the whole cycle plays, stopping after each part.
+ * The Z plate's Setup (Claude Design, `templates/probe-z-proposal`,
+ * 2026-09-30): the drawing large, one bar of its moves under it and a
+ * player's controls — see `machine/player` — the tool's Z before and after the zero, and the move's name with
+ * its G-code; beside it the instruction and the figures by what they are
+ * about, those the move playing uses lit. A group opens to set its figures
+ * (Mateusz: *"grupa jak teraz"*); the figure being set loops the move it
+ * changes, its part of the drawing lit.
+ *
+ * `split(left, right)`, wide: the screen lays the drawing and the figures out
+ * as cards of their own.
  */
-const ZPlateParams = ({ fields, texts, onText, bad, wcs, intro = null }) => {
+const ZPlateParams = ({
+  fields, texts, onText, bad, wcs, intro = null, note = null, split = null,
+}) => {
   const units = useUnits();
+  const wide = useIsWide();
   const [picked, setPicked] = useState(null);
-  const ms = useTicker(picked || 'cycle');
-  const whole = picked ? null : cycleAt(ms);
-  const shown = picked || whole.name;
-  const figure = FIGURES[shown];
-  const scene = picked ? sceneAt(picked, ms) : whole.scene;
-  // The value of the part shown, and its dimension where the design draws one.
-  const badge = { x: figure.badge[0], y: figure.badge[1], text: figureSaid(shown, texts[shown] ?? '', units.rule) };
-  // A move whose way is bounded by another figure says that bound by its dimension (review note, 2026-09-30).
-  const bound = BOUNDS[shown];
-  const noteText = bound ? t('probe.cycle.upTo', { v: figureSaid(bound, texts[bound] ?? '', units.rule) }) : '';
-  // Ending short of the dimension's line at x 196, as wide as its words are.
-  const note = bound ? { x: 188 - badgeWidth(noteText), y: 140, text: noteText } : null;
-  // In the whole cycle, the tool's Z in the system before and after the zero is written.
-  const mm = Object.fromEntries(['retract', 'lift', 'plateThickness'].map((name) => [name, inMm(numberOf(texts[name]), units.rule) ?? 0]));
-  const read = picked ? null : readoutAt(shown, scene.gap, mm);
-  const readout = read
-? {
-    name: t('probe.readout.name', { wcs: wcs || 'G54' }),
-    when: t(read.after ? 'probe.readout.after' : 'probe.readout.before'),
-    value: `${units.figure(read.z)} ${units.length}`,
-    after: read.after,
-  }
-: null;
+  const [open, setOpen] = useState(null);
+  const still = useReducedMotion();
+  const group = PLATE_PARAMS.find((one) => one.id === open);
+  // The cycle on the player's clock; a figure being set plays its own loop meanwhile, and the player waits.
+  const items = useMemo(() => plateTimeline(), []);
+  const player = usePlayer(items, { hold: LOOP_HOLD_MS, running: !picked });
+  const fieldMs = useClock(picked, Boolean(picked));
+  const frame = picked ? playAt(fieldMs, { field: picked, still }) : { ...frameAt(items, player.t), focus: null };
+  const { name, focus } = frame;
+  const p = still && !picked ? 1 : frame.p;
+  const pick = (ids, part = null) => player.seek({ ...rangeOf(items, ids, part), ids, part });
+  const say = (field, text) => figureSaid(field, text, units.rule);
+  const scene = plateScene(name, p, {
+    texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus,
+  });
+  const move = moveOf(name);
+  const code = plateCode(name, texts, systemNumber(wcs));
+  const mm = { plateThickness: inMm(numberOf(texts.plateThickness), units.rule) ?? 0 };
+  const read = plateReadout(name, mm);
+  const title = t(move.titleKey, { t: say('plateThickness', texts.plateThickness ?? '') });
 
+  const groups = namedGroups(PLATE_GROUPS, t, (id) => t(moveOf(id).titleKey, { t: '' }));
+  const sections = PLATE_PARAMS.map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
+    .filter((one) => one.fields.length);
+
+  const left = (
+    <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
+      <div className="relative">
+        {/*
+          * As tall as the corner's Setup drawing at any width (review notes, 2026-09-30): the shape of its two views side
+          * by side (202 × 188 each) and the same caps, so one screen scrolls exactly when the other does.
+          */}
+        <ZPlateScene {...scene} label={title} className="aspect-[404/188] h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
+      </div>
+      <MoveBar
+        groups={groups}
+        active={BAR_OF[name] || name}
+        fills={picked ? fillsAt(items, timeAt(items, BAR_OF[name] || name, p), false) : fillsAt(items, player.t)}
+        onPick={pick}
+        picked={player.mode === 'cycle' ? null : player.range}
+        marked={group ? PLATE_ORDER.filter((id) => moveOf(id).uses.some((use) => group.fields.includes(use))) : []}
+      />
+      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
+      <ProbeReadout wcs={wcs} after={read.after} axes={[[Z_AXIS, read.z]]} />
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
+        <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
+        <span className="whitespace-nowrap font-num text-cap text-mut">{code}</span>
+      </div>
+    </div>
+  );
+  const { right, third } = figureColumns({
+    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField: setPicked, lit: move.uses, intro, note,
+  });
+  if (split) {
+    return split(left, right, third);
+  }
   return (
     <div className="grid gap-4 @3xl/shell:grid-cols-2">
-      <div className="flex min-w-0 flex-col gap-3 self-start">
-      <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
-        <CycleStages stage={figure?.stage} />
-        <ZPlateScene {...scene} marks={shown} badge={badge} note={note} readout={readout} label={t('probe.method.z')} className="w-full" />
-        <div className="flex flex-col items-center justify-center gap-1 border-t border-line px-2 py-2 text-center">
-          <span className="text-note font-semibold text-ink">{t(CAPTIONS[shown])}</span>
-          <span className="font-num text-cap text-mut">{lineOf(shown, texts)}</span>
-        </div>
-      </div>
-      {intro}
-      </div>
-      <div className="grid min-w-0 content-start gap-2 self-start @xl/shell:grid-cols-2">
-        {fields.map((name) => (
-          <div key={name} className="flex flex-col gap-1">
-            <span className={`text-note ${name === picked ? 'font-semibold text-acc' : 'text-mut'}`}>{t(FIELDS[name].key)}</span>
-            <TextField
-              label={t(FIELDS[name].key)}
-              inputMode="decimal"
-              unit={fieldUnit(name, units.rule)}
-              value={texts[name] ?? ''}
-              state={bad === name ? BAD : undefined}
-              onFocus={() => setPicked(name)}
-              onBlur={() => setPicked(null)}
-              onChange={(event) => onText(name, figureOnly(event.target.value))}
-            />
-          </div>
-        ))}
-      </div>
+      <div className="flex min-w-0 flex-col gap-3 self-start">{left}</div>
+      <div className="min-w-0 self-start">{right}</div>
     </div>
   );
 };

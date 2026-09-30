@@ -34,7 +34,7 @@ export const NotConnected = () => (
 export const OnPhone = () => (
   // On a phone the chip is one line — dot, word, a rule and the chevron —
   // as tall as the STOP beside it. A 360px shell is a phone.
-  <PanelRoot className="w-[360px]">
+  <PanelRoot className="w-full max-w-sm">
     <div className="flex flex-wrap gap-2">
       <StateChip tone="running" label="Stan maszyny">Run</StateChip>
       <StateChip tone="ready" label="Stan maszyny">Idle</StateChip>
