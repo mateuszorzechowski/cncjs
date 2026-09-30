@@ -14,7 +14,7 @@ export const JogStep = () => {
   // number face because `unit` says they are a quantity.
   const [step, setStep] = useState(1);
   return (
-    <div className="flex w-[360px] flex-col gap-2">
+    <div className="flex w-full max-w-sm flex-col gap-2">
       <Caption>Krok XY</Caption>
       <SegmentedChoice label="Krok XY" options={[0.1, 1, 10, 50]} value={step} onChange={setStep} unit="mm" />
     </div>
@@ -26,7 +26,7 @@ export const Joined = () => {
   const [theme, setTheme] = useState('system');
   const [units, setUnits] = useState('mm');
   return (
-    <div className="flex w-[360px] flex-col gap-3">
+    <div className="flex w-full max-w-sm flex-col gap-3">
       <SegmentedChoice
         joined
         label="Motyw"
@@ -51,7 +51,7 @@ export const Floor = () => {
   // A floor: the journal keeps from Info up, so Uwaga and Błąd sit in a wash.
   const [level, setLevel] = useState('info');
   return (
-    <div className="flex w-[360px] flex-col gap-2">
+    <div className="flex w-full max-w-sm flex-col gap-2">
       <Caption>Dziennik zapisuje od</Caption>
       <SegmentedChoice
         joined
@@ -101,7 +101,7 @@ export const Columns = () => {
   const [range, setRange] = useState('h1');
   const ranges = { m15: '15 min', h1: '1 h', today: 'Dziś', all: 'Wszystko', custom: 'Własny zakres…' };
   return (
-    <div className="flex w-[360px] flex-col gap-3">
+    <div className="flex w-full max-w-sm flex-col gap-3">
       <Caption>Poziom</Caption>
       <SegmentedChoice
         columns={2}
@@ -125,7 +125,7 @@ export const WasAndDisabled = () => {
   const [homing, setHoming] = useState(0);
   const [report, setReport] = useState(1);
   return (
-    <div className="flex w-[360px] flex-col gap-3">
+    <div className="flex w-full max-w-sm flex-col gap-3">
       <SegmentedChoice label="Bazowanie" options={[0, 1]} value={homing} was={1} onChange={setHoming} format={(on) => (on ? 'Wł.' : 'Wył.')} />
       <SegmentedChoice
         label="Raport statusu"

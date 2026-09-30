@@ -30,11 +30,15 @@ JavaScript only), so:
   `@3xl/shell:` queries), ShellWidth/ShellNode providers (sheets portal into
   the node, so children render once it exists), UnitsProvider with the
   server's mm rule, and the language (`pl` by default).
-- **Fonts**: the panel names IBM Plex Sans / Azeret Mono / IBM Plex Mono but
-  ships no `@font-face`; it renders in system fonts unless installed.
-  Mateusz, 2026-09-26: keep system fonts in the design system too — a
-  deliberate substitute, not a miss. `[FONT_MISSING]` for those families is
-  expected.
+- **Fonts**: since 2026-09-29 the panel bundles its four number faces
+  (`src/panel/styles/fonts.css`, @fontsource: Azeret Mono, IBM Plex Mono,
+  JetBrains Mono, Share Tech Mono). Their `url()`s are webpack's
+  `~@fontsource/...`, which the converter cannot resolve, so `buildCmd`
+  rewrites them in the compiled `panel.css` to `../../node_modules/@fontsource/`
+  — the converter then copies the woff2s to `fonts/` (19 rules). The text face,
+  IBM Plex Sans, is still not bundled by the panel itself: system sans in
+  both (Mateusz, 2026-09-26: a deliberate substitute). `[FONT_MISSING]` for
+  "IBM Plex Sans" alone is expected; for any number face it is a regression.
 - **Only the panel's classes exist.** The CSS is Tailwind compiled from the
   panel's sources, so an arbitrary class a preview (or a design) invents —
   `h-[600px]` — is simply absent and does nothing. Use classes the panel
@@ -44,12 +48,14 @@ JavaScript only), so:
   containing block) and take `max-h-[85%]` of it. Inside a card that div has
   no height, so previews nest `<PanelRoot className="h-[32rem]">`; overrides
   give the card `cardMode: single` and a 900x620 viewport.
-- **Widths and heights that exist** (checked with `grep -oF '.w-\[360px\]'`
-  against the bundle CSS — escaped, `-F`; `grep -c` counts lines):
-  `w-side`, `w-[360px]`, `w-rail`, `w-jcard`, `w-48`, `w-36`, `w-full`,
-  `max-w-[1180px]`; `h-[32rem]`, `h-[340px]`, `h-60`, `h-full`, `h-ctl`,
-  `h-chiph`. Absent: `w-80`, `w-96`, `w-64`, `w-72`, `w-[28rem]`,
-  `w-[46rem]`, `p-4`, `gap-5`.
+- **Widths and heights that exist** (2026-09-30; checked with
+  `grep -oF '.max-w-sm'` against the bundle CSS — escaped, `-F`):
+  `w-side`, `w-rail`, `w-jcard`, `w-48`, `w-36`, `w-32`, `w-full`,
+  `max-w-sm`/`md`/`lg`; `h-[32rem]`, `h-60`, `h-44`, `h-24`, `h-full`,
+  `h-ctl`, `h-chiph`. GONE since 2026-09-28 (the panel stopped using them):
+  `w-[360px]`, `h-[340px]`, `max-w-[1180px]` — a phone-wide column is now
+  `w-full max-w-sm` (384px, still under the 768px shell line). Absent:
+  `w-80`, `w-96`, `w-64`, `w-72`, `w-[28rem]`, `p-4`, `gap-5`.
 - **A card cell stretches its child**: a lone inline component (WcsBadge)
   goes full width; wrap it in `<div className="flex">`.
 - **The default cell's shell is wide (≥768px)**, so components show their
@@ -101,7 +107,30 @@ JavaScript only), so:
 
 ## Known render warns
 
-(none recorded yet)
+- `[FONT_MISSING] "IBM Plex Sans"` — the accepted system-sans substitute (Fonts above).
+
+## Re-sync risks
+
+- **A class can vanish from the CSS without any component changing.** The CSS
+  is compiled from the panel's sources, so when the panel stops using a class
+  every preview that relies on it silently loses it — and the driver counts
+  those components `unchanged` (their render hash follows the preview and the
+  component, not the CSS), so nothing recaptures them. On 2026-09-30 twelve
+  previews had lost `w-[360px]` this way. Before every upload, check each
+  preview's `className` tokens against `ds-bundle/_ds_bundle.css` (escaped,
+  fixed-string grep) and check `conventions.md`'s class table the same way.
+- **Components the panel removes** break the build (`Could not resolve
+  ../src/panel/ui/X`): `DateTimeField` went this way (replaced by
+  `DateRangeField`, 2026-09-30). Remove the export from `entry.jsx`, the
+  `componentSrcMap`/`overrides` entries, and `previews/X.tsx`.
+- **The Sonda drawings** (`ZPlateParams`, `CornerParams`, `ZPlateCycle`,
+  `CornerCycle`, `ProbeWire`, `ProbePicture`, `StepTrack`, `ActTrack`,
+  `ProbeReadout`) are pure only because the figure helpers live in
+  `machine/probeFields.js`, apart from `machine/probe.js` (which imports
+  `machine/controller`). A new import from `machine/probe` in any of them
+  pulls the controller into the bundle — check the module graph.
+- The animated previews are captured at one moment of their loop; a grade is
+  of that frame. Open the card to see them move.
 - **Devices** (Mateusz, 2026-09-27: the design agent must know how each
   component looks on a phone, a tablet and a PC). `DeviceFrame` (entry.jsx)
   lays a PanelRoot out at 360 / 1024 / 1920 px and scales it (1, 0.6, 0.4)
@@ -121,7 +150,8 @@ JavaScript only), so:
   every build (the converter wipes `ds-bundle/`), and before uploading:
   1. with the panel server on :8001 (never :8000):
      `node .design-sync/capture-screens.cjs http://localhost:8001`
-     (needs `output/cncjs/server` built; 36 PNGs in `.design-sync/.cache/screens`);
+     (needs `output/cncjs/server` built; 45 PNGs in `.design-sync/.cache/screens`,
+     incl. four Sonda shots: method, Z plate setup, corner setup, wire);
   2. `mkdir -p ds-bundle/guidelines/screens && cp .design-sync/.cache/screens/*.png ds-bundle/guidelines/screens/`;
   3. upload `guidelines/**` with the rest.
 - `auxSha` in `_ds_sync.json` is computed before the screenshots are copied,

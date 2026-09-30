@@ -25,7 +25,7 @@ export const AtWorkZero = () => (
 export const Narrow = () => (
   // Narrow, as on a phone: the figures step down so the widest coordinate the
   // panel can show still fits its column.
-  <div className="w-[360px]">
+  <div className="w-full max-w-sm">
     <Card label="Pozycja" aside={<WcsBadge wcs="G54" />} bodyClassName="gap-0">
       <DroStrip position={{ x: -1234.567, y: 250.5, z: -12.35 }} machinePosition={{ x: -1634.567, y: -49.5, z: -52.35 }} />
     </Card>

@@ -36,7 +36,7 @@ const Journal = ({ rows }) => (
 export const MoreBelow = () => (
   // At the top: the fade and the track say there is more below.
   // Telefon / tablet / PC: same look on every device and the scroller of every screen, card list and sheet at every width; the one per-device difference is the jog card, which scrolls through it on a tablet/PC (keys plus both axis groups) and not on a phone, where the keys fill the card and the settings fold into SettingSummary lines.
-  <Card label="Dziennik" className="h-[340px] w-side" bodyClassName="gap-3">
+  <Card label="Dziennik" className="h-60 w-side" bodyClassName="gap-3">
     <FadeScroller className="min-h-0 flex-1">
       <Journal rows={ENTRIES} />
     </FadeScroller>
@@ -55,7 +55,7 @@ export const Scrolled = () => {
   }, []);
   return (
     <div ref={box}>
-      <Card label="Dziennik" className="h-[340px] w-side" bodyClassName="gap-3">
+      <Card label="Dziennik" className="h-60 w-side" bodyClassName="gap-3">
         <FadeScroller className="min-h-0 flex-1">
           <Journal rows={ENTRIES} />
         </FadeScroller>
@@ -66,7 +66,7 @@ export const Scrolled = () => {
 
 export const Fits = () => (
   // Content that fits: no fade, no track — nothing promises more.
-  <Card label="Dziennik" className="h-[340px] w-side" bodyClassName="gap-3">
+  <Card label="Dziennik" className="h-60 w-side" bodyClassName="gap-3">
     <FadeScroller className="min-h-0 flex-1">
       <Journal rows={ENTRIES.slice(0, 3)} />
     </FadeScroller>
