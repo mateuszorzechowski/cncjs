@@ -262,6 +262,13 @@ export const useMachine = () => {
       'files:fit': (fits) => {
         setSnapshot((previous) => ({ ...previous, fits: fits || null }));
       },
+      /**
+       * A probing measurement, to every device: running, measured and waiting
+       * for the zero to be confirmed, or failed; null once that is settled.
+       */
+      'probe:state': (probe) => {
+        setSnapshot((previous) => ({ ...previous, probe: probe || null }));
+      },
       'units:change': (units) => {
         setSnapshot((previous) => ({ ...previous, units: units || null }));
       },

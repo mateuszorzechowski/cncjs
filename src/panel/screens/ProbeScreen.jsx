@@ -1,0 +1,201 @@
+import { useEffect, useState } from 'react';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import Notice from '../ui/Notice';
+import ProbePicture from '../ui/ProbePicture';
+import {
+  Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
+} from '../ui/ProbeSteps';
+import StepTrack from '../ui/StepTrack';
+import JogWidget from '../widgets/JogWidget';
+import controller from '../machine/controller';
+import { controlledStop } from '../machine/commands';
+import {
+  FIRST_CORNER, STEPS, applyProbe, discardProbe, fetchProbe, fieldText, methodOf, saveProbe, startProbe, wizardStep,
+} from '../machine/probe';
+import { useIsPhone } from '../ui/shell';
+import { useUnits } from '../ui/units';
+import { t } from '../i18n';
+
+/**
+ * Sonda: a wizard, one step after another, across the whole screen
+ * (Mateusz, 2026-09-29) — which method, the plate and its figures, the wire,
+ * the tool over the plate, the measurement, and the zero it found.
+ *
+ * The first four are this device's. The last two are the server's: it runs
+ * the measurement (`services/probe`), and while it runs or waits for its zero
+ * to be confirmed every device shows it. **Nothing is written until Zapisz**
+ * — the zero goes into the system it was measured in, and into the journal.
+ *
+ * The figures are the server's, shown again every time and changed here
+ * (*"pamiętaj parametry, przypominaj"*). The travel limit among them is the
+ * fence: a probe that touches nothing goes that far and stops in an alarm.
+ */
+const ProbeScreen = ({ machine }) => {
+  const units = useUnits();
+  const phone = useIsPhone();
+  const { probe } = machine;
+  const [local, setLocal] = useState('method');
+  const [picked, setPicked] = useState(null);
+  const [corner, setCorner] = useState(FIRST_CORNER);
+  const [kept, setKept] = useState(null);
+  const [texts, setTexts] = useState({});
+  const [bad, setBad] = useState(null);
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    fetchProbe().then(setKept).catch(() => setKept(null));
+  }, []);
+
+  // A measurement another device started is shown with its own method.
+  const method = methodOf(probe?.method || picked);
+  // With no method in hand — a page opened afresh — the wizard starts at the start.
+  const step = wizardStep(method ? local : 'method', probe);
+  const fields = kept?.methods?.[method?.id]?.fields ?? [];
+  const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
+
+  useEffect(() => {
+    if (step === 'wire' && lit) {
+      setTouched(true);
+    }
+  }, [step, lit]);
+
+  const pick = (id) => {
+    const uses = kept?.methods?.[id]?.fields ?? [];
+    setPicked(id);
+    setTexts(Object.fromEntries(uses.map((name) => [name, fieldText(kept.params[name], name, units.rule)])));
+    setBad(null);
+    setLocal('prepare');
+  };
+
+  const confirmFigures = () => {
+    saveProbe(texts, units.rule)
+      .then((next) => {
+        setKept(next);
+        setBad(null);
+        setTouched(false);
+        setLocal('wire');
+      })
+      .catch((error) => setBad(error.name || fields[0]));
+  };
+
+  const measure = () => startProbe(method.id, method.id === 'corner' ? { corner } : {});
+
+  const again = () => {
+    if (machine.status?.word === 'Alarm') {
+      controller.command('unlock');
+    }
+    // Tried again here even if it was started on another device: its method and corner, then.
+    setPicked(probe?.method ?? picked);
+    setCorner(probe?.options?.corner ?? corner);
+    discardProbe();
+    setLocal('position');
+  };
+
+  const finish = (write) => {
+    if (write) {
+      applyProbe();
+    } else {
+      discardProbe();
+    }
+    setPicked(null);
+    setLocal('method');
+  };
+
+  const track = (
+    <Card label={t('probe.title')} aside={method ? t(method.key) : null}>
+      <StepTrack steps={STEPS.map((s) => ({ ...s, name: t(s.key) }))} current={step} label={t('probe.steps')} />
+    </Card>
+  );
+
+  if (step === 'position') {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-gap">
+        {track}
+        <div className="flex min-h-0 flex-1 flex-col gap-gap @4xl/shell:flex-row">
+          <Card className="min-w-0 shrink-0 @4xl/shell:flex-1" bodyClassName="gap-3">
+            <div className="flex items-start gap-4">
+              <ProbePicture method={method.id} corner={corner} label={t(method.key)} className="h-24 w-32" />
+              <p className="m-0 text-base text-ink">{t(method.place)}</p>
+            </div>
+            {lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
+            {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
+            <Foot back={() => setLocal('wire')}>
+              <Button tone="go" disabled={!machine.canProbe || lit !== false} onClick={measure} className="h-ctl">
+                {t('probe.position.start')}
+              </Button>
+            </Foot>
+          </Card>
+          <JogWidget machine={machine} className={phone ? 'min-h-0 flex-1' : 'min-h-0 w-jcard shrink-0'} />
+        </div>
+      </div>
+    );
+  }
+
+  let body = null;
+  let foot = null;
+  if (step === 'method') {
+    body = <MethodStep onPick={pick} />;
+  } else if (step === 'prepare') {
+    body = (
+      <PrepareStep
+        method={method}
+        corner={corner}
+        onCorner={setCorner}
+        fields={fields}
+        texts={texts}
+        onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}
+        bad={bad}
+      />
+    );
+    foot = (
+      <Foot back={() => setLocal('method')}>
+        <Button tone="primary" onClick={confirmFigures} className="h-ctl">{t('probe.next')}</Button>
+      </Foot>
+    );
+  } else if (step === 'wire') {
+    body = <WireStep lit={lit} touched={touched} />;
+    foot = (
+      <Foot back={() => setLocal('prepare')}>
+        <Button tone="primary" disabled={!touched || lit !== false} onClick={() => setLocal('position')} className="h-ctl">
+          {t('probe.next')}
+        </Button>
+      </Foot>
+    );
+  } else if (step === 'measure') {
+    body = <MeasureStep probe={probe} />;
+    foot = (
+      <Foot>
+        <Button tone="stop" onClick={() => controlledStop(machine.type)} className="h-ctl">{t('probe.measure.abort')}</Button>
+      </Foot>
+    );
+  } else if (probe?.state === 'failed') {
+    body = <ResultStep probe={probe} />;
+    foot = (
+      <Foot>
+        <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.close')}</Button>
+        <Button tone="primary" onClick={again} className="h-ctl">{t('probe.result.again')}</Button>
+      </Foot>
+    );
+  } else {
+    body = <ResultStep probe={probe} />;
+    foot = (
+      <Foot>
+        <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.discard')}</Button>
+        <Button tone="primary" disabled={!machine.connected} onClick={() => finish(true)} className="h-ctl">{t('probe.result.save')}</Button>
+      </Foot>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-gap">
+      {track}
+      <Card scrolls className="min-h-0 flex-1" bodyClassName="gap-3 pt-1">
+        {body}
+        {foot}
+      </Card>
+    </div>
+  );
+};
+
+export default ProbeScreen;

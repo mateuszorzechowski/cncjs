@@ -73,6 +73,13 @@ const KEYS = {
   'unknown-setting': 'refusal.unknownSetting',
   'setting-locked': 'refusal.settingLocked',
   'bad-value': 'refusal.badValue',
+  // The probe — see `machine/probe`. The clip on the tool before it moved is
+  // the one worth a sentence: Grbl would alarm at once.
+  'probe-triggered': 'refusal.probeTriggered',
+  probing: 'refusal.probing',
+  'no-result': 'refusal.noResult',
+  'bad-method': 'refusal.badMethod',
+  'bad-corner': 'refusal.badCorner',
 };
 
 /**
