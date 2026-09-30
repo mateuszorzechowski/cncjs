@@ -1378,9 +1378,11 @@
       "paperNote": "By hand with a sheet of paper: the top or any side, no probe."
     },
     "how": {
-      "z": "Lay the plate flat on the work, under the tool. Clip the lead to the tool.",
-      "corner": "Set the L plate on the chosen corner, its walls against both edges of the work. Clip the lead to the tool.",
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
+    },
+    "lay": {
+      "z": "Lay the plate flat on the work, under the tool.",
+      "corner": "Set the L plate on the chosen corner, its walls against both edges of the work."
     },
     "place": {
       "z": "Jog the tool over the plate, a few millimetres above it — less than the Z travel limit.",
@@ -1392,14 +1394,39 @@
       "backRight": "Back right",
       "frontLeft": "Front left",
       "frontRight": "Front right",
-      "zeroXY": "X0 Y0",
       "zeroX": "X0",
-      "fromAbove": "from above",
-      "fromSide": "from the side",
       "work": "work",
       "chosen": "Corner: {{name}}",
       "dirs": "{{x}} · {{y}} · Z−",
-      "pickHow": "Tap one of the four corners. The plate jumps to it; the arrows show which way each probe goes."
+      "pickHow": "Tap one of the four corners. The plate jumps to it; the arrows show which way each probe goes.",
+      "move": {
+        "zFast": "Z · fast move down to the plate",
+        "zBack": "Z · back-off before measuring",
+        "zSlow": "Z · slow, precise touch",
+        "xSet": "X · set-up",
+        "xFast": "X · fast move to the wall",
+        "xBack": "X · back-off",
+        "xSlow": "X · slow touch",
+        "ySet": "Y · set-up",
+        "yFast": "Y · fast move to the wall",
+        "yBack": "Y · back-off",
+        "ySlow": "Y · slow touch",
+        "zero": "Zero written: Z0, X0 and Y0",
+        "lift": "Z · lift",
+        "depth": "X · down beside the wall, below the work's edge",
+        "set": "{{axis}} · set-up: {{leg}}",
+        "liftLeg": "Lift: {{leg}}"
+      },
+      "zeroY": "Y0",
+      "leg": {
+        "up": "up",
+        "over": "over the plate",
+        "out": "out past the wall",
+        "down": "down",
+        "off": "off the wall",
+        "lift": "up by the lift",
+        "corner": "over X0 Y0"
+      }
     },
     "field": {
       "plateThickness": "Plate thickness",
@@ -1415,7 +1442,7 @@
       "fast": "Fast touch",
       "slow": "Slow touch",
       "paperThickness": "Paper thickness",
-      "lift": "Lift after measuring"
+      "lift": "Lift"
     },
     "step": {
       "method": "Method",
@@ -1427,11 +1454,12 @@
       "result": "Result"
     },
     "wire": {
-      "how": "Touch the plate to the tool and let go. The probe input has to light while they touch and go out after.",
+      "how": "Clip the lead to the tool. Touch the plate to the tool and let go. The panel reads the probe from the controller: it shows “Touching” while they touch and “Works” once you let go.",
       "waiting": "Waiting for a touch",
       "touching": "Touching",
       "ok": "Works",
       "unknown": "The controller does not report its inputs, so the wire cannot be checked here.",
+      "untested": "The wire is not tested. If the clip is not on, the tool goes all the way to the travel limit when measuring, and only then stops with ALARM:5.",
       "picture": "The clip on the tool, and the plate apart from it and touching it",
       "open": "PROBE · open",
       "closed": "PROBE · closed",
@@ -1487,28 +1515,59 @@
       "yBack": "Back side (Y)"
     },
     "stage": {
-      "label": "{{n}} · {{name}}",
       "search": "finding",
-      "measure": "measuring",
       "zero": "setting zero"
     },
     "cycle": {
-      "maxZ": "Fast approach: the furthest it looks for the plate — no touch, an alarm",
-      "fast": "Fast approach to the touch",
-      "retract": "Touch · back off before measuring",
-      "slow": "Slow, exact measurement",
-      "plateThickness": "Zero: the plate’s thickness under the touch",
-      "lift": "Up over the plate",
-      "zeroSum": "Z0 = touch − {{t}}",
       "alarm": "ALARM:5 · no touch",
-      "upTo": "up to {{v}}"
+      "upTo": "≤ {{v}}"
     },
     "z0": "Z0",
     "readout": {
-      "name": "Z · {{wcs}}",
       "system": "{{wcs}} · {{when}}",
       "before": "before",
       "after": "after"
+    },
+    "plate": {
+      "fast": "Z · fast move down to the plate",
+      "retract": "Z · back-off before measuring",
+      "slow": "Z · slow, precise touch",
+      "zero": "Z0 written (touch − plate {{t}})",
+      "lift": "Z · lift",
+      "miss": "No plate: down to the limit"
+    },
+    "bar": {
+      "measure": "measure",
+      "zero": "zero"
+    },
+    "group": {
+      "plate": "Plate",
+      "measure": "Measuring",
+      "reach": "Reach",
+      "moves": "Moves",
+      "tool": "Tool",
+      "measureAll": "Measuring · every axis"
+    },
+    "play": {
+      "pause": "Pause",
+      "play": "Play",
+      "cycle": "Cycle",
+      "loop": "Loop",
+      "once": "Once",
+      "prev": "Previous step",
+      "next": "Next step",
+      "repeat": "Repeat",
+      "label": "Playback"
+    },
+    "axis": {
+      "xPlus": "X+",
+      "yPlus": "Y+",
+      "zPlus": "Z+"
+    },
+    "view": {
+      "label": "View",
+      "top": "From above",
+      "side": "From the side"
     }
   }
 }

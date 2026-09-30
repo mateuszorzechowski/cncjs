@@ -1,49 +1,41 @@
 /**
- * The Z plate's cycle as a drawing moves through it — the design's flat
- * drawings, 1g and 1l (`Sondowanie - grafiki plaskie`, 2026-09-29).
+ * The Z plate's cycle as its drawing moves through it — the design's proposal
+ * (`templates/probe-z-proposal`, Claude Design, 2026-09-30): four moves in
+ * two stages, each drawn by one rule — on the left the move's arrow with its
+ * feed, on the right a grey dimension with the figure from the form.
  *
- * Nothing here is the machine's: the tool's height above the plate is in the
- * drawing's pixels and the timings are the drawing's, the same for any
- * figure. What a figure *means* is shown by which part of the cycle plays
- * when it is picked — the design's keyframes, carried over as they are.
+ * Nothing here is the machine's: heights are the drawing's units and the
+ * timings are the drawing's. What a move *says* — its dimension, its feed,
+ * its G-code — is made from the figures typed, so the drawing reads back
+ * the form.
  */
 
-/** One loop of a part of the cycle, in milliseconds. */
-export const CYCLE_MS = 2600;
+import { frameAt, layOut, totalOf } from './timeline';
 
-// The tool's tip on the plate, in the drawing's pixels.
-export const PLATE_TOP = 192;
+// The plate's top, where the tip touches, in the drawing's units.
+export const TOP = 156;
 
+// One move: played for `RUN`, then held to `SPAN` before the next.
+export const SPAN_MS = 3400;
+export const RUN_MS = 2600;
 /*
- * Each figure: which stage of the cycle it belongs to (1 finding the plate,
- * 2 the measurement, 3 the zero), the tool's height above the plate through
- * one loop as `[at, px, eased]`, and whether an arrow shows the move.
+ * A move looped on its own — picked on the bar, or its figure being set —
+ * holds its end the same long while for every move, and longer than the
+ * whole cycle's stop (review notes, 2026-09-30).
  */
-const APPROACH = [[0, 84], [0.15, 84], [0.7, 0], [1, 0]];
+export const LOOP_HOLD_MS = 2500;
 
-export const FIGURES = {
-  /*
-   * The limit is what happens with nothing to touch (Mateusz, 2026-09-30):
-   * the plate drawn as absent, the tool going the whole way, and the alarm
-   * Grbl raises at the end of it.
-   */
-  maxZ: { stage: 1, frames: APPROACH, arrow: false, badge: [96, 140], missing: true },
-  fast: { stage: 1, frames: APPROACH, arrow: true, badge: [256, 140] },
-  retract: { stage: 2, frames: [[0, 0], [0.2, 0], [0.55, 14, true], [1, 14]], arrow: false, badge: [108, 175] },
-  slow: { stage: 2, frames: [[0, 14], [0.15, 14], [0.75, 0], [1, 0]], arrow: true, badge: [256, 166] },
-  plateThickness: { stage: 3, frames: [[0, 0], [1, 0]], arrow: false, zero: true, badge: [304, 191] },
-  lift: { stage: 3, frames: [[0, 0], [0.2, 0], [0.6, 56, true], [1, 56]], arrow: true, badge: [256, 150] },
-};
+// How high the tool starts the fast touch, and how far it backs off.
+const HIGH = 84;
+const BACK = 24;
+const LIFT = 56;
 
-export const STAGES = [
-  { n: 1, key: 'probe.stage.search' },
-  { n: 2, key: 'probe.stage.measure' },
-  { n: 3, key: 'probe.stage.zero' },
-];
+// The tool's Z against the old zero at the touch — an example figure.
+export const BEFORE_MM = 37.482;
 
 const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - ((-2 * u + 2) ** 3) / 2);
 
-/** The tool's height above the plate at `p`, a fraction of one loop. */
+/** The tool's height above the plate at `p`, a fraction of one move, from `[at, height, eased]` keyframes. */
 export const gapAt = (frames, p) => {
   for (let i = 0; i < frames.length - 1; i++) {
     const [a, from] = frames[i];
@@ -56,127 +48,254 @@ export const gapAt = (frames, p) => {
   return frames[frames.length - 1][1];
 };
 
+const number = (text) => Number(String(text ?? '').replace(',', '.')) || 0;
+
+/*
+ * Each move: its keyframes; the way it goes (`from` → `to`, heights) and how
+ * (`kind`: `probe` a G38.2 touch in the accent, `rapid` a G0 dashed in the
+ * rapid colour, as the Ścieżka screen draws them); the feed's figure; its
+ * dimension — top and bottom heights on the drawing, the figure it shows,
+ * `limit` for a search limit (dashed, one head) and `upTo` to say so; the
+ * figures it uses, lit in the list beside it; `after` once the new zero is
+ * written.
+ */
+const MOVES = {
+  fast: {
+    frames: [[0, HIGH], [0.15, HIGH], [0.7, 0, true], [1, 0]],
+    from: HIGH, to: 0, kind: 'probe', feed: 'fast',
+    dim: { top: TOP - HIGH, bottom: TOP + 26, field: 'maxZ', limit: true, upTo: true },
+    titleKey: 'probe.plate.fast',
+    code: (v) => [`G38.2 Z-${v.maxZ} F${v.fast}`],
+    uses: ['fast', 'maxZ'],
+  },
+  retract: {
+    frames: [[0, 0], [0.2, 0], [0.55, BACK, true], [1, BACK]],
+    from: 0, to: BACK, kind: 'rapid', feed: null,
+    dim: { top: TOP - BACK, bottom: TOP, field: 'retract' },
+    titleKey: 'probe.plate.retract',
+    code: (v) => [`G0 Z+${v.retract}`],
+    uses: ['retract'],
+  },
+  slow: {
+    frames: [[0, BACK], [0.15, BACK], [0.75, 0, true], [1, 0]],
+    from: BACK, to: 0, kind: 'probe', feed: 'slow',
+    // The slow touch searches twice the back-off (`services/probe/moves`).
+    dim: { top: TOP - BACK, bottom: TOP + 26, double: 'retract', limit: true, upTo: true },
+    titleKey: 'probe.plate.slow',
+    code: (v) => [`G38.2 Z-${number(v.retract) * 2} F${v.slow}`],
+    uses: ['slow', 'retract'],
+  },
+  // The zero written at the touch, and the lift off the plate after it: two
+  // moves, two segments of the bar (review note, 2026-09-30).
+  zero: {
+    frames: [[0, 0], [1, 0]],
+    from: 0, to: 0, kind: null, feed: null, zeroAt: [0.25, 0.45],
+    dim: { top: TOP, bottom: TOP + 14, field: 'plateThickness' },
+    titleKey: 'probe.plate.zero',
+    code: (v, wcs) => [`G10 L20 P${wcs} Z${v.plateThickness}`],
+    uses: ['plateThickness'],
+    after: true,
+  },
+  lift: {
+    frames: [[0, 0], [0.2, 0], [0.6, LIFT, true], [1, LIFT]],
+    from: 0, to: LIFT, kind: 'rapid', feed: null,
+    // The zero is written by now: its line stays.
+    zeroAt: [-1, 0],
+    dim: { top: TOP - LIFT, bottom: TOP, field: 'lift' },
+    titleKey: 'probe.plate.lift',
+    code: (v) => [`G0 Z+${v.lift}`],
+    uses: ['lift'],
+    after: true,
+  },
+  // What the limit means: no plate, the whole way down, and the alarm.
+  miss: {
+    frames: [[0, HIGH], [0.1, HIGH], [0.7, -26, true], [1, -26]],
+    from: HIGH, to: -26, kind: 'probe', feed: 'fast', miss: true, alarmAt: 0.7,
+    dim: { top: TOP - HIGH, bottom: TOP + 26, field: 'maxZ', limit: true, upTo: true },
+    titleKey: 'probe.plate.miss',
+    code: () => ['ALARM:5'],
+    uses: ['maxZ'],
+  },
+};
+
+/*
+ * The whole cycle's moves in order, grouped as the bar under the drawing
+ * shows them: the stage (Z, then the zero) and within it the step.
+ */
+export const PLATE_ORDER = ['fast', 'retract', 'slow', 'zero', 'lift'];
+
+/*
+ * Z being the one axis, its steps are the stages themselves — no Z above
+ * them (review note, 2026-09-30). Each named only folded: open, its one step
+ * names it.
+ */
+export const PLATE_GROUPS = [
+  { id: 'search', key: 'probe.stage.search', folded: true, subs: [{ key: 'probe.stage.search', moves: ['fast'] }] },
+  { id: 'measure', key: 'probe.bar.measure', folded: true, subs: [{ key: 'probe.bar.measure', moves: ['retract', 'slow'] }] },
+  { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
+];
+
+/*
+ * A figure being set loops the move it changes, with its part of the drawing
+ * lit (`focus`: `dim` its dimension, `feed` the arrow's feed). The travel
+ * limit loops twice: the touch, then the same way with no plate.
+ */
+const EDIT = {
+  maxZ: [['fast', 'dim'], ['miss', 'dim']],
+  fast: [['fast', 'feed']],
+  retract: [['retract', 'dim']],
+  slow: [['slow', 'feed']],
+  plateThickness: [['zero', 'dim']],
+  lift: [['lift', 'dim']],
+};
+
+/*
+ * The figures in the list beside the drawing, by what they are about
+ * (proposal: Płytka, Pomiar, Dojazd, Przejazdy).
+ */
+export const PLATE_PARAMS = [
+  { id: 'plate', key: 'probe.group.plate', fields: ['plateThickness'] },
+  { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
+  { id: 'reach', key: 'probe.group.reach', fields: ['maxZ'] },
+  { id: 'moves', key: 'probe.group.moves', fields: ['lift'] },
+];
+
+export const moveOf = (name) => MOVES[name];
+
+/** Where through its run a move stops changing: its last keyframe that moves, the zero come in, the alarm up. */
+export const motionEnd = (name) => {
+  const move = MOVES[name];
+  let end = 0;
+  move.frames.forEach(([at, height], i) => {
+    if (i && height !== move.frames[i - 1][1]) {
+      end = at;
+    }
+  });
+  if (move.zeroAt) {
+    end = Math.max(end, move.zeroAt[1]);
+  }
+  return Math.max(end, move.alarmAt || 0);
+};
+
+/** The cycle on its clock, for the Setup's player: each move a span, one segment up to where it stops changing. */
+export const plateTimeline = () => layOut(PLATE_ORDER, {
+  spanOf: () => SPAN_MS,
+  runOf: () => RUN_MS,
+  partsOf: (name) => [[0, motionEnd(name)]],
+});
+
 /**
- * The drawing for one figure at `ms` into its loop: the tool's `gap`, the
- * arrow of the move under way (`{ from, to }`, tip to target, or null), the
- * amber dot of a contact, and for the plate's thickness how far the Z0 line
- * has come in.
+ * Which move plays at `ms`, and how far into it: the whole cycle, or `pinned`
+ * alone — the machine's step on the measurement screen — or, a figure being
+ * set, its loop, each move held longer (`span` is how long one lasts).
+ * `still` holds every move at its end (the system asks for reduced motion).
  */
-export const sceneAt = (name, ms, { arrows = false } = {}) => {
-  const figure = FIGURES[name];
-  if (!figure) {
-    return { gap: 84, arrow: null, contact: false, zero: 0 };
+export const playAt = (ms, { pinned = null, field = null, still = false } = {}) => {
+  if (!(field && EDIT[field]) && !pinned) {
+    const items = plateTimeline();
+    const frame = frameAt(items, ms % totalOf(items));
+    return { ...frame, focus: null, p: still ? 1 : frame.p };
   }
-  const p = (ms % CYCLE_MS) / CYCLE_MS;
-  const { frames } = figure;
-  const gap = gapAt(frames, p);
-  const start = (frames[1] || frames[0])[0];
-  const [end, target] = frames[2] || frames[frames.length - 1];
-  let arrow = null;
-  /*
-   * The move's arrow, only while the tool moves, from the tool to where it is
-   * going — shrinking with the way left, gone once shorter than its head
-   * (Mateusz, 2026-09-29: *"strzałka kierunku ruchu pokazuje się jedynie
-   * przy ruchu i skraca się wraz z drogą do celu"*). `arrows` turns it on for
-   * every move of the whole cycle, not only a figure's own.
-   */
-  if ((figure.arrow || arrows) && p >= start && p < end) {
-    const from = PLATE_TOP - gap;
-    const to = PLATE_TOP - target;
-    arrow = Math.abs(to - from) > 10 ? { from, to } : null;
+  const loop = field && EDIT[field] ? EDIT[field] : [[pinned, null]];
+  const spans = loop.map(([one]) => RUN_MS * motionEnd(one) + LOOP_HOLD_MS);
+  let at = ms % spans.reduce((all, one) => all + one, 0);
+  let i = 0;
+  while (at >= spans[i]) {
+    at -= spans[i];
+    i += 1;
   }
-  if (figure.zero) {
-    return { gap, arrow, contact: p % 0.5 < 0.3, zero: Math.min(1, Math.max(0, (p - 0.25) / 0.2)) };
-  }
-  if (figure.missing) {
-    // Nothing is touched; at the end of the way, the alarm.
-    return { gap, arrow, contact: false, zero: 0, ghost: true, alarm: p >= end };
-  }
-  return { gap, arrow, contact: gap < 0.5, zero: 0 };
+  const [name, focus] = loop[i];
+  return {
+    name, focus, p: still ? 1 : Math.min(1, at / RUN_MS), span: spans[i], run: RUN_MS, into: at,
+  };
 };
+
+/**
+ * The drawing of move `name` at `p`, with `texts` the figures as typed and
+ * `say(field, text)` a figure as a label says it (`F50`, `5 mm`), `upTo(v)`
+ * as a search limit says it: everything the scene draws, in the drawing's
+ * units.
+ */
+export const plateScene = (name, p, { texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null } = {}) => {
+  const said = (field) => say(field, texts[field] ?? '');
+  const move = MOVES[name];
+  const gap = gapAt(move.frames, p);
+  const dim = move.dim || null;
+  let dimText = null;
+  if (dim) {
+    const figure = dim.double ? say(dim.double, String(number(texts[dim.double]) * 2)) : said(dim.field);
+    dimText = dim.upTo ? upTo(figure) : figure;
+  }
+  let motion = null;
+  if (move.kind && move.from !== move.to) {
+    motion = { from: TOP - move.from, to: TOP - move.to, kind: move.kind, feed: move.feed ? said(move.feed) : null };
+  }
+  let zero = 0;
+  if (move.zeroAt) {
+    const [a, b] = move.zeroAt;
+    zero = Math.min(1, Math.max(0, (p - a) / (b - a)));
+  }
+  return {
+    gap,
+    dim: dim ? { top: dim.top, bottom: dim.bottom, limit: Boolean(dim.limit), text: dimText } : null,
+    motion,
+    // The feed is said by the arrow's colour alone while a dimension is
+    // drawn; its figure comes up only when it is the one being set.
+    feedTag: Boolean(motion?.feed && (focus || !dim)),
+    zero,
+    contact: !move.miss && gap < 0.5,
+    ghost: Boolean(move.miss),
+    alarm: Boolean(move.miss && p >= move.alarmAt),
+    focus,
+  };
+};
+
+/** The move's G-code, with the figures typed and the coordinate system's number. */
+export const plateCode = (name, texts, wcs = 1) => MOVES[name].code(texts, wcs).join(' ');
 
 /*
- * The whole cycle, when no figure is being set (Mateusz, 2026-09-29: *"jak
- * żaden input nie ma fokusa to pokazuj całą animację z przystankami"*): each
- * part in the order the machine runs them, played once and then held for a
- * moment, so the stages read one at a time — every move with its arrow
- * (*"pokazuj jeszcze strzałki kierunku i wartości na rysunku"*).
+ * The tool's Z at the touch, as the readout says it: against the old zero
+ * before it is written, the plate's thickness after — held, not following
+ * the moves (review note, 2026-09-30: *"stała wartość przed i stała wartość
+ * po, bez zmiany przy ruchu, która może rozpraszać"*).
  */
-export const CYCLE_ORDER = ['fast', 'retract', 'slow', 'plateThickness', 'lift'];
-
-/** How long each part is held at its end before the next begins. */
-export const STOP_MS = 800;
-
-/** The part of the whole cycle at `ms`, and the drawing for it. */
-export const cycleAt = (ms) => {
-  const span = CYCLE_MS + STOP_MS;
-  const at = ms % (span * CYCLE_ORDER.length);
-  const name = CYCLE_ORDER[Math.floor(at / span)];
-  const into = at % span;
-  // Held on its last frame through the stop.
-  return { name, scene: sceneAt(name, Math.min(into, CYCLE_MS - 1), { arrows: true }) };
-};
-
-/*
- * The tool's Z in the coordinate system through the whole cycle, for the
- * example it is (Mateusz, 2026-09-29: *"pozycję Z dla układu w przykładowej
- * animacji przed i po"*). Before the zero is written it reads against the
- * old zero — an example figure, `BEFORE_MM` at the touch; after, against the
- * new one, where the touch is the plate's thickness. Each part moves it by
- * its own distance, in step with the drawing: the approach by `APPROACH_MM`,
- * the back-off and the slow touch by `retract`, the lift by `lift`.
- */
-export const BEFORE_MM = 37.482;
-export const APPROACH_MM = 5;
-
-const TRAVEL = {
-  fast: () => APPROACH_MM,
-  retract: (mm) => mm.retract,
-  slow: (mm) => mm.retract,
-  plateThickness: () => 0,
-  lift: (mm) => mm.lift,
-};
-
-/** `{ z, after }` — the tool's Z in millimetres for part `name` at `gap`, and whether the new zero is written. */
-export const readoutAt = (name, gap, mm) => {
-  const figure = FIGURES[name];
-  const after = figure.stage === 3;
-  const most = Math.max(...figure.frames.map(([, px]) => px));
-  const travel = most > 0 ? (gap / most) * TRAVEL[name](mm) : 0;
-  return { z: (after ? mm.plateThickness : BEFORE_MM) + travel, after };
+export const plateReadout = (name, mm) => {
+  const after = Boolean(MOVES[name].after);
+  return { z: after ? mm.plateThickness : BEFORE_MM, after };
 };
 
 /*
  * Getting the tool into place before measuring (review note, 2026-09-29: the
  * position step as the machine moving over the plate): from off to the side
  * and high, across until it is over the plate, then down to a few
- * millimetres above it, and a moment there before it starts again.
+ * millimetres above it, and a while there before it starts again — slower,
+ * and held longer at the end (review note, 2026-09-30).
  */
-export const POSITION_MS = 4000;
-const ASIDE_PX = -150;
-const HIGH_PX = 90;
-export const OVER_PX = 30;
+export const POSITION_MS = 7000;
+const ASIDE = -100;
+const HIGH_OVER = 70;
+export const OVER = 22;
 
 export const positionAt = (ms) => {
   const p = (ms % POSITION_MS) / POSITION_MS;
-  const across = Math.min(1, Math.max(0, (p - 0.15) / 0.35));
-  const down = Math.min(1, Math.max(0, (p - 0.55) / 0.25));
-  const gap = HIGH_PX + (OVER_PX - HIGH_PX) * ease(down);
+  const across = Math.min(1, Math.max(0, (p - 0.1) / 0.3));
+  const down = Math.min(1, Math.max(0, (p - 0.45) / 0.2));
+  const gap = HIGH_OVER + (OVER - HIGH_OVER) * ease(down);
   const descending = down > 0 && down < 1;
   return {
-    shift: ASIDE_PX * (1 - ease(across)),
+    shift: ASIDE * (1 - ease(across)),
     gap,
-    arrow: descending ? { from: PLATE_TOP - HIGH_PX, to: PLATE_TOP - OVER_PX } : null,
+    motion: descending ? { from: TOP - HIGH_OVER, to: TOP - OVER, kind: 'rapid', feed: null } : null,
     over: down >= 1,
   };
 };
 
 /*
- * What the machine is doing, as the figure whose part of the cycle it is —
+ * What the machine is doing, as the move whose part of the cycle it is —
  * the server's step names (`services/probe/moves`), so the measurement
- * screen plays the part the machine is in.
+ * screen plays the move the machine is in.
  */
-const PHASE_FIGURE = {
+const PHASE_MOVE = {
   'z-fast': 'fast',
   'z-back': 'retract',
   'z-settle': 'retract',
@@ -184,4 +303,4 @@ const PHASE_FIGURE = {
   lift: 'lift',
 };
 
-export const figureOfPhase = (phase) => PHASE_FIGURE[phase] || 'fast';
+export const moveOfPhase = (phase) => PHASE_MOVE[phase] || 'fast';

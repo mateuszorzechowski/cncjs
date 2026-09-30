@@ -8,15 +8,17 @@ import ZPlatePosition from '../ui/ZPlatePosition';
 import CornerChooser from '../ui/CornerChooser';
 import CornerPosition from '../ui/CornerPosition';
 import {
-  Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
+  Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep, hasEditor,
 } from '../ui/ProbeSteps';
+import Sheet from '../ui/Sheet';
 import StepTrack from '../ui/StepTrack';
 import JogWidget from '../widgets/JogWidget';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  applyProbe, discardProbe, fetchProbe, fieldText, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
+  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
 } from '../machine/probe';
+import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
 import { useUnits } from '../ui/units';
 import { t } from '../i18n';
@@ -56,6 +58,8 @@ const ProbeScreen = ({ machine }) => {
   const [texts, setTexts] = useState({});
   const [bad, setBad] = useState(null);
   const [touched, setTouched] = useState(false);
+  // The jog's sheet open, on a phone at the position step.
+  const [jogging, setJogging] = useState(false);
 
   useEffect(() => {
     fetchProbe().then(setKept).catch(() => setKept(null));
@@ -123,8 +127,20 @@ const ProbeScreen = ({ machine }) => {
   };
 
   const track = (
-    <Card label={t('probe.title')} aside={method ? t(method.key) : null}>
-      <StepTrack steps={stepsOf(method).map((s) => ({ ...s, name: t(s.key) }))} current={step} label={t('probe.steps')} />
+    // The card's caption, the steps and the method in one row when wide
+    // (review note, 2026-09-30: *"dużo miejsca to zajmuje"*); on a phone the
+    // steps under the other two.
+    <Card>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <h2 className="m-0 text-cap font-semibold uppercase tracking-[0.1em] text-mut">{t('probe.title')}</h2>
+        <StepTrack
+          steps={stepsOf(method).map((s) => ({ ...s, name: t(s.key) }))}
+          current={step}
+          label={t('probe.steps')}
+          className="order-3 w-full @3xl/shell:order-none @3xl/shell:w-auto @3xl/shell:flex-1"
+        />
+        {method ? <span className="ml-auto font-num text-note text-mut @3xl/shell:ml-0">{t(method.key)}</span> : null}
+      </div>
     </Card>
   );
 
@@ -135,11 +151,12 @@ const ProbeScreen = ({ machine }) => {
       <div className="flex min-h-0 flex-1 flex-col gap-gap">
         {track}
         <div className="flex min-h-0 flex-1 flex-col gap-gap @4xl/shell:flex-row">
-          <Card className="min-w-0 shrink-0 @4xl/shell:flex-1" bodyClassName="gap-3">
+          <Card className={`min-w-0 @4xl/shell:flex-1 ${phone ? 'flex-1' : 'shrink-0'}`} bodyClassName="gap-3">
             {Moving ? (
               <>
                 <Moving choice={choice} />
-                <p className="m-0 text-base text-ink">{t(method.place)}</p>
+                {/* Where the plate goes, then where the tool goes: the plate laid here, not on the Setup (review note, 2026-09-30). */}
+                <p className="m-0 text-base text-ink">{method.lay ? `${t(method.lay)} ${t(method.place)}` : t(method.place)}</p>
               </>
             ) : (
               <div className="flex items-start gap-4">
@@ -150,12 +167,23 @@ const ProbeScreen = ({ machine }) => {
             {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
             {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
             <Foot back={() => go(-1)}>
+              {phone ? <Button tone="outline" onClick={() => setJogging(true)} className="h-ctl">{t('nav.jog')}</Button> : null}
               <Button tone="go" disabled={!machine.canProbe || (method.touches && lit !== false)} onClick={measure} className="h-ctl">
                 {t(method.start)}
               </Button>
             </Foot>
           </Card>
-          <JogWidget machine={machine} className={phone ? 'min-h-0 flex-1' : 'min-h-0 w-jcard shrink-0'} />
+          {/*
+            * On a phone the jog is a sheet over the step, opened from its foot
+            * (review note, 2026-09-30: *"jog na telefonie w arkuszu"*) — under
+            * the card it had the half of the screen left, and the card none.
+            */}
+          {phone ? null : <JogWidget machine={machine} className="min-h-0 w-jcard shrink-0" />}
+          {phone && jogging ? (
+            <Sheet title={t('nav.jog')} onClose={() => setJogging(false)} tall>
+              <JogWidget machine={machine} className="min-h-0 flex-1" />
+            </Sheet>
+          ) : null}
         </div>
       </div>
     );
@@ -163,6 +191,15 @@ const ProbeScreen = ({ machine }) => {
 
   let body = null;
   let foot = null;
+  /*
+   * Wide, the figures are a card of their own beside the drawing's, standing
+   * at the top and running out under a fade at the foot (review note,
+   * 2026-09-30: *"prawa kolumna to osobna karta, cień zamknięty z góry,
+   * otwarty z dołu"*). On a phone they are three lines that open a sheet,
+   * and stay in the one card. On a PC the group chosen stands in a third,
+   * as the controller's settings (review note, 2026-09-30).
+   */
+  const split = step === 'prepare' && !phone && hasEditor(method);
   if (step === 'method') {
     body = <MethodStep onPick={pick} />;
   } else if (step === 'choose') {
@@ -184,6 +221,22 @@ const ProbeScreen = ({ machine }) => {
         onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}
         bad={bad}
         wcs={machine.modal?.wcs}
+        split={split ? (left, right, third) => (
+          <>
+            <div className="flex min-h-0 min-w-0 flex-[7_7_0] flex-col">
+              <FadeScroller>
+                <div className="flex min-h-full flex-col">
+                  <Card className="flex-1" bodyClassName="gap-3">
+                    {left}
+                    {foot}
+                  </Card>
+                </div>
+              </FadeScroller>
+            </div>
+            <Card scrolls className={`min-h-0 min-w-0 ${third ? 'flex-[4_4_0]' : 'flex-[5_5_0]'}`}>{right}</Card>
+            {third ? <Card scrolls className="min-h-0 min-w-0 flex-[4_4_0]">{third}</Card> : null}
+          </>
+        ) : null}
       />
     );
     foot = (
@@ -195,7 +248,7 @@ const ProbeScreen = ({ machine }) => {
     body = <WireStep lit={lit} touched={touched} plate={method.plate} />;
     foot = (
       <Foot back={() => go(-1)}>
-        <Button tone="primary" disabled={!touched || lit !== false} onClick={() => go(1)} className="h-ctl">
+        <Button tone="primary" onClick={() => go(1)} className="h-ctl">
           {t('probe.next')}
         </Button>
       </Foot>
@@ -237,14 +290,18 @@ const ProbeScreen = ({ machine }) => {
         * rather than its contents sliding under its own standing edge
         * (review note, 2026-09-29: *"na górze cień otwarty"*).
         */}
-      <FadeScroller>
-        <div className="flex min-h-full flex-col">
-          <Card label={choosing ? t('probe.title') : null} className="flex-1" bodyClassName="gap-3">
-            {body}
-            {foot}
-          </Card>
-        </div>
-      </FadeScroller>
+      {split ? (
+        <div className="flex min-h-0 flex-1 gap-gap">{body}</div>
+      ) : (
+        <FadeScroller>
+          <div className="flex min-h-full flex-col">
+            <Card label={choosing ? t('probe.title') : null} className="flex-1" bodyClassName="gap-3">
+              {body}
+              {foot}
+            </Card>
+          </div>
+        </FadeScroller>
+      )}
     </div>
   );
 };

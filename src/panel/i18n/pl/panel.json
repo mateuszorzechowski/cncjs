@@ -1378,9 +1378,11 @@
       "paperNote": "Ręcznie, kartką papieru: wierzch albo dowolny bok, bez sondy."
     },
     "how": {
-      "z": "Połóż płytkę płasko na materiale, pod frezem. Przypnij krokodylek do frezu.",
-      "corner": "Załóż płytkę L na wybrany narożnik, ściankami do obu krawędzi materiału. Przypnij krokodylek do frezu.",
       "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
+    },
+    "lay": {
+      "z": "Połóż płytkę płasko na materiale, pod frezem.",
+      "corner": "Załóż płytkę L na wybrany narożnik, ściankami do obu krawędzi materiału."
     },
     "place": {
       "z": "Podjedź frezem nad płytkę, kilka milimetrów nad nią — mniej niż limit dojazdu Z.",
@@ -1392,14 +1394,39 @@
       "backRight": "Tył prawy",
       "frontLeft": "Przód lewy",
       "frontRight": "Przód prawy",
-      "zeroXY": "X0 Y0",
       "zeroX": "X0",
-      "fromAbove": "z góry",
-      "fromSide": "z boku",
       "work": "materiał",
       "chosen": "Narożnik: {{name}}",
       "dirs": "{{x}} · {{y}} · Z−",
-      "pickHow": "Stuknij jeden z czterech narożników. Płytka przeskakuje w wybrany róg, strzałki pokazują kierunki sondowania."
+      "pickHow": "Stuknij jeden z czterech narożników. Płytka przeskakuje w wybrany róg, strzałki pokazują kierunki sondowania.",
+      "move": {
+        "zFast": "Z · szybki zjazd do płytki",
+        "zBack": "Z · cofnięcie przed pomiarem",
+        "zSlow": "Z · wolny, dokładny pomiar",
+        "xSet": "X · ustawienie",
+        "xFast": "X · szybki dojazd do ścianki",
+        "xBack": "X · cofnięcie",
+        "xSlow": "X · wolny pomiar",
+        "ySet": "Y · ustawienie",
+        "yFast": "Y · szybki dojazd do ścianki",
+        "yBack": "Y · cofnięcie",
+        "ySlow": "Y · wolny pomiar",
+        "zero": "Zapis zera: Z0, X0 i Y0",
+        "lift": "Z · odjazd w górę",
+        "depth": "X · zjazd obok ścianki, pod krawędź materiału",
+        "set": "{{axis}} · ustawienie: {{leg}}",
+        "liftLeg": "Odjazd: {{leg}}"
+      },
+      "zeroY": "Y0",
+      "leg": {
+        "up": "w górę",
+        "over": "nad płytkę",
+        "out": "za ściankę",
+        "down": "w dół",
+        "off": "od ścianki",
+        "lift": "w górę o odjazd",
+        "corner": "nad X0 Y0"
+      }
     },
     "field": {
       "plateThickness": "Grubość płytki",
@@ -1411,11 +1438,11 @@
       "depth": "Zejście przy ściance",
       "maxZ": "Limit dojazdu Z",
       "maxXY": "Limit dojazdu X/Y",
-      "retract": "Odjazd",
+      "retract": "Cofnięcie",
       "fast": "Szybki dotyk",
       "slow": "Wolny dotyk",
       "paperThickness": "Grubość kartki",
-      "lift": "Powrót po pomiarze"
+      "lift": "Odjazd w górę"
     },
     "step": {
       "method": "Metoda",
@@ -1427,11 +1454,12 @@
       "result": "Wynik"
     },
     "wire": {
-      "how": "Dotknij płytką frezu i puść. Wejście sondy ma się zapalić przy dotyku i zgasnąć po nim.",
+      "how": "Przypnij krokodylek do frezu. Dotknij płytką frezu i puść. Panel czyta stan sondy ze sterownika: przy dotyku pokaże „Dotyk”, po puszczeniu „Działa”.",
       "waiting": "Czekam na dotyk",
       "touching": "Dotyk",
       "ok": "Działa",
       "unknown": "Sterownik nie podaje stanu wejść, więc przewodu nie da się tu sprawdzić.",
+      "untested": "Przewód nie sprawdzony. Jeśli krokodylek nie jest wpięty, frez przy pomiarze zjedzie aż do limitu dojazdu i dopiero wtedy stanie z ALARM:5.",
       "picture": "Krokodylek na frezie, płytka z dala od niego i dotykająca go",
       "open": "SONDA · otwarta",
       "closed": "SONDA · zwarta",
@@ -1487,28 +1515,59 @@
       "yBack": "Tylny bok (Y)"
     },
     "stage": {
-      "label": "{{n}} · {{name}}",
       "search": "szukanie",
-      "measure": "dokładny pomiar",
       "zero": "zapis zera"
     },
     "cycle": {
-      "maxZ": "Szybki zjazd: maksymalna droga szukania — bez dotyku alarm",
-      "fast": "Szybki zjazd do styku",
-      "retract": "Styk · odjazd przed pomiarem",
-      "slow": "Wolny, dokładny pomiar",
-      "plateThickness": "Zapis zera: grubość płytki pod stykiem",
-      "lift": "Powrót nad płytkę",
-      "zeroSum": "Z0 = styk − {{t}}",
       "alarm": "ALARM:5 · brak dotyku",
-      "upTo": "maks. {{v}}"
+      "upTo": "≤ {{v}}"
     },
     "z0": "Z0",
     "readout": {
-      "name": "Z · {{wcs}}",
       "system": "{{wcs}} · {{when}}",
       "before": "przed",
       "after": "po"
+    },
+    "plate": {
+      "fast": "Z · szybki zjazd do płytki",
+      "retract": "Z · cofnięcie przed pomiarem",
+      "slow": "Z · wolny, dokładny pomiar",
+      "zero": "Zapis zera Z0 (styk − płytka {{t}})",
+      "lift": "Z · odjazd w górę",
+      "miss": "Brak płytki: zjazd do limitu"
+    },
+    "bar": {
+      "measure": "pomiar",
+      "zero": "zero"
+    },
+    "group": {
+      "plate": "Płytka",
+      "measure": "Pomiar",
+      "reach": "Dojazd",
+      "moves": "Przejazdy",
+      "tool": "Frez",
+      "measureAll": "Pomiar · wszystkie osie"
+    },
+    "play": {
+      "pause": "Pauza",
+      "play": "Odtwórz",
+      "cycle": "Cykl",
+      "loop": "Etap",
+      "once": "Raz",
+      "prev": "Poprzedni etap",
+      "next": "Następny etap",
+      "repeat": "Powtarzanie",
+      "label": "Odtwarzanie"
+    },
+    "axis": {
+      "xPlus": "X+",
+      "yPlus": "Y+",
+      "zPlus": "Z+"
+    },
+    "view": {
+      "label": "Widok",
+      "top": "Z góry",
+      "side": "Z boku"
     }
   }
 }

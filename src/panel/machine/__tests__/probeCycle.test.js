@@ -1,102 +1,128 @@
 import {
-  BEFORE_MM, CYCLE_MS, CYCLE_ORDER, FIGURES, PLATE_TOP, STOP_MS, cycleAt, figureOfPhase, gapAt, readoutAt, sceneAt,
+  BEFORE_MM, LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, RUN_MS, SPAN_MS, TOP, gapAt, motionEnd, moveOf, moveOfPhase, plateCode, plateReadout, plateScene, playAt, positionAt,
 } from '../probeCycle';
 
-const at = (fraction) => fraction * CYCLE_MS;
+const TEXTS = {
+  maxZ: '20', fast: '50', retract: '5', slow: '15', plateThickness: '20', lift: '20',
+};
+const say = (field, text) => (field === 'fast' || field === 'slow' ? `F${text}` : `${text} mm`);
+const upTo = (v) => `maks. ${v}`;
 
-describe('the tool on the drawing', () => {
-  test('waits, comes down onto the plate, and rests on it', () => {
-    const { frames } = FIGURES.fast;
-
-    expect(gapAt(frames, 0.1)).toBe(84);
-    expect(gapAt(frames, 0.425)).toBeCloseTo(42, 6);
-    expect(gapAt(frames, 0.9)).toBe(0);
+describe('the Z plate cycle (probe proposal)', () => {
+  test('plays its five moves in order, each for a span, and loops', () => {
+    expect(PLATE_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['fast', 'retract', 'slow', 'zero', 'lift']);
+    expect(playAt(PLATE_ORDER.length * SPAN_MS + 10).name).toBe('fast');
   });
 
-  test('an arrow shows the move while it is under way, to where it ends', () => {
-    expect(sceneAt('fast', at(0.3)).arrow).toEqual({ from: PLATE_TOP - gapAt(FIGURES.fast.frames, 0.3), to: PLATE_TOP });
-    expect(sceneAt('fast', at(0.9)).arrow).toBeNull();
+  test('holds a move at its end between the run and the next move', () => {
+    expect(playAt(RUN_MS + 100).p).toBe(1);
+    expect(playAt(RUN_MS + 100).name).toBe('fast');
   });
 
-  test('the travel limit is the same move without the arrow — it is the distance that counts', () => {
-    expect(sceneAt('maxZ', at(0.3)).arrow).toBeNull();
+  test('shows every move at its end when the system asks for less motion', () => {
+    expect(playAt(10, { still: true }).p).toBe(1);
   });
 
-  test('a touch lights the contact', () => {
-    expect(sceneAt('slow', at(0.9)).contact).toBe(true);
-    expect(sceneAt('slow', at(0.05)).contact).toBe(false);
+  test('loops a pinned move alone', () => {
+    expect(playAt(5 * SPAN_MS + 10, { pinned: 'slow' }).name).toBe('slow');
   });
 
-  test('the plate\'s thickness brings the Z0 line in', () => {
-    expect(sceneAt('plateThickness', at(0.1)).zero).toBe(0);
-    expect(sceneAt('plateThickness', at(0.6)).zero).toBe(1);
+  test('a figure being set loops the move it changes, its part lit', () => {
+    expect(playAt(10, { field: 'fast' })).toMatchObject({ name: 'fast', focus: 'feed' });
+    expect(playAt(10, { field: 'retract' })).toMatchObject({ name: 'retract', focus: 'dim' });
+    expect(playAt(10, { field: 'plateThickness' })).toMatchObject({ name: 'zero', focus: 'dim' });
+    expect(playAt(10, { field: 'lift' })).toMatchObject({ name: 'lift', focus: 'dim' });
   });
 
-  test('loops', () => {
-    expect(sceneAt('lift', at(1.3)).gap).toBeCloseTo(sceneAt('lift', at(0.3)).gap, 6);
-  });
-});
-
-describe('what the machine is doing, as a part of the cycle', () => {
-  test.each([
-    ['z-fast', 'fast', 1],
-    ['z-back', 'retract', 2],
-    ['z-settle', 'retract', 2],
-    ['z', 'slow', 2],
-    ['lift', 'lift', 3],
-  ])('%s plays %s, stage %i', (phase, figure, stage) => {
-    expect(figureOfPhase(phase)).toBe(figure);
-    expect(FIGURES[figure].stage).toBe(stage);
-  });
-});
-
-describe('the whole cycle, with no figure in hand', () => {
-  const span = CYCLE_MS + STOP_MS;
-
-  test('plays each part in the order the machine runs them, and starts again', () => {
-    expect(CYCLE_ORDER.map((_, i) => cycleAt(i * span + 10).name)).toEqual(['fast', 'retract', 'slow', 'plateThickness', 'lift']);
-    expect(cycleAt(CYCLE_ORDER.length * span + 10).name).toBe('fast');
+  test('the travel limit loops the touch, then the same way with no plate, each held alike', () => {
+    expect(playAt(10, { field: 'maxZ' }).name).toBe('fast');
+    // The fast touch stops moving at 0.7 of its run.
+    expect(playAt(RUN_MS * 0.7 + LOOP_HOLD_MS + 10, { field: 'maxZ' }).name).toBe('miss');
   });
 
-  test('stops on the last frame of each part before the next', () => {
-    const end = sceneAt('fast', CYCLE_MS - 1).gap;
-
-    expect(cycleAt(CYCLE_MS + STOP_MS / 2).scene.gap).toBe(end);
-    expect(cycleAt(CYCLE_MS + STOP_MS / 2).name).toBe('fast');
+  test('a move looped on its own holds its end the same long while, whatever its length', () => {
+    const hold = (name) => {
+      const at = playAt(0, { pinned: name });
+      return at.span - RUN_MS * motionEnd(name);
+    };
+    expect(hold('retract')).toBe(LOOP_HOLD_MS);
+    expect(hold('slow')).toBe(LOOP_HOLD_MS);
+    expect(motionEnd('retract')).toBe(0.55);
+    expect(motionEnd('zero')).toBe(0.45);
   });
 
-  test('shows the arrow of a move while it moves, shrinking to where it goes', () => {
-    const at = (fraction) => cycleAt(CYCLE_ORDER.indexOf('lift') * span + CYCLE_MS * fraction).scene.arrow;
-    const length = (arrow) => Math.abs(arrow.to - arrow.from);
-
-    expect(at(0.25).to).toBe(PLATE_TOP - 56);
-    expect(length(at(0.25))).toBeGreaterThan(length(at(0.45)));
-    // Nearly there, and before it moves: no arrow.
-    expect(at(0.58)).toBeNull();
-    expect(at(0.1)).toBeNull();
-  });
-});
-
-describe('the Z the example reads, before and after the zero', () => {
-  const mm = { retract: 2, lift: 10, plateThickness: 10 };
-
-  test('against the old zero while it is being found', () => {
-    expect(readoutAt('fast', 0, mm)).toEqual({ z: BEFORE_MM, after: false });
-    expect(readoutAt('retract', 14, mm).z).toBeCloseTo(BEFORE_MM + 2, 6);
+  test('the fast touch: a probing arrow down to the plate, its limit dashed past it', () => {
+    const scene = plateScene('fast', 0.5, { texts: TEXTS, say, upTo });
+    expect(scene.gap).toBe(gapAt(moveOf('fast').frames, 0.5));
+    expect(scene.motion).toMatchObject({ from: TOP - 84, to: TOP, kind: 'probe', feed: 'F50' });
+    expect(scene.dim).toMatchObject({ limit: true, text: 'maks. 20 mm' });
+    // The feed is said by the arrow's colour while the dimension is drawn.
+    expect(scene.feedTag).toBe(false);
+    expect(plateScene('fast', 0.5, { texts: TEXTS, say, upTo, focus: 'feed' }).feedTag).toBe(true);
   });
 
-  test('against the new one once written: the plate at the touch, and the lift above it', () => {
-    expect(readoutAt('plateThickness', 0, mm)).toEqual({ z: 10, after: true });
-    expect(readoutAt('lift', 56, mm).z).toBeCloseTo(20, 6);
+  test('the back-off is a rapid, the slow touch searches twice it', () => {
+    expect(plateScene('retract', 0.8, { texts: TEXTS, say }).motion.kind).toBe('rapid');
+    expect(plateScene('slow', 0.5, { texts: TEXTS, say, upTo }).dim.text).toBe('maks. 10 mm');
   });
-});
 
-describe('the Z travel limit', () => {
-  test('is drawn with no plate to touch, and ends in the alarm', () => {
-    const going = sceneAt('maxZ', CYCLE_MS * 0.4);
-    const there = sceneAt('maxZ', CYCLE_MS * 0.9);
+  test('touches green where the tip reaches the plate', () => {
+    expect(plateScene('fast', 1, { texts: TEXTS, say }).contact).toBe(true);
+    expect(plateScene('fast', 0.3, { texts: TEXTS, say }).contact).toBe(false);
+  });
 
-    expect(going).toMatchObject({ ghost: true, alarm: false, contact: false });
-    expect(there).toMatchObject({ ghost: true, alarm: true, contact: false, gap: 0 });
+  test('the zero: Z0 comes in with the plate thickness; the lift keeps it and goes up by G0', () => {
+    const zero = plateScene('zero', 0.6, { texts: TEXTS, say });
+    expect(zero.zero).toBe(1);
+    expect(zero.dim.text).toBe('20 mm');
+    expect(zero.motion).toBeNull();
+    const lift = plateScene('lift', 0.5, { texts: TEXTS, say });
+    expect(lift.zero).toBe(1);
+    expect(lift.motion.kind).toBe('rapid');
+    expect(lift.dim.top).toBe(TOP - 56);
+  });
+
+  test('with no plate the tool goes the whole limit and ends in the alarm', () => {
+    expect(plateScene('miss', 0.5, { texts: TEXTS, say }).alarm).toBe(false);
+    const end = plateScene('miss', 1, { texts: TEXTS, say });
+    expect(end).toMatchObject({ ghost: true, alarm: true, contact: false });
+  });
+
+  test('says each move in G-code with the figures typed', () => {
+    expect(plateCode('fast', TEXTS)).toBe('G38.2 Z-20 F50');
+    expect(plateCode('slow', TEXTS)).toBe('G38.2 Z-10 F15');
+    expect(plateCode('zero', TEXTS, 2)).toBe('G10 L20 P2 Z20');
+    expect(plateCode('lift', TEXTS)).toBe('G0 Z+20');
+  });
+
+  test('reads the tool Z against the old zero, then the new one, held through the moves', () => {
+    const mm = { plateThickness: 20 };
+    expect(plateReadout('fast', mm)).toEqual({ z: BEFORE_MM, after: false });
+    expect(plateReadout('retract', mm)).toEqual({ z: BEFORE_MM, after: false });
+    expect(plateReadout('zero', mm)).toEqual({ z: 20, after: true });
+    expect(plateReadout('lift', mm)).toEqual({ z: 20, after: true });
+  });
+
+  test('every move in the bar is one of the cycle\'s, and every figure is in one group', () => {
+    const barred = PLATE_GROUPS.flatMap((group) => group.subs.flatMap((sub) => sub.moves));
+    expect(barred).toEqual(PLATE_ORDER);
+    const grouped = PLATE_PARAMS.flatMap((group) => group.fields).sort();
+    expect(grouped).toEqual(['fast', 'lift', 'maxZ', 'plateThickness', 'retract', 'slow']);
+  });
+
+  test('plays the move of the server\'s step on the measurement screen', () => {
+    expect(moveOfPhase('z-fast')).toBe('fast');
+    expect(moveOfPhase('z-settle')).toBe('retract');
+    expect(moveOfPhase('z')).toBe('slow');
+    expect(moveOfPhase('lift')).toBe('lift');
+    expect(moveOfPhase('unknown')).toBe('fast');
+  });
+
+  test('the position step comes across and down to a few millimetres, then holds', () => {
+    const start = positionAt(0);
+    expect(start.shift).toBeLessThan(0);
+    const held = positionAt(6800);
+    expect(held).toMatchObject({ over: true, motion: null });
+    expect(held.shift + 0).toBe(0);
   });
 });

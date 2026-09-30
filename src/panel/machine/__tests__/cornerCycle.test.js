@@ -1,117 +1,128 @@
 import {
-  BEFORE_MM, CORNER_MS, POSITION_MS, positionAt, PART_MS, PART_STOP_MS, WHOLE_MS, WHOLE_PART_MS, WHOLE_STOP_MS, ZERO_FROM, cornerAt, cornerReadout, cornerSides, figureAt, loopIn, windowOfPhase,
+  BEFORE_MM, CORNER_GROUPS, cornerTimeline, CORNER_ORDER, CORNER_PARAMS, HOLD_MS, LOOP_HOLD_MS, motionEnd, SPAN_MS, cornerCode, cornerReadout, cornerSides, legAt, moveOf, moveOfPhase, playAt, positionAt, positionOf, tipOf,
 } from '../cornerCycle';
 import { methodOf, stepBeside, stepsOf } from '../probe';
+import { segmentsOf } from '../timeline';
 
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
 
-describe('the L plate on the drawing', () => {
-  test('touches each wall twice, fast and then slow, Z then X then Y', () => {
-    const lit = [0.125, 0.185, 0.415, 0.475, 0.755, 0.815].map((p) => cornerAt(p).touch?.axis);
+const TEXTS = {
+  cornerThickness: '10', wallX: '10', wallY: '10', toolDiameter: '6', clear: '10', depth: '5', maxZ: '20', maxXY: '15', retract: '5', fast: '50', slow: '15', lift: '20',
+};
 
-    expect(lit).toEqual(['z', 'z', 'x', 'x', 'y', 'y']);
-    expect(cornerAt(0.15).touch).toBeNull();
+describe('the L plate cycle (probe proposal)', () => {
+  test('plays Z, then each wall, then the zero and the lift, each move for its span', () => {
+    const at = [];
+    let ms = 10;
+    CORNER_ORDER.forEach((name) => {
+      at.push(playAt(ms).name);
+      if (moveOf(name).legs) {
+        ms += 1000 * moveOf(name).legs.length + HOLD_MS;
+      } else {
+        // The zero, seen from two sides, plays three times as long.
+        ms += moveOf(name).walls ? SPAN_MS * 3 : SPAN_MS;
+      }
+    });
+    expect(at).toEqual(CORNER_ORDER);
+    expect(playAt(ms).name).toBe('zFast');
   });
 
-  test('backs off between the two touches', () => {
-    expect(cornerAt(0.15).side[1]).toBeLessThan(150);
-    expect(cornerAt(0.44).top[0]).toBeLessThan(90);
+  test('gives a set-up a second a leg, and knows the leg under way', () => {
+    const set = moveOf('xSet');
+    expect(playAt(0, { pinned: 'xSet' }).span).toBe(3000 + LOOP_HOLD_MS);
+    expect(playAt(0).span).toBe(SPAN_MS);
+    expect(legAt(set, 0.1)).toBe(0);
+    expect(legAt(set, 0.5)).toBe(1);
+    expect(legAt(set, 0.9)).toBe(2);
   });
 
-  test('knows which way the tool is going, so an arrow cannot point elsewhere', () => {
-    // Down onto the plate; back up off it; out past the X wall; in to it; up at the end.
-    expect(cornerAt(0.08).moving.side).toEqual([0, 1]);
-    expect(cornerAt(0.13).moving.side).toEqual([0, -1]);
-    expect(cornerAt(0.25).moving.top).toEqual([-1, 0]);
-    expect(cornerAt(0.38).moving.top).toEqual([1, 0]);
-    expect(cornerAt(0.87).moving.side).toEqual([0, -1]);
-    expect(cornerAt(0.95).moving).toEqual({ top: null, side: null });
+  test('the X set-up rises off the plate, goes out past the wall and comes down beside it', () => {
+    const set = moveOf('xSet');
+    const [, , start] = positionOf(set.frames, 0);
+    const [x, , up] = positionOf(set.frames, 0.24);
+    const [outX, , down] = positionOf(set.frames, 1);
+    expect(tipOf(start)).toBe(146);
+    expect(up).toBe(1);
+    expect(outX).toBeLessThan(x);
+    expect(tipOf(down)).toBeGreaterThan(170);
   });
 
-  test('the tabs follow: Z, X, Y', () => {
-    expect([0.1, 0.4, 0.8].map((p) => cornerAt(p).stage)).toEqual([1, 2, 3]);
+  test('says each move in G-code as the server runs it', () => {
+    expect(cornerCode('zFast', 0.5, TEXTS).parts).toEqual(['G38.2 Z-20 F50']);
+    expect(cornerCode('xSet', 0.5, TEXTS)).toEqual({ parts: ['G0 X-10'], now: -1, leg: 'out' });
+    expect(cornerCode('xSet', 0.9, TEXTS)).toMatchObject({ parts: ['G38.3 Z-10 F50'], leg: 'down' });
+    expect(cornerCode('xSlow', 0.5, TEXTS).parts).toEqual(['G38.2 X+10 F15']);
+    expect(cornerCode('lift', 0.5, TEXTS)).toMatchObject({ parts: ['G0 Z+25'], leg: 'lift' });
+    expect(cornerCode('lift', 0.9, TEXTS)).toMatchObject({ parts: ['G0 X0 Y0'], leg: 'corner' });
+    expect(cornerCode('lift', 0.1, TEXTS)).toMatchObject({ parts: ['G0 Y-5'], leg: 'off' });
   });
 
-  test('comes down beside the wall, below the top of the plate, before touching it', () => {
-    // From the side the plate's top is at 150; beside the wall the tip is at 186.
-    expect(cornerAt(0.34).side).toEqual([60, 186]);
+  test('a figure being set loops the move it changes, over the part that shows it, held longer', () => {
+    expect(playAt(10, { field: 'toolDiameter' })).toMatchObject({ name: 'xSlow', focus: 'tool' });
+    expect(motionEnd('zFast')).toBe(0.75);
+    expect(motionEnd('xBack')).toBe(0.6);
+    expect(playAt(10, { field: 'depth' })).toMatchObject({ name: 'depth', focus: 'dim' });
+    const wall = playAt(10, { field: 'wallX' });
+    expect(wall).toMatchObject({ name: 'zero', focus: 'wallX' });
+    expect(wall.p).toBeGreaterThanOrEqual(0.6);
   });
 
-  test('shows the zero at the end', () => {
-    expect(cornerAt(0.95).zero).toBe(true);
-    expect(cornerAt(0.5).zero).toBe(false);
+  test('a move looped alone ends, for a pause, inside its loop', () => {
+    CORNER_ORDER.forEach((name) => {
+      const { run, span } = playAt(0, { pinned: name });
+      expect(run).toBeLessThan(span);
+    });
   });
 
-  test('says the value of the part passing', () => {
-    expect(figureAt(0.08)).toBe('fast');
-    expect(figureAt(0.25)).toBe('clear');
-    expect(figureAt(0.3)).toBe('depth');
-    expect(figureAt(0.95)).toBe('cornerThickness');
-  });
-});
-
-describe('the part that plays', () => {
-  test.each([
-    ['z-fast', 'zFast'],
-    ['z', 'zSlow'],
-    ['x-out', 'xOut'],
-    ['x-down', 'xDown'],
-    ['x-settle', 'xBack'],
-    ['y-down', 'yDown'],
-    ['y', 'ySlow'],
-    ['lift', 'lift'],
-  ])('the machine\'s %s plays %s', (phase, part) => {
-    expect(windowOfPhase(phase)).toBe(part);
+  test('on a phone, a move before the view turns holds as long as a loop', () => {
+    const spanIn = (items, name) => items.find((item) => item.name === name).span;
+    expect(spanIn(cornerTimeline({ apart: true }), 'zSlow')).toBe(SPAN_MS - HOLD_MS + LOOP_HOLD_MS);
+    expect(spanIn(cornerTimeline(), 'zSlow')).toBe(SPAN_MS);
+    expect(spanIn(cornerTimeline({ apart: true }), 'zBack')).toBe(SPAN_MS);
   });
 
-  test('a short part played on its own is slowed to be seen, and stops at its end', () => {
-    // The back-off is 0.12–0.15 of the loop: 300 ms at the loop's own pace.
-    expect(loopIn('zBack', PART_MS / 2)).toBeCloseTo(0.135, 6);
-    expect(loopIn('zBack', PART_MS + PART_STOP_MS / 2)).toBeCloseTo(0.15, 3);
-    expect(loopIn('zBack', PART_MS + PART_STOP_MS + 1)).toBeCloseTo(0.12, 3);
+  test('the bar segments: a set-up legs, the zero two views on a phone, one for any other move', () => {
+    const segments = segmentsOf(cornerTimeline({ apart: true }));
+    expect(segments.filter((one) => one.name === 'xSet')).toHaveLength(3);
+    expect(segments.filter((one) => one.name === 'zero')).toHaveLength(2);
+    expect(segmentsOf(cornerTimeline()).filter((one) => one.name === 'zero')).toHaveLength(1);
   });
 
-  test('loops inside its part', () => {
-    const later = loopIn('x', (0.5 - 0.34) * CORNER_MS * 1.5);
-
-    expect(loopIn('x', 0)).toBeCloseTo(0.34, 6);
-    expect(later).toBeGreaterThanOrEqual(0.34);
-    expect(later).toBeLessThan(0.5);
+  test('reads the example against the old zero, then a radius and a wall off the corner', () => {
+    const mm = {
+      toolDiameter: 6, wallX: 10, wallY: 10, cornerThickness: 10,
+    };
+    expect(cornerReadout('xFast', 'front-left', mm)).toEqual({ ...BEFORE_MM, after: false });
+    expect(cornerReadout('zero', 'front-left', mm)).toEqual({
+      x: -13, y: -13, z: 10, after: true,
+    });
+    expect(cornerReadout('lift', 'back-right', mm)).toMatchObject({ x: 13, y: 13 });
   });
-});
 
-describe('the corner turns it', () => {
-  test('right mirrors across, back mirrors top to bottom, and the probes go the other way', () => {
+  test('mirrors the right corners across and the back ones top to bottom', () => {
     expect(cornerSides('front-left')).toMatchObject({ flipX: false, flipY: false, dirs: ['X+', 'Y+'] });
     expect(cornerSides('back-right')).toMatchObject({ flipX: true, flipY: true, dirs: ['X−', 'Y−'] });
   });
-});
 
-describe('the example\'s X, Y and Z', () => {
-  const mm = { wallX: 10, wallY: 10, cornerThickness: 10 };
-
-  test('against the old zero before it is written', () => {
-    const read = cornerReadout(cornerAt(0), 'front-left', mm);
-
-    expect(read.after).toBe(false);
-    expect(read.x).toBeCloseTo(35 + BEFORE_MM.x, 6);
+  test('every move is on the bar once, and every figure in one group', () => {
+    const barred = CORNER_GROUPS.flatMap((group) => group.subs.flatMap((sub) => sub.moves));
+    expect(barred).toEqual(CORNER_ORDER);
+    const grouped = CORNER_PARAMS.flatMap((group) => group.fields).sort();
+    expect(grouped).toEqual(['clear', 'cornerThickness', 'depth', 'fast', 'lift', 'maxXY', 'maxZ', 'retract', 'slow', 'toolDiameter', 'wallX', 'wallY']);
   });
 
-  test('once written, the tool over the plate reads as far as it is from the corner', () => {
-    const read = cornerReadout(cornerAt(ZERO_FROM + 0.05), 'front-left', mm);
-
-    // Over the Y wall, 30 in from the corner; out in front of it; 30 up (60 px at half a mm each).
-    expect(read).toMatchObject({ after: true });
-    expect(read.x).toBeCloseTo(30, 6);
-    expect(read.y).toBeCloseTo(-42, 6);
-    expect(read.z).toBeCloseTo(30, 6);
+  test('plays the move of the server\'s step on the measurement screen', () => {
+    expect(moveOfPhase('z-fast')).toBe('zFast');
+    expect(moveOfPhase('x-down')).toBe('xSet');
+    expect(moveOfPhase('y-settle')).toBe('yBack');
+    expect(moveOfPhase('lift')).toBe('lift');
+    expect(moveOfPhase('corner')).toBe('lift');
+    expect(moveOfPhase('unknown')).toBe('zFast');
   });
 
-  test('a right corner reads X the other way', () => {
-    const left = cornerReadout(cornerAt(0.95), 'front-left', mm);
-    const right = cornerReadout(cornerAt(0.95), 'front-right', mm);
-
-    expect(right.x).toBeCloseTo(-left.x, 6);
+  test('comes into place across and down, then holds over the plate', () => {
+    expect(positionAt(0)).toMatchObject({ over: false });
+    expect(positionAt(6800)).toMatchObject({ over: true, level: 1 });
   });
 });
 
@@ -123,29 +134,5 @@ describe('the corner\'s steps', () => {
     expect(stepsOf(corner)[1].key).toBe('probe.step.corner');
     expect(stepBeside(corner, 'method', 1)).toBe('choose');
     expect(stepBeside(corner, 'prepare', -1)).toBe('choose');
-  });
-});
-
-describe('the whole loop, part by part', () => {
-  test('is slow enough to follow: every part at least 1.6 s, and a stop after each', () => {
-    expect(WHOLE_MS).toBeGreaterThan(30000);
-    // The first part — waiting over the plate — then the fast touch starting.
-    expect(loopIn('whole', 100)).toBeLessThan(0.04);
-    expect(loopIn('whole', WHOLE_PART_MS + WHOLE_STOP_MS + 100)).toBeGreaterThan(0.04);
-  });
-
-  test('ends on the zero, held', () => {
-    expect(cornerAt(loopIn('whole', WHOLE_MS - 500)).zero).toBe(true);
-  });
-});
-
-describe('the move into place', () => {
-  test('comes across high, then down to a few millimetres over the plate, and stays', () => {
-    expect(positionAt(POSITION_MS * 0.3).moving.top).toEqual([1, 1]);
-    expect(positionAt(POSITION_MS * 0.3).side[1]).toBe(100);
-    expect(positionAt(POSITION_MS * 0.65).moving.side).toEqual([0, 1]);
-    const there = positionAt(POSITION_MS * 0.9);
-    expect(there).toMatchObject({ over: true, top: [145, 165], side: [145, 130] });
-    expect(there.moving).toEqual({ top: null, side: null });
   });
 });

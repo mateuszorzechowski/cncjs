@@ -11,9 +11,8 @@ import CornerParams from './CornerParams';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
-import {
-  FIELDS, METHODS, failureKey, fieldUnit, phaseWords,
-} from '../machine/probe';
+import { METHODS, failureKey, phaseWords } from '../machine/probe';
+import { FIELDS, fieldUnit } from '../machine/probeFields';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -50,7 +49,7 @@ const OUTCOMES = {
     <ZPlateScene gap={56} marks={THICKNESS} zero={1} badge={{ x: 304, y: 191, text: `T ${plate}` }} label={t('probe.method.z')} className="mx-auto w-full max-w-md" />
   ),
   // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
-  corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} still={0.97} className="mx-auto w-full max-w-md" />,
+  corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} done className="mx-auto w-full max-w-md" />,
 };
 
 /** The buttons at the foot of a step: back on the left, the way on at the right. */
@@ -78,7 +77,13 @@ export const MethodStep = ({ onPick }) => (
   </div>
 );
 
-export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, bad, wcs }) => {
+// Whether a method's figures are set beside a drawing of its own, which the
+// screen can split into two cards.
+export const hasEditor = (method) => Boolean(EDITORS[method?.id]);
+
+export const PrepareStep = ({
+  method, chosen, onChoose, fields, texts, onText, bad, wcs, split = null,
+}) => {
   const units = useUnits();
   const Editor = EDITORS[method.id];
   if (Editor) {
@@ -90,12 +95,9 @@ export const PrepareStep = ({ method, chosen, onChoose, fields, texts, onText, b
         bad={bad}
         wcs={wcs}
         corner={chosen}
-        intro={(
-          <>
-            <p className="m-0 text-base text-ink">{t(method.how)}</p>
-            <p className="m-0 text-note text-mut">{t('probe.remember')}</p>
-          </>
-        )}
+        split={split}
+        intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
+        note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}
       />
     );
   }
@@ -150,7 +152,12 @@ export const WireStep = ({ lit, touched, plate }) => {
     <div className="flex flex-col gap-3">
       <p className="m-0 text-base text-ink">{t('probe.wire.how')}</p>
       <ProbeWire lit={lit} plate={plate} />
-      <StatTile label={t('diag.pin.probe')} value={state} tone={lit ? 'warn' : undefined} />
+      {/* Dalej is never held back (Mateusz, 2026-09-30); an untested wire is said
+        * instead, beside the pin when wide, so the step still needs no scroll. */}
+      <div className="grid gap-3 @3xl/shell:grid-cols-2">
+        <StatTile label={t('diag.pin.probe')} value={state} tone={lit ? 'warn' : undefined} />
+        {touched ? null : <Notice>{t('probe.wire.untested')}</Notice>}
+      </div>
       {lit === null ? <p className="m-0 text-note text-mut">{t('probe.wire.unknown')}</p> : null}
     </div>
   );

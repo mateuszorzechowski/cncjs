@@ -1,73 +1,41 @@
-import CornerScene from './CornerScene';
-import CycleStages from './CycleStages';
+import CornerSide from './CornerSide';
+import CornerTop from './CornerTop';
+import MoveBar, { namedGroups } from './MoveBar';
 import useTicker from './useTicker';
 import {
-  CORNER_MS, CORNER_STAGES, FIELD_WINDOW, STILL_FIGURES, cornerAt, cornerReadout, figureAt, loopIn, windowOfPhase,
+  CORNER_GROUPS, cornerTimeline, moveOf, moveOfPhase, playAt,
 } from '../machine/cornerCycle';
-import { figureSaid } from '../machine/probe';
-import { inMm } from '../machine/units';
-import { useUnits } from './units';
+import { fillsAt, timeAt } from '../machine/timeline';
 import { t } from '../i18n';
 
-const AXES = CORNER_STAGES.map(({ axis }) => axis);
-
-// The figure that bounds a move's way: the fast touch goes as far as the travel limit.
-const BOUNDS = { fast: 'maxZ' };
-
-const numberOf = (text) => Number(String(text).replace(',', '.'));
+// The cycle's segments, as the Setup's bar has them on a wide screen.
+const ITEMS = cornerTimeline();
 
 /**
- * The L plate's cycle over its tabs — 1 · Z, 2 · X, 3 · Y — and under it what
- * the part playing does. Three ways to play it, one drawing: `field`, the
- * part a figure being set acts in; `phase`, the part the machine is in; with
- * neither, the whole loop. `still` holds one frame instead (0 the tool over
- * the plate, 0.97 the zero found).
- *
- * Given the figures typed (`texts`), it is the example the Z plate's is
- * (review notes, 2026-09-29): each part's value where it acts, and under the
- * drawing the tool's X, Y and Z in the system — against the old zero, then
- * the new one once written.
+ * The L plate's cycle played by the machine rather than a clock: the move the
+ * server's step belongs to, looping until the next step comes in, from above
+ * and from the side as the Setup draws it (Claude Design, probe proposals,
+ * 2026-09-30) — without the form's figures, the machine being the one moving.
+ * `words` is what the tool is doing, said under it; `done`, the result: the
+ * zero written, held.
  */
 const CornerCycle = ({
-  corner, field = null, phase = null, still = null, words = null, texts = null, wcs = null, className = '',
+  corner, phase = null, done = false, words = null, className = '',
 }) => {
-  const units = useUnits();
-  let part = 'whole';
-  if (field) {
-    part = FIELD_WINDOW[field] || 'whole';
-  } else if (phase) {
-    part = windowOfPhase(phase);
-  }
-  const ms = useTicker(still === null ? `${part}-${phase || field || ''}` : null);
-  const at = cornerAt(still ?? loopIn(part, ms, CORNER_MS));
-
-  const shownField = field || figureAt(at.p);
-  const badge = texts && shownField && texts[shownField] !== undefined
-    ? { name: shownField, text: figureSaid(shownField, texts[shownField], units.rule) }
-    : null;
-  // A move whose way is bounded by another figure says that bound by its dimension (review note, 2026-09-30).
-  const bound = texts && BOUNDS[shownField];
-  const note = bound ? { name: bound, text: t('probe.cycle.upTo', { v: figureSaid(bound, texts[bound] ?? '', units.rule) }) } : null;
-  let readout = null;
-  if (texts) {
-    const mm = Object.fromEntries(['wallX', 'wallY', 'cornerThickness'].map((name) => [name, inMm(numberOf(texts[name]), units.rule) ?? 0]));
-    readout = cornerReadout(at, corner, mm);
-  }
-
+  const name = done ? 'zero' : moveOfPhase(phase);
+  const ms = useTicker(done ? null : phase || name);
+  const { p } = done ? { p: 1 } : playAt(ms, { pinned: name });
+  const groups = namedGroups(CORNER_GROUPS, t, (id) => t(moveOf(id).titleKey), (id) => moveOf(id).legs?.length || 1);
+  const drawing = {
+    name, p, corner, bare: true, label: t(moveOf(name).titleKey), className: 'h-auto w-full',
+  };
   return (
     <div className={`flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel ${className}`}>
-      <CycleStages stage={at.stage} names={AXES} />
-      <CornerScene corner={corner} at={at} badge={badge} note={note} moves={!STILL_FIGURES.includes(field)} label={t('probe.method.corner')} className="w-full" />
-      {readout ? (
-        <div className={`flex flex-wrap items-baseline justify-center gap-x-4 gap-y-1 border-t border-line px-2 py-2 font-num ${readout.after ? 'bg-accS text-acc' : 'text-ink'}`}>
-          <span className="text-cap text-mut">
-            {t('probe.readout.system', { wcs: wcs || 'G54', when: t(readout.after ? 'probe.readout.after' : 'probe.readout.before') })}
-          </span>
-          {['x', 'y', 'z'].map((axis) => (
-            <span key={axis} className="text-note font-semibold">{`${axis.toUpperCase()} ${units.figure(readout[axis])}`}</span>
-          ))}
-        </div>
-      ) : null}
+      <div className="grid grid-cols-2 divide-x divide-line">
+        <CornerTop {...drawing} />
+        <CornerSide {...drawing} />
+      </div>
+      {done ? null : <MoveBar groups={groups} active={name} fills={fillsAt(ITEMS, timeAt(ITEMS, name, p))} />}
       {words ? <div className="border-t border-line px-2 py-3 text-center text-base font-semibold text-ink">{words}</div> : null}
     </div>
   );

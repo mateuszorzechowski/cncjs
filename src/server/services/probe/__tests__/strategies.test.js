@@ -142,10 +142,12 @@ describe('the corner plate', () => {
     // Over the plate, 8 mm in from each edge of the work.
     const start = { x: cx + sx * 8, y: cy + sy * 8, z: top + params.cornerThickness + 5 };
 
-    const { outcome, zero } = measure({ method: 'corner', options: { corner: name }, params, boxes: plateOn(name, cx, cy, top), start });
+    const { outcome, zero, pos } = measure({ method: 'corner', options: { corner: name }, params, boxes: plateOn(name, cx, cy, top), start });
 
     expect(outcome.failure).toBeUndefined();
     close(zero, { x: cx, y: cy, z: top });
+    // Lifted over the plate, then over the corner found.
+    close(pos, { x: cx, y: cy, z: top + params.cornerThickness + params.lift });
   });
 
   test('coming down onto the plate instead of beside it stops, and says so', () => {

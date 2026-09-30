@@ -82,6 +82,15 @@ module.exports = {
       red: 'var(--red)',
       grn: 'var(--grn)',
       amb: 'var(--amb)',
+      /*
+       * The probing drawings' work and plate (Claude Design, probe proposals,
+       * 2026-09-30): the work a faint hatch, the plate neutral — the accent
+       * greyed — so the only colours left are the move's and the touch's.
+       */
+      work: 'color-mix(in srgb, var(--mut) 5%, var(--surf))',
+      hatch: 'color-mix(in srgb, var(--mut) 22%, var(--surf))',
+      plate: 'color-mix(in srgb, color-mix(in srgb, var(--acc) 45%, var(--mut)) 16%, var(--surf))',
+      plateEdge: 'color-mix(in srgb, color-mix(in srgb, var(--acc) 45%, var(--mut)) 75%, var(--ink))',
       // A rapid move's colour in the drawings, and a word's in G-code (`editor/gcode`).
       rapid: 'var(--rapid)',
       white: '#ffffff',

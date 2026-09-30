@@ -47,6 +47,11 @@ import { t } from '../i18n';
  * a changed field wears, over the whole line; on the chosen line, which
  * stays blue, the amber dot a changed choice carries, where the chevron
  * would be.
+ *
+ * `children`: what the group holds, line by line under the head — the
+ * probing figures' groups (review note, 2026-09-30: *"standardowy komponent
+ * użyty w ustawieniach sterownika, ten sam rozmiar, chevron"*, the figures
+ * inside as they were). The head keeps the line's height, name and mark.
  */
 const FACES = {
   locked: 'border-line bg-bg',
@@ -68,9 +73,29 @@ const face = ({ locked, selected, changed }) => {
   return changed ? 'changed' : 'plain';
 };
 
+const Chevron = ({ opens }) => (
+  // The icon's path points down; a view beside is the same mark turned.
+  <Icon name="chevron" className={`size-4 shrink-0 text-mut ${opens === 'view' ? '-rotate-90' : ''}`} weight={2} />
+);
+
 const SettingSummary = ({
-  title, label, values, onOpen, disabled, locked = false, opens = 'sheet', selected = false, changed = false,
-}) => (
+  title, label, values = [], onOpen, disabled, locked = false, opens = 'sheet', selected = false, changed = false, children = null,
+}) => (children ? (
+  <button
+    type="button"
+    onClick={onOpen}
+    disabled={disabled || locked}
+    aria-current={selected ? 'true' : undefined}
+    className={`flex shrink-0 flex-col gap-1.5 rounded-ctl border p-3 text-left ${FACES[face({ locked, selected, changed })]}`}
+  >
+    {/* The same padding all round (review note, 2026-09-30: *"równy na całym przycisku"*). */}
+    <span className="flex w-full items-center gap-2">
+      <span className="flex-1 text-cap font-semibold uppercase tracking-[0.08em] text-ink">{title}</span>
+      {selected || !opens ? null : <Chevron opens={opens} />}
+    </span>
+    <span className="flex w-full flex-col gap-0.5">{children}</span>
+  </button>
+) : (
   <button
     type="button"
     onClick={onOpen}
@@ -106,11 +131,8 @@ const SettingSummary = ({
       </span>
     ) : null}
     {selected && changed ? <WasDot /> : null}
-    {/* The icon's path points down; a view beside is the same mark turned. */}
-    {locked || selected || !opens ? null : (
-      <Icon name="chevron" className={`size-4 shrink-0 text-mut ${opens === 'view' ? '-rotate-90' : ''}`} weight={2} />
-    )}
+    {locked || selected || !opens ? null : <Chevron opens={opens} />}
   </button>
-);
+));
 
 export default SettingSummary;

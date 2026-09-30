@@ -1,6 +1,5 @@
 import controller from './controller';
 import { currentToken } from './session';
-import { settingFigure } from './units';
 
 /**
  * The probe, from the panel — the server's half is `services/probe` and the
@@ -53,11 +52,11 @@ const CHOOSE_FIRST = ['method', 'choose', 'prepare', 'wire', 'position', 'measur
  */
 export const METHODS = [
   {
-    id: 'z', key: 'probe.method.z', note: 'probe.method.zNote', how: 'probe.how.z', place: 'probe.place.z',
+    id: 'z', key: 'probe.method.z', note: 'probe.method.zNote', lay: 'probe.lay.z', place: 'probe.place.z',
     start: 'probe.position.start', steps: THROUGH_PROBE, touches: true,
   },
   {
-    id: 'corner', key: 'probe.method.corner', note: 'probe.method.cornerNote', how: 'probe.how.corner', place: 'probe.place.corner',
+    id: 'corner', key: 'probe.method.corner', note: 'probe.method.cornerNote', lay: 'probe.lay.corner', place: 'probe.place.corner',
     start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true, plate: 'l',
     choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', columns: 2, step: 'probe.step.corner' },
   },
@@ -72,37 +71,6 @@ export const methodOf = (id) => METHODS.find((method) => method.id === id) || nu
 
 /** What a measurement is asked for with: the method's one choice, if it has one. */
 export const optionsFor = (method, chosen) => (method?.choice ? { [method.choice.option]: chosen } : {});
-
-/** Each figure the server keeps: what it is called and whether it is a length or a rate (`kind`, the units' word). */
-export const FIELDS = {
-  plateThickness: { key: 'probe.field.plateThickness', kind: 'length' },
-  cornerThickness: { key: 'probe.field.cornerThickness', kind: 'length' },
-  wallX: { key: 'probe.field.wallX', kind: 'length' },
-  wallY: { key: 'probe.field.wallY', kind: 'length' },
-  toolDiameter: { key: 'probe.field.toolDiameter', kind: 'length' },
-  paperThickness: { key: 'probe.field.paperThickness', kind: 'length' },
-  clear: { key: 'probe.field.clear', kind: 'length' },
-  depth: { key: 'probe.field.depth', kind: 'length' },
-  maxZ: { key: 'probe.field.maxZ', kind: 'length' },
-  maxXY: { key: 'probe.field.maxXY', kind: 'length' },
-  retract: { key: 'probe.field.retract', kind: 'length' },
-  lift: { key: 'probe.field.lift', kind: 'length' },
-  fast: { key: 'probe.field.fast', kind: 'feed' },
-  slow: { key: 'probe.field.slow', kind: 'feed' },
-};
-
-/** A kept figure in millimetres, as the text a field starts with: `12.7`, not `12.700`. */
-export const fieldText = (mm, name, rule) => {
-  const { value } = settingFigure(mm, FIELDS[name].kind, rule);
-  const number = Number(value);
-  return Number.isFinite(number) ? String(number) : '';
-};
-
-/** The unit a field is typed in. */
-export const fieldUnit = (name, rule) => settingFigure(0, FIELDS[name].kind, rule).unit;
-
-/** A figure as a drawing's badge says it: a rate as `F100`, a length with its unit. */
-export const figureSaid = (name, text, rule) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${text} ${fieldUnit(name, rule)}`);
 
 /*
  * Where the wizard is. The first four are the operator's own, one after

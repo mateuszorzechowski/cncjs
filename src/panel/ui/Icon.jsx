@@ -170,6 +170,17 @@ const GLYPHS = {
   cross: <path d="M7 7 17 17M17 7 7 17" />,
   // Read again from the controller: an arc that comes back round to itself.
   refresh: <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15" />,
+  // A drawing's animation: held, and let go (the probing drawings' corner button).
+  pause: <path d="M9 6.5v11M15 6.5v11" />,
+  play: <path d="M8.5 6.5v11l9-5.5z" />,
+  // A segment back or on: a bar at the end the step goes to, the way a player draws it.
+  prev: <path d="M7 6.5v11M17.5 6.5v11l-8-5.5z" />,
+  next: <path d="M17 6.5v11M6.5 6.5v11l8-5.5z" />,
+  // Repeat, as a playlist player draws it — and with a 1, one part over and over.
+  repeat: <path d="M16.5 3.5l3 3-3 3M4.5 11.5v-2a3 3 0 0 1 3-3h12M7.5 20.5l-3-3 3-3M19.5 12.5v2a3 3 0 0 1-3 3h-12" />,
+  // Once: a straight way to its end, and the 1.
+  once: <path d="M3.5 12h10M10.5 8.5l3.5 3.5-3.5 3.5M18 9.2l1.8-1.2v8" />,
+  repeatOne: <path d="M16.5 3.5l3 3-3 3M4.5 11.5v-2a3 3 0 0 1 3-3h12M7.5 20.5l-3-3 3-3M19.5 12.5v2a3 3 0 0 1-3 3h-12M11 10.8l1.3-.8v4.5" />,
   // A newer panel is available: an arrow down into a tray, the way an update is fetched.
   update: <path d="M12 4v11M7 10.5l5 5 5-5M5.5 19.5h13" />,
 

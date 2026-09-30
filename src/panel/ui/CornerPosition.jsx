@@ -1,28 +1,24 @@
-import CornerScene from './CornerScene';
+import CornerSide from './CornerSide';
+import CornerTop from './CornerTop';
 import useTicker from './useTicker';
 import { positionAt } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
-// Which dimension the tool ends on.
-const CLEARANCE = 'clearance';
-
 /**
  * Where the tool has to be before the L plate is measured, shown as the move
  * to get it there (review note, 2026-09-30): from off the work across over
- * the plate, both views, and down to a few millimetres above it, held there
- * with the gap drawn.
+ * the plate, and down to a few millimetres above it, held there with the gap
+ * drawn — from above and from the side, as the Setup draws the corner.
  */
 const CornerPosition = ({ corner, className = '' }) => {
-  const at = positionAt(useTicker('position'));
+  const place = { ...positionAt(useTicker('position')), text: t('probe.position.few') };
+  const drawing = {
+    corner, place, label: t('probe.place.corner'), className: 'h-auto w-full',
+  };
   return (
-    <div className={`overflow-hidden rounded-ctl border border-line bg-panel ${className}`}>
-      <CornerScene
-        corner={corner}
-        at={at}
-        badge={at.over ? { name: CLEARANCE, text: t('probe.position.few') } : null}
-        label={t('probe.place.corner')}
-        className="w-full"
-      />
+    <div className={`grid grid-cols-2 divide-x divide-line overflow-hidden rounded-ctl border border-line bg-panel ${className}`}>
+      <CornerTop {...drawing} />
+      <CornerSide {...drawing} />
     </div>
   );
 };
