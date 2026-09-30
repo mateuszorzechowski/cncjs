@@ -243,7 +243,9 @@ class CNCEngine {
       if (!last?.port) {
         return;
       }
-      const listed = (await SerialPort.list().catch(() => [])).map(port => port.path);
+      const listed = (await SerialPort.list().catch(() => []))
+        .concat(ensureArray(config.get('ports', [])))
+        .map(port => port.path);
       if (!listed.includes(last.port)) {
         this.closedByHand.delete(last.port);
         return;

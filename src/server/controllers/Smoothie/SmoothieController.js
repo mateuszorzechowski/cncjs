@@ -8,7 +8,7 @@ import fsp from 'fs/promises';
 import * as gcodeParser from 'gcode-parser';
 import _ from 'lodash';
 import * as autolevel from '../../lib/autolevel';
-import SerialConnection from '../../lib/SerialConnection';
+import createConnection from '../../lib/create-connection';
 import EventTrigger from '../../lib/EventTrigger';
 import Feeder from '../../lib/Feeder';
 import MessageSlot from '../../lib/MessageSlot';
@@ -181,7 +181,7 @@ class SmoothieController {
       };
 
       // Connection
-      this.connection = new SerialConnection({
+      this.connection = createConnection({
         path: port,
         baudRate: baudrate,
         rtscts: rtscts,
