@@ -128,6 +128,9 @@ const DIMENSIONS = {
   cornerThickness: [['side', () => <Vertical x={206} top={150} bottom={170} from={192} to={214} />]],
   depth: [['side', () => <Vertical x={36} top={150} bottom={186} from={28} to={100} />]],
   lift: [['side', () => <Vertical x={180} top={110} bottom={150} from={150} to={188} />]],
+  // The fast touch's way, as the lift's (review note, 2026-09-30): from where
+  // the tool sets off down to the plate.
+  fast: [['side', () => <Vertical x={120} top={110} bottom={150} from={112} to={150} />]],
   retract: [['side', () => <Vertical x={180} top={128} bottom={150} from={150} to={188} />]],
   clear: [['top', () => <Horizontal y={150} left={60} right={145} from={142} to={158} />]],
   wallX: WALL_X,

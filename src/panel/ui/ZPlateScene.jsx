@@ -42,6 +42,10 @@ const MARKS = {
   // A few millimetres between the tip and the plate, before measuring.
   clearance: () => <Dimension x={178} top={PLATE_TOP - OVER_PX} bottom={PLATE_TOP} ticks={[170, 210]} outside />,
   maxZ: () => <Dimension x={196} top={PLATE_TOP - 84} bottom={PLATE_TOP} ticks={[186, 210]} />,
+  // The way the tool goes, as the lift's (review note, 2026-09-30): the fast
+  // touch from where it sets off down to the plate, the lift up off it.
+  fast: () => <Dimension x={196} top={PLATE_TOP - 84} bottom={PLATE_TOP} ticks={[186, 210]} />,
+  lift: () => <Dimension x={196} top={PLATE_TOP - 56} bottom={PLATE_TOP} ticks={[186, 210]} />,
   retract: () => <Dimension x={178} top={PLATE_TOP - 14} bottom={PLATE_TOP} ticks={[170, 210]} outside />,
   plateThickness: ({ zero }) => (
     <>
