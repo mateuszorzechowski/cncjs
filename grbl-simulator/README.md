@@ -32,14 +32,17 @@ Or add to `~/.cncrc`:
 }
 ```
 
-On Windows there is no pty: install [com0com](https://sourceforge.net/projects/com0com/)
-(the signed build), name a pair `COM20` / `COM21` with "use Ports class" on,
-and bridge one end:
+Or, with no pty at all (Windows), connect cncjs straight over TCP:
 
 ```bash
 node grbl-server.js 5000
-node serial-bridge.js 5000 COM21
-# cncjs opens COM20
+```
+
+and list the port in `~/.cncrc`:
+```json
+{
+  "ports": [{ "path": "tcp://localhost:5000", "manufacturer": "Grbl Simulator" }]
+}
 ```
 
 ## Probing
