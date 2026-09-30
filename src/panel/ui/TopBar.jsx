@@ -67,7 +67,20 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate
       * then the machine, and STOP alone at the other end. Last in the group,
       * so on a screen without help it goes and nothing that can be pressed
       * moves. `headerSlot`. */}
-    {help ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:h-btnh @3xl/shell:w-14 @3xl/shell:text-lead" /> : null}
+    {help && !help.icon ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:h-btnh @3xl/shell:w-14 @3xl/shell:text-lead" /> : null}
+    {help?.icon ? (
+      <button
+        type="button"
+        onClick={help.onPress}
+        aria-label={help.label}
+        title={help.label}
+        className="flex size-chiph shrink-0 items-center justify-center rounded-ctl border border-outline text-ink transition-colors hover:border-acc hover:text-acc @3xl/shell:h-btnh @3xl/shell:w-14"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 @3xl/shell:size-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <path d={help.icon} />
+        </svg>
+      </button>
+    ) : null}
 
     {/*
       * A newer panel is available: the arrow into the tray, and nothing more,

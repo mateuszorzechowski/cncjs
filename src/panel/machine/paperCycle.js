@@ -165,6 +165,15 @@ export const scriptAt = (ms) => {
   return { hand: push + amp * Math.sin(ms / SWING_MS), grip: FEEL[feelAt(gapOf(move, p))].grip };
 };
 
+// The feel, stage by stage: what the measuring step shows beside its buttons.
+export const FEEL_ORDER = ['drag', 'resist', 'stuck', 'back', 'here'];
+
+/** The feel's stages on a loop of their own, each for a span. */
+export const feelLoopAt = (ms) => {
+  const at = ms % (FEEL_ORDER.length * SPAN_MS);
+  return { name: FEEL_ORDER[Math.floor(at / SPAN_MS)], p: Math.min(1, (at % SPAN_MS) / RUN_MS) };
+};
+
 /** Which move plays at `ms`: the whole cycle, a figure's loop, or `pinned` alone. */
 export const playAt = (ms, { pinned = null, field = null, still = false } = {}) => {
   const alone = (field && EDIT[field]) || pinned;
@@ -187,6 +196,9 @@ const EDGES_BY_ID = {
   'y-front': { axis: 'y', sign: 1 },
   'y-back': { axis: 'y', sign: -1 },
 };
+
+/** The axis a surface is felt on, and the way towards it: `x-left` is +X, the top −Z. */
+export const surfaceOf = (edge) => EDGES_BY_ID[edge];
 
 /** The right and back sides are drawn as the left and front, mirrored. */
 export const mirrored = (edge) => EDGES_BY_ID[edge].sign < 0 && edge !== 'z';
@@ -226,7 +238,9 @@ export const paperScene = (name, p, { edge = 'z', texts = {}, say = (field, text
     fine: name === 'fine' && gap < NEAR - 1 ? { from: NEAR, to: gap } : null,
     zero,
     axis: EDGES_BY_ID[edge].axis.toUpperCase(),
-    dim: name === 'zero' ? { text: paper } : null,
+    dim: name === 'zero' ? {
+      top: SHEET_Y, bottom: FACE_Y, text: paper, field: 'paperThickness',
+    } : null,
     dia: name === 'zero' && side ? { text: say('toolDiameter', texts.toolDiameter ?? '') } : null,
     side,
     mirror: mirrored(edge),

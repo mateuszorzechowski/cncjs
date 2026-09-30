@@ -76,7 +76,7 @@ export const MethodStep = ({ onPick }) => (
 );
 
 export const PrepareStep = ({
-  method, chosen, onChoose, fields, texts, onText, bad, wcs, split = null,
+  method, chosen, fields, texts, onText, bad, wcs, split = null,
 }) => {
   const Editor = EDITORS[method.id];
   return (
@@ -88,7 +88,6 @@ export const PrepareStep = ({
       wcs={wcs}
       corner={chosen}
       chosen={chosen}
-      onChoose={onChoose}
       split={split}
       intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
       note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}

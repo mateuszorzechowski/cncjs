@@ -2,17 +2,15 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
-import Notice from '../ui/Notice';
-import ProbePicture from '../ui/ProbePicture';
-import ZPlatePosition from '../ui/ZPlatePosition';
 import CornerChooser from '../ui/CornerChooser';
-import CornerPosition from '../ui/CornerPosition';
+import PaperChooser from '../ui/PaperChooser';
+import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
-import Sheet from '../ui/Sheet';
 import StepTrack from '../ui/StepTrack';
-import JogWidget from '../widgets/JogWidget';
+import { MARKS } from '../ui/NavTabs';
+import { useHeaderHelp } from '../ui/headerSlot';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
@@ -23,14 +21,8 @@ import { useIsPhone } from '../ui/shell';
 import { useUnits } from '../ui/units';
 import { t } from '../i18n';
 
-// The methods that show the move into place rather than a picture of it.
-const MOVES = {
-  z: ZPlatePosition,
-  corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
-};
-
 // The methods whose one choice is a step of its own, and what it is picked on.
-const CHOOSERS = { corner: CornerChooser };
+const CHOOSERS = { corner: CornerChooser, paper: PaperChooser };
 
 /**
  * Sonda: a wizard, one step after another, across the whole screen
@@ -73,6 +65,15 @@ const ProbeScreen = ({ machine }) => {
   const choice = chosen[method?.id] ?? method?.choice?.first;
   const go = (by) => setLocal(stepBeside(method, step, by));
   const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
+  // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
+  const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
+  /*
+   * On a phone the jog is a sheet opened from the top bar, where a screen's
+   * help sits (review note, 2026-09-30: *"ikona w headerze, po kliknięciu
+   * otwiera się jog i zatwierdzenie"*) — while it is open, the jog's own help
+   * has the place.
+   */
+  useHeaderHelp(t('nav.jog'), () => setJogging(true), { icon: MARKS.jog, on: phone && !jogging && (step === 'position' || feeling) });
 
   useEffect(() => {
     if (step === 'wire' && lit) {
@@ -144,47 +145,22 @@ const ProbeScreen = ({ machine }) => {
     </Card>
   );
 
-  if (step === 'position') {
-    // The methods that show the move into place rather than a picture of it.
-    const Moving = MOVES[method.id];
+  if (step === 'position' || feeling) {
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-gap">
         {track}
-        <div className="flex min-h-0 flex-1 flex-col gap-gap @4xl/shell:flex-row">
-          <Card className={`min-w-0 @4xl/shell:flex-1 ${phone ? 'flex-1' : 'shrink-0'}`} bodyClassName="gap-3">
-            {Moving ? (
-              <>
-                <Moving choice={choice} />
-                {/* Where the plate goes, then where the tool goes: the plate laid here, not on the Setup (review note, 2026-09-30). */}
-                <p className="m-0 text-base text-ink">{method.lay ? `${t(method.lay)} ${t(method.place)}` : t(method.place)}</p>
-              </>
-            ) : (
-              <div className="flex items-start gap-4">
-                <ProbePicture method={method.id} choice={choice} label={t(method.key)} className="h-24 w-32" />
-                <p className="m-0 text-base text-ink">{t(method.place)}</p>
-              </div>
-            )}
-            {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
-            {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
-            <Foot back={() => go(-1)}>
-              {phone ? <Button tone="outline" onClick={() => setJogging(true)} className="h-ctl">{t('nav.jog')}</Button> : null}
-              <Button tone="go" disabled={!machine.canProbe || (method.touches && lit !== false)} onClick={measure} className="h-ctl">
-                {t(method.start)}
-              </Button>
-            </Foot>
-          </Card>
-          {/*
-            * On a phone the jog is a sheet over the step, opened from its foot
-            * (review note, 2026-09-30: *"jog na telefonie w arkuszu"*) — under
-            * the card it had the half of the screen left, and the card none.
-            */}
-          {phone ? null : <JogWidget machine={machine} className="min-h-0 w-jcard shrink-0" />}
-          {phone && jogging ? (
-            <Sheet title={t('nav.jog')} onClose={() => setJogging(false)} tall>
-              <JogWidget machine={machine} className="min-h-0 flex-1" />
-            </Sheet>
-          ) : null}
-        </div>
+        <ProbeMoveStep
+          machine={machine}
+          method={method}
+          choice={choice}
+          feeling={feeling}
+          lit={lit}
+          jogging={jogging}
+          onJogging={setJogging}
+          onBack={() => go(-1)}
+          onNext={() => go(1)}
+          onMeasure={measure}
+        />
       </div>
     );
   }
@@ -215,7 +191,6 @@ const ProbeScreen = ({ machine }) => {
       <PrepareStep
         method={method}
         chosen={choice}
-        onChoose={(id) => setChosen((now) => ({ ...now, [method.id]: id }))}
         fields={fields}
         texts={texts}
         onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}

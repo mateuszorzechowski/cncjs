@@ -1,5 +1,6 @@
 import { CORNERS } from '../machine/probe';
 import { cornerSides } from '../machine/cornerCycle';
+import ProbeDrop from './ProbeDrop';
 import { t } from '../i18n';
 
 /**
@@ -21,27 +22,6 @@ const POINTS = {
   'front-right': [350, 220],
 };
 
-// Each probe from outside a wall as a label: a small solid drop whose point touches the wall
-// it goes into, and in its white middle the way it goes, X+ or Y− (review notes, 2026-09-30:
-// *"łezka"*, *"delikatniejsze, lite … w środku białe kółko ma X+"*).
-const DROP = 13;
-const TIP = 21;
-const Probe = ({ wall, angle, dir }) => {
-  const rad = (angle * Math.PI) / 180;
-  const cx = wall[0] - TIP * Math.cos(rad);
-  const cy = wall[1] - TIP * Math.sin(rad);
-  const c = DROP / TIP;
-  const s = Math.sqrt(1 - c * c);
-  const drop = `M${cx + TIP} ${cy} L${cx + DROP * c} ${cy - DROP * s} A${DROP} ${DROP} 0 1 0 ${cx + DROP * c} ${cy + DROP * s} Z`;
-  return (
-    <>
-      <path d={drop} transform={`rotate(${angle} ${cx} ${cy})`} className="fill-acc" />
-      <circle cx={cx} cy={cy} r={10.5} className="fill-surf" />
-      <text x={cx} y={cy + 2.8} textAnchor={MIDDLE} fontSize={8} className="fill-acc font-num font-semibold">{dir}</text>
-    </>
-  );
-};
-
 const Chosen = ({ corner }) => {
   const { flipX, flipY, dirs } = cornerSides(corner);
   const x = (v) => (flipX ? 440 - v : v);
@@ -52,8 +32,8 @@ const Chosen = ({ corner }) => {
       <rect x={plate.x} y={plate.y} width={80} height={80} className="fill-accS stroke-acc" strokeWidth={2} />
       <path d={`M${x(90)} ${y(150)} V${y(220)} H${x(160)}`} className="stroke-acc" fill="none" strokeWidth={1.2} strokeDasharray="4 3" />
       {/* Into the walls: X from the side, Y from the front or back. */}
-      <Probe wall={[x(80), y(184)]} angle={flipX ? 180 : 0} dir={dirs[0]} />
-      <Probe wall={[x(126), y(230)]} angle={flipY ? 90 : -90} dir={dirs[1]} />
+      <ProbeDrop wall={[x(80), y(184)]} angle={flipX ? 180 : 0} dir={dirs[0]} />
+      <ProbeDrop wall={[x(126), y(230)]} angle={flipY ? 90 : -90} dir={dirs[1]} />
       <circle cx={x(125)} cy={y(185)} r={10} className="fill-field stroke-ink" strokeWidth={2} />
       <circle cx={x(125)} cy={y(185)} r={3} className="fill-acc" />
     </>

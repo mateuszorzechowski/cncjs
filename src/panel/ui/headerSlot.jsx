@@ -12,20 +12,28 @@ import { createContext, useContext, useEffect, useRef } from 'react';
  *
  * The press is read through a ref, so the bar is told once per screen rather
  * than on every render — the handler is a new function each time.
+ *
+ * The same place carries a screen's one tool when it is not help: `icon`, a
+ * path in the nav's 24-unit box, drawn instead of the `?` (review note,
+ * 2026-09-30: the probe's jog on a phone, *"ikona w headerze"*). `on` false
+ * leaves the place empty — for a screen whose tool is there only at one step.
  */
 const HeaderHelp = createContext(() => {});
 
 export const HeaderHelpProvider = HeaderHelp.Provider;
 
-export const useHeaderHelp = (label, onPress) => {
+export const useHeaderHelp = (label, onPress, { icon = null, on = true } = {}) => {
   const fill = useContext(HeaderHelp);
   const press = useRef(onPress);
   press.current = onPress;
 
   useEffect(() => {
-    fill({ label, onPress: () => press.current() });
+    if (!on) {
+      return undefined;
+    }
+    fill({ label, icon, onPress: () => press.current() });
     return () => fill(null);
-  }, [fill, label]);
+  }, [fill, label, icon, on]);
 };
 
 export default HeaderHelp;

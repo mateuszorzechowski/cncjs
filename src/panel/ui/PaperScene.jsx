@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  Contact, DASH, Dimension, FACE, Head, Jog, NS, TONES, Tag, kit,
+  Contact, DASH, Dimension, FACE, Head, Jog, Motion, NS, TONES, Tag, kit,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { FACE_Y, SHEET_Y } from '../machine/paperCycle';
@@ -20,6 +20,8 @@ import { t } from '../i18n';
  * A side is drawn in the top's layout, the work's face the line the sheet
  * lies on; `mirror` turns it for the right and back sides, the words kept
  * readable. `focus` names the figure being set; its dimension is lit.
+ * `shift` and `motion` are the position step's: the tool coming across and
+ * down (`positionAt`), its heights on this drawing.
  */
 
 const WIDTH = 310;
@@ -48,9 +50,10 @@ const at2 = (v) => Math.round(v * 100) / 100;
 const TAG_FACE = { grn: FACE.touch, amb: FACE.warn, red: FACE.alarm };
 
 const PaperScene = ({
-  gap = 60, sheet, tone = null, jog = null, fine = null, tag = null, zero = 0, axis = 'Z',
+  gap = 60, shift = 0, motion = null, sheet, tone = null, jog = null, fine = null, tag = null, zero = 0, axis = 'Z',
   dim = null, dia = null, side = false, mirror = false, focus = null, label, className = '',
 }) => {
+  const toolX = TOOL_X + shift;
   const id = useId().replace(/:/g, '');
   const [measure, k] = useViewScale(WIDTH, HEIGHT);
   const size = kit(k);
@@ -92,11 +95,19 @@ const PaperScene = ({
         <Tag x={mx(ARROW_X - 8)} y={jog ? SHEET_Y - jog.from + 10 : SHEET_Y - 22} text={t(jog ? 'probe.paper.step1' : 'probe.paper.step01')} right={!mirror} face={FACE.ink} size={size} />
       ) : null}
       {dim ? (
-        <g opacity={focus && focus !== 'paperThickness' ? 0.3 : 1}>
-          <Dimension at={mx(DIM_X)} from={SHEET_Y} to={FACE_Y} lit={focus === 'paperThickness'} size={size} />
-          <Tag x={mx(DIM_X + (mirror ? -8 : 8))} y={SHEET_Y - 12} text={dim.text} right={mirror} face={focus === 'paperThickness' ? FACE.hot : FACE.plain} size={size} />
+        <g opacity={focus && focus !== dim.field ? 0.3 : 1}>
+          <Dimension at={mx(DIM_X)} from={dim.top} to={dim.bottom} lit={Boolean(dim.field) && focus === dim.field} size={size} />
+          <Tag
+            x={mx(DIM_X + (mirror ? -8 : 8))}
+            y={dim.bottom - dim.top < 24 ? dim.top - 12 : (dim.top + dim.bottom) / 2}
+            text={dim.text}
+            right={mirror}
+            face={dim.field && focus === dim.field ? FACE.hot : FACE.plain}
+            size={size}
+          />
         </g>
       ) : null}
+      {motion ? <Motion at={mx(ARROW_X + shift)} from={motion.from} to={motion.to} kind={motion.kind} size={size} /> : null}
       {dia ? (
         <g opacity={focus && focus !== 'toolDiameter' ? 0.3 : 1}>
           <Dimension axis={ACROSS} at={tip - 2 * R - 14} from={mx(TOOL_X - R)} to={mx(TOOL_X + R)} lit={focus === 'toolDiameter'} size={size} />
@@ -104,10 +115,10 @@ const PaperScene = ({
         </g>
       ) : null}
       {side ? (
-        <circle cx={mx(TOOL_X)} cy={tip - R} r={R} className="fill-field stroke-ink" strokeWidth={2} vectorEffect={NS} />
+        <circle cx={mx(toolX)} cy={tip - R} r={R} className="fill-field stroke-ink" strokeWidth={2} vectorEffect={NS} />
       ) : (
         // The Z plate's V bit, 16 wide: its point is 12 long.
-        <path d={`M${mx(TOOL_X) - 8} ${tip - 64} H${mx(TOOL_X) + 8} V${tip - 12} L${mx(TOOL_X)} ${tip} L${mx(TOOL_X) - 8} ${tip - 12} Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
+        <path d={`M${mx(toolX) - 8} ${tip - 64} H${mx(toolX) + 8} V${tip - 12} L${mx(toolX)} ${tip} L${mx(toolX) - 8} ${tip - 12} Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
       )}
       {tone ? <Contact x={mx(TOOL_X)} y={SHEET_Y} tone={tone} size={size} /> : null}
       {tag ? <Tag x={mx(8)} y={SHEET_Y - 50} text={t(tag)} right={mirror} face={TAG_FACE[tone] || FACE.ink} size={size} /> : null}
