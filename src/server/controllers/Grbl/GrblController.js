@@ -57,6 +57,9 @@ import { isHomingLine, losesPosition } from './homing';
 import { JOURNALED, changesWorkOffsets, offsetChange } from './offsets';
 import { machineEnvelope, programOverrun } from './envelope';
 import { checkLines, createCheckRun } from './check-run';
+import { createProbeRun, offsetFor, offsetLine } from './probe-run';
+import probeSettings from '../../services/probe';
+import { STRATEGIES } from '../../services/probe/strategies';
 import library from '../../services/library';
 import units, { toMm } from '../../services/units';
 import { machineTiming } from '../../services/library/estimate';
@@ -223,6 +226,14 @@ class GrblController {
      * settings message. See `envelope.js`.
      */
     envelope = null;
+
+    /**
+     * The probing measurement under way, or measured and waiting for the
+     * operator to confirm it, or null — `{ method, options, wcs, run, step,
+     * result, failure }`. A measurement writes no offset of its own; the
+     * operator's `probe:apply` does (Mateusz, 2026-09-29). See `probe-run`.
+     */
+    probe = null;
 
     // Message Slot
     messageSlot = null;
@@ -905,6 +916,12 @@ class GrblController {
           return;
         }
 
+        // And so does a probing measurement.
+        if (this.probe?.run) {
+          this.probe.run.ok();
+          return;
+        }
+
         const { hold, sent, received } = this.sender.state;
 
         if (this.workflow.state === WORKFLOW_STATE_RUNNING) {
@@ -974,6 +991,12 @@ class GrblController {
 
         if (this.fileCheck?.run) {
           this.fileCheck.run.error(error ? `error:${code}` : res.raw);
+          return;
+        }
+
+        if (this.probe?.run) {
+          this.emit('serialport:read', res.raw);
+          this.probe.run.error(error ? `error:${code}` : res.raw);
           return;
         }
 
@@ -1132,6 +1155,7 @@ class GrblController {
         }
 
         this.fileCheck?.run?.alarm(alarm ? `ALARM:${code}` : res.raw);
+        this.probe?.run?.alarm(alarm ? `ALARM:${code}` : res.raw);
       });
 
       this.runner.on('parserstate', (res) => {
@@ -1175,6 +1199,10 @@ class GrblController {
         if (this.actionMask.queryParameters.state && name === 'PRB') {
           this.actionMask.queryParameters.state = false;
           this.actionMask.queryParameters.reply = true;
+        }
+
+        if (name === 'PRB' && this.probe?.run) {
+          this.probe.run.prb({ ...this.reportedMm(value), result: value.result });
         }
 
         if (name === 'PRB') {
@@ -1325,6 +1353,7 @@ class GrblController {
 
       this.runner.on('startup', (res) => {
         this.fileCheck?.run?.startup();
+        this.probe?.run?.startup();
         this.settingWrite = null;
         this.emit('serialport:read', res.raw);
         this.note({ level: 'info', source: 'controller', event: 'startup', data: { text: res.raw } });
@@ -1460,7 +1489,8 @@ class GrblController {
         if (this.actionMask.queryParameters.state || this.actionMask.queryParameters.reply) {
           return;
         }
-        if (this.workflow.state !== WORKFLOW_STATE_IDLE || !this.runner.isIdle()) {
+        // A `PRB` of ours in the middle of a measurement would be taken for its touch.
+        if (this.workflow.state !== WORKFLOW_STATE_IDLE || !this.runner.isIdle() || this.probe?.run) {
           return;
         }
         if (!this.isOpen()) {
@@ -1741,6 +1771,7 @@ class GrblController {
 
     destroy() {
       this.fileCheck = null;
+      this.probe = null;
       this.settingWrite = null;
       clearTimeout(this.settingsReadTimer);
 
@@ -1998,6 +2029,9 @@ class GrblController {
       if (this.fileCheck) {
         socket.emit('file:check', { name: this.fileCheck.name, state: 'running', ...this.fileCheck.progress });
       }
+      if (this.probe) {
+        socket.emit('probe:state', this.probeReport());
+      }
 
       if (!_.isEmpty(this.settings)) {
         // controller settings
@@ -2243,7 +2277,7 @@ class GrblController {
       return programRefusal(asked, {
         // A file going through `$C` holds the machine as a program does, and
         // so do the lines sent before one.
-        workflow: (this.fileCheck || this.isStarting()) ? 'running' : this.workflow.state,
+        workflow: (this.fileCheck || this.probe?.run || this.isStarting()) ? 'running' : this.workflow.state,
         firmware: this.runner?.state?.status?.activeState,
       });
     }
@@ -2341,6 +2375,87 @@ class GrblController {
         log.error(`Could not keep the check of "${name}": ${err}`);
       });
       this.emit('file:check', { name, state: 'done', result: kept });
+    }
+
+    /** Figures Grbl reported — `$#`, `PRB`, positions — in millimetres, whatever `$13` says. */
+    reportedMm(value = {}) {
+      const inches = this.runner.settings?.settings?.$13 === '1';
+      return _.mapValues(_.pick(value, ['x', 'y', 'z']), (v) => (inches ? in2mm(Number(v)) : Number(v)));
+    }
+
+    /** What every client is told about the measurement, or null when there is none. */
+    probeReport() {
+      if (!this.probe) {
+        return null;
+      }
+      const { method, options, wcs, run, step, result, failure } = this.probe;
+      let state = 'measured';
+      if (run) {
+        state = 'running';
+      } else if (failure) {
+        state = 'failed';
+      }
+      return { method, options, wcs, state, step, result, failure };
+    }
+
+    /**
+     * Measure with one of the methods — see `services/probe/strategies`. The
+     * figures are the ones kept on the server, which the panel showed the
+     * operator and had confirmed before asking.
+     */
+    startProbe(method, options) {
+      const strategy = STRATEGIES[method];
+      const params = probeSettings.params();
+      const modal = this.runner.getModalGroup();
+      const mpos = this.reportedMm(this.runner.getMachinePosition());
+      const wpos = this.reportedMm(this.runner.getWorkPosition());
+
+      this.probe = { method, options, wcs: modal.wcs, run: null, step: null, result: null, failure: null };
+      this.note({ level: 'info', source: 'server', event: 'probe', code: 'start', data: { method, ...options } });
+
+      this.probe.run = createProbeRun({
+        steps: strategy.steps(params, options),
+        start: mpos,
+        wco: _.mapValues(mpos, (v, axis) => v - wpos[axis]),
+        restore: `${modal.distance || 'G90'} ${modal.units || 'G21'}`,
+        write: (line) => this.writeln(line),
+        progress: (step) => {
+          this.probe.step = step;
+          this.emit('probe:state', this.probeReport());
+        },
+        done: (outcome) => this.endProbe(strategy, params, outcome),
+      });
+      this.probe.run.start();
+    }
+
+    /**
+     * A measurement's outcome. Measured, it is the new zero and what writing it
+     * would do: the offset for `G10 L2`, and how far that moves the zero from
+     * where it is now. Nothing is written until the operator confirms it.
+     */
+    endProbe(strategy, params, outcome) {
+      if (!this.probe) {
+        return;
+      }
+      const { method, options, wcs } = this.probe;
+      this.probe.run = null;
+
+      if (outcome.failure) {
+        this.probe.failure = { code: outcome.failure, phase: outcome.phase };
+        this.note({ level: 'warn', source: 'server', event: 'probe', code: outcome.failure, data: { method, phase: outcome.phase } });
+      } else {
+        const parameters = this.runner.getParameters();
+        const zero = strategy.zero(params, options, outcome.seen);
+        const offset = offsetFor(zero, {
+          g92: this.reportedMm(parameters.G92),
+          tlo: this.reportedMm({ z: parameters.TLO }).z || 0,
+        });
+        const current = this.reportedMm(parameters[wcs]);
+        const shift = _.mapValues(offset, (v, axis) => v - (current[axis] || 0));
+        this.probe.result = { zero, offset, shift };
+        this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, ...offset } });
+      }
+      this.emit('probe:state', this.probeReport());
     }
 
     /**
@@ -2903,6 +3018,84 @@ class GrblController {
           }
 
           this.startFileCheck(name, { firstError: Boolean(firstError) });
+        },
+        /**
+         * Measure with a probe: `probe:start({ method, options })`, a method
+         * being one of `services/probe/strategies`. The machine is held as by
+         * a program until the measurement is done; what it found waits for
+         * `probe:apply` or `probe:discard`.
+         */
+        'probe:start': () => {
+          const [{ method, options = {} } = {}] = args;
+          const strategy = STRATEGIES[method];
+
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+          if (!strategy) {
+            this.refuse(cmd, 'bad-method');
+            return;
+          }
+          const wrong = strategy.check(options);
+          if (wrong) {
+            this.refuse(cmd, wrong);
+            return;
+          }
+          if (this.probe?.run) {
+            this.refuse(cmd, 'probing');
+            return;
+          }
+          if (!activeWcsNumber(this.runner.getModalGroup())) {
+            this.refuse(cmd, 'no-wcs');
+            return;
+          }
+          if (this.jogging.dir) {
+            this.refuse(cmd, 'jogging');
+            return;
+          }
+          if (!this.runner.isIdle()) {
+            this.refuse(cmd, 'not-idle');
+            return;
+          }
+          // Grbl would alarm at once (ALARM:4): the clip is on the tool, or the wire is shorted.
+          if (String(this.runner.state?.status?.pinState || '').includes('P')) {
+            this.refuse(cmd, 'probe-triggered');
+            return;
+          }
+          if (!this.claimMotion(cmd)) {
+            return;
+          }
+
+          this.startProbe(method, options);
+        },
+        /** Write the zero the last measurement found, into the system it was measured in. */
+        'probe:apply': () => {
+          const result = this.probe?.result;
+
+          if (!result) {
+            this.refuse(cmd, 'no-result');
+            return;
+          }
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+
+          const p = activeWcsNumber({ wcs: this.probe.wcs });
+          this.command('gcode', [offsetLine(p, result.offset), this.runner.getModalGroup().units || 'G21']);
+          this.note({ level: 'info', source: 'server', event: 'probe', code: 'applied', data: { method: this.probe.method, wcs: this.probe.wcs } });
+          this.probe = null;
+          this.emit('probe:state', null);
+        },
+        /** Put a measurement away without writing it — or a failure, once read. */
+        'probe:discard': () => {
+          if (this.probe?.run) {
+            this.refuse(cmd, 'probing');
+            return;
+          }
+          this.probe = null;
+          this.emit('probe:state', null);
         },
         'goToPoint': () => {
           const [point] = args;

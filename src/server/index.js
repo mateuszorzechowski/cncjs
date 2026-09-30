@@ -25,6 +25,7 @@ import library from './services/library';
 import devices from './services/devices';
 import machineSettings from './services/machine-settings';
 import units from './services/units';
+import probe from './services/probe';
 import monitor from './services/monitor';
 import config from './services/configstore';
 import createWebApp from './lib/create-web-app';
@@ -73,6 +74,9 @@ const createServer = (options, callback) => {
   // The units every panel shows, and whether the machine is put back into
   // them after a program. See `services/units`.
   units.open(config.get('units', {}));
+
+  // The probe's figures, kept from the last measurement. See `services/probe`.
+  probe.open(config.get('probe', {}));
 
   // The devices that have talked to this server, by name — see
   // `services/devices`. Kept in `.cncrc` when what a reader sees changes.

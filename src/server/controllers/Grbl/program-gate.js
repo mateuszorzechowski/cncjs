@@ -53,6 +53,9 @@ const PROGRAM = new Set([
   'gcode:load', 'gcode:unload', 'gcode:start', 'start', 'watchdir:load', 'macro:load',
   // `$C` resets Grbl as it leaves — not over a program that is paused.
   'file:check',
+  // Not in a pause for now either (Mateusz, 2026-09-29) — to be looked at
+  // again with the tool-length probe, which is what a tool change needs.
+  'probe:start', 'probe:apply',
 ]);
 
 /**
