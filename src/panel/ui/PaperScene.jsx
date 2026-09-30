@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  Contact, DASH, Dimension, FACE, Head, Jog, NS, Tag, kit,
+  Contact, DASH, Dimension, FACE, Head, Jog, NS, TONES, Tag, kit,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { FACE_Y, SHEET_Y } from '../machine/paperCycle';
@@ -13,8 +13,9 @@ import { t } from '../i18n';
  * colour with a darker top edge and no outline, folding and bowing as
  * `paperSheet` moves it. The rest is the Z plate's drawing's: the work a
  * faint hatch, the tool an outline — a V bit from the side over the top, a
- * circle from above on a side — the jog's arrow in the text's colour, a
- * touch green, the zero's line in the accent.
+ * circle from above on a side — the jog's arrow in the text's colour, the
+ * zero's line in the accent. The touch is coloured by the feel: green the
+ * drag to stop at, amber resisting, red standing (Mateusz, 2026-09-30).
  *
  * A side is drawn in the top's layout, the work's face the line the sheet
  * lies on; `mirror` turns it for the right and back sides, the words kept
@@ -43,15 +44,11 @@ const ACROSS = 'h';
 // Two places after the point are plenty for a path.
 const at2 = (v) => Math.round(v * 100) / 100;
 
-const TAG_FACE = {
-  'probe.paper.drag': FACE.quiet,
-  'probe.paper.held': FACE.touch,
-  'probe.paper.stopped': FACE.touch,
-  'probe.paper.loose': FACE.quiet,
-};
+// The feel's colour on its tag.
+const TAG_FACE = { grn: FACE.touch, amb: FACE.warn, red: FACE.alarm };
 
 const PaperScene = ({
-  gap = 60, sheet, held = false, jog = null, fine = null, tag = null, zero = 0, axis = 'Z',
+  gap = 60, sheet, tone = null, jog = null, fine = null, tag = null, zero = 0, axis = 'Z',
   dim = null, dia = null, side = false, mirror = false, focus = null, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
@@ -64,7 +61,7 @@ const PaperScene = ({
   const path = `M${points.map(([x, lift]) => `${at2(mx(x))} ${at2(mid - lift)}`).join(' L')} L${mx(TOOL_X)} ${mid} H${at2(mx(end))}`;
   const hand = points[0][0];
   const slideY = mid - SLIDE_UP;
-  const slide = held ? 'grn' : 'mut';
+  const slide = TONES[tone || 'mut'];
   const [outward, inward] = mirror ? [RIGHT, LEFT] : [LEFT, RIGHT];
   return (
     <svg ref={measure} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={label} className={`block ${className}`}>
@@ -83,11 +80,11 @@ const PaperScene = ({
       ) : null}
       <path d={path} fill="none" className="stroke-plate" strokeWidth={BAND} strokeLinejoin="round" />
       <path d={path} transform={`translate(0 ${-EDGE})`} fill="none" className="stroke-plateEdge" strokeWidth={1.5} strokeLinejoin="round" vectorEffect={NS} />
-      {/* The hand's to-and-fro at the sheet's end: grey while it slides, green once the tool holds it. */}
+      {/* The hand's to-and-fro at the sheet's end: grey while it slides freely, then in the feel's colour. */}
       <g>
-        <path d={`M${mx(hand - SLIDE_W)} ${slideY} H${mx(hand)}`} className={`stroke-${slide}`} strokeWidth={1.5} vectorEffect={NS} />
-        <Head x={mx(hand - SLIDE_W)} y={slideY} dir={outward} size={size} className={`fill-${slide}`} />
-        <Head x={mx(hand)} y={slideY} dir={inward} size={size} className={`fill-${slide}`} />
+        <path d={`M${mx(hand - SLIDE_W)} ${slideY} H${mx(hand)}`} className={slide.stroke} strokeWidth={1.5} vectorEffect={NS} />
+        <Head x={mx(hand - SLIDE_W)} y={slideY} dir={outward} size={size} className={slide.fill} />
+        <Head x={mx(hand)} y={slideY} dir={inward} size={size} className={slide.fill} />
       </g>
       {jog ? <Jog at={mx(ARROW_X)} from={SHEET_Y - jog.from} to={tip} every={jog.every} size={size} /> : null}
       {fine ? <Jog at={mx(ARROW_X)} from={SHEET_Y - fine.from} to={tip} size={size} /> : null}
@@ -112,8 +109,8 @@ const PaperScene = ({
         // The Z plate's V bit, 16 wide: its point is 12 long.
         <path d={`M${mx(TOOL_X) - 8} ${tip - 64} H${mx(TOOL_X) + 8} V${tip - 12} L${mx(TOOL_X)} ${tip} L${mx(TOOL_X) - 8} ${tip - 12} Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
       )}
-      {held ? <Contact x={mx(TOOL_X)} y={SHEET_Y} size={size} /> : null}
-      {tag ? <Tag x={mx(8)} y={SHEET_Y - 50} text={t(tag)} right={mirror} face={TAG_FACE[tag] || FACE.ink} size={size} /> : null}
+      {tone ? <Contact x={mx(TOOL_X)} y={SHEET_Y} tone={tone} size={size} /> : null}
+      {tag ? <Tag x={mx(8)} y={SHEET_Y - 50} text={t(tag)} right={mirror} face={TAG_FACE[tone] || FACE.ink} size={size} /> : null}
     </svg>
   );
 };

@@ -31,83 +31,106 @@ const NEAR = 10;
 const STEP = 5;
 const FINE = 0.5;
 
-// The hand's to-and-fro: its period's measure, and how far it goes each way while the sheet slides freely.
+// The hand's to-and-fro: its period's measure. How far it swings, and what the tool does to the sheet, by `FEEL`.
 const SWING_MS = 80;
-const SWING = 5;
-// Pushed in once it holds — a little: held at both ends a strip bows high for a small slack — and how
-// far the hand still swings then; drawn back past straight when the hand lets go.
+// Pressed hard, the hand still pushes a little in: the sheet bows.
 const PUSH = 1.5;
-const HELD_SWING = 1;
-const LET_GO = -6;
+// How long a change of feel takes to reach the hand, as a part of a move's run.
+const RAMP = 0.08;
 
 const clamp = (v) => Math.max(0, Math.min(1, v));
-const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - ((-2 * u + 2) ** 3) / 2);
-
-// Where through its run the tool's steps are over.
-const steps = (p) => clamp((p - 0.1) / 0.75);
-// The drag comes on over the last fine steps; at most this much of a push stays as slack, the rest slides.
-const dragAt = (gap) => clamp((0.5 - gap / NEAR) / 0.5);
-const DRAG = 0.6;
-// When the drag becomes a hold, in the "here" move.
-const HOLDS = 0.45;
 
 /*
- * Each move: the tool's height over the sheet at `p`; how the tool grips;
- * where the hand is on top of its swing (`mean`) and how far it swings
- * (`amp`); `end`, where through its run it stops changing; the keys of its
- * title and its tag.
+ * What the operator feels with the tool this high over the sheet (Mateusz,
+ * 2026-09-30): it slides freely; it drags — the one to stop at, green; it
+ * resists, amber, one step too far; it stands, red — too low, the zero would
+ * be under the paper. How much of a push stays as slack (`grip`), how far
+ * the hand still swings, the tag and its tone.
  */
-const MOVES = {
-  coarse: {
-    gap: (p) => HIGH - Math.min(10, Math.floor(steps(p) * 11)) * STEP,
-    grip: () => ({ friction: 0 }),
-    mean: () => 0,
-    amp: () => SWING,
-    end: 0.85,
-    titleKey: 'probe.paper.coarse',
+const FEEL = {
+  free: { grip: { friction: 0 }, amp: 5 },
+  drag: {
+    grip: { friction: 0.6 }, amp: 2.5, tag: 'probe.paper.drag', tone: 'grn',
   },
-  fine: {
-    gap: (p) => NEAR - Math.min(20, Math.floor(steps(p) * 21)) * FINE,
-    grip: (p) => ({ friction: DRAG * dragAt(MOVES.fine.gap(p)) }),
-    mean: () => 0,
-    amp: (p) => SWING * (1 - 0.75 * dragAt(MOVES.fine.gap(p))),
-    end: 0.85,
-    titleKey: 'probe.paper.fine',
+  resist: {
+    grip: { friction: 0.9 }, amp: 1.5, tag: 'probe.paper.resist', tone: 'amb',
   },
-  here: {
-    gap: () => 0,
-    grip: (p) => (p < HOLDS ? { friction: DRAG } : { pinned: true }),
-    mean: (p) => PUSH * ease(clamp((p - HOLDS) / 0.4)),
-    amp: (p) => (p < HOLDS ? SWING * 0.25 : HELD_SWING),
-    end: 0.85,
-    titleKey: 'probe.paper.here',
-  },
-  // The hand stops; the folds stand; then it lets go and the sheet lies straight.
-  stop: {
-    gap: () => 0,
-    grip: () => ({ pinned: true }),
-    mean: (p) => PUSH + (LET_GO - PUSH) * ease(clamp((p - 0.55) / 0.35)),
-    amp: (p) => HELD_SWING * (1 - ease(clamp(p / 0.25))),
-    end: 0.9,
-    titleKey: 'probe.paper.stop',
-  },
-  zero: {
-    gap: () => 0,
-    grip: () => ({ pinned: true }),
-    mean: () => LET_GO,
-    amp: () => 0,
-    zeroAt: [0.1, 0.3],
-    end: 0.3,
-    titleKey: 'probe.paper.zero',
-    after: true,
+  stuck: {
+    grip: { pinned: true }, amp: 1, push: PUSH, tag: 'probe.paper.stuck', tone: 'red',
   },
 };
 
-export const PAPER_ORDER = ['coarse', 'fine', 'here', 'stop', 'zero'];
+export const feelAt = (gap) => {
+  if (gap > 0.75) {
+    return 'free';
+  }
+  if (gap > 0.25) {
+    return 'drag';
+  }
+  return gap > -0.25 ? 'resist' : 'stuck';
+};
+
+// `n` steps of `by` from `from`, spread over the run from 0.1 to 0.85.
+const stepsOf = (from, by, n) => [[0, from], ...Array.from({ length: n }, (_, i) => [0.1 + (0.75 * i) / n, from - by * (i + 1)])];
+
+// The step the tool stands on at `p`, and the one before.
+const stepAt = (steps, p) => {
+  let i = 0;
+  while (i + 1 < steps.length && steps[i + 1][0] <= p) {
+    i += 1;
+  }
+  return i;
+};
+
+/*
+ * Each move: the tool's `steps` — `[p, height]`, held until the next; the
+ * hand's swing and push follow the feel at the tool's height, eased over a
+ * moment when it changes. `still` from where the hand stops; `end`, where
+ * through its run the move stops changing; its title.
+ */
+const MOVES = {
+  coarse: { steps: stepsOf(HIGH, STEP, 10), end: 0.85, titleKey: 'probe.paper.coarse' },
+  fine: { steps: stepsOf(NEAR, FINE, 18), end: 0.85, titleKey: 'probe.paper.fine' },
+  // On past the drag: it resists, then it stands.
+  over: {
+    steps: [[0, 1], [0.1, 0.5], [0.4, 0], [0.7, -0.5]], end: 0.85, titleKey: 'probe.paper.over',
+  },
+  // Back a step at a time: it resists, then it drags.
+  back: {
+    steps: [[0, -0.5], [0.15, 0], [0.5, 0.5]], end: 0.75, titleKey: 'probe.paper.back',
+  },
+  // It drags: "here". The hand stops.
+  here: {
+    steps: [[0, 0.5]], still: [0, 0.4], end: 0.4, titleKey: 'probe.paper.here', tag: 'probe.paper.ok',
+  },
+  zero: {
+    steps: [[0, 0.5]], still: [-1, 0], zeroAt: [0.1, 0.3], end: 0.3, titleKey: 'probe.paper.zero', after: true,
+  },
+};
+
+const gapOf = (move, p) => move.steps[stepAt(move.steps, p)][1];
+
+/** The hand's swing and push at `p`: the feel's, eased from the step before's. */
+const handOf = (move, p) => {
+  const i = stepAt(move.steps, p);
+  const now = FEEL[feelAt(move.steps[i][1])];
+  const was = FEEL[feelAt(move.steps[Math.max(0, i - 1)][1])];
+  const u = clamp((p - move.steps[i][0]) / RAMP);
+  let amp = was.amp + (now.amp - was.amp) * u;
+  const push = (was.push || 0) + ((now.push || 0) - (was.push || 0)) * u;
+  if (move.still) {
+    const [a, b] = move.still;
+    amp *= 1 - clamp((p - a) / (b - a));
+  }
+  return { amp, push };
+};
+
+export const PAPER_ORDER = ['coarse', 'fine', 'over', 'back', 'here', 'zero'];
 
 export const PAPER_GROUPS = [
   { id: 'coarse', key: 'probe.paper.barCoarse', folded: true, subs: [{ key: 'probe.paper.barCoarse', moves: ['coarse'] }] },
-  { id: 'fine', key: 'probe.paper.barFine', folded: true, subs: [{ key: 'probe.paper.barFine', moves: ['fine', 'here', 'stop'] }] },
+  { id: 'fine', key: 'probe.paper.barFine', folded: true, subs: [{ key: 'probe.paper.barFine', moves: ['fine', 'over'] }] },
+  { id: 'back', key: 'probe.paper.barBack', folded: true, subs: [{ key: 'probe.paper.barBack', moves: ['back', 'here'] }] },
   { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero'] }] },
 ];
 
@@ -136,7 +159,8 @@ const startOf = (name) => ITEMS.find((item) => item.name === name).start;
 export const scriptAt = (ms) => {
   const { name, p } = frameAt(ITEMS, ms % TOTAL);
   const move = MOVES[name];
-  return { hand: move.mean(p) + move.amp(p) * Math.sin(ms / SWING_MS), grip: move.grip(p) };
+  const { amp, push } = handOf(move, p);
+  return { hand: push + amp * Math.sin(ms / SWING_MS), grip: FEEL[feelAt(gapOf(move, p))].grip };
 };
 
 /** Which move plays at `ms`: the whole cycle, a figure's loop, or `pinned` alone. */
@@ -179,29 +203,24 @@ export const paperScene = (name, p, { edge = 'z', texts = {}, say = (field, text
   const move = MOVES[name];
   const at = startOf(name) + p * RUN_MS;
   const sheet = sheetAt(at, scriptAt);
-  const grip = move.grip(p);
-  const gap = move.gap(p);
+  const gap = gapOf(move, p);
+  const feel = FEEL[feelAt(gap)];
   let zero = 0;
   if (move.zeroAt) {
     const [a, b] = move.zeroAt;
     zero = clamp((p - a) / (b - a));
-  }
-  let tag = null;
-  if (name === 'here') {
-    tag = grip.pinned ? 'probe.paper.held' : 'probe.paper.drag';
-  } else if (name === 'stop') {
-    tag = sheet.slack > 0.05 ? 'probe.paper.stopped' : 'probe.paper.loose';
   }
   const side = edge !== 'z';
   const paper = say('paperThickness', texts.paperThickness ?? '');
   return {
     gap,
     sheet: sheetShape(sheet),
-    held: Boolean(grip.pinned),
+    // What the tool does to the sheet, by its colour: none while it slides freely.
+    tone: feel.tone || null,
+    tag: name === 'zero' ? null : move.tag || feel.tag || null,
     // The jog: from where the steps began down to the tip, a tick a step.
     jog: name === 'coarse' && gap < HIGH ? { from: HIGH, to: gap, every: STEP } : null,
     fine: name === 'fine' && gap < NEAR - 1 ? { from: NEAR, to: gap } : null,
-    tag,
     zero,
     axis: EDGES_BY_ID[edge].axis.toUpperCase(),
     dim: name === 'zero' ? { text: paper } : null,
@@ -220,8 +239,11 @@ export const paperCode = (name, edge, texts, wcs = 1, mm = { paperThickness: num
   if (name === 'coarse') {
     return `$J=G91 ${A}${toward}1`;
   }
-  if (name === 'fine') {
+  if (name === 'fine' || name === 'over') {
     return `$J=G91 ${A}${toward}0.1`;
+  }
+  if (name === 'back') {
+    return `$J=G91 ${A}${toward ? '' : '-'}0.1`;
   }
   if (name === 'zero') {
     return `G10 L20 P${wcs} ${A}${fmt(-sign * offsetOf(edge, mm))}`;
