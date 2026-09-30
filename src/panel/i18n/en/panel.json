@@ -1597,6 +1597,11 @@
       "label": "View",
       "top": "From above",
       "side": "From the side"
+    },
+    "jog": {
+      "title": "Probe · {{method}}",
+      "open": "Probe jog",
+      "where": "Jog and the next step: the jog icon at the top — it works from any screen on the phone."
     }
   }
 }

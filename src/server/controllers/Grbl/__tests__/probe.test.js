@@ -244,3 +244,40 @@ describe('the offset it writes', () => {
     expect(offsetLine(2, { x: 1.23456, y: -4 })).toBe('G21 G10 L2 P2 X1.235 Y-4');
   });
 });
+
+describe('probe:stage', () => {
+  const stages = (controller) => controller.__events.filter(({ event }) => event === 'probe:stage').map(({ args }) => args[0]);
+
+  const watched = () => {
+    const made = setup();
+    const events = [];
+    made.controller.sockets.watching = { emit: (event, ...args) => events.push({ event, args }) };
+    made.controller.__events = events;
+    return made;
+  };
+
+  test('where the wizard waits is said to every device, and a measurement starting ends it', () => {
+    const { controller } = watched();
+
+    controller.command('probe:stage', { method: 'paper', options: { edge: 'x-left' }, step: 'measure' });
+    expect(controller.probeStage).toEqual({ method: 'paper', options: { edge: 'x-left' }, step: 'measure' });
+
+    controller.command('probe:start', { method: 'z' });
+    expect(controller.probeStage).toBeNull();
+    expect(stages(controller)).toEqual([{ method: 'paper', options: { edge: 'x-left' }, step: 'measure' }, null]);
+  });
+
+  test('a stage that is not one clears it', () => {
+    const { controller } = watched();
+
+    controller.command('probe:stage', { method: 'z', step: 'position' });
+    controller.command('probe:stage', { method: 'nope', step: 'position' });
+    expect(controller.probeStage).toBeNull();
+    controller.command('probe:stage', { method: 'z', step: 'result' });
+    expect(controller.probeStage).toBeNull();
+  });
+
+  test('is said while a program runs: it reaches no machine', () => {
+    expect(programRefusal('probe:stage', { workflow: 'running', firmware: 'Run' })).toBeNull();
+  });
+});

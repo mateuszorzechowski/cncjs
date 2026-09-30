@@ -180,6 +180,14 @@ export const saveProbe = async (texts, rule) => {
   return body;
 };
 
+/**
+ * Tell every device where this wizard waits on the operator's hands —
+ * `{ method, options, step }` — or, null, that it no longer does.
+ */
+export const sayProbeStage = (stage) => {
+  controller.command('probe:stage', stage);
+};
+
 export const startProbe = (method, options = {}) => {
   controller.command('probe:start', { method, options });
 };

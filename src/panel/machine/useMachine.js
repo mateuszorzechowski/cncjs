@@ -269,6 +269,10 @@ export const useMachine = () => {
       'probe:state': (probe) => {
         setSnapshot((previous) => ({ ...previous, probe: probe || null }));
       },
+      // Where a probe wizard waits on the operator's hands, to every device; null once it does not.
+      'probe:stage': (stage) => {
+        setSnapshot((previous) => ({ ...previous, probeStage: stage || null }));
+      },
       'units:change': (units) => {
         setSnapshot((previous) => ({ ...previous, units: units || null }));
       },

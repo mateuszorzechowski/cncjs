@@ -15,6 +15,7 @@ import StatusSheet from './ui/StatusSheet';
 import RefusalNotice from './ui/RefusalNotice';
 import StateHelp from './ui/StateHelp';
 import NoHomingSheet from './ui/NoHomingSheet';
+import ProbeJogSheet from './ui/ProbeJogSheet';
 import { buildName, isUpdateReady, servedBuild, watchUpdate } from './machine/update';
 import { useAutoConnect } from './machine/autoConnect';
 import useScreen from './machine/useScreen';
@@ -162,6 +163,14 @@ const Panel = ({ machine, screen, onScreen }) => {
   // Not homed: the amber mark in the top bar and what it says (`NoHomingSheet`).
   const unhomed = machine.envelope?.placed === false;
   const [cautioning, setCautioning] = useState(false);
+  // A probe wizard waiting on the operator's hands, on any device: its jog, on a phone (`ProbeJogSheet`).
+  const [probeJogging, setProbeJogging] = useState(false);
+  const probeWaits = Boolean(machine.probeStage);
+  useEffect(() => {
+    if (!probeWaits) {
+      setProbeJogging(false);
+    }
+  }, [probeWaits]);
   const Screen = SCREENS[screen];
 
   /*
@@ -206,6 +215,7 @@ const Panel = ({ machine, screen, onScreen }) => {
         caution={unhomed}
         onCaution={() => setCautioning(true)}
         help={screenHelp}
+        onProbeJog={phone && probeWaits ? () => setProbeJogging(true) : null}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -400,6 +410,7 @@ const Panel = ({ machine, screen, onScreen }) => {
 
       {helping ? <StateHelp machine={machine} onClose={() => setHelping(false)} /> : null}
 
+      {probeJogging && probeWaits ? <ProbeJogSheet machine={machine} onClose={() => setProbeJogging(false)} /> : null}
       {cautioning && unhomed ? (
         <NoHomingSheet
           onSettings={() => {

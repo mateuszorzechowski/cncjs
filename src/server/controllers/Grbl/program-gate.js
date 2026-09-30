@@ -43,6 +43,8 @@ const CONTROL = new Set([
   // settings changes waiting to be written, shared by the panels, and what
   // they would do to the geometry. Discarding them mid-job is harmless.
   'settings:drafts', 'settings:preview',
+  // Where a probe wizard waits: said to the other devices, nothing sent to the machine.
+  'probe:stage',
 ]);
 
 /** Grbl's states in which a paused program has nothing left in the firmware. */

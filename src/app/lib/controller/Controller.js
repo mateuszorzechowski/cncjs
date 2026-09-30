@@ -211,6 +211,14 @@ class Controller {
          * @param {object} probe - `{ method, options, wcs, state, step, result, failure }`, or null
          */
         'probe:state': [],
+        /**
+         * Where a probe wizard waits on the operator's hands, so a phone can
+         * jog and go on from any screen — null once it does not.
+         *
+         * @event probe:stage
+         * @param {object} stage - `{ method, options, step }`, `step` `position` or `measure`, or null
+         */
+        'probe:stage': [],
 
         /**
          * The units every panel shows and the machine goes back to — the

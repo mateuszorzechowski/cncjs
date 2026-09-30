@@ -235,6 +235,15 @@ class GrblController {
      */
     probe = null;
 
+    /**
+     * Where a probe wizard is waiting on the operator's hands, or null —
+     * `{ method, options, step }`, `step` being `position` (the tool into
+     * place) or `measure` (the paper felt for). Said by the device the wizard
+     * is open on and sent to every device, so a phone can jog and go on from
+     * wherever it is (review note, 2026-09-30). A measurement starting ends it.
+     */
+    probeStage = null;
+
     // Message Slot
     messageSlot = null;
 
@@ -2032,6 +2041,9 @@ class GrblController {
       if (this.probe) {
         socket.emit('probe:state', this.probeReport());
       }
+      if (this.probeStage) {
+        socket.emit('probe:stage', this.probeStage);
+      }
 
       if (!_.isEmpty(this.settings)) {
         // controller settings
@@ -3067,7 +3079,16 @@ class GrblController {
             return;
           }
 
+          this.probeStage = null;
+          this.emit('probe:stage', null);
           this.startProbe(method, options);
+        },
+        /** Where the wizard waits on the operator's hands, for every device; null when it no longer does. */
+        'probe:stage': () => {
+          const [stage = null] = args;
+          const known = stage && STRATEGIES[stage.method] && ['position', 'measure'].includes(stage.step);
+          this.probeStage = known ? { method: stage.method, options: stage.options || {}, step: stage.step } : null;
+          this.emit('probe:stage', this.probeStage);
         },
         /** Write the zero the last measurement found, into the system it was measured in. */
         'probe:apply': () => {

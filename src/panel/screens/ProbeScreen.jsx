@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
@@ -9,12 +9,10 @@ import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
 import StepTrack from '../ui/StepTrack';
-import { MARKS } from '../ui/NavTabs';
-import { useHeaderHelp } from '../ui/headerSlot';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
+  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, sayProbeStage, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
@@ -50,8 +48,6 @@ const ProbeScreen = ({ machine }) => {
   const [texts, setTexts] = useState({});
   const [bad, setBad] = useState(null);
   const [touched, setTouched] = useState(false);
-  // The jog's sheet open, on a phone at the position step.
-  const [jogging, setJogging] = useState(false);
 
   useEffect(() => {
     fetchProbe().then(setKept).catch(() => setKept(null));
@@ -67,13 +63,36 @@ const ProbeScreen = ({ machine }) => {
   const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
   // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
   const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
+
   /*
-   * On a phone the jog is a sheet opened from the top bar, where a screen's
-   * help sits (review note, 2026-09-30: *"ikona w headerze, po kliknięciu
-   * otwiera się jog i zatwierdzenie"*) — while it is open, the jog's own help
-   * has the place.
+   * Where this wizard waits on the operator's hands, said to every device, so
+   * a phone can jog and go on from any screen (review note, 2026-09-30) — and
+   * taken back only by the device that said it.
    */
-  useHeaderHelp(t('nav.jog'), () => setJogging(true), { icon: MARKS.jog, on: phone && !jogging && (step === 'position' || feeling) });
+  const waiting = step === 'position' || feeling ? step : null;
+  const stage = waiting ? JSON.stringify({ method: method.id, options: optionsFor(method, choice), step: waiting }) : null;
+  const said = useRef(false);
+  useEffect(() => {
+    if (stage) {
+      said.current = true;
+      sayProbeStage(JSON.parse(stage));
+    } else if (said.current) {
+      said.current = false;
+      sayProbeStage(null);
+    }
+  }, [stage]);
+  useEffect(() => () => {
+    if (said.current) {
+      sayProbeStage(null);
+    }
+  }, []);
+  // Gone on from another device — the phone's Dalej: follow it.
+  const shared = machine.probeStage;
+  useEffect(() => {
+    if (shared && waiting && shared.method === method?.id && shared.step !== waiting) {
+      setLocal(shared.step);
+    }
+  }, [shared?.step, shared?.method]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (step === 'wire' && lit) {
@@ -155,8 +174,6 @@ const ProbeScreen = ({ machine }) => {
           choice={choice}
           feeling={feeling}
           lit={lit}
-          jogging={jogging}
-          onJogging={setJogging}
           onBack={() => go(-1)}
           onNext={() => go(1)}
           onMeasure={measure}

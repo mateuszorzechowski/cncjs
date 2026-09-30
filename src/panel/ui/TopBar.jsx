@@ -3,6 +3,7 @@ import HelpButton from './HelpButton';
 import Icon from './Icon';
 import { Triangle } from './Notice';
 import StateChip from './StateChip';
+import { MARKS } from './NavTabs';
 import { t } from '../i18n';
 
 /**
@@ -47,7 +48,9 @@ import { t } from '../i18n';
  * rail's own width. On a phone there is no rail to line up with and the chip
  * has no box, so it keeps the bar's ordinary margin instead.
  */
-const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate, caution = false, onCaution, help }) => (
+const TopBar = ({
+  status, machine, onStatus, canStop, onStop, updateTo, onUpdate, caution = false, onCaution, help, onProbeJog = null,
+}) => (
   /*
     * The safe area is padded here rather than on the body.
     *
@@ -67,17 +70,23 @@ const TopBar = ({ status, machine, onStatus, canStop, onStop, updateTo, onUpdate
       * then the machine, and STOP alone at the other end. Last in the group,
       * so on a screen without help it goes and nothing that can be pressed
       * moves. `headerSlot`. */}
-    {help && !help.icon ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:h-btnh @3xl/shell:w-14 @3xl/shell:text-lead" /> : null}
-    {help?.icon ? (
+    {help ? <HelpButton label={help.label} onPress={help.onPress} className="size-chiph text-base @3xl/shell:h-btnh @3xl/shell:w-14 @3xl/shell:text-lead" /> : null}
+
+    {/*
+      * A probe wizard, here or on another device, waits on the operator's
+      * hands: the jog, from any screen (review note, 2026-09-30). The nav's
+      * jog glyph, as tall as the help; last in the group, so nothing moves.
+      */}
+    {onProbeJog ? (
       <button
         type="button"
-        onClick={help.onPress}
-        aria-label={help.label}
-        title={help.label}
-        className="flex size-chiph shrink-0 items-center justify-center rounded-ctl border border-outline text-ink transition-colors hover:border-acc hover:text-acc @3xl/shell:h-btnh @3xl/shell:w-14"
+        onClick={onProbeJog}
+        aria-label={t('probe.jog.open')}
+        title={t('probe.jog.open')}
+        className="flex size-chiph shrink-0 items-center justify-center rounded-ctl border border-acc bg-accS text-acc @3xl/shell:h-btnh @3xl/shell:w-14"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 @3xl/shell:size-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-          <path d={help.icon} />
+          <path d={MARKS.jog} />
         </svg>
       </button>
     ) : null}
