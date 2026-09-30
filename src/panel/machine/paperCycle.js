@@ -46,14 +46,19 @@ const clamp = (v) => Math.max(0, Math.min(1, v));
  * resists, amber, one step too far; it stands, red — too low, the zero would
  * be under the paper. How much of a push stays as slack (`grip`), how far
  * the hand still swings, the tag and its tone.
+ *
+ * Told apart by what the sheet does, not only the colour (review note, the
+ * same day: *"nie widzę różnicy między drags i resists"*): dragging, it still
+ * slides under the tool — its far end goes to and fro — and ripples a little
+ * by the hand; resisting, it hardly slides, and a push piles up in folds.
  */
 const FEEL = {
   free: { grip: { friction: 0 }, amp: 5 },
   drag: {
-    grip: { friction: 0.6 }, amp: 2.5, tag: 'probe.paper.drag', tone: 'grn',
+    grip: { friction: 0.15 }, amp: 3, tag: 'probe.paper.drag', tone: 'grn',
   },
   resist: {
-    grip: { friction: 0.9 }, amp: 1.5, tag: 'probe.paper.resist', tone: 'amb',
+    grip: { friction: 0.95 }, amp: 2.5, tag: 'probe.paper.resist', tone: 'amb',
   },
   stuck: {
     grip: { pinned: true }, amp: 1, push: PUSH, tag: 'probe.paper.stuck', tone: 'red',
@@ -91,17 +96,14 @@ const stepAt = (steps, p) => {
 const MOVES = {
   coarse: { steps: stepsOf(HIGH, STEP, 10), end: 0.85, titleKey: 'probe.paper.coarse' },
   fine: { steps: stepsOf(NEAR, FINE, 18), end: 0.85, titleKey: 'probe.paper.fine' },
-  // On past the drag: it resists, then it stands.
-  over: {
-    steps: [[0, 1], [0.1, 0.5], [0.4, 0], [0.7, -0.5]], end: 0.85, titleKey: 'probe.paper.over',
-  },
-  // Back a step at a time: it resists, then it drags.
-  back: {
-    steps: [[0, -0.5], [0.15, 0], [0.5, 0.5]], end: 0.75, titleKey: 'probe.paper.back',
-  },
-  // It drags: "here". The hand stops.
+  // One more step each: it drags, it resists, it stands (Mateusz: each its own stage).
+  drag: { steps: [[0, 1], [0.15, 0.5]], end: 0.8, titleKey: 'probe.paper.drags' },
+  resist: { steps: [[0, 0.5], [0.15, 0]], end: 0.8, titleKey: 'probe.paper.resists' },
+  stuck: { steps: [[0, 0], [0.15, -0.5]], end: 0.8, titleKey: 'probe.paper.stands' },
+  // Back a step: it resists; another: it drags — "here", and the hand stops.
+  back: { steps: [[0, -0.5], [0.15, 0]], end: 0.8, titleKey: 'probe.paper.back' },
   here: {
-    steps: [[0, 0.5]], still: [0, 0.4], end: 0.4, titleKey: 'probe.paper.here', tag: 'probe.paper.ok',
+    steps: [[0, 0], [0.15, 0.5]], still: [0.45, 0.85], end: 0.85, titleKey: 'probe.paper.here', tag: 'probe.paper.ok',
   },
   zero: {
     steps: [[0, 0.5]], still: [-1, 0], zeroAt: [0.1, 0.3], end: 0.3, titleKey: 'probe.paper.zero', after: true,
@@ -125,11 +127,11 @@ const handOf = (move, p) => {
   return { amp, push };
 };
 
-export const PAPER_ORDER = ['coarse', 'fine', 'over', 'back', 'here', 'zero'];
+export const PAPER_ORDER = ['coarse', 'fine', 'drag', 'resist', 'stuck', 'back', 'here', 'zero'];
 
 export const PAPER_GROUPS = [
   { id: 'coarse', key: 'probe.paper.barCoarse', folded: true, subs: [{ key: 'probe.paper.barCoarse', moves: ['coarse'] }] },
-  { id: 'fine', key: 'probe.paper.barFine', folded: true, subs: [{ key: 'probe.paper.barFine', moves: ['fine', 'over'] }] },
+  { id: 'fine', key: 'probe.paper.barFine', folded: true, subs: [{ key: 'probe.paper.barFine', moves: ['fine', 'drag', 'resist', 'stuck'] }] },
   { id: 'back', key: 'probe.paper.barBack', folded: true, subs: [{ key: 'probe.paper.barBack', moves: ['back', 'here'] }] },
   { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero'] }] },
 ];
@@ -217,7 +219,8 @@ export const paperScene = (name, p, { edge = 'z', texts = {}, say = (field, text
     sheet: sheetShape(sheet),
     // What the tool does to the sheet, by its colour: none while it slides freely.
     tone: feel.tone || null,
-    tag: name === 'zero' ? null : move.tag || feel.tag || null,
+    // "Here" is said once it drags; the zero's figures say the rest.
+    tag: name === 'zero' ? null : (feelAt(gap) === 'drag' && move.tag) || feel.tag || null,
     // The jog: from where the steps began down to the tip, a tick a step.
     jog: name === 'coarse' && gap < HIGH ? { from: HIGH, to: gap, every: STEP } : null,
     fine: name === 'fine' && gap < NEAR - 1 ? { from: NEAR, to: gap } : null,
@@ -231,7 +234,7 @@ export const paperScene = (name, p, { edge = 'z', texts = {}, say = (field, text
   };
 };
 
-/** The move's line: the jog as the pad sends it, or the zero written; null where the machine does not move. */
+/** The move's line: the jog as the pad sends it — down, or back up — or the zero written. */
 export const paperCode = (name, edge, texts, wcs = 1, mm = { paperThickness: number(texts.paperThickness), toolDiameter: number(texts.toolDiameter) }) => {
   const { axis, sign } = EDGES_BY_ID[edge];
   const A = axis.toUpperCase();
@@ -239,16 +242,13 @@ export const paperCode = (name, edge, texts, wcs = 1, mm = { paperThickness: num
   if (name === 'coarse') {
     return `$J=G91 ${A}${toward}1`;
   }
-  if (name === 'fine' || name === 'over') {
+  if (['fine', 'drag', 'resist', 'stuck'].includes(name)) {
     return `$J=G91 ${A}${toward}0.1`;
   }
-  if (name === 'back') {
+  if (name === 'back' || name === 'here') {
     return `$J=G91 ${A}${toward ? '' : '-'}0.1`;
   }
-  if (name === 'zero') {
-    return `G10 L20 P${wcs} ${A}${fmt(-sign * offsetOf(edge, mm))}`;
-  }
-  return null;
+  return `G10 L20 P${wcs} ${A}${fmt(-sign * offsetOf(edge, mm))}`;
 };
 
 // An example of where the tool stood against the old zero, before it is written.

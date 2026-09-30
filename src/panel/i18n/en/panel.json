@@ -1539,9 +1539,11 @@
     "paper": {
       "coarse": "{{axis}} · approach in 1 mm steps",
       "fine": "{{axis}} · 0.1 mm steps, the sheet still free",
-      "over": "{{axis}} · on by 0.1 mm: resists, stuck — too low",
-      "back": "{{axis}} · back by 0.1 mm: resists, drags",
-      "here": "It drags — “Here”",
+      "drags": "{{axis}} · 0.1 mm step — drags",
+      "resists": "{{axis}} · 0.1 mm more — resists",
+      "stands": "{{axis}} · 0.1 mm more — stuck, too low",
+      "back": "{{axis}} · back 0.1 mm — resists",
+      "here": "{{axis}} · back 0.1 mm — drags: “Here”",
       "zero": "{{axis}}0 written",
       "step1": "1 mm step",
       "step01": "0.1 mm step",
@@ -1551,8 +1553,7 @@
       "ok": "drags — Here",
       "barCoarse": "coarse",
       "barFine": "fine",
-      "barBack": "back off",
-      "byHand": "no machine move"
+      "barBack": "back off"
     },
     "bar": {
       "measure": "measure",

@@ -86,7 +86,7 @@ const PaperParams = ({
       <ProbeReadout wcs={wcs} after={read.after} axes={[[read.axis, read.value]]} />
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
-        <span className="whitespace-nowrap font-num text-cap text-mut">{code ?? t('probe.paper.byHand')}</span>
+        <span className="whitespace-nowrap font-num text-cap text-mut">{code}</span>
       </div>
     </div>
   );

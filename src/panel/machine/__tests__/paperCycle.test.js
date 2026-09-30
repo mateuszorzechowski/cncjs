@@ -31,8 +31,8 @@ const feel = (name, p) => {
 };
 
 describe('the paper cycle', () => {
-  test('down past the drag to standing, back a step at a time to the drag, "here", the zero — no lift', () => {
-    expect(PAPER_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['coarse', 'fine', 'over', 'back', 'here', 'zero']);
+  test('each feel a stage of its own: down through drags, resists, stands; back to resists, to drags — "here"; the zero', () => {
+    expect(PAPER_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['coarse', 'fine', 'drag', 'resist', 'stuck', 'back', 'here', 'zero']);
   });
 
   test('the feel is the tool\'s height over the sheet: free, drags, resists, stands', () => {
@@ -41,11 +41,10 @@ describe('the paper cycle', () => {
 
   test('coloured by the feel: the drag green, resisting amber, standing red', () => {
     expect(feel('fine', 0.5)).toEqual([null, null]);
-    expect(feel('over', 0.2)).toEqual(['probe.paper.drag', 'grn']);
-    expect(feel('over', 0.5)).toEqual(['probe.paper.resist', 'amb']);
-    expect(feel('over', 0.8)).toEqual(['probe.paper.stuck', 'red']);
-    expect(feel('back', 0.3)).toEqual(['probe.paper.resist', 'amb']);
-    expect(feel('back', 0.6)).toEqual(['probe.paper.drag', 'grn']);
+    expect(feel('drag', 0.5)).toEqual(['probe.paper.drag', 'grn']);
+    expect(feel('resist', 0.5)).toEqual(['probe.paper.resist', 'amb']);
+    expect(feel('stuck', 0.5)).toEqual(['probe.paper.stuck', 'red']);
+    expect(feel('back', 0.5)).toEqual(['probe.paper.resist', 'amb']);
     expect(feel('here', 0.5)).toEqual(['probe.paper.ok', 'grn']);
     // The zero written at the drag; its figures say it, not a tag.
     expect(feel('zero', 0.5)).toEqual([null, 'grn']);
@@ -60,7 +59,6 @@ describe('the paper cycle', () => {
       const [was, now] = [ALL[i - 1], ALL[i]];
       if (was.name !== now.name) {
         expect(Math.abs(now.peak[1] - was.peak[1])).toBeLessThan(1);
-        expect(Math.abs(now.state.slack - was.state.slack)).toBeLessThan(0.5);
       }
       // Slack comes only from the hand: never more of it in a frame than the hand moved.
       let moved = 0;
@@ -79,19 +77,23 @@ describe('the paper cycle', () => {
     expect(Math.max(...ends) - Math.min(...ends)).toBeGreaterThan(8);
   });
 
-  test('dragging: pushed, it folds by the hand; pulled, it goes straight and slides', () => {
-    const drag = during('over', 0.12, 0.39);
-    const pushed = drag.filter((f) => f.state.slack > 0.3);
-    expect(pushed.length).toBeGreaterThan(2);
-    expect(drag.some((f) => f.state.slack < 0.01)).toBe(true);
-    pushed.forEach((f) => {
+  test('dragging, the sheet still slides and only ripples; resisting, it hardly slides and piles up in folds', () => {
+    const range = (list) => Math.max(...list) - Math.min(...list);
+    const drag = during('drag', 0.3, 1);
+    const resist = during('resist', 0.3, 1);
+    expect(range(drag.map((f) => f.shape.end))).toBeGreaterThan(3);
+    expect(range(resist.map((f) => f.shape.end))).toBeLessThan(0.5);
+    const highest = (list) => Math.max(...list.map((f) => f.peak[1]));
+    expect(highest(resist)).toBeGreaterThan(2 * highest(drag));
+    // Pushed, the folds stand nearer the hand than the tool.
+    resist.filter((f) => f.state.slack > 0.5).forEach((f) => {
       const hand = f.shape.points[0][0];
       expect(f.peak[0] - hand).toBeLessThan((TOOL_X - hand) / 2);
     });
   });
 
   test('standing, nothing slides and the pushed sheet bows into one arch', () => {
-    const stuck = during('over', 0.72, 1);
+    const stuck = during('stuck', 0.3, 1);
     const ends = stuck.map((f) => f.shape.end);
     expect(Math.max(...ends) - Math.min(...ends)).toBeLessThan(1e-9);
     const bowed = stuck.filter((f) => f.state.slack > 1);
@@ -104,8 +106,8 @@ describe('the paper cycle', () => {
 
   test('backed off, the slack comes out; at "here" the hand stops and the zero is written with it still', () => {
     const slackAt = (name, p) => during(name, p - 0.02, p + 0.02)[0].state.slack;
-    expect(slackAt('back', 0.72)).toBeLessThan(slackAt('over', 0.98));
-    const hands = during('here', 0.42, 1).concat(during('zero', 0, 1)).map((f) => f.state.hand);
+    expect(slackAt('here', 0.4)).toBeLessThan(slackAt('stuck', 0.98));
+    const hands = during('here', 0.86, 1).concat(during('zero', 0, 1)).map((f) => f.state.hand);
     expect(Math.max(...hands) - Math.min(...hands)).toBeLessThan(0.05);
   });
 
@@ -113,19 +115,22 @@ describe('the paper cycle', () => {
     expect(paperScene('coarse', 0).gap).toBe(60);
     expect(paperScene('coarse', 1).gap).toBe(10);
     expect(paperScene('fine', 1).gap).toBe(1);
-    expect(paperScene('over', 1).gap).toBe(-0.5);
-    expect(paperScene('back', 1).gap).toBe(0.5);
+    expect(paperScene('drag', 1).gap).toBe(0.5);
+    expect(paperScene('resist', 1).gap).toBe(0);
+    expect(paperScene('stuck', 1).gap).toBe(-0.5);
+    expect(paperScene('back', 1).gap).toBe(0);
+    expect(paperScene('here', 1).gap).toBe(0.5);
     expect(paperScene('zero', 1).gap).toBe(0.5);
   });
 
   test('says each move as its line, the zero with the sheet and on a side the radius', () => {
     const texts = { paperThickness: '0.1', toolDiameter: '6' };
     expect(paperCode('coarse', 'z', texts)).toBe('$J=G91 Z-1');
-    expect(paperCode('over', 'z', texts)).toBe('$J=G91 Z-0.1');
+    expect(paperCode('resist', 'z', texts)).toBe('$J=G91 Z-0.1');
     expect(paperCode('back', 'z', texts)).toBe('$J=G91 Z0.1');
     expect(paperCode('fine', 'x-left', texts)).toBe('$J=G91 X0.1');
     expect(paperCode('back', 'x-left', texts)).toBe('$J=G91 X-0.1');
-    expect(paperCode('here', 'z', texts)).toBeNull();
+    expect(paperCode('here', 'z', texts)).toBe('$J=G91 Z0.1');
     expect(paperCode('zero', 'z', texts, 2)).toBe('G10 L20 P2 Z0.1');
     expect(paperCode('zero', 'x-left', texts)).toBe('G10 L20 P1 X-3.1');
     expect(paperCode('zero', 'y-back', texts)).toBe('G10 L20 P1 Y3.1');
