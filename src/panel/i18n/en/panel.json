@@ -1493,13 +1493,14 @@
       "zero": "setting zero"
     },
     "cycle": {
-      "maxZ": "Fast approach: the furthest it looks for the plate",
+      "maxZ": "Fast approach: the furthest it looks for the plate — no touch, an alarm",
       "fast": "Fast approach to the touch",
       "retract": "Touch · back off before measuring",
       "slow": "Slow, exact measurement",
       "plateThickness": "Zero: the plate’s thickness under the touch",
       "lift": "Up over the plate",
-      "zeroSum": "Z0 = touch − {{t}}"
+      "zeroSum": "Z0 = touch − {{t}}",
+      "alarm": "ALARM:5 · no touch"
     },
     "z0": "Z0",
     "readout": {

@@ -71,14 +71,37 @@ const Readout = ({ name, value, when, after }) => (
   </g>
 );
 
+/*
+ * The alarm the limit ends in, as the state chip shows one: red, by the tip
+ * that went the whole way and touched nothing (ALARM:5 on Grbl).
+ */
+const Alarm = () => {
+  const text = t('probe.cycle.alarm');
+  // As wide as its words, and inside the drawing's right edge.
+  const width = text.length * 8 + 20;
+  return (
+    <g>
+      <circle cx={220} cy={PLATE_TOP} r={6} className="fill-red" />
+      <rect x={Math.min(240, 434 - width)} y={PLATE_TOP - 36} width={width} height={24} rx={4} className="fill-redS stroke-red" strokeWidth={1.5} />
+      <text x={Math.min(240, 434 - width) + 10} y={PLATE_TOP - 19} className="fill-red font-num text-cap font-semibold">{text}</text>
+    </g>
+  );
+};
+
 const ZPlateScene = ({
-  gap = 84, shift = 0, arrow = null, contact = false, marks = null, zero = 0, badge = null, readout = null, label, className = '',
+  gap = 84, shift = 0, arrow = null, contact = false, marks = null, zero = 0, badge = null, readout = null, ghost = false, alarm = false,
+  label, className = '',
 }) => {
   const Mark = MARKS[marks];
   return (
     <svg viewBox="0 0 440 242" role="img" aria-label={label} className={`block ${className}`}>
       <rect x={-2} y={210} width={444} height={32} className="fill-mutS stroke-line" strokeWidth={1.5} />
-      <rect x={180} y={PLATE_TOP} width={80} height={18} className="fill-accS stroke-acc" strokeWidth={2} />
+      {ghost ? (
+        // Not there: the limit is what the probe does with nothing to touch.
+        <rect x={180} y={PLATE_TOP} width={80} height={18} className="stroke-acc" fill="none" strokeWidth={1.5} strokeDasharray="5 4" opacity={0.4} />
+      ) : (
+        <rect x={180} y={PLATE_TOP} width={80} height={18} className="fill-accS stroke-acc" strokeWidth={2} />
+      )}
       {Mark ? <Mark zero={zero} /> : null}
       <g transform={`translate(${shift} ${-gap})`}>
         {/* A 60° V bit: the point is its half-width over tan 30° long. */}
@@ -94,6 +117,7 @@ const ZPlateScene = ({
       {contact ? <circle cx={220} cy={PLATE_TOP} r={4.5} className="fill-amb" /> : null}
       {badge ? <Badge x={badge.x} y={badge.y} text={badge.text} /> : null}
       {readout ? <Readout {...readout} /> : null}
+      {alarm ? <Alarm /> : null}
     </svg>
   );
 };

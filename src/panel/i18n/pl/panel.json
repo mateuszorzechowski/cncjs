@@ -1493,13 +1493,14 @@
       "zero": "zapis zera"
     },
     "cycle": {
-      "maxZ": "Szybki zjazd: maksymalna droga szukania",
+      "maxZ": "Szybki zjazd: maksymalna droga szukania — bez dotyku alarm",
       "fast": "Szybki zjazd do styku",
       "retract": "Styk · odjazd przed pomiarem",
       "slow": "Wolny, dokładny pomiar",
       "plateThickness": "Zapis zera: grubość płytki pod stykiem",
       "lift": "Powrót nad płytkę",
-      "zeroSum": "Z0 = styk − {{t}}"
+      "zeroSum": "Z0 = styk − {{t}}",
+      "alarm": "ALARM:5 · brak dotyku"
     },
     "z0": "Z0",
     "readout": {

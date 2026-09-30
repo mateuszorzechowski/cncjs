@@ -22,7 +22,12 @@ export const PLATE_TOP = 192;
 const APPROACH = [[0, 84], [0.15, 84], [0.7, 0], [1, 0]];
 
 export const FIGURES = {
-  maxZ: { stage: 1, frames: APPROACH, arrow: false, badge: [96, 140] },
+  /*
+   * The limit is what happens with nothing to touch (Mateusz, 2026-09-30):
+   * the plate drawn as absent, the tool going the whole way, and the alarm
+   * Grbl raises at the end of it.
+   */
+  maxZ: { stage: 1, frames: APPROACH, arrow: false, badge: [96, 140], missing: true },
   fast: { stage: 1, frames: APPROACH, arrow: true, badge: [256, 140] },
   retract: { stage: 2, frames: [[0, 0], [0.2, 0], [0.55, 14, true], [1, 14]], arrow: false, badge: [108, 175] },
   slow: { stage: 2, frames: [[0, 14], [0.15, 14], [0.75, 0], [1, 0]], arrow: true, badge: [256, 166] },
@@ -82,6 +87,10 @@ export const sceneAt = (name, ms, { arrows = false } = {}) => {
   }
   if (figure.zero) {
     return { gap, arrow, contact: p % 0.5 < 0.3, zero: Math.min(1, Math.max(0, (p - 0.25) / 0.2)) };
+  }
+  if (figure.missing) {
+    // Nothing is touched; at the end of the way, the alarm.
+    return { gap, arrow, contact: false, zero: 0, ghost: true, alarm: p >= end };
   }
   return { gap, arrow, contact: gap < 0.5, zero: 0 };
 };

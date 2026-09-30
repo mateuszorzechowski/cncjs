@@ -90,3 +90,13 @@ describe('the Z the example reads, before and after the zero', () => {
     expect(readoutAt('lift', 56, mm).z).toBeCloseTo(20, 6);
   });
 });
+
+describe('the Z travel limit', () => {
+  test('is drawn with no plate to touch, and ends in the alarm', () => {
+    const going = sceneAt('maxZ', CYCLE_MS * 0.4);
+    const there = sceneAt('maxZ', CYCLE_MS * 0.9);
+
+    expect(going).toMatchObject({ ghost: true, alarm: false, contact: false });
+    expect(there).toMatchObject({ ghost: true, alarm: true, contact: false, gap: 0 });
+  });
+});
