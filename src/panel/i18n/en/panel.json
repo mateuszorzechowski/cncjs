@@ -436,7 +436,8 @@
     "probing": "A measurement is already running.",
     "noResult": "There is no measurement to save.",
     "badMethod": "The server does not know that probing method.",
-    "badCorner": "That is not a corner the server knows."
+    "badCorner": "That is not a corner the server knows.",
+    "badEdge": "That is not a surface the server knows."
   },
   "notice": {
     "warning": "Warning",
@@ -1374,22 +1375,31 @@
       "corner": "XYZ corner",
       "cornerNote": "Corner of the work: X0, Y0 and Z0, with an L-shaped plate.",
       "paper": "Paper",
-      "paperNote": "By hand with a sheet of paper, no probe.",
-      "soon": "Not built yet."
+      "paperNote": "By hand with a sheet of paper: the top or any side, no probe."
     },
     "how": {
       "z": "Lay the plate flat on the work, under the tool. Clip the lead to the tool.",
-      "corner": "Set the L plate on the chosen corner, its walls against both edges of the work. Clip the lead to the tool."
+      "corner": "Set the L plate on the chosen corner, its walls against both edges of the work. Clip the lead to the tool.",
+      "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
     },
     "place": {
       "z": "Jog the tool over the plate, a few millimetres above it — less than the Z travel limit.",
-      "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls."
+      "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls.",
+      "paper": "Jog the tool onto the paper with the smallest step. Stop when the paper just starts to drag as you slide it — then say here."
     },
     "corner": {
       "backLeft": "Back left",
       "backRight": "Back right",
       "frontLeft": "Front left",
-      "frontRight": "Front right"
+      "frontRight": "Front right",
+      "zeroXY": "X0 Y0",
+      "zeroX": "X0",
+      "fromAbove": "from above",
+      "fromSide": "from the side",
+      "work": "work",
+      "chosen": "Corner: {{name}}",
+      "dirs": "{{x}} · {{y}} · Z−",
+      "pickHow": "Tap one of the four corners. The plate jumps to it; the arrows show which way each probe goes."
     },
     "field": {
       "plateThickness": "Plate thickness",
@@ -1403,11 +1413,14 @@
       "maxXY": "X/Y travel limit",
       "retract": "Back-off",
       "fast": "Fast touch",
-      "slow": "Slow touch"
+      "slow": "Slow touch",
+      "paperThickness": "Paper thickness",
+      "lift": "Lift after measuring"
     },
     "step": {
       "method": "Method",
-      "prepare": "Plate",
+      "corner": "Corner",
+      "prepare": "Setup",
       "wire": "Wire",
       "position": "Position",
       "measure": "Measure",
@@ -1418,12 +1431,20 @@
       "waiting": "Waiting for a touch",
       "touching": "Touching",
       "ok": "Works",
-      "unknown": "The controller does not report its inputs, so the wire cannot be checked here."
+      "unknown": "The controller does not report its inputs, so the wire cannot be checked here.",
+      "picture": "The clip on the tool, and the plate apart from it and touching it",
+      "open": "PROBE · open",
+      "closed": "PROBE · closed",
+      "before": "before the touch",
+      "after": "plate touching the tool",
+      "touch": "touch"
     },
     "position": {
       "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",
       "notNow": "The machine has to stand idle, with no program, to measure.",
-      "start": "Measure"
+      "start": "Measure",
+      "here": "Here",
+      "few": "a few mm"
     },
     "measure": {
       "stepOf": "Step {{n}} of {{total}}",
@@ -1451,11 +1472,43 @@
     "result": {
       "into": "New zero for",
       "shift": "{{axis}} moves by",
-      "note": "Nothing is written until you save. Remove the plate before cutting.",
+      "note": "Nothing is written until you save. Clear the plate or the paper away before cutting.",
       "save": "Save zero",
       "discard": "Discard",
       "close": "Close",
       "again": "Try again"
+    },
+    "edgeLabel": "Which surface of the work",
+    "edge": {
+      "z": "Top (Z)",
+      "xLeft": "Left side (X)",
+      "xRight": "Right side (X)",
+      "yFront": "Front side (Y)",
+      "yBack": "Back side (Y)"
+    },
+    "stage": {
+      "label": "{{n}} · {{name}}",
+      "search": "finding",
+      "measure": "measuring",
+      "zero": "setting zero"
+    },
+    "cycle": {
+      "maxZ": "Fast approach: the furthest it looks for the plate — no touch, an alarm",
+      "fast": "Fast approach to the touch",
+      "retract": "Touch · back off before measuring",
+      "slow": "Slow, exact measurement",
+      "plateThickness": "Zero: the plate’s thickness under the touch",
+      "lift": "Up over the plate",
+      "zeroSum": "Z0 = touch − {{t}}",
+      "alarm": "ALARM:5 · no touch",
+      "upTo": "up to {{v}}"
+    },
+    "z0": "Z0",
+    "readout": {
+      "name": "Z · {{wcs}}",
+      "system": "{{wcs}} · {{when}}",
+      "before": "before",
+      "after": "after"
     }
   }
 }

@@ -27,11 +27,16 @@ export const FIELDS = {
   clear: { value: 20, min: 1, max: 100 },
   depth: { value: 5, min: 0.5, max: 50 },
   toolDiameter: { value: 6, min: 0.1, max: 50 },
+  // Paper by hand: an office sheet is a tenth of a millimetre.
+  paperThickness: { value: 0.1, min: 0.01, max: 5 },
   // The fence: the furthest one probing move may go.
   maxZ: { value: 15, min: 1, max: 100 },
   maxXY: { value: 15, min: 1, max: 100 },
   // Back off between the fast touch and the slow one.
   retract: { value: 2, min: 0.5, max: 20 },
+  // Up over the plate once measured, so it can be taken out from under the
+  // tool (the design's "powrót po pomiarze", 2026-09-29).
+  lift: { value: 10, min: 0, max: 100 },
   fast: { value: 100, min: 10, max: 2000 },
   slow: { value: 25, min: 1, max: 500 },
 };

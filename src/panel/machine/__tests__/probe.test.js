@@ -1,5 +1,5 @@
 import {
-  FIELDS, METHODS, failureKey, fieldText, fieldUnit, phaseWords, wizardStep,
+  FIELDS, METHODS, failureKey, fieldText, fieldUnit, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, wizardStep,
 } from '../probe';
 
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
@@ -18,6 +18,29 @@ describe('where the wizard is', () => {
     ['failed', 'result'],
   ])('a measurement %s on any device shows as %s', (state, step) => {
     expect(wizardStep('method', { state })).toBe(step);
+  });
+});
+
+describe('the steps a method goes through', () => {
+  test('the paper has no wire to test', () => {
+    expect(stepsOf(methodOf('paper')).map((s) => s.id)).toEqual(['method', 'prepare', 'position', 'measure', 'result']);
+    expect(stepBeside(methodOf('paper'), 'prepare', 1)).toBe('position');
+    expect(stepBeside(methodOf('paper'), 'position', -1)).toBe('prepare');
+  });
+
+  test('a probe does', () => {
+    expect(stepBeside(methodOf('z'), 'prepare', 1)).toBe('wire');
+    expect(stepBeside(methodOf('corner'), 'position', -1)).toBe('wire');
+  });
+
+  test('every step until a method is picked', () => {
+    expect(stepsOf(null)).toHaveLength(6);
+  });
+
+  test('the one choice goes as its option', () => {
+    expect(optionsFor(methodOf('corner'), 'back-left')).toEqual({ corner: 'back-left' });
+    expect(optionsFor(methodOf('paper'), 'x-right')).toEqual({ edge: 'x-right' });
+    expect(optionsFor(methodOf('z'), undefined)).toEqual({});
   });
 });
 

@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import FadeScroller from '../ui/FadeScroller';
 import Notice from '../ui/Notice';
 import ProbePicture from '../ui/ProbePicture';
+import ZPlatePosition from '../ui/ZPlatePosition';
+import CornerChooser from '../ui/CornerChooser';
+import CornerPosition from '../ui/CornerPosition';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
@@ -11,11 +15,20 @@ import JogWidget from '../widgets/JogWidget';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  FIRST_CORNER, STEPS, applyProbe, discardProbe, fetchProbe, fieldText, methodOf, saveProbe, startProbe, wizardStep,
+  applyProbe, discardProbe, fetchProbe, fieldText, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
 } from '../machine/probe';
 import { useIsPhone } from '../ui/shell';
 import { useUnits } from '../ui/units';
 import { t } from '../i18n';
+
+// The methods that show the move into place rather than a picture of it.
+const MOVES = {
+  z: ZPlatePosition,
+  corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
+};
+
+// The methods whose one choice is a step of its own, and what it is picked on.
+const CHOOSERS = { corner: CornerChooser };
 
 /**
  * Sonda: a wizard, one step after another, across the whole screen
@@ -37,7 +50,8 @@ const ProbeScreen = ({ machine }) => {
   const { probe } = machine;
   const [local, setLocal] = useState('method');
   const [picked, setPicked] = useState(null);
-  const [corner, setCorner] = useState(FIRST_CORNER);
+  // The corner, the paper's surface: each method's one choice, kept per method.
+  const [chosen, setChosen] = useState({});
   const [kept, setKept] = useState(null);
   const [texts, setTexts] = useState({});
   const [bad, setBad] = useState(null);
@@ -52,6 +66,8 @@ const ProbeScreen = ({ machine }) => {
   // With no method in hand — a page opened afresh — the wizard starts at the start.
   const step = wizardStep(method ? local : 'method', probe);
   const fields = kept?.methods?.[method?.id]?.fields ?? [];
+  const choice = chosen[method?.id] ?? method?.choice?.first;
+  const go = (by) => setLocal(stepBeside(method, step, by));
   const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
 
   useEffect(() => {
@@ -65,7 +81,8 @@ const ProbeScreen = ({ machine }) => {
     setPicked(id);
     setTexts(Object.fromEntries(uses.map((name) => [name, fieldText(kept.params[name], name, units.rule)])));
     setBad(null);
-    setLocal('prepare');
+    // The corner's own step first, where a method has one.
+    setLocal(stepBeside(methodOf(id), 'method', 1));
   };
 
   const confirmFigures = () => {
@@ -74,20 +91,23 @@ const ProbeScreen = ({ machine }) => {
         setKept(next);
         setBad(null);
         setTouched(false);
-        setLocal('wire');
+        go(1);
       })
       .catch((error) => setBad(error.name || fields[0]));
   };
 
-  const measure = () => startProbe(method.id, method.id === 'corner' ? { corner } : {});
+  const measure = () => startProbe(method.id, optionsFor(method, choice));
 
   const again = () => {
     if (machine.status?.word === 'Alarm') {
       controller.command('unlock');
     }
-    // Tried again here even if it was started on another device: its method and corner, then.
-    setPicked(probe?.method ?? picked);
-    setCorner(probe?.options?.corner ?? corner);
+    // Tried again here even if it was started on another device: its method and choice, then.
+    const again = methodOf(probe?.method ?? picked);
+    setPicked(again?.id ?? null);
+    if (again?.choice && probe?.options?.[again.choice.option]) {
+      setChosen((now) => ({ ...now, [again.id]: probe.options[again.choice.option] }));
+    }
     discardProbe();
     setLocal('position');
   };
@@ -104,25 +124,34 @@ const ProbeScreen = ({ machine }) => {
 
   const track = (
     <Card label={t('probe.title')} aside={method ? t(method.key) : null}>
-      <StepTrack steps={STEPS.map((s) => ({ ...s, name: t(s.key) }))} current={step} label={t('probe.steps')} />
+      <StepTrack steps={stepsOf(method).map((s) => ({ ...s, name: t(s.key) }))} current={step} label={t('probe.steps')} />
     </Card>
   );
 
   if (step === 'position') {
+    // The methods that show the move into place rather than a picture of it.
+    const Moving = MOVES[method.id];
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-gap">
         {track}
         <div className="flex min-h-0 flex-1 flex-col gap-gap @4xl/shell:flex-row">
           <Card className="min-w-0 shrink-0 @4xl/shell:flex-1" bodyClassName="gap-3">
-            <div className="flex items-start gap-4">
-              <ProbePicture method={method.id} corner={corner} label={t(method.key)} className="h-24 w-32" />
-              <p className="m-0 text-base text-ink">{t(method.place)}</p>
-            </div>
-            {lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
+            {Moving ? (
+              <>
+                <Moving choice={choice} />
+                <p className="m-0 text-base text-ink">{t(method.place)}</p>
+              </>
+            ) : (
+              <div className="flex items-start gap-4">
+                <ProbePicture method={method.id} choice={choice} label={t(method.key)} className="h-24 w-32" />
+                <p className="m-0 text-base text-ink">{t(method.place)}</p>
+              </div>
+            )}
+            {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
             {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
-            <Foot back={() => setLocal('wire')}>
-              <Button tone="go" disabled={!machine.canProbe || lit !== false} onClick={measure} className="h-ctl">
-                {t('probe.position.start')}
+            <Foot back={() => go(-1)}>
+              <Button tone="go" disabled={!machine.canProbe || (method.touches && lit !== false)} onClick={measure} className="h-ctl">
+                {t(method.start)}
               </Button>
             </Foot>
           </Card>
@@ -136,28 +165,37 @@ const ProbeScreen = ({ machine }) => {
   let foot = null;
   if (step === 'method') {
     body = <MethodStep onPick={pick} />;
+  } else if (step === 'choose') {
+    const Chooser = CHOOSERS[method.id];
+    body = <Chooser value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;
+    foot = (
+      <Foot back={() => go(-1)}>
+        <Button tone="primary" onClick={() => go(1)} className="h-ctl">{t('probe.next')}</Button>
+      </Foot>
+    );
   } else if (step === 'prepare') {
     body = (
       <PrepareStep
         method={method}
-        corner={corner}
-        onCorner={setCorner}
+        chosen={choice}
+        onChoose={(id) => setChosen((now) => ({ ...now, [method.id]: id }))}
         fields={fields}
         texts={texts}
         onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}
         bad={bad}
+        wcs={machine.modal?.wcs}
       />
     );
     foot = (
-      <Foot back={() => setLocal('method')}>
+      <Foot back={() => go(-1)}>
         <Button tone="primary" onClick={confirmFigures} className="h-ctl">{t('probe.next')}</Button>
       </Foot>
     );
   } else if (step === 'wire') {
-    body = <WireStep lit={lit} touched={touched} />;
+    body = <WireStep lit={lit} touched={touched} plate={method.plate} />;
     foot = (
-      <Foot back={() => setLocal('prepare')}>
-        <Button tone="primary" disabled={!touched || lit !== false} onClick={() => setLocal('position')} className="h-ctl">
+      <Foot back={() => go(-1)}>
+        <Button tone="primary" disabled={!touched || lit !== false} onClick={() => go(1)} className="h-ctl">
           {t('probe.next')}
         </Button>
       </Foot>
@@ -170,7 +208,7 @@ const ProbeScreen = ({ machine }) => {
       </Foot>
     );
   } else if (probe?.state === 'failed') {
-    body = <ResultStep probe={probe} />;
+    body = <ResultStep probe={probe} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.close')}</Button>
@@ -178,7 +216,7 @@ const ProbeScreen = ({ machine }) => {
       </Foot>
     );
   } else {
-    body = <ResultStep probe={probe} />;
+    body = <ResultStep probe={probe} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.discard')}</Button>
@@ -187,13 +225,26 @@ const ProbeScreen = ({ machine }) => {
     );
   }
 
+  // The track only once there is a method to follow (review note, 2026-09-29):
+  // before that the choice is the whole screen, under the screen's name.
+  const choosing = step === 'method';
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-gap">
-      {track}
-      <Card scrolls className="min-h-0 flex-1" bodyClassName="gap-3 pt-1">
-        {body}
-        {foot}
-      </Card>
+      {choosing ? null : track}
+      {/*
+        * The card scrolls whole, its top edge too, and fades into the page as
+        * it goes under the steps — an open shadow, the Diagnostyka screen's —
+        * rather than its contents sliding under its own standing edge
+        * (review note, 2026-09-29: *"na górze cień otwarty"*).
+        */}
+      <FadeScroller>
+        <div className="flex min-h-full flex-col">
+          <Card label={choosing ? t('probe.title') : null} className="flex-1" bodyClassName="gap-3">
+            {body}
+            {foot}
+          </Card>
+        </div>
+      </FadeScroller>
     </div>
   );
 };

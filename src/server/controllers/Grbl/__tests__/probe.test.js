@@ -67,12 +67,15 @@ describe('probe:start', () => {
     controller.runner.parse('[PRB:0.000,0.000,-7.100:1]');
     controller.runner.parse('ok');
     controller.runner.parse('ok');
+    controller.runner.parse('ok');
     expect(sent().slice(1)).toEqual([
       'G90 G21 G53 G0 Z-5',
       // A clip still touching as the tool backs off would fail the slow touch.
       'G4 P0.5',
       'G90 G21 G38.2 Z21 F25',
       'G90 G21 G53 G0 Z-5.1',
+      // Up clear of the plate, so it can come out from under the tool.
+      'G90 G21 G53 G0 Z2.9',
       // The modes it found, put back.
       'G91 G21',
     ]);
@@ -88,7 +91,7 @@ describe('probe:start', () => {
   test('writes nothing to the offsets until the operator confirms', () => {
     const { controller, sent } = setup();
     controller.command('probe:start', { method: 'z' });
-    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok']) {
+    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', 'ok']) {
       controller.runner.parse(line);
     }
 
@@ -178,6 +181,19 @@ describe('probe:start', () => {
 
     expect(sent()).toEqual([]);
     expect(refusals.map(({ reason: said }) => said)).toEqual([reason]);
+  });
+
+  test('the paper needs no probe input, so a lit one does not stop it', () => {
+    const { controller, sent, refusals, probeStates } = setup();
+    controller.runner.state.status.pinState = 'P';
+
+    controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
+    controller.runner.parse('ok');
+
+    expect(refusals).toEqual([]);
+    expect(sent()).toEqual(['G91 G21']);
+    // Machine Z0 less a tenth of paper, against G54's -30: the zero moves up 29.9.
+    expect(probeStates().pop().result.shift.z).toBeCloseTo(29.9, 6);
   });
 
   test('not in a pause, for now', () => {

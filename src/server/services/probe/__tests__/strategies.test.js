@@ -2,6 +2,7 @@ import { createProbeRun } from '../../../controllers/Grbl/probe-run';
 import { probeParams } from '..';
 import { STRATEGIES, describeStrategies } from '../strategies';
 import { CORNERS } from '../strategies/corner';
+import { EDGES } from '../strategies/paper';
 
 /*
  * Every method, run against a bench: plates as boxes in machine coordinates,
@@ -80,7 +81,7 @@ const measure = ({ method, options = {}, params, boxes, start }) => {
     }
     run.ok();
   }
-  const zero = outcome.seen ? strategy.zero(params, options, outcome.seen) : null;
+  const zero = outcome.seen ? strategy.zero(params, options, outcome.seen, start) : null;
   return { outcome, zero, sent, pos };
 };
 
@@ -102,10 +103,10 @@ describe('the Z plate', () => {
     close(zero, { z: -60 });
   });
 
-  test('leaves the tool above the plate and the modes as they were', () => {
+  test('lifts the tool clear of the plate and leaves the modes as they were', () => {
     const { sent, pos } = measure({ method: 'z', params, boxes, start: { x: 0, y: 0, z: -40 } });
 
-    expect(pos.z).toBeCloseTo(-47.5 + params.retract, 6);
+    expect(pos.z).toBeCloseTo(-47.5 + params.lift, 6);
     expect(sent[sent.length - 1]).toBe('G90 G21');
   });
 
@@ -161,6 +162,37 @@ describe('the corner plate', () => {
   test('a corner that is not one is refused before anything moves', () => {
     expect(STRATEGIES.corner.check({ corner: 'middle' })).toBe('bad-corner');
     expect(STRATEGIES.corner.check({ corner: 'back-right' })).toBeNull();
+  });
+});
+
+describe('the paper', () => {
+  const params = { ...probeParams(), paperThickness: 0.1, toolDiameter: 6 };
+  const start = { x: -100, y: -50, z: -30 };
+
+  test.each([
+    ['z', { z: -30.1 }],
+    ['x-left', { x: -96.9 }],
+    ['x-right', { x: -103.1 }],
+    ['y-front', { y: -46.9 }],
+    ['y-back', { y: -53.1 }],
+  ])('%s: where the tool stands, less the paper and on a side the radius', (edge, expected) => {
+    const { outcome, zero } = measure({ method: 'paper', options: { edge }, params, boxes: [], start });
+
+    expect(outcome.failure).toBeUndefined();
+    close(zero, expected);
+    expect(Object.keys(zero)).toEqual(Object.keys(expected));
+  });
+
+  test('moves nothing: the only line is the modes put back', () => {
+    const { sent } = measure({ method: 'paper', options: { edge: 'z' }, params, boxes: [], start });
+
+    expect(sent).toEqual(['G90 G21']);
+  });
+
+  test('an edge that is not one is refused', () => {
+    expect(STRATEGIES.paper.check({ edge: 'top' })).toBe('bad-edge');
+    expect(STRATEGIES.paper.check({ edge: 'y-back' })).toBeNull();
+    expect(Object.keys(EDGES)).toHaveLength(5);
   });
 });
 
