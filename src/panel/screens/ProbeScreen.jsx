@@ -4,7 +4,9 @@ import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
 import CornerChooser from '../ui/CornerChooser';
 import PaperChooser from '../ui/PaperChooser';
-import useProbeStage from '../ui/useProbeStage';
+import useProbeJoin from '../ui/useProbeJoin';
+import ProbeJoin from '../ui/ProbeJoin';
+import Notice from '../ui/Notice';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
@@ -37,7 +39,7 @@ const CHOOSERS = { corner: CornerChooser, paper: PaperChooser };
  * (*"pamiętaj parametry, przypominaj"*). The travel limit among them is the
  * fence: a probe that touches nothing goes that far and stops in an alarm.
  */
-const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
+const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const units = useUnits();
   const phone = useIsPhone();
   const { probe } = machine;
@@ -67,25 +69,11 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
   // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
   const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
 
-  const owner = useProbeStage({
-    machine, method, choice, step, feeling, joined: Boolean(picked || probe),
-    onJoin: (stage) => {
-      const joined = methodOf(stage.method);
-      setPicked(stage.method);
-      if (joined?.choice) {
-        setChosen((now) => ({ ...now, [stage.method]: stage.options?.[joined.choice.option] }));
-      }
-      setLocal(stage.step);
-    },
-    onFollow: setLocal,
+  const {
+    shared, mine, mode, setMode, takenBy, setTakenBy, declined, setDeclined, join, leave,
+  } = useProbeJoin({
+    machine, method, choice, step, feeling, ask, onAsked, setPicked, setChosen, setLocal, setJogging,
   });
-  // The top bar's way here asks for the jog open.
-  useEffect(() => {
-    if (jogAsk) {
-      setJogging(true);
-      onJogAsked();
-    }
-  }, [jogAsk]);
 
   useEffect(() => {
     if (step === 'wire' && lit) {
@@ -95,7 +83,8 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
 
   const pick = (id) => {
     const uses = kept?.methods?.[id]?.fields ?? [];
-    owner.current = true;
+    setMode('own');
+    setTakenBy(null);
     setPicked(id);
     setTexts(Object.fromEntries(uses.map((name) => [name, fieldText(kept.params[name], name, units.rule)])));
     setBad(null);
@@ -109,6 +98,7 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
         setKept(next);
         setBad(null);
         setTouched(false);
+        setTakenBy(null);
         go(1);
       })
       .catch((error) => setBad(error.name || fields[0]));
@@ -122,6 +112,7 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
     }
     // Tried again here even if it was started on another device: its method and choice, then.
     const again = methodOf(probe?.method ?? picked);
+    setMode('own');
     setPicked(again?.id ?? null);
     if (again?.choice && probe?.options?.[again.choice.option]) {
       setChosen((now) => ({ ...now, [again.id]: probe.options[again.choice.option] }));
@@ -136,6 +127,7 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
     } else {
       discardProbe();
     }
+    setMode(null);
     setPicked(null);
     setLocal('method');
   };
@@ -154,6 +146,7 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
           className="order-3 w-full @3xl/shell:order-none @3xl/shell:w-auto @3xl/shell:flex-1"
         />
         {method ? <span className="ml-auto font-num text-note text-mut @3xl/shell:ml-0">{t(method.key)}</span> : null}
+        {takenBy ? <div className="order-4 w-full"><Notice>{t('probe.join.taken', { where: takenBy })}</Notice></div> : null}
       </div>
     </Card>
   );
@@ -170,7 +163,8 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
           lit={lit}
           jogging={jogging}
           onJogging={setJogging}
-          onBack={() => go(-1)}
+          onBack={mode === 'joined' ? leave : () => go(-1)}
+          backLabel={mode === 'joined' ? t('probe.join.leave') : null}
           onNext={() => go(1)}
           onMeasure={measure}
         />
@@ -189,7 +183,9 @@ const ProbeScreen = ({ machine, jogAsk = false, onJogAsked = () => {} }) => {
    * as the controller's settings (review note, 2026-09-30).
    */
   const split = step === 'prepare' && !phone;
-  if (step === 'method') {
+  if (step === 'method' && !mode && shared && !mine && !declined) {
+    body = <ProbeJoin stage={shared} onJoin={join} onOwn={() => setDeclined(true)} />;
+  } else if (step === 'method') {
     body = <MethodStep onPick={pick} />;
   } else if (step === 'choose') {
     const Chooser = CHOOSERS[method.id];

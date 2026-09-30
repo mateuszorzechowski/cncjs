@@ -1600,6 +1600,15 @@
     },
     "jog": {
       "open": "Probe waiting — jog"
+    },
+    "join": {
+      "elsewhere": "another device",
+      "waiting": "{{method}} on {{where}} is waiting: {{step}}",
+      "how": "Join to run this measurement from here — the steps move together on both devices. A wizard of your own takes the measurement over once you reach Position in it.",
+      "join": "Join",
+      "own": "Start my own",
+      "leave": "Leave",
+      "taken": "The wizard was taken over on {{where}}."
     }
   }
 }

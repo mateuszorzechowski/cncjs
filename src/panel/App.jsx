@@ -171,7 +171,7 @@ const Panel = ({ machine, screen, onScreen }) => {
    * (*"albo na jog, albo na ekran pomiaru, w zależności od sytuacji"*). The
    * ask is taken once, so coming to the screen the usual way opens nothing.
    */
-  const [jogAsk, setJogAsk] = useState(false);
+  const [probeAsk, setProbeAsk] = useState(null);
   const probeWaits = Boolean(machine.probeStage);
   const Screen = SCREENS[screen];
 
@@ -218,7 +218,7 @@ const Panel = ({ machine, screen, onScreen }) => {
         onCaution={() => setCautioning(true)}
         help={screenHelp}
         onProbeJog={phone && probeWaits && screen !== 'probe' ? () => {
-          setJogAsk(machine.probeStage.step === 'position');
+          setProbeAsk({ jog: machine.probeStage.step === 'position' });
           onScreen('probe');
         } : null}
       />
@@ -390,7 +390,7 @@ const Panel = ({ machine, screen, onScreen }) => {
           <HeaderHelpProvider value={setScreenHelp}>
             <FooterSlotProvider value={setFooter}>
               {Screen
-                ? <Screen machine={machine} onGo={onScreen} jogAsk={jogAsk} onJogAsked={() => setJogAsk(false)} />
+                ? <Screen machine={machine} onGo={onScreen} ask={probeAsk} onAsked={() => setProbeAsk(null)} />
                 : <Dashboard machine={machine} onGo={onScreen} />}
             </FooterSlotProvider>
           </HeaderHelpProvider>

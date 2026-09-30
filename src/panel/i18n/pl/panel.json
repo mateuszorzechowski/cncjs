@@ -1600,6 +1600,15 @@
     },
     "jog": {
       "open": "Sonda czeka — jog"
+    },
+    "join": {
+      "elsewhere": "innym urządzeniu",
+      "waiting": "{{method}} na {{where}} czeka: {{step}}",
+      "how": "Dołącz, żeby prowadzić ten pomiar stąd — kroki idą razem na obu urządzeniach. Własny kreator przejmie pomiar, gdy dojdziesz w nim do Ustawienia.",
+      "join": "Dołącz",
+      "own": "Zacznij własny",
+      "leave": "Opuść",
+      "taken": "Kreator przejęty na {{where}}."
     }
   }
 }

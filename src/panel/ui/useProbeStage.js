@@ -1,52 +1,76 @@
 import { useEffect, useRef } from 'react';
-import { methodOf, optionsFor, sayProbeStage } from '../machine/probe';
+import { deviceId } from '../machine/device';
+import { optionsFor, sayProbeStage } from '../machine/probe';
 
 /**
  * Where a probe wizard waits on the operator's hands — the position step, or
- * the paper felt for — said to every device through the server
- * (`probe:stage`), so a phone elsewhere shows a way to it with the jog open
- * (review notes, 2026-09-30).
+ * the paper felt for — shared through the server (`probe:stage`) so a phone
+ * elsewhere can join it (review notes, 2026-09-30/10-01). One at a time:
  *
- * Said whenever this device moves it on; taken back only by the device the
- * wizard was begun on — the returned `owner`, set when a method is picked —
- * not by one that joined it. A device with no wizard in hand (`joined`
- * false) joins one waiting elsewhere (`onJoin(stage)`); one on the same
- * method follows a step taken elsewhere (`onFollow(step)`).
+ * - `mode` `own`: this device's wizard. Reaching the step it says so as its
+ *   owner, taking it over from another device's; leaving the step it lets
+ *   it go. Taken over by another device reaching the step — `onTakenOver`
+ *   with that device's name — it goes back a step.
+ * - `mode` `joined`: another device's wizard, followed here. A step taken
+ *   here is said without taking it; its owner gone, this device takes it on.
+ * - Either follows a step taken elsewhere (`onFollow`).
+ *
+ * Returns `mine`: the wizard waiting is this device's.
  */
 const useProbeStage = ({
-  machine, method, choice, step, feeling, joined, onJoin, onFollow,
+  machine, method, choice, step, feeling, mode, onFollow, onTakenOver,
 }) => {
   const shared = machine.probeStage;
-  const owner = useRef(false);
-  const waiting = step === 'position' || feeling ? step : null;
+  const mine = Boolean(shared?.owner && shared.owner.device === deviceId());
+  const waiting = mode && (step === 'position' || feeling) ? step : null;
   const stage = waiting ? JSON.stringify({ method: method.id, options: optionsFor(method, choice), step: waiting }) : null;
+  const said = ({ owner, ...rest } = {}) => JSON.stringify(rest);
+  const owned = useRef(false);
+  owned.current = mine;
 
+  // Say it: as the owner for a wizard of this device's, as a step for one joined.
   useEffect(() => {
-    if (stage && stage !== JSON.stringify(shared)) {
-      sayProbeStage(JSON.parse(stage), owner.current);
-    } else if (!stage && owner.current && shared) {
-      sayProbeStage(null);
+    if (stage) {
+      if (mode === 'own' ? !mine || stage !== said(shared) : stage !== said(shared)) {
+        sayProbeStage(JSON.parse(stage), mode === 'own');
+      }
+    } else if (mine) {
+      sayProbeStage({ release: true });
     }
   }, [stage]);
 
+  // Leaving the screen is leaving the step.
   useEffect(() => () => {
-    if (owner.current) {
-      sayProbeStage(null);
+    if (owned.current) {
+      sayProbeStage({ release: true });
     }
   }, []);
 
+  // Taken over, followed, or left without an owner.
+  const had = useRef(false);
   useEffect(() => {
-    if (!shared || machine.probe?.state === 'running' || !methodOf(shared.method)) {
+    if (mine) {
+      had.current = true;
+    }
+    if (!shared || !waiting) {
       return;
     }
-    if (!joined) {
-      onJoin(shared);
-    } else if (waiting && shared.method === method?.id && shared.step !== waiting) {
+    const another = shared.owner && !mine && (had.current || (mode === 'joined' && shared.method !== method?.id));
+    if (another) {
+      had.current = false;
+      onTakenOver(shared.owner.name);
+      return;
+    }
+    if (mode === 'joined' && !shared.owner) {
+      sayProbeStage(JSON.parse(stage), true);
+      return;
+    }
+    if (shared.method === method?.id && shared.step !== waiting) {
       onFollow(shared.step);
     }
-  }, [shared?.step, shared?.method]);
+  }, [shared?.step, shared?.method, shared?.owner?.device]);
 
-  return owner;
+  return { mine };
 };
 
 export default useProbeStage;

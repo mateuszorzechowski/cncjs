@@ -29,7 +29,7 @@ const MOVES = {
  * another screen — with the button that goes on.
  */
 const ProbeMoveStep = ({
-  machine, method, choice, feeling, lit, jogging, onJogging, onBack, onNext, onMeasure,
+  machine, method, choice, feeling, lit, jogging, onJogging, onBack, backLabel = null, onNext, onMeasure,
 }) => {
   const phone = useIsPhone();
   const Moving = MOVES[method.id];
@@ -55,7 +55,7 @@ const ProbeMoveStep = ({
       {phone ? paper : null}
       {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
       {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
-      <Foot back={onBack}>
+      <Foot back={onBack} backLabel={backLabel}>
         {phone ? <Button tone="outline" onClick={() => onJogging(true)} className="h-ctl">{t('nav.jog')}</Button> : null}
         {onward}
       </Foot>

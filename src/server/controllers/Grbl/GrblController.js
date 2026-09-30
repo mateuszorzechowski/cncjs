@@ -98,6 +98,9 @@ const noop = _.noop;
 // taken to mean the controller is no longer reachable.
 const CONNECTION_TIMEOUT = 10000;
 
+// How long a probe wizard's step waits, its owner gone, for a device in it to take it on.
+const STAGE_ORPHAN_MS = 5000;
+
 // https://github.com/gnea/grbl/blob/master/doc/markdown/commands.md#grbl-v11-realtime-commands
 const isRealtimeCommand = (data) => (
   _.includes(GRBL_REALTIME_COMMANDS, data) || Boolean(String(data).match(/[\x80-\xff]/))
@@ -237,16 +240,23 @@ class GrblController {
 
     /**
      * Where a probe wizard is waiting on the operator's hands, or null —
-     * `{ method, options, step }`, `step` being `position` (the tool into
-     * place) or `measure` (the paper felt for). Said by the device the wizard
-     * is open on and sent to every device, so a phone can jog and go on from
-     * wherever it is (review note, 2026-09-30). A measurement starting ends it,
-     * and so does the device the wizard was begun on going away
-     * (`probeStageSocket`) — its wizard went with it.
+     * `{ method, options, step, owner }`, `step` being `position` (the tool
+     * into place) or `measure` (the paper felt for), `owner` the device it is
+     * the wizard of, `{ device, name }`, or null for a moment. Sent to every
+     * device, so a phone can join it from wherever it is (review notes,
+     * 2026-09-30/10-01).
+     *
+     * One at a time: a device reaching the step with a wizard of its own
+     * takes it over (`own`), and the other goes back. The owner leaving the
+     * screen or the server lets it go; a device in that wizard takes it on,
+     * and if none does within `STAGE_ORPHAN_MS` it ends. A measurement
+     * starting ends it too.
      */
     probeStage = null;
 
     probeStageSocket = null;
+
+    probeStageTimer = null;
 
     // Message Slot
     messageSlot = null;
@@ -1785,6 +1795,8 @@ class GrblController {
     destroy() {
       this.fileCheck = null;
       this.probe = null;
+      this.probeStage = null;
+      clearTimeout(this.probeStageTimer);
       this.settingWrite = null;
       clearTimeout(this.settingsReadTimer);
 
@@ -2122,11 +2134,9 @@ class GrblController {
       this.sockets[socket.id] = undefined;
       delete this.sockets[socket.id];
 
-      // The wizard waiting on the operator was on this device: nobody is left to go on with it.
+      // The wizard waiting on the operator was this device's: let another in it take it on.
       if (this.probeStage && this.probeStageSocket === socket.id) {
-        this.probeStage = null;
-        this.probeStageSocket = null;
-        this.emit('probe:stage', null);
+        this.releaseProbeStage();
       }
 
       /*
@@ -2407,6 +2417,29 @@ class GrblController {
     }
 
     /** What every client is told about the measurement, or null when there is none. */
+    /** The owner lets the waiting wizard go: someone in it takes it on, or it ends. */
+    releaseProbeStage() {
+      this.probeStage = { ...this.probeStage, owner: null };
+      this.probeStageSocket = null;
+      this.emit('probe:stage', this.probeStage);
+      clearTimeout(this.probeStageTimer);
+      this.probeStageTimer = setTimeout(() => {
+        if (this.probeStage && !this.probeStage.owner) {
+          this.endProbeStage();
+        }
+      }, STAGE_ORPHAN_MS);
+    }
+
+    endProbeStage() {
+      clearTimeout(this.probeStageTimer);
+      this.probeStageTimer = null;
+      this.probeStageSocket = null;
+      if (this.probeStage) {
+        this.probeStage = null;
+        this.emit('probe:stage', null);
+      }
+    }
+
     probeReport() {
       if (!this.probe) {
         return null;
@@ -3090,28 +3123,41 @@ class GrblController {
             return;
           }
 
-          this.probeStage = null;
-          this.probeStageSocket = null;
-          this.emit('probe:stage', null);
+          this.endProbeStage();
           this.startProbe(method, options);
         },
         /**
-         * Where the wizard waits on the operator's hands, for every device; null
-         * when it no longer does. `own`: said by the device the wizard was begun
-         * on, whose going away ends it.
+         * Where the wizard waits on the operator's hands, for every device:
+         * `{ method, options, step, own }` — `own` from the device whose
+         * wizard it is, taking it over from any other; `{ release: true }`
+         * from that device leaving it; null, none.
          */
         'probe:stage': () => {
           const [stage = null] = args;
-          const known = stage && STRATEGIES[stage.method] && ['position', 'measure'].includes(stage.step);
-          this.probeStage = known ? { method: stage.method, options: stage.options || {}, step: stage.step } : null;
-          if (!this.probeStage) {
-            this.probeStageSocket = null;
-          } else if (stage.own) {
-            this.probeStageSocket = this.commandSocket?.id ?? null;
+          const socket = this.commandSocket;
+          if (stage?.release) {
+            if (this.probeStage && this.probeStageSocket === socket?.id) {
+              this.releaseProbeStage();
+            }
+            return;
           }
+          const known = stage && STRATEGIES[stage.method] && ['position', 'measure'].includes(stage.step);
+          if (!known) {
+            this.endProbeStage();
+            return;
+          }
+          let owner = this.probeStage?.owner ?? null;
+          if (stage.own) {
+            const device = socket?.device ?? null;
+            owner = { device, name: devices.all()[device]?.name ?? null };
+            this.probeStageSocket = socket?.id ?? null;
+            clearTimeout(this.probeStageTimer);
+          }
+          this.probeStage = {
+            method: stage.method, options: stage.options || {}, step: stage.step, owner,
+          };
           this.emit('probe:stage', this.probeStage);
         },
-        /** Write the zero the last measurement found, into the system it was measured in. */
         'probe:apply': () => {
           const result = this.probe?.result;
 

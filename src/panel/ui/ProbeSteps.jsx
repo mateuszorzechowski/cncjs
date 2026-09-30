@@ -50,10 +50,10 @@ const OUTCOMES = {
   ),
 };
 
-/** The buttons at the foot of a step: back on the left, the way on at the right. */
-export const Foot = ({ back, children }) => (
+/** The buttons at the foot of a step: back on the left — or `backLabel`'s way out — the way on at the right. */
+export const Foot = ({ back, backLabel = null, children }) => (
   <div className="mt-auto flex shrink-0 justify-between gap-2 pt-4">
-    {back ? <Button tone="outline" onClick={back} className="h-ctl">{t('probe.back')}</Button> : <span />}
+    {back ? <Button tone="outline" onClick={back} className="h-ctl">{backLabel || t('probe.back')}</Button> : <span />}
     <div className="flex gap-2">{children}</div>
   </div>
 );
