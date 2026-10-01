@@ -3,8 +3,8 @@
  * out in `probeDraw`'s header (map §4a/4b, Mateusz 2026-10-01).
  */
 
-// A figure's words a little under the drawing's, and lighter (review note, 2026-09-30).
-export const TAG_SCALE = 0.88;
+// A figure's words well under the drawing's — 8.5 px at its usual 13 (Mateusz, 2026-10-02: the smallest set "wygląda ok").
+export const TAG_SCALE = 0.65;
 
 // The figures face (Azeret Mono) is 0.65 em a glyph, the em dash two (measured in the panel,
 // 2026-10-01: "stoi — za nisko" ran out of its box); `fs` the drawing's size.
