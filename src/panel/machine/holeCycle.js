@@ -54,8 +54,9 @@ const build = () => {
         const wall = wallFrom(at, axis, sign);
         const off = along(axis, wall, -sign * BACK);
         const name = `${axis}${pass}${sign > 0 ? 'p' : 'm'}`;
+        const way = `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`;
         moves[name] = {
-          kind: 'touch', axis, sign, pass, from: at, wall,
+          kind: 'touch', axis, sign, pass, from: at, wall, way,
           frames: [[0, at], [0.15, at], [0.55, wall, true], [0.62, wall], [0.7, off], [0.78, off], [0.9, wall], [1, off]],
           titleKey: 'probe.hole.move.touch',
           uses: ['holeSize', 'fast', 'slow', 'retract'],
@@ -70,7 +71,7 @@ const build = () => {
         : [at[0], (touches[0][1] + touches[1][1]) / 2];
       const name = `${axis}${pass}c`;
       moves[name] = {
-        kind: 'centre', axis, pass, from: at, to: middle, touches,
+        kind: 'centre', axis, pass, from: at, to: middle, touches, way: axis.toUpperCase(),
         frames: [[0, at], [0.15, at], [0.6, middle, true], [1, middle]],
         titleKey: 'probe.hole.move.centre',
         uses: [],
@@ -92,10 +93,20 @@ const { moves: MOVES, order: ORDER } = build();
 export const HOLE_ORDER = ORDER;
 export const moveOf = (name) => MOVES[name];
 
+/** A move's spoken name: `t(key, vars)`. */
+export const titleOf = (name) => {
+  const move = MOVES[name];
+  return [move.titleKey, { pass: move.pass, axis: move.way }];
+};
+
+// Written out, so the translations' check sees every key.
+const PASS_KEYS = { 1: 'probe.hole.pass1', 2: 'probe.hole.pass2' };
+const AXIS_KEYS = { x: 'probe.hole.axis.x', y: 'probe.hole.axis.y' };
+
 export const HOLE_GROUPS = [1, 2].map((pass) => ({
   id: `pass${pass}`,
-  key: `probe.hole.pass${pass}`,
-  subs: AXES.map((axis) => ({ key: `probe.hole.axis.${axis}`, moves: ORDER.filter((name) => name.startsWith(`${axis}${pass}`)) })),
+  key: PASS_KEYS[pass],
+  subs: AXES.map((axis) => ({ key: AXIS_KEYS[axis], moves: ORDER.filter((name) => name.startsWith(`${axis}${pass}`)) })),
 })).concat([{
   id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero'] }],
 }]);
@@ -103,8 +114,8 @@ export const HOLE_GROUPS = [1, 2].map((pass) => ({
 export const HOLE_PARAMS = [
   { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'] },
   { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
-  // Only for the hole's size said back: the centre needs no radius.
-  { id: 'tool', key: 'probe.group.tool', fields: ['toolDiameter'] },
+  // Only for the hole's size said back: the centre needs no radius. A tool, or a 3D probe's ball.
+  { id: 'tool', key: 'probe.group.tip', fields: ['toolDiameter'] },
 ];
 
 // A figure being set loops the first touch, or the zero for the tool.
@@ -152,6 +163,9 @@ export const toolAt = (move, p) => {
 
 const near = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.5;
 
+// Where the tool's edge meets the wall, from where its centre stands then.
+const onWall = (centre) => [centre[0] * (HOLE_R / FREE), centre[1] * (HOLE_R / FREE)];
+
 /**
  * The drawing of move `name` at `p`: the tool's centre, the arrow while it
  * moves, the search's limit along a touch, the walls touched so far this
@@ -167,18 +181,18 @@ export const holeScene = (name, p, {
   // The walls this pass has touched before this move, and this move's once it is there.
   const touched = ORDER.slice(0, ORDER.indexOf(name))
     .filter((one) => MOVES[one].kind === 'touch' && MOVES[one].pass === move.pass)
-    .map((one) => MOVES[one].wall);
+    .map((one) => onWall(MOVES[one].wall));
   let motion = null;
   let limit = null;
   if (move.kind === 'touch') {
     const going = p > 0.15 && p < 0.55;
     if (going) {
       motion = {
-        axis: move.axis, from: move.from, to: move.wall, kind: 'probe', feed: said('fast'),
+        axis: move.axis, from: move.from, to: move.wall, kind: 'probe', feed: said('fast'), lit: focus === 'feed',
       };
     }
     limit = {
-      axis: move.axis, from: move.from, to: along(move.axis, move.wall, move.sign * PAST), text: upTo(said('holeSize')),
+      axis: move.axis, from: move.from, to: along(move.axis, move.wall, move.sign * PAST), text: upTo(said('holeSize')), lit: focus === 'dim',
     };
   } else if (move.kind === 'centre' && p > 0.15 && p < 0.6) {
     motion = {
@@ -195,10 +209,11 @@ export const holeScene = (name, p, {
     motion,
     limit,
     touched,
-    contact: move.kind === 'touch' && near(tool, move.wall) ? move.wall : null,
+    contact: move.kind === 'touch' && near(tool, move.wall) ? onWall(move.wall) : null,
     centre: move.kind === 'centre' && p >= 0.6 ? move.to : null,
     zero,
-    found: move.kind === 'zero' ? { text: said('toolDiameter') } : null,
+    // The tool's diameter, the one figure the zero uses: it is added back to say the hole's size.
+    dia: move.kind === 'zero' ? { text: `Ø${said('toolDiameter')}`, lit: focus === 'dim', fade: zero } : null,
     focus,
   };
 };
@@ -226,14 +241,18 @@ export const holeReadout = (name) => {
 
 /*
  * Into place: from off to the side, across over the hole, down into it —
- * drawn from above as the tool coming over its middle-ish and staying.
+ * drawn from above as the tool coming over its middle-ish, drawn smaller as
+ * it goes down (`level` 1 high, 0 in the hole), as the corner draws height.
  */
 export const POSITION_MS = 6000;
 export const positionAt = (ms) => {
   const p = (ms % POSITION_MS) / POSITION_MS;
   const k = ease(clamp((p - 0.1) / 0.45));
   const from = [-150, 70];
-  return { tool: [from[0] + (START[0] - from[0]) * k, from[1] + (START[1] - from[1]) * k], over: p > 0.6 };
+  return {
+    tool: [from[0] + (START[0] - from[0]) * k, from[1] + (START[1] - from[1]) * k],
+    level: 1 - ease(clamp((p - 0.6) / 0.2)),
+  };
 };
 
 /*
@@ -248,4 +267,16 @@ export const moveOfPhase = (phase) => {
   }
   const centre = /^([xy])([12])-centre/.exec(phase || '');
   return centre ? `${centre[1]}${centre[2]}c` : 'x1p';
+};
+
+// The words of a step's part where the hole's differ from a plate's: the fast touch finds a wall, not a plate.
+const PHASE_KEYS = {
+  fast: 'probe.hole.phase.fast', back: 'probe.phase.back', settle: 'probe.phase.settle', centre: 'probe.hole.phase.centre',
+};
+
+/** What the tool is doing at the server's step, as `t(key, vars)`: `x1a-fast` is "X+: looking for the wall". */
+export const holeWords = (phase) => {
+  const move = MOVES[moveOfPhase(phase)];
+  const part = String(phase || '').split('-')[1];
+  return [PHASE_KEYS[part] || 'probe.phase.touch', { axis: move.way }];
 };

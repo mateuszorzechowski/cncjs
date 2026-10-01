@@ -48,7 +48,8 @@ const CHOOSE_FIRST = ['method', 'choose', 'prepare', 'wire', 'position', 'measur
 const BY_HAND = ['method', 'choose', 'prepare', 'position', 'measure', 'result'];
 
 /*
- * The methods the wizard offers, in its order. `choice` is the one thing
+ * The methods the wizard offers, in its order. `wire`, how its wire is
+ * tested, where that is not the plate's. `choice` is the one thing
  * chosen per measurement, sent as that option; `start` names the button that
  * sets it going — a probe measures, the paper says "here". `touches`, as the
  * server's strategy says it: works through the probe input, which must be
@@ -63,6 +64,10 @@ export const METHODS = [
     id: 'corner', key: 'probe.method.corner', note: 'probe.method.cornerNote', lay: 'probe.lay.corner', place: 'probe.place.corner',
     start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true, plate: 'l',
     choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', step: 'probe.step.corner' },
+  },
+  {
+    id: 'hole', key: 'probe.method.hole', note: 'probe.method.holeNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
+    wire: 'probe.wire.howHole', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true,
   },
   {
     id: 'paper', key: 'probe.method.paper', note: 'probe.method.paperNote', how: 'probe.how.paper', place: 'probe.place.paper',
@@ -135,7 +140,9 @@ const PHASES = {
 };
 
 export const phaseWords = (phase) => {
-  const [axis, what = 'touch'] = String(phase || '').split('-');
+  const [step, what = 'touch'] = String(phase || '').split('-');
+  // A step tagged with its pass and side — the hole's `x1a` — is still its axis.
+  const axis = /^[xyz]\d/.test(step) ? step[0] : step;
   return { key: PHASES[what] || PHASES.touch, axis: axis.toUpperCase() };
 };
 

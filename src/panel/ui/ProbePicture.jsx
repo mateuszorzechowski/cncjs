@@ -52,7 +52,21 @@ const PaperPictogram = ({ label, className }) => (
   </svg>
 );
 
-const PICTOGRAMS = { z: ZPlatePictogram, corner: CornerPictogram, paper: PaperPictogram };
+/*
+ * The hole's pictogram, cut through: the work either side of the hole, the
+ * V bit down in it, and an accent head on each side — it touches both walls.
+ */
+const HolePictogram = ({ label, className }) => (
+  <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <path d="M4 26 H15 V44 H4 Z M33 26 H44 V44 H33 Z" className="fill-mutS stroke-line" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M20.5 8 H27.5 V30.4 L24 36.5 L20.5 30.4 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M18.6 28 L15.8 31 L18.6 34 Z M29.4 28 L32.2 31 L29.4 34 Z" className="fill-acc" />
+  </svg>
+);
+
+const PICTOGRAMS = {
+  z: ZPlatePictogram, corner: CornerPictogram, hole: HolePictogram, paper: PaperPictogram,
+};
 
 const ProbePicture = ({ method, label, className = '' }) => {
   const Pictogram = PICTOGRAMS[method];

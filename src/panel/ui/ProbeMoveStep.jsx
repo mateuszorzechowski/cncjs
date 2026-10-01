@@ -4,6 +4,7 @@ import Card from './Card';
 import ConfirmSheet from './ConfirmSheet';
 import CornerPosition from './CornerPosition';
 import FadeScroller from './FadeScroller';
+import HolePosition from './HolePosition';
 import Notice from './Notice';
 import PaperFeel from './PaperFeel';
 import PaperJog from './PaperJog';
@@ -19,6 +20,7 @@ import { t } from '../i18n';
 const MOVES = {
   z: ZPlatePosition,
   corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
+  hole: HolePosition,
   paper: ({ choice }) => <PaperPosition edge={choice} />,
 };
 

@@ -1375,19 +1375,23 @@
       "corner": "XYZ corner",
       "cornerNote": "Corner of the work: X0, Y0 and Z0, with an L-shaped plate.",
       "paper": "Paper",
-      "paperNote": "By hand with a sheet of paper: the top or any side, no probe."
+      "paperNote": "By hand with a sheet of paper: the top or any side, no probe.",
+      "hole": "Hole centre",
+      "holeNote": "The centre of a round hole, by probe: X0 and Y0, Z unchanged."
     },
     "how": {
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
     },
     "lay": {
       "z": "Lay the plate flat on the work, under the tool.",
-      "corner": "Set the L plate on the chosen corner, its walls against both edges of the work."
+      "corner": "Set the L plate on the chosen corner, its walls against both edges of the work.",
+      "hole": "Plug the 3D probe into the probe input instead of the plate. The bare tool instead of a probe only in metal: the clip on the tool, the second lead on the work."
     },
     "place": {
       "z": "Jog the tool over the plate, a few millimetres above it — less than the Z travel limit.",
       "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls.",
-      "paper": "Bring the tool a few millimetres over the surface chosen — in front of it for a side. Keep the sheet at hand."
+      "paper": "Bring the tool a few millimetres over the surface chosen — in front of it for a side. Keep the sheet at hand.",
+      "hole": "Lower the probe's ball or the tool into the hole, a few millimetres below its edge, roughly in the middle — clear of the walls."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1445,7 +1449,8 @@
       "paperThickness": "Paper thickness",
       "lift": "Lift",
       "stockThickness": "Work thickness",
-      "paperLift": "Lift after measuring"
+      "paperLift": "Lift after measuring",
+      "holeSize": "Hole diameter (roughly)"
     },
     "step": {
       "method": "Method",
@@ -1469,7 +1474,8 @@
       "closed": "PROBE · closed",
       "before": "before the touch",
       "after": "plate touching the tool",
-      "touch": "touch"
+      "touch": "touch",
+      "howHole": "3D probe: deflect its tip with a finger and let go. Tool in metal: touch the work's lead to the tool and let go. The panel reads the probe from the controller: it shows “Touching” while they touch and “Works” once you let go."
     },
     "position": {
       "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",
@@ -1494,7 +1500,7 @@
       "return": "{{axis}}: back over the start"
     },
     "failure": {
-      "notFound": "{{axis}}: the plate was not touched within the travel limit. Nothing was written. Check the plate and the lead, or move the tool closer.",
+      "notFound": "{{axis}}: nothing was touched within the travel limit. Nothing was written. Check the plate or the probe and the lead, or move the tool closer.",
       "alreadyTouching": "{{axis}}: the probe was already touching before the move. Nothing was written. Check the lead is not shorted.",
       "softLimit": "The move would leave the machine travel (soft limits). Nothing was written. Reset, then move the tool or home the machine.",
       "touched": "{{axis}}: the tool came down on the plate instead of beside it. Nothing was written. Increase “Out past the wall” or start closer to the corner.",
@@ -1504,11 +1510,12 @@
     "result": {
       "into": "New zero for",
       "shift": "{{axis}} moves by",
-      "note": "Nothing is written until you save. Clear the plate or the paper away before cutting.",
+      "note": "Nothing is written until you save. Clear the plate, the paper or the probe away before cutting.",
       "save": "Save zero",
       "discard": "Discard",
       "close": "Close",
-      "again": "Try again"
+      "again": "Try again",
+      "found": "Hole diameter in {{axis}}"
     },
     "edgeLabel": "Which surface of the work",
     "edge": {
@@ -1578,7 +1585,9 @@
       "moves": "Moves",
       "tool": "Tool",
       "measureAll": "Measuring · every axis",
-      "paper": "Paper"
+      "paper": "Paper",
+      "hole": "Hole",
+      "tip": "Tool or probe ball"
     },
     "play": {
       "pause": "Pause",
@@ -1623,6 +1632,24 @@
       "work": "Work",
       "table": "Table",
       "top": "Work top"
+    },
+    "hole": {
+      "pass1": "Pass 1",
+      "pass2": "Pass 2",
+      "axis": {
+        "x": "across X",
+        "y": "across Y"
+      },
+      "move": {
+        "touch": "Pass {{pass}} · {{axis}}: touch the wall",
+        "centre": "Pass {{pass}} · {{axis}}: to the middle",
+        "zero": "Zero written: X0 and Y0"
+      },
+      "centreCode": "G0 to the middle of the touches",
+      "phase": {
+        "fast": "{{axis}}: looking for the wall",
+        "centre": "{{axis}}: to the middle"
+      }
     }
   }
 }

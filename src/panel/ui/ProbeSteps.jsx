@@ -6,12 +6,15 @@ import StatTile from './StatTile';
 import WcsBadge from './WcsBadge';
 import CornerCycle from './CornerCycle';
 import CornerParams from './CornerParams';
+import HoleCycle from './HoleCycle';
+import HoleParams from './HoleParams';
 import PaperParams from './PaperParams';
 import PaperScene from './PaperScene';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
 import { METHODS, SURFACE, failureKey, phaseWords } from '../machine/probe';
+import { holeWords } from '../machine/holeCycle';
 import { paperScene } from '../machine/paperCycle';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
@@ -29,10 +32,13 @@ const signed = (text) => (text.startsWith('-') || text === NO_READING ? text : `
  * 2026-09-30): the figures set on the drawing, the measurement played on it,
  * the zero shown on it.
  */
-const EDITORS = { z: ZPlateParams, corner: CornerParams, paper: PaperParams };
+const EDITORS = {
+  z: ZPlateParams, corner: CornerParams, hole: HoleParams, paper: PaperParams,
+};
 const CYCLES = {
   z: ZPlateCycle,
   corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
+  hole: ({ phase }) => <HoleCycle phase={phase} words={phase ? t(...holeWords(phase)) : null} />,
 };
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
@@ -47,6 +53,8 @@ const OUTCOMES = {
   ),
   // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
   corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} done className="mx-auto w-full max-w-md" />,
+  // X0 Y0 from above, at the middle of the hole.
+  hole: () => <HoleCycle done className="mx-auto w-full max-w-md" />,
   // The paper's zero written: the sheet flat under the tool, the zero's line on the surface.
   paper: ({ probe }) => (
     <PaperScene {...paperScene('zero', 1, { edge: probe?.options?.edge || 'z', surface: surfaceOf(probe) })} dim={null} dia={null} stock={null} label={t('probe.method.paper')} className="mx-auto w-full max-w-md" />
@@ -100,7 +108,9 @@ export const PrepareStep = ({
   );
 };
 
-export const WireStep = ({ lit, touched, plate }) => {
+export const WireStep = ({
+  lit, touched, plate, how = 'probe.wire.how',
+}) => {
   let state = t('probe.wire.waiting');
   if (lit === null) {
     state = NO_READING;
@@ -111,7 +121,7 @@ export const WireStep = ({ lit, touched, plate }) => {
   }
   return (
     <div className="flex flex-col gap-3">
-      <p className="m-0 text-base text-ink">{t('probe.wire.how')}</p>
+      <p className="m-0 text-base text-ink">{t(how)}</p>
       <ProbeWire lit={lit} plate={plate} />
       {/* Dalej is never held back (Mateusz, 2026-09-30); an untested wire is said
         * instead, beside the pin when wide, so the step still needs no scroll. */}
@@ -160,6 +170,8 @@ export const ResultStep = ({ probe, plate }) => {
     );
   }
   const shift = probe?.result?.shift || {};
+  // What else the touches told, for the operator to check: a hole's size each way.
+  const found = probe?.result?.found || {};
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -173,6 +185,14 @@ export const ResultStep = ({ probe, plate }) => {
             key={axis}
             label={t('probe.result.shift', { axis: axis.toUpperCase() })}
             value={signed(units.figure(shift[axis]))}
+            unit={units.length}
+          />
+        ))}
+        {['x', 'y'].filter((axis) => axis in found).map((axis) => (
+          <StatTile
+            key={`found${axis}`}
+            label={t('probe.result.found', { axis: axis.toUpperCase() })}
+            value={units.figure(found[axis])}
             unit={units.length}
           />
         ))}
