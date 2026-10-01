@@ -1,10 +1,10 @@
 import { move, touch } from '../moves';
 
 /**
- * The centre of a hole (Mateusz, 2026-10-01): the tool — or a probe tip —
- * down in the hole, the walls touched across X, then across Y, and the
- * centre half way between each pair. The tool's radius is on both sides
- * of a pair, so it falls out of the centre and need not be known.
+ * The centre of a hole (Mateusz, 2026-10-01): a 3D probe's ball down in the
+ * hole, the walls touched across X, then across Y, and the centre half way
+ * between each pair. The ball's radius is on both sides of a pair, so it
+ * falls out of the centre and need not be known.
  *
  * Two passes, as the common senders do: the first finds the centre from
  * wherever the tool stood, the second touches again from there, so a start
@@ -30,7 +30,7 @@ const pass = (n, params) => [...across('x', n, params), ...across('y', n, params
 const centre = (seen, axis) => (seen[`${axis}2a`][axis] + seen[`${axis}2b`][axis]) / 2;
 
 export default {
-  fields: ['holeSize', 'toolDiameter', 'retract', 'fast', 'slow'],
+  fields: ['holeSize', 'ballDiameter', 'retract', 'fast', 'slow'],
   options: {},
   touches: true,
 
@@ -40,9 +40,9 @@ export default {
 
   zero: (params, options, seen) => ({ x: centre(seen, 'x'), y: centre(seen, 'y') }),
 
-  // The hole's size each way, the tool's diameter added back: what the operator can check.
+  // The hole's size each way, the ball's diameter added back: what the operator can check.
   found: (params, options, seen) => ({
-    x: Math.abs(seen.x2a.x - seen.x2b.x) + params.toolDiameter,
-    y: Math.abs(seen.y2a.y - seen.y2b.y) + params.toolDiameter,
+    x: Math.abs(seen.x2a.x - seen.x2b.x) + params.ballDiameter,
+    y: Math.abs(seen.y2a.y - seen.y2b.y) + params.ballDiameter,
   }),
 };

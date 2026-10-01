@@ -82,7 +82,7 @@ const build = () => {
     });
   });
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at], [1, at]], zeroAt: [0.1, 0.35], titleKey: 'probe.hole.move.zero', uses: ['toolDiameter'], end: 0.35, after: true,
+    kind: 'zero', from: at, frames: [[0, at], [1, at]], zeroAt: [0.1, 0.35], titleKey: 'probe.hole.move.zero', uses: ['ballDiameter'], end: 0.35, after: true,
   };
   order.push('zero');
   return { moves, order };
@@ -114,13 +114,13 @@ export const HOLE_GROUPS = [1, 2].map((pass) => ({
 export const HOLE_PARAMS = [
   { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'] },
   { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
-  // Only for the hole's size said back: the centre needs no radius. A tool, or a 3D probe's ball.
-  { id: 'tool', key: 'probe.group.tip', fields: ['toolDiameter'] },
+  // Only for the hole's size said back: the centre needs no radius.
+  { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
 ];
 
 // A figure being set loops the first touch, or the zero for the tool.
 const EDIT = {
-  holeSize: ['x1p', 'dim'], fast: ['x1p', 'feed'], slow: ['x1p', 'feed'], retract: ['x1p', 'feed'], toolDiameter: ['zero', 'dim'],
+  holeSize: ['x1p', 'dim'], fast: ['x1p', 'feed'], slow: ['x1p', 'feed'], retract: ['x1p', 'feed'], ballDiameter: ['zero', 'dim'],
 };
 
 export const holeTimeline = () => layOut(ORDER, {
@@ -212,8 +212,8 @@ export const holeScene = (name, p, {
     contact: move.kind === 'touch' && near(tool, move.wall) ? onWall(move.wall) : null,
     centre: move.kind === 'centre' && p >= 0.6 ? move.to : null,
     zero,
-    // The tool's diameter, the one figure the zero uses: it is added back to say the hole's size.
-    dia: move.kind === 'zero' ? { text: `Ø${said('toolDiameter')}`, lit: focus === 'dim', fade: zero } : null,
+    // The ball's diameter, the one figure the zero uses: it is added back to say the hole's size.
+    dia: move.kind === 'zero' ? { text: `Ø${said('ballDiameter')}`, lit: focus === 'dim', fade: zero } : null,
     focus,
   };
 };

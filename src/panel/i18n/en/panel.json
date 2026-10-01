@@ -1385,13 +1385,13 @@
     "lay": {
       "z": "Lay the plate flat on the work, under the tool.",
       "corner": "Set the L plate on the chosen corner, its walls against both edges of the work.",
-      "hole": "Plug the 3D probe into the probe input instead of the plate. The bare tool instead of a probe only in metal: the clip on the tool, the second lead on the work."
+      "hole": "Plug the 3D probe into the probe input instead of the plate."
     },
     "place": {
       "z": "Jog the tool over the plate, a few millimetres above it — less than the Z travel limit.",
       "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls.",
       "paper": "Bring the tool a few millimetres over the surface chosen — in front of it for a side. Keep the sheet at hand.",
-      "hole": "Lower the probe's ball or the tool into the hole, a few millimetres below its edge, roughly in the middle — clear of the walls."
+      "hole": "Lower the probe's ball into the hole, a few millimetres below its edge, roughly in the middle — clear of the walls."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1450,7 +1450,8 @@
       "lift": "Lift",
       "stockThickness": "Work thickness",
       "paperLift": "Lift after measuring",
-      "holeSize": "Hole diameter (roughly)"
+      "holeSize": "Hole diameter (roughly)",
+      "ballDiameter": "Ball diameter"
     },
     "step": {
       "method": "Method",
@@ -1475,7 +1476,7 @@
       "before": "before the touch",
       "after": "plate touching the tool",
       "touch": "touch",
-      "howHole": "3D probe: deflect its tip with a finger and let go. Tool in metal: touch the work's lead to the tool and let go. The panel reads the probe from the controller: it shows “Touching” while they touch and “Works” once you let go."
+      "howHole": "Deflect the probe's tip with a finger and let go. The panel reads the probe from the controller: it shows “Touching” while deflected and “Works” once you let go."
     },
     "position": {
       "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",
@@ -1587,7 +1588,7 @@
       "measureAll": "Measuring · every axis",
       "paper": "Paper",
       "hole": "Hole",
-      "tip": "Tool or probe ball"
+      "probe": "Probe"
     },
     "play": {
       "pause": "Pause",

@@ -27,6 +27,8 @@ export const FIELDS = {
   clear: { value: 20, min: 1, max: 100 },
   depth: { value: 5, min: 0.5, max: 50 },
   toolDiameter: { value: 6, min: 0.1, max: 50 },
+  // A 3D probe's ball, apart from the tool: measuring with one never changes the other.
+  ballDiameter: { value: 2, min: 0.1, max: 20 },
   // A hole's rough diameter: how far each search across it may go.
   holeSize: { value: 20, min: 1, max: 300 },
   // The work's thickness, between its top and the table, for a zero on the other one (`surface`).

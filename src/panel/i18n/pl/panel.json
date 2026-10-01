@@ -1385,13 +1385,13 @@
     "lay": {
       "z": "Połóż płytkę płasko na materiale, pod frezem.",
       "corner": "Załóż płytkę L na wybrany narożnik, ściankami do obu krawędzi materiału.",
-      "hole": "Sondę 3D wepnij w wejście sondy zamiast płytki. Sam frez zamiast sondy tylko w metalu: krokodylek na frezie, drugi przewód na materiale."
+      "hole": "Wepnij sondę 3D w wejście sondy zamiast płytki."
     },
     "place": {
       "z": "Podjedź frezem nad płytkę, kilka milimetrów nad nią — mniej niż limit dojazdu Z.",
       "corner": "Podjedź frezem nad płytkę, kilka milimetrów nad nią i ok. 8 mm od obu ścianek.",
       "paper": "Podjedź frezem kilka milimetrów nad wybraną powierzchnię — przy boku przed nią. Kartkę trzymaj pod ręką.",
-      "hole": "Opuść kulkę sondy albo frez do otworu, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek."
+      "hole": "Opuść kulkę sondy do otworu, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1450,7 +1450,8 @@
       "lift": "Odjazd w górę",
       "stockThickness": "Grubość materiału",
       "paperLift": "Odjazd po pomiarze",
-      "holeSize": "Średnica otworu (w przybliżeniu)"
+      "holeSize": "Średnica otworu (w przybliżeniu)",
+      "ballDiameter": "Średnica kulki"
     },
     "step": {
       "method": "Metoda",
@@ -1475,7 +1476,7 @@
       "before": "przed dotknięciem",
       "after": "płytka dotyka frezu",
       "touch": "dotknij",
-      "howHole": "Sonda 3D: wychyl palcem jej końcówkę i puść. Frez w metalu: dotknij frezu przewodem od materiału i puść. Panel czyta stan sondy ze sterownika: przy dotyku pokaże „Dotyk”, po puszczeniu „Działa”."
+      "howHole": "Wychyl palcem końcówkę sondy i puść. Panel czyta stan sondy ze sterownika: przy wychyleniu pokaże „Dotyk”, po puszczeniu „Działa”."
     },
     "position": {
       "clipOn": "Wejście sondy świeci: płytka dotyka freza albo przewód jest zwarty. Usuń to przed pomiarem.",
@@ -1587,7 +1588,7 @@
       "measureAll": "Pomiar · wszystkie osie",
       "paper": "Kartka",
       "hole": "Otwór",
-      "tip": "Frez lub kulka sondy"
+      "probe": "Sonda"
     },
     "play": {
       "pause": "Pauza",

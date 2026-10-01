@@ -7,7 +7,7 @@ import { segmentsOf } from '../timeline';
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
 
 const TEXTS = {
-  holeSize: '20', toolDiameter: '6', retract: '2', fast: '100', slow: '20',
+  holeSize: '20', ballDiameter: '6', retract: '2', fast: '100', slow: '20',
 };
 
 describe('the hole centre cycle', () => {
@@ -21,7 +21,7 @@ describe('the hole centre cycle', () => {
     const barred = HOLE_GROUPS.flatMap((group) => group.subs.flatMap((sub) => sub.moves));
     expect(barred).toEqual(HOLE_ORDER);
     const grouped = HOLE_PARAMS.flatMap((group) => group.fields).sort();
-    expect(grouped).toEqual(['fast', 'holeSize', 'retract', 'slow', 'toolDiameter']);
+    expect(grouped).toEqual(['ballDiameter', 'fast', 'holeSize', 'retract', 'slow']);
   });
 
   test('a touch ends with the tool off the wall, a way to the middle at the middle of its pair', () => {
@@ -59,7 +59,7 @@ describe('the hole centre cycle', () => {
   test('a figure being set loops the move it changes, its part lit', () => {
     expect(playAt(10, { field: 'holeSize' })).toMatchObject({ name: 'x1p', focus: 'dim' });
     expect(playAt(10, { field: 'fast' })).toMatchObject({ name: 'x1p', focus: 'feed' });
-    expect(playAt(10, { field: 'toolDiameter' })).toMatchObject({ name: 'zero', focus: 'dim' });
+    expect(playAt(10, { field: 'ballDiameter' })).toMatchObject({ name: 'zero', focus: 'dim' });
     expect(holeScene('x1p', 0.3, { texts: TEXTS, focus: 'dim' }).limit).toMatchObject({ lit: true, text: '20' });
   });
 
