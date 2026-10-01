@@ -50,7 +50,12 @@ describe('the L plate cycle (probe proposal)', () => {
 
   test('says each move in G-code as the server runs it', () => {
     expect(cornerCode('zFast', 0.5, TEXTS).parts).toEqual(['G38.2 Z-20 F50']);
-    expect(cornerCode('xSet', 0.5, TEXTS)).toEqual({ parts: ['G0 X-10'], now: -1, leg: 'out' });
+    // Each leg lights the one figure its way is: out past the wall, the clear.
+    expect(cornerCode('xSet', 0.5, TEXTS)).toEqual({
+      parts: ['G0 X-10'], now: -1, leg: 'out', uses: ['clear'],
+    });
+    expect(cornerCode('xSet', 0.1, TEXTS).uses).toEqual(['retract']);
+    expect(cornerCode('xSet', 0.9, TEXTS).uses).toEqual(['depth', 'retract']);
     expect(cornerCode('xSet', 0.9, TEXTS)).toMatchObject({ parts: ['G38.3 Z-10 F50'], leg: 'down' });
     expect(cornerCode('xSlow', 0.5, TEXTS).parts).toEqual(['G38.2 X+10 F15']);
     expect(cornerCode('lift', 0.5, TEXTS)).toMatchObject({ parts: ['G0 Z+25'], leg: 'lift' });

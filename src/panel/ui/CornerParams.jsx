@@ -144,7 +144,7 @@ const CornerParams = ({
     </div>
   );
   const { right, third } = figureColumns({
-    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField, lit: move.uses, intro, note,
+    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField, lit: code.uses, intro, note,
   });
   if (split) {
     return split(left, right, third);
