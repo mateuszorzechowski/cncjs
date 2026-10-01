@@ -67,16 +67,21 @@ const Plate = ({ kind, x, y }) => {
   return <Shape x={x} y={y} />;
 };
 
+// Where the probe's lamp sits on its body.
+const LAMP_Y = 56;
+
 /*
  * A 3D probe in the holder, its stylus and ball under it, and its lead off
  * to the side; `tilt` the stylus deflected, in degrees about where it leaves
- * the body.
+ * the body, and its lamp.
  */
 const Stylus = ({ x, tilt = 0 }) => (
   <>
     <path d={`M${x + 18} 62 C ${x + 44} 62, ${x + 40} 30, ${x + 70} 24`} className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" />
     <rect x={x - 10} y={14} width={20} height={22} className="fill-field stroke-ink" strokeWidth={2} />
     <rect x={x - 20} y={36} width={40} height={72} rx={6} className="fill-field stroke-ink" strokeWidth={2} />
+    {/* The probe's lamp, dark; lit, the touch's dot stands in it. */}
+    <circle cx={x} cy={LAMP_Y} r={5} className="fill-field stroke-ink" strokeWidth={1.5} />
     <g transform={`rotate(${tilt} ${x} 108)`}>
       <path d={`M${x} 108 V172`} className="stroke-ink" strokeWidth={3} />
       <circle cx={x} cy={180} r={8} className="fill-field stroke-ink" strokeWidth={2} />
@@ -109,7 +114,7 @@ const ProbeHalves = ({ open, closed }) => {
       <g className={closed}>
         <Stylus x={330} tilt={TILT} />
         <Finger x={bx + 8} y={178} />
-        <Contact x={330} y={108} r={4.5} />
+        <Contact x={330} y={LAMP_Y} r={4.5} />
         <path d={`M${bx + 70} 204 H${bx + 30}`} className="stroke-acc" strokeWidth={2.5} />
         <path d={`M${bx + 31} 196 V212 L${bx + 18} 204 Z`} className="fill-acc stroke-acc" strokeWidth={1.5} strokeLinejoin="round" />
         <Pill x={244} closed text={t('probe.wire.closed')} />
