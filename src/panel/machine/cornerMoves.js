@@ -57,13 +57,20 @@ export const MOVES = {
     code: (v) => [`G38.2 Z-${number(v.retract) * 2} F${v.slow}`],
     uses: ['slow', 'retract'],
   },
+  // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01).
+  zOff: {
+    group: 'z', view: 'side', gap: [0, 12], kind: 'rapid', feed: null,
+    dim: { from: 134, to: 146, field: 'retract' },
+    titleKey: 'probe.corner.move.zOff',
+    code: (v) => [`G0 Z+${v.retract}`],
+    uses: ['retract'],
+  },
   xSet: {
     group: 'x', view: 'top',
-    frames: [[0, C0, 0.75], [0.14, C0, 1], [0.24, C0, 1], [0.58, XO, 1], [0.68, XO, 1], [0.9, XO, 0], [1, XO, 0]],
+    frames: [[0, C0, 1], [0.05, C0, 1], [0.45, XO, 1], [0.55, XO, 1], [0.95, XO, 0], [1, XO, 0]],
     legs: [
-      [0, 0.2, 'z', (v, say) => `Z↑ ${say('retract', v.retract)}`, (v) => `G0 Z+${v.retract}`, 'up'],
-      [0.2, 0.64, 'xy', (v, say) => `X− ${say('clear', v.clear)}`, (v) => `G0 X-${v.clear}`, 'out'],
-      [0.64, 1, 'z', (v, say) => `Z↓ ${say('depth', sum(v.retract, v.depth))}`, (v) => `G38.3 Z-${sum(v.retract, v.depth)} F${v.fast}`, 'down', ['depth', 'retract']],
+      [0, 0.5, 'xy', (v, say) => say('clear', v.clear), (v) => `G0 X-${v.clear}`, 'out'],
+      [0.5, 1, 'z', () => '', (v) => `G38.3 Z-${sum(v.retract, v.depth)} F${v.fast}`, 'down', ['depth', 'retract']],
     ],
     titleKey: 'probe.corner.move.xSet',
     uses: ['retract', 'clear', 'depth'],
@@ -93,17 +100,23 @@ export const MOVES = {
    * Backed off the X wall first, as the server does — rising straight off the
    * touch drew the tool rubbing along the work (review note, 2026-09-30).
    */
+  xOff: {
+    group: 'x', view: 'top', frames: [[0, XC, 0], [0.2, XC, 0], [0.6, XB, 0], [1, XB, 0]], kind: 'rapid', feed: null,
+    by: 'retract', touch: [106, 116],
+    titleKey: 'probe.corner.move.xOff',
+    code: (v) => [`G0 X-${v.retract}`],
+    uses: ['retract'],
+  },
   ySet: {
     group: 'y', view: 'top',
-    frames: [[0, XC, 0], [0.17, XB, 0], [0.2, XB, 0], [0.37, XB, 1], [0.4, XB, 1], [0.57, YM, 1], [0.6, YM, 1], [0.77, YO, 1], [0.8, YO, 1], [0.97, YO, 0], [1, YO, 0]],
+    frames: [[0, XB, 0], [0.05, XB, 0], [0.21, XB, 1], [0.25, XB, 1], [0.46, YM, 1], [0.5, YM, 1], [0.71, YO, 1], [0.75, YO, 1], [0.96, YO, 0], [1, YO, 0]],
     legs: [
-      [0, 0.2, 'xy', (v, say) => `X− ${say('retract', v.retract)}`, (v) => `G0 X-${v.retract}`, 'off'],
-      [0.2, 0.4, 'z', (v, say) => `Z↑ ${say('depth', sum(v.retract, v.depth))}`, (v) => `G0 Z+${sum(v.retract, v.depth)}`, 'up', ['depth', 'retract']],
+      [0, 0.25, 'z', () => '', (v) => `G0 Z+${sum(v.retract, v.depth)}`, 'up', ['depth', 'retract']],
       // Back over the plate, to where Z was touched: a place, not a figure of the form's — its
       // line says so in words, there being no numbers to show (review note, 2026-10-01).
-      [0.4, 0.6, 'xy', () => '', () => null, 'over'],
-      [0.6, 0.8, 'xy', (v, say) => `Y− ${say('clear', v.clear)}`, (v) => `G0 Y-${v.clear}`, 'out'],
-      [0.8, 1, 'z', (v, say) => `Z↓ ${say('depth', sum(v.retract, v.depth))}`, (v) => `G38.3 Z-${sum(v.retract, v.depth)} F${v.fast}`, 'down', ['depth', 'retract']],
+      [0.25, 0.5, 'xy', () => '', () => null, 'over'],
+      [0.5, 0.75, 'xy', (v, say) => say('clear', v.clear), (v) => `G0 Y-${v.clear}`, 'out'],
+      [0.75, 1, 'z', () => '', (v) => `G38.3 Z-${sum(v.retract, v.depth)} F${v.fast}`, 'down', ['depth', 'retract']],
     ],
     titleKey: 'probe.corner.move.ySet',
     uses: ['retract', 'clear', 'depth'],
@@ -129,10 +142,17 @@ export const MOVES = {
     code: (v) => [`G38.2 Y+${number(v.retract) * 2} F${v.slow}`],
     uses: ['slow', 'retract'],
   },
+  yOff: {
+    group: 'y', view: 'top', frames: [[0, YC, 0], [0.2, YC, 0], [0.6, YB, 0], [1, YB, 0]], kind: 'rapid', feed: null,
+    by: 'retract', touch: [154, 164],
+    titleKey: 'probe.corner.move.yOff',
+    code: (v) => [`G0 Y-${v.retract}`],
+    uses: ['retract'],
+  },
   // The zero, written: Z0 from the side, then X0 and Y0 from above; and the
   // lift after it — two segments of the bar, as the Z plate's.
   zero: {
-    group: 'zero', view: 'both', frames: [[0, YC, 0], [1, YC, 0]], zero: true,
+    group: 'zero', view: 'both', frames: [[0, YB, 0], [1, YB, 0]], zero: true,
     walls: true, touch: [154, 164],
     titleKey: 'probe.corner.move.zero',
     code: (v, wcs) => [`G10 L20 P${wcs}`],
@@ -141,17 +161,16 @@ export const MOVES = {
   },
   /*
    * As the server runs it (review notes, 2026-09-30: the tool rose along the
-   * wall; going back over the plate was a move too many): backed off the Y
-   * wall, straight up to the lift, and over the corner found, X0 Y0.
+   * wall; going back over the plate was a move too many): off the Y wall
+   * already, straight up to the lift, and over the corner found, X0 Y0.
    */
   lift: {
-    group: 'zero', view: 'both', frames: [[0, YC, 0], [0.28, YB, 0], [0.33, YB, 0], [0.61, YB, LIFTED], [0.67, YB, LIFTED], [0.95, K0, LIFTED], [1, K0, LIFTED]], zero: true, zeroAt: 1, kind: 'rapid',
+    group: 'zero', view: 'both', frames: [[0, YB, 0], [0.05, YB, 0], [0.45, YB, LIFTED], [0.55, YB, LIFTED], [0.95, K0, LIFTED], [1, K0, LIFTED]], zero: true, zeroAt: 1, kind: 'rapid',
     rise: 'lift',
     // Its moves one by one, each on the bar and said under it (review note, 2026-09-30).
     legs: [
-      [0, 1 / 3, 'xy', (v, say) => `Y− ${say('retract', v.retract)}`, (v) => `G0 Y-${v.retract}`, 'off'],
-      [1 / 3, 2 / 3, 'z', (v, say) => `Z↑ ${say('lift', sum(v.depth, v.lift))}`, (v) => `G0 Z+${sum(v.depth, v.lift)}`, 'lift', ['depth', 'lift']],
-      [2 / 3, 1, 'xy', () => '', () => 'G0 X0 Y0', 'corner'],
+      [0, 0.5, 'z', () => '', (v) => `G0 Z+${sum(v.depth, v.lift)}`, 'lift', ['depth', 'lift']],
+      [0.5, 1, 'xy', () => '', () => 'G0 X0 Y0', 'corner'],
     ],
     legsKey: 'probe.corner.move.liftLeg',
     titleKey: 'probe.corner.move.lift',
@@ -161,7 +180,7 @@ export const MOVES = {
   },
   // Down beside the wall, from the side — the one place its depth shows.
   depth: {
-    group: 'x', view: 'side', frames: [[0, XO, 1], [0.15, XO, 1], [0.75, XO, 0], [1, XO, 0]], kind: 'rapid', depthOf: true,
+    group: 'x', view: 'side', frames: [[0, XO, 1], [0.15, XO, 1], [0.75, XO, 0], [1, XO, 0]], kind: 'probe', depthOf: true,
     titleKey: 'probe.corner.move.depth',
     code: (v) => [`G38.3 Z-${sum(v.retract, v.depth)} F${v.fast}`],
     uses: ['depth'],

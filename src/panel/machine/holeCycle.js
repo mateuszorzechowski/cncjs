@@ -9,8 +9,8 @@
  *
  * Each touch is the corner's steps (review note, 2026-10-01: *"kroki w
  * pomiarze otworu to zlepek kilku kroków, w pomiarze XYZ wygląda inaczej"*):
- * the fast one to the wall, back off it, the slow one that counts — each a
- * move of its own on the bar, with its own line and arrow.
+ * the fast one to the wall, back off it, the slow one that counts, off it
+ * again — each a move of its own on the bar, with its own line and arrow.
  *
  * Positions are the drawing's units, the hole's centre at the origin and Y
  * up; the figures said come from the form. Nothing here is the machine's.
@@ -40,6 +40,8 @@ export const titleOf = (name) => {
  * The bar's stages, as the corner's are by axis: each pass across X, then
  * across Y — a wall's three steps, the other wall's, the way to the middle —
  * then the zero. Named by the axis, and the pass when there are two.
+ * Two walls on an axis, so a sub-stage is a wall, not a search and a
+ * measuring (rule, Mateusz 2026-10-01: `cncjs-notes/probe/oznaczenia.html` §8).
  */
 export const holeGroups = (passes = 2) => [1, 2].slice(0, passes).flatMap((pass) => AXES.map((axis) => {
   const AXIS = axis.toUpperCase();
@@ -48,8 +50,8 @@ export const holeGroups = (passes = 2) => [1, 2].slice(0, passes).flatMap((pass)
     id: `${axis}${pass}`,
     name: passes > 1 ? `${AXIS} · ${pass}` : AXIS,
     subs: [
-      { name: `${AXIS}+`, moves: ['Fast', 'Back', 'Slow'].map((step) => `${sideOf('p')}${step}`) },
-      { name: `${AXIS}−`, moves: ['Fast', 'Back', 'Slow'].map((step) => `${sideOf('m')}${step}`) },
+      { name: `${AXIS}+`, moves: ['Fast', 'Back', 'Slow', 'Off'].map((step) => `${sideOf('p')}${step}`) },
+      { name: `${AXIS}−`, moves: ['Fast', 'Back', 'Slow', 'Off'].map((step) => `${sideOf('m')}${step}`) },
       { key: 'probe.hole.middle', moves: [`${axis}${pass}c`] },
     ],
   };
@@ -129,6 +131,7 @@ export const holeScene = (name, p, {
   let motion = null;
   let limit = null;
   let dims = [];
+  let reach = null;
   const going = isGoing(move, p);
   if (move.kind === 'fast') {
     if (going) {
@@ -159,12 +162,8 @@ export const holeScene = (name, p, {
       axis: move.axis, from: move.off, to: move.wall, kind: 'probe', feed: said('slow'), lit: focus === 'feed',
     }
 : null;
-    dims = [{
-      id: 'retract', axis: move.axis, from: move.off, to: move.wall, text: said('retract'), lit: focus === 'retract', tagAt: 0.15,
-    }];
-    // Its words a row lower, or past its end: apart from the way back's.
-    limit = {
-      axis: move.axis, from: move.wall, to: along(move.axis, move.wall, move.sign * BACK), text: upTo(said('retract')), lit: focus === 'retract', tagAt: 1.6, row: 1,
+    reach = {
+      axis: move.axis, from: move.off, mid: move.wall, to: along(move.axis, move.wall, move.sign * BACK), near: said('retract'), far: upTo(said('retract')), lit: focus === 'retract',
     };
   } else if (move.kind === 'centre' && going) {
     motion = {
@@ -180,6 +179,7 @@ export const holeScene = (name, p, {
     motion,
     limit,
     dims,
+    reach,
     touched: move.kind === 'back' || move.kind === 'slow' ? [...touched, onWall(move.wall)] : touched,
     contact: TOUCHING.includes(move.kind) && near(tool, move.wall) ? onWall(move.wall) : null,
     centre: move.kind === 'centre' && p >= move.end ? move.to : null,
@@ -236,8 +236,10 @@ export const positionAt = (ms) => {
   };
 };
 
-// The server's parts of a touch, as the steps drawn: `x1a-fast`, `x1a-back`, `x1a-settle`, `x1a` the slow one.
-const STEP_OF = { fast: 'Fast', back: 'Back', settle: 'Back' };
+// The server's parts of a touch, as the steps drawn: `x1a-fast`, `x1a-back`, `x1a-settle`, `x1a` the slow one, `x1a-off`.
+const STEP_OF = {
+  fast: 'Fast', back: 'Back', settle: 'Back', off: 'Off',
+};
 
 /*
  * What the machine is doing, as the step it belongs to — the server's step
@@ -255,7 +257,7 @@ export const moveOfPhase = (phase) => {
 
 // The words of a step's part where the hole's differ from a plate's: the fast touch finds a wall, not a plate.
 const PHASE_KEYS = {
-  fast: 'probe.hole.phase.fast', back: 'probe.phase.back', settle: 'probe.phase.settle', centre: 'probe.hole.phase.centre',
+  fast: 'probe.hole.phase.fast', back: 'probe.phase.back', settle: 'probe.phase.settle', off: 'probe.phase.off', centre: 'probe.hole.phase.centre',
 };
 
 /** What the ball is doing at the server's step, as `t(key, vars)`: `x1a-fast` is "X+: looking for the wall". */
@@ -272,9 +274,7 @@ export const HOLE_CYCLE = {
     kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2, view: [-101, -94, 202, 188],
   },
   // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
-  side: (name, p, how) => holeSide({
-    ...MOVES[name], at: toolAt(MOVES[name], p), going: isGoing(MOVES[name], p),
-  }, p, how, HOLE_CYCLE.part),
+  side: (name, p, how) => holeSide({ ...MOVES[name], at: toolAt(MOVES[name], p) }, p, how, HOLE_CYCLE.part),
   sidePlace: ({ tool, level }) => holeSide({ kind: 'place', at: tool, level }, 0, {}, HOLE_CYCLE.part),
   place: 'probe.place.hole',
   params: HOLE_PARAMS,

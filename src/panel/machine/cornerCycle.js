@@ -3,7 +3,7 @@
  * `templates/probe-corner-proposal`, 2026-09-30, the "podział" layout): the
  * corner from above and from the side at once, one move after another — Z
  * touched on the plate's top, then each wall: set up beside it, touch fast,
- * back off, touch slow — and the zero written, then the lift.
+ * back off, touch slow, off it again — and the zero written, then the lift.
  *
  * Positions are the front-left corner's in the drawing's units; the others
  * are mirrors of it (`cornerSides`). A position is `[x, y, level]`: x and y
@@ -48,12 +48,12 @@ export const positionOf = (frames, p) => {
   return [x, y, z];
 };
 
-export const CORNER_ORDER = ['zFast', 'zBack', 'zSlow', 'xSet', 'xFast', 'xBack', 'xSlow', 'ySet', 'yFast', 'yBack', 'ySlow', 'zero', 'lift'];
+export const CORNER_ORDER = ['zFast', 'zBack', 'zSlow', 'zOff', 'xSet', 'xFast', 'xBack', 'xSlow', 'xOff', 'ySet', 'yFast', 'yBack', 'ySlow', 'yOff', 'zero', 'lift'];
 
 export const CORNER_GROUPS = [
-  { id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow'] }] },
-  { id: 'x', name: 'X', subs: [{ key: 'probe.stage.search', moves: ['xSet', 'xFast'] }, { key: 'probe.bar.measure', moves: ['xBack', 'xSlow'] }] },
-  { id: 'y', name: 'Y', subs: [{ key: 'probe.stage.search', moves: ['ySet', 'yFast'] }, { key: 'probe.bar.measure', moves: ['yBack', 'ySlow'] }] },
+  { id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow', 'zOff'] }] },
+  { id: 'x', name: 'X', subs: [{ key: 'probe.stage.search', moves: ['xSet', 'xFast'] }, { key: 'probe.bar.measure', moves: ['xBack', 'xSlow', 'xOff'] }] },
+  { id: 'y', name: 'Y', subs: [{ key: 'probe.stage.search', moves: ['ySet', 'yFast'] }, { key: 'probe.bar.measure', moves: ['yBack', 'ySlow', 'yOff'] }] },
   // Named only folded: open, its one step names it (review notes, 2026-09-30).
   { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
 ];
@@ -86,7 +86,7 @@ const EDIT = {
   wallX: ['zero', 'wallX', [0.6, 1]],
   wallY: ['zero', 'wallY', [0.6, 1]],
   toolDiameter: ['xSlow', 'tool'],
-  clear: ['xSet', 'clear', [0, 0.66]],
+  clear: ['xSet', 'clear', [0, 0.5]],
   depth: ['depth', 'dim'],
   maxXY: ['xFast', 'dim'],
   lift: ['lift', 'rise'],
@@ -218,7 +218,7 @@ export const legAt = (move, p) => {
 // The figures a leg's way is made of, where the leg does not say: so the one
 // figure behind "G0 X-20" is the one lit (review note, 2026-10-01).
 const LEG_USES = {
-  up: ['retract'], out: ['clear'], off: ['retract'], over: [], corner: [],
+  out: ['clear'], over: [], corner: [],
 };
 
 export const cornerCode = (name, p, texts, wcs = 1, corner = 'front-left') => {
@@ -273,7 +273,7 @@ export const cornerSides = (corner) => SIDES[corner] || SIDES['front-left'];
 
 // Each leg's words: the title's, and on the drawing for a leg with no figure of its own.
 export const LEG_WORDS = {
-  up: 'probe.corner.leg.up', over: 'probe.corner.leg.over', out: 'probe.corner.leg.out', down: 'probe.corner.leg.down', off: 'probe.corner.leg.off', lift: 'probe.corner.leg.lift', corner: 'probe.corner.leg.corner',
+  up: 'probe.corner.leg.up', over: 'probe.corner.leg.over', out: 'probe.corner.leg.out', down: 'probe.corner.leg.down', lift: 'probe.corner.leg.lift', corner: 'probe.corner.leg.corner',
 };
 
 const OPPOSITE = { '+': '-', '-': '+', '−': '+' };
@@ -346,12 +346,14 @@ const PHASE_MOVE = {
   'z-back': 'zBack',
   'z-settle': 'zBack',
   z: 'zSlow',
+  'z-off': 'zOff',
   'x-out': 'xSet',
   'x-down': 'xSet',
   'x-fast': 'xFast',
   'x-back': 'xBack',
   'x-settle': 'xBack',
   x: 'xSlow',
+  'x-off': 'xOff',
   'x-up': 'ySet',
   'x-return': 'ySet',
   'y-out': 'ySet',
@@ -360,6 +362,7 @@ const PHASE_MOVE = {
   'y-back': 'yBack',
   'y-settle': 'yBack',
   y: 'ySlow',
+  'y-off': 'yOff',
   lift: 'lift',
   corner: 'lift',
 };

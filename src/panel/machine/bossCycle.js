@@ -8,7 +8,7 @@
  *
  * In the corner's steps (review note, 2026-10-01: *"w pomiarze XYZ wygląda
  * inaczej"*): the top's search and its measuring; each side's set-up (out,
- * down), fast touch, back off, slow touch, and the way up — each a move of
+ * down), fast touch, back off, slow touch, off it again, and the way up — each a move of
  * its own on the bar, with its own line and arrow.
  *
  * Height is drawn as size, as the corner and the hole do: the ball larger
@@ -37,11 +37,15 @@ export const titleOf = (name) => {
   return [move.titleKey, { pass: move.pass, axis: move.way }];
 };
 
-const STEPS = ['Set', 'Fast', 'Back', 'Slow', 'Up'];
+const STEPS = ['Set', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
 
-/** The bar's stages, as the corner's: the top's search and measuring, each pass across X and across Y, the zero. */
+/*
+ * The bar's stages, as the corner's: the top's search and measuring, each
+ * pass across X and across Y, the zero. Two walls on an axis, so a
+ * sub-stage there is a wall, as the hole's (rule, Mateusz 2026-10-01).
+ */
 export const bossGroups = (passes = 2) => [{
-  id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow'] }],
+  id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow', 'zOff'] }],
 }].concat([1, 2].slice(0, passes).flatMap((pass) => AXES.map((axis) => {
   const AXIS = axis.toUpperCase();
   return {
@@ -122,17 +126,14 @@ const TOUCHED = ['back', 'slow', 'up'];
  * by the ball for what goes up and down. `said` a figure's words, `lit(part)`
  * whether the figure being set is that part.
  */
-const above = (move, p, going, said, upTo, lit, { reach, rise }) => {
+const above = (move, p, going, said, upTo, lit, reach) => {
   const arrow = (from, to, kind, feed = null, on = false) => (going
 ? {
     axis: move.axis, from, to, kind, feed, lit: on,
   }
 : null);
   switch (move.kind) {
-    case 'topFast': return { tag: { text: `Z ${upTo(said('maxZ'))}`, lit: lit('dim') } };
-    case 'topBack': return { tag: { text: `↑ ${said('retract')}`, lit: lit('retract') } };
-    case 'topSlow': return { tag: { text: `↓ ${said('slow')}`, lit: lit('feed') } };
-    case 'set': return legAt(p).name === 'out' ? { motion: arrow(move.from, move.out, 'rapid') } : { tag: { text: `↓ ${said('depth')}`, lit: lit('depth') } };
+    case 'set': return legAt(p).name === 'out' ? { motion: arrow(move.from, move.out, 'rapid') } : {};
     // The search goes in no further than the middle thought.
     // Its reach: half the part's width and the way out past it (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*).
     case 'fast': return { motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')), limit: { axis: move.axis, from: move.out, to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false } };
@@ -142,13 +143,10 @@ const above = (move, p, going, said, upTo, lit, { reach, rise }) => {
     // are — back to the side, and the margin past it to the limit — as the Z plate's (review notes, 2026-10-01).
     case 'slow': return {
       motion: arrow(move.off, move.wall, 'probe', said('slow'), lit('feed')),
-      dims: [{ id: 'retract', axis: move.axis, from: move.off, to: move.wall, text: said('retract'), lit: lit('retract'), tagAt: 0.15 }],
-      // Its words a row lower, or past its end: apart from the way back's.
-      limit: {
-        axis: move.axis, from: move.wall, to: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] - move.sign * BACK), text: upTo(said('retract')), lit: lit('retract'), tagAt: 1.6, row: 1,
+      reach: {
+        axis: move.axis, from: move.off, mid: move.wall, to: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] - move.sign * BACK), near: said('retract'), far: upTo(said('retract')), lit: lit('retract'),
       },
     };
-    case 'up': return { tag: { text: `↑ ${rise}`, lit: false } };
     case 'centre': return { motion: arrow(move.from, move.to, 'rapid') };
     default: return {};
   }
@@ -172,11 +170,8 @@ export const bossScene = (name, p, {
     .filter((one) => MOVES[one].kind === 'fast' && MOVES[one].pass === move.pass && (MOVES[one].side !== move.side || TOUCHED.includes(move.kind)))
     .map((one) => MOVES[one].side))];
   const {
-    motion = null, limit = null, tag = null, dims: stepDims = [],
-  } = above(move, p, isGoing(move, p), said, upTo, lit, {
-    reach: say('clear', fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear))),
-    rise: say('depth', fmt(numberOf(texts.depth) + numberOf(texts.retract))),
-  });
+    motion = null, limit = null, reach = null, dims: stepDims = [],
+  } = above(move, p, isGoing(move, p), said, upTo, lit, say('clear', fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear))));
   // The part's rough width, and how far out past it, on a set-up.
   let dims = stepDims;
   if (move.kind === 'set') {
@@ -202,7 +197,7 @@ export const bossScene = (name, p, {
     motion,
     limit,
     dims,
-    tag,
+    reach,
     touched: sides.map((side) => onSide(MOVES[`${side}Fast`].wall)),
     contact,
     centre: move.kind === 'centre' && p >= move.end ? move.to : null,
@@ -269,11 +264,13 @@ export const positionAt = (ms) => {
   };
 };
 
-// The server's parts of a touch, as the steps drawn: `x1a-out`, `-down`, `-fast`, `-back`, `-settle`, the slow one bare, `-up`.
+// The server's parts of a touch, as the steps drawn: `x1a-out`, `-down`, `-fast`, `-back`, `-settle`, the slow one bare, `-off`, `-up`.
 const STEP_OF = {
-  out: 'Set', down: 'Set', fast: 'Fast', back: 'Back', settle: 'Back', up: 'Up',
+  out: 'Set', down: 'Set', fast: 'Fast', back: 'Back', settle: 'Back', off: 'Off', up: 'Up',
 };
-const TOP_OF = { fast: 'zFast', back: 'zBack', settle: 'zBack' };
+const TOP_OF = {
+  fast: 'zFast', back: 'zBack', settle: 'zBack', off: 'zOff',
+};
 
 /*
  * What the machine is doing, as the step it belongs to — the server's step
@@ -298,6 +295,7 @@ const PHASE_KEYS = {
   fast: 'probe.boss.phase.fast',
   back: 'probe.phase.back',
   settle: 'probe.phase.settle',
+  off: 'probe.phase.off',
   out: 'probe.phase.out',
   down: 'probe.phase.down',
   up: 'probe.boss.phase.up',

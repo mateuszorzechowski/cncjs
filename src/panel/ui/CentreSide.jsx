@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Motion, NS, Tag, WorkHatch, kit, tagWidth,
+  AxisPair, Contact, DASH, Dimension, FACE, Motion, NS, ReachDimension, Tag, WorkHatch, kit, tagWidth,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
@@ -27,7 +27,6 @@ const VIEW = [-101, -110, 202, 188];
 const FOOT = VIEW[1] + VIEW[3];
 // How deep a hole is drawn.
 const HOLE_DEPTH = 46;
-const ACROSS = 'h';
 const ALONG = 'v';
 const BOSS = 'boss';
 // Beside the ball, where its arrow goes: a way across over it, a way up or down to its left.
@@ -36,13 +35,11 @@ const ASIDE = 16;
 const BESIDE = 13;
 
 const CentreSide = ({
-  part, along, r, hidden = false, h, motion = null, depth = null, gap = null, dims = [], vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
+  part, along, r, hidden = false, h, motion = null, gap = null, vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
   const [measure, k] = useViewScale(VIEW[2], VIEW[3]);
   const size = kit(k);
-  // How far a label's middle stands off its line, clear of the ticks, whatever the label's size.
-  const off = { arrow: 7 + 0.8 * size.fs, dim: 11 + 0.8 * size.fs };
   const fade = (one) => (focus && focus !== one ? 0.3 : 1);
   // Up the drawing is up the machine: a height is drawn negative.
   const cy = -(h + r);
@@ -57,31 +54,17 @@ const CentreSide = ({
     const at = Math.max(left, Math.min(right - w, toLeft ? x - w : x));
     return <Tag x={at} y={y} text={text} face={lit ? FACE.hot : FACE.plain} size={size} />;
   };
-  // Words centred on `x`, kept inside the drawing.
-  const centred = (x, y, text, lit) => {
-    if (!text) {
-      return null;
-    }
-    const w = tagWidth(text, size.fs);
-    return words(Math.max(left, Math.min(right - w, x - w / 2)), y, text, lit);
-  };
   // A vertical dimension's words: beside its line, away from the middle, where the drawing has room.
   const besideV = (at, y, text, lit) => (at > 0 ? words(at + BESIDE, y, text, lit) : words(at - BESIDE, y, text, lit, true));
 
+  // A Z move's arrow left of the ball, its feed beside it; the distances stand on the right.
   let arrow = null;
   if (motion) {
-    const flat = motion.dir === 'h';
-    // A way across goes under the ball, where the stylus is not — a way out over the top (`over`) above it.
-    const under = flat && !motion.over;
-    let at = motion.at - ASIDE;
-    if (flat) {
-      at = under ? -motion.at + ASIDE : -(motion.at + 2 * r) - ASIDE / 2;
-    }
-    const [from, to] = flat ? [motion.from, motion.to] : [-motion.from, -motion.to];
+    const at = motion.at - ASIDE;
     arrow = (
-      <g opacity={motion.kind === 'rapid' ? 1 : fade(motion.lit ? 'feed' : 'dim')}>
-        <Motion axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} kind={motion.kind} size={size} />
-        {flat ? centred((from + to) / 2, under ? at + off.arrow : at - off.arrow, motion.text, motion.lit) : words(at - 6, (from + to) / 2, motion.text, motion.lit, true)}
+      <g opacity={motion.kind === 'rapid' ? 1 : fade('feed')}>
+        <Motion axis={ALONG} at={at} from={-motion.from} to={-motion.to} kind={motion.kind} size={size} />
+        {words(at - 6, -(motion.from + motion.to) / 2, motion.text, motion.lit, true)}
       </g>
     );
   }
@@ -115,25 +98,20 @@ const CentreSide = ({
       ) : <circle cx={along} cy={cy} r={r} className="fill-surf stroke-ink" strokeWidth={2} vectorEffect={NS} />}
       {contact ? <Contact x={contact[0]} y={-contact[1]} size={size} /> : null}
       {/* Arrows, dimensions and their words over the stylus and the ball, never under them (review note, 2026-10-01: *"strzałki i etykiety są zakryte"*). */}
-      {dims.map((dim) => (
-        <g key={dim.id} opacity={fade(dim.id)}>
-          <Dimension axis={ACROSS} at={-dim.at} from={dim.from} to={dim.to} lit={dim.lit} size={size} />
-          {centred((dim.from + dim.to) / 2, -dim.at + off.dim, dim.text, dim.lit)}
-        </g>
-      ))}
       {/* Up and down the drawing, as the Z plate's: a way, or a limit dashed, its words beside it. */}
       {vdims.map((dim) => (
         <g key={dim.id} opacity={fade(dim.lit ? dim.id : 'retract')}>
-          <Dimension axis={ALONG} at={dim.at} from={-dim.from} to={-dim.to} limit={dim.limit} lit={dim.lit} size={size} />
-          {besideV(dim.at, -(dim.from + dim.to) / 2, dim.text, dim.lit)}
+          {dim.mid === undefined ? (
+            <Dimension axis={ALONG} at={dim.at} from={-dim.from} to={-dim.to} limit={dim.limit} lit={dim.lit} size={size} />
+          ) : (
+            // A slow touch's reach: one line, its way to the top and the margin past it.
+            <ReachDimension axis={ALONG} at={dim.at} from={-dim.from} mid={-dim.mid} to={-dim.to} lit={dim.lit} size={size} />
+          )}
+          {/* Right of the line, away from the arrow on the ball's left (review note, 2026-10-01: "10 mm" lay on the arrow). */}
+          {words(dim.at + BESIDE, -(dim.from + (dim.mid ?? dim.to)) / 2, dim.text, dim.lit)}
+          {dim.mid === undefined ? null : words(dim.at + BESIDE, -(dim.mid + dim.to) / 2, dim.far, dim.lit)}
         </g>
       ))}
-      {depth ? (
-        <g opacity={fade('depth')}>
-          <Dimension axis={ALONG} at={depth.at} from={0} to={-depth.to} lit={depth.lit} size={size} />
-          {besideV(depth.at, -depth.to / 2, depth.text, depth.lit)}
-        </g>
-      ) : null}
       {gap ? (
         <g>
           <Dimension axis={ALONG} at={gap.at} from={-gap.from} to={-gap.to} size={size} />

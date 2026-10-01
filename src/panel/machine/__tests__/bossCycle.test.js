@@ -11,15 +11,15 @@ const TEXTS = {
   bossSize: '30', clear: '10', depth: '5', maxZ: '15', ballDiameter: '2', retract: '2', fast: '100', slow: '20',
 };
 
-const STEPS = ['Set', 'Fast', 'Back', 'Slow', 'Up'];
+const STEPS = ['Set', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
 const sideSteps = (side) => STEPS.map((step) => `${side}${step}`);
 
 describe('the centre from outside cycle', () => {
   test('the top\'s steps as the corner\'s, then each side\'s, the middle after each pair, the zero last', () => {
     expect(bossOrder(1)).toEqual([
-      'zFast', 'zBack', 'zSlow', ...sideSteps('x1p'), ...sideSteps('x1m'), 'x1c', ...sideSteps('y1p'), ...sideSteps('y1m'), 'y1c', 'zero',
+      'zFast', 'zBack', 'zSlow', 'zOff', ...sideSteps('x1p'), ...sideSteps('x1m'), 'x1c', ...sideSteps('y1p'), ...sideSteps('y1m'), 'y1c', 'zero',
     ]);
-    expect(bossOrder()).toHaveLength(3 + 2 * 22 + 1);
+    expect(bossOrder()).toHaveLength(4 + 2 * 26 + 1);
   });
 
   test('the bar: Z searched and measured, a stage per axis and pass, every move once; set-ups by their legs', () => {
@@ -52,22 +52,20 @@ describe('the centre from outside cycle', () => {
     expect(toolAt(moveOf('y1c'), 1).at[1]).toBeCloseTo(0);
   });
 
-  test('each step its arrow or its word', () => {
+  test('each step across X and Y its arrow and distances from above; Z none (the animation rules)', () => {
     expect(bossScene('x1pSet', 0.3).motion).toMatchObject({ kind: 'rapid' });
-    expect(bossScene('x1pSet', 0.7, { texts: TEXTS }).tag).toMatchObject({ text: '↓ 5' });
+    expect(bossScene('x1pSet', 0.7, { texts: TEXTS }).motion).toBeNull();
     expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '100' });
     // The back-off as the Z plate's: the arrow bare, its figure a dimension.
     expect(bossScene('x1pBack', 0.4, { texts: TEXTS }).motion).toMatchObject({ kind: 'rapid', feed: null });
     expect(bossScene('x1pBack', 0.4, { texts: TEXTS }).dims).toEqual([expect.objectContaining({ id: 'retract', text: '2' })]);
     // The slow touch: its feed, and its reach — twice the back-off — as a limit.
     expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '20' });
-    // Back to the side, and the margin past it: the back-off each, as the Z plate's.
-    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).dims).toEqual([expect.objectContaining({ id: 'retract', text: '2' })]);
-    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).limit).toMatchObject({ text: '2' });
-    expect(bossScene('zSlow', 0.4, { texts: TEXTS }).tag).toMatchObject({ text: '↓ 20' });
-    // The distances (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*): the fast touch's reach, the way up.
+    // One reach: back to the side, and the margin past it — the back-off each.
+    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ near: '2', far: '2' });
+    expect(bossScene('zSlow', 0.4, { texts: TEXTS })).toMatchObject({ motion: null, limit: null, dims: [] });
+    // The fast touch's reach (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*).
     expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).limit).toMatchObject({ text: '25' });
-    expect(bossScene('x1pUp', 0.5, { texts: TEXTS }).tag).toMatchObject({ text: '↑ 7' });
   });
 
   test('a segment\'s end frame is its own move\'s', () => {

@@ -9,8 +9,8 @@ const say = (field, text) => (field === 'fast' || field === 'slow' ? `F${text}` 
 const upTo = (v) => `maks. ${v}`;
 
 describe('the Z plate cycle (probe proposal)', () => {
-  test('plays its five moves in order, each for a span, and loops', () => {
-    expect(PLATE_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['fast', 'retract', 'slow', 'zero', 'lift']);
+  test('plays its six moves in order, each for a span, and loops', () => {
+    expect(PLATE_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['fast', 'retract', 'slow', 'off', 'zero', 'lift']);
     expect(playAt(PLATE_ORDER.length * SPAN_MS + 10).name).toBe('fast');
   });
 
@@ -56,9 +56,8 @@ describe('the Z plate cycle (probe proposal)', () => {
     expect(scene.gap).toBe(gapAt(moveOf('fast').frames, 0.5));
     expect(scene.motion).toMatchObject({ from: TOP - 84, to: TOP, kind: 'probe', feed: 'F50' });
     expect(scene.dim).toMatchObject({ limit: true, text: 'maks. 20 mm' });
-    // The feed is said by the arrow's colour while the dimension is drawn.
-    expect(scene.feedTag).toBe(false);
-    expect(plateScene('fast', 0.5, { texts: TEXTS, say, upTo, focus: 'feed' }).feedTag).toBe(true);
+    // The arrow carries its feed beside the dimension.
+    expect(scene.feedTag).toBe(true);
   });
 
   test('the back-off is a rapid, the slow touch searches twice it', () => {
@@ -66,7 +65,7 @@ describe('the Z plate cycle (probe proposal)', () => {
     // Back to the plate, then the margin past it to the limit.
     const { dim } = plateScene('slow', 0.5, { texts: TEXTS, say, upTo });
     expect(dim.text).toBe('5 mm');
-    expect(dim.beyond).toMatchObject({ top: TOP, limit: true, text: 'maks. +5 mm' });
+    expect(dim.beyond).toMatchObject({ top: TOP, limit: true, text: 'maks. 5 mm' });
   });
 
   test('touches green where the tip reaches the plate', () => {
@@ -95,7 +94,9 @@ describe('the Z plate cycle (probe proposal)', () => {
     expect(plateCode('fast', TEXTS)).toBe('G38.2 Z-20 F50');
     expect(plateCode('slow', TEXTS)).toBe('G38.2 Z-10 F15');
     expect(plateCode('zero', TEXTS, 2)).toBe('G10 L20 P2 Z20');
-    expect(plateCode('lift', TEXTS)).toBe('G0 Z+20');
+    expect(plateCode('off', TEXTS)).toBe('G0 Z+5');
+    // The lift is over the touch: from the back-off, the rest of it.
+    expect(plateCode('lift', TEXTS)).toBe('G0 Z+15');
   });
 
   test('reads the tool Z against the old zero, then the new one, held through the moves', () => {
