@@ -4,7 +4,7 @@ import {
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import {
-  C0, cornerSides, signedFor, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
+  C0, cornerSides, signedFor, LEG_WORDS, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -94,7 +94,7 @@ const CornerTop = ({
     geometry.length = 0;
   } else if (move.legs) {
     const now = legAt(move, p);
-    move.legs.forEach(([from, to, plane, sayLeg], i) => {
+    move.legs.forEach(([from, to, plane, sayLeg, , legName], i) => {
       // The leg under way's arrow alone: the ones before do not pile up (review note, 2026-09-30).
       if (i !== now || plane !== 'xy') {
         return;
@@ -109,8 +109,9 @@ const CornerTop = ({
           {flat ? null : <Motion axis={ALONG} at={190} from={fy} to={ty} kind={RAPID} size={size} />}
         </g>,
       );
-      // Its signs turned for the corner, as the drawing is (review note, 2026-10-01).
-      const text = signedFor(corner)(sayLeg(texts, say));
+      // Its signs turned for the corner, as the drawing is; a way to a place rather than by a
+      // figure — over the plate, over X0 Y0 — says where (review notes, 2026-10-01).
+      const text = signedFor(corner)(sayLeg(texts, say)) || t(LEG_WORDS[legName]);
       if (i === now && !focus && text) {
         words.push(flat ? tag((fx + tx) / 2, 66, text, MID, FACE.rapid) : tag(196, 207, text, MID, FACE.rapid));
       }

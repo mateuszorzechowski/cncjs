@@ -10,6 +10,7 @@ import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
+  LEG_WORDS,
   CORNER_GROUPS, CORNER_ORDER, CORNER_PARAMS, LOOP_HOLD_MS, cornerCode, cornerReadout, cornerTimeline, moveOf, playAt, TURN,
 } from '../machine/cornerCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
@@ -21,9 +22,6 @@ import { t } from '../i18n';
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 
 const AXES = ['x', 'y', 'z'];
-const LEG_KEYS = {
-  up: 'probe.corner.leg.up', over: 'probe.corner.leg.over', out: 'probe.corner.leg.out', down: 'probe.corner.leg.down', off: 'probe.corner.leg.off', lift: 'probe.corner.leg.lift', corner: 'probe.corner.leg.corner',
-};
 // The descent beside the wall is the X set-up's, on the bar.
 const BAR_OF = { depth: 'xSet' };
 const VIEWS = ['top', 'side'];
@@ -84,7 +82,7 @@ const CornerParams = ({
   const mm = Object.fromEntries(['toolDiameter', 'wallX', 'wallY', 'cornerThickness'].map((field) => [field, inMm(numberOf(texts[field]), units.rule) ?? 0]));
   const read = cornerReadout(name, corner, mm);
   const title = code.leg
-    ? t(move.legsKey || 'probe.corner.move.set', { axis: move.group.toUpperCase(), leg: t(LEG_KEYS[code.leg]) })
+    ? t(move.legsKey || 'probe.corner.move.set', { axis: move.group.toUpperCase(), leg: t(LEG_WORDS[code.leg]) })
     : t(move.titleKey);
   // A view picked by hand holds while its stage plays.
   const view = chosen && chosen.group === move.group ? chosen.view : viewOf(move, p, focus);

@@ -270,6 +270,11 @@ const SIDES = {
 
 export const cornerSides = (corner) => SIDES[corner] || SIDES['front-left'];
 
+// Each leg's words: the title's, and on the drawing for a leg with no figure of its own.
+export const LEG_WORDS = {
+  up: 'probe.corner.leg.up', over: 'probe.corner.leg.over', out: 'probe.corner.leg.out', down: 'probe.corner.leg.down', off: 'probe.corner.leg.off', lift: 'probe.corner.leg.lift', corner: 'probe.corner.leg.corner',
+};
+
 const OPPOSITE = { '+': '-', '-': '+', '−': '+' };
 
 /**
