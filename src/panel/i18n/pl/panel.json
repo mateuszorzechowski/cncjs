@@ -1443,7 +1443,8 @@
       "slow": "Wolny dotyk",
       "paperThickness": "Grubość kartki",
       "lift": "Odjazd w górę",
-      "stockThickness": "Grubość materiału"
+      "stockThickness": "Grubość materiału",
+      "paperLift": "Odjazd po pomiarze"
     },
     "step": {
       "method": "Metoda",
@@ -1561,7 +1562,9 @@
       "jogTitle": "Kartka · {{axis}}",
       "mm01": "0,1 mm",
       "mm001": "0,01 mm",
-      "feelHow": "Włóż kartkę między frez a powierzchnię i przesuwaj ją, podjeżdżając krokiem 0,1 mm, potem 0,01 mm. Tarcie — kartka jeszcze jedzie, ale ciągnie — to „Tu”. Opór albo kartka stoi: cofnij o krok."
+      "feelHow": "Włóż kartkę między frez a powierzchnię i przesuwaj ją, podjeżdżając krokiem 0,1 mm, potem 0,01 mm. Tarcie — kartka jeszcze jedzie, ale ciągnie — to „Tu”. Opór albo kartka stoi: cofnij o krok.",
+      "lift": "{{axis}} · odjazd od powierzchni",
+      "mm1": "1 mm"
     },
     "bar": {
       "measure": "pomiar",

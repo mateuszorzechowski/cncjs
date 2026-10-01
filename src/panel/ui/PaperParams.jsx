@@ -22,8 +22,10 @@ import { t } from '../i18n';
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 
-// The one move the figures change: the zero.
-const ZERO_MOVE = ['zero'];
+// The moves each figure changes: the zero, and the lift after it.
+const MOVED_BY = {
+  paperThickness: 'zero', toolDiameter: 'zero', stockThickness: 'zero', paperLift: 'lift',
+};
 
 // The coordinate system's number in G10 L20 P…: G54 is 1.
 const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53;
@@ -72,7 +74,9 @@ const PaperParams = ({
   const sections = PAPER_PARAMS.filter((one) => (side || !one.side) && (!one.shifts || shifts))
     .map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
     .filter((one) => one.fields.length);
-  const uses = name === 'zero' ? ['paperThickness', ...(side ? ['toolDiameter'] : []), ...(shifts ? ['stockThickness'] : [])] : [];
+  const usable = ['paperThickness', 'paperLift', ...(side ? ['toolDiameter'] : []), ...(shifts ? ['stockThickness'] : [])];
+  const uses = usable.filter((field) => MOVED_BY[field] === name);
+  const openGroup = PAPER_PARAMS.find((one) => one.id === open);
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
@@ -83,7 +87,7 @@ const PaperParams = ({
         fills={picked ? fillsAt(items, timeAt(items, name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
-        marked={open ? ZERO_MOVE : []}
+        marked={openGroup ? [...new Set(openGroup.fields.map((field) => MOVED_BY[field]))] : []}
       />
       <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={[[read.axis, read.value]]} />

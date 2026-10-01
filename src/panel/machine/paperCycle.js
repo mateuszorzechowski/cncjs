@@ -41,6 +41,9 @@ const PUSH = 1.5;
 const RAMP = 0.08;
 
 const clamp = (v) => Math.max(0, Math.min(1, v));
+// How far the lift goes on the drawing — a little, as the figure is.
+const LIFT = 14;
+const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - ((-2 * u + 2) ** 3) / 2);
 
 /*
  * What the operator feels with the tool this high over the sheet (Mateusz,
@@ -110,9 +113,19 @@ const MOVES = {
   zero: {
     steps: [[0, 0.5]], still: [-1, 0], zeroAt: [0.1, 0.3], end: 0.3, titleKey: 'probe.paper.zero', after: true,
   },
+  // Off the surface by the lift, so the sheet comes out (review note, 2026-10-01): a G0, not a step.
+  lift: {
+    steps: [[0, 0.5]], still: [-1, 0], zeroAt: [-1, 0], end: 0.6, titleKey: 'probe.paper.lift', after: true,
+    gap: (p) => 0.5 + LIFT * ease(clamp((p - 0.2) / 0.4)),
+  },
 };
 
-const gapOf = (move, p) => move.steps[stepAt(move.steps, p)][1];
+const gapOf = (move, p) => (move.gap ? move.gap(p) : move.steps[stepAt(move.steps, p)][1]);
+
+// How long a jog key shows pressed after its step, as a part of a move's run.
+const CLICK = 0.05;
+// Which way each jogged move goes: towards the surface, or back off it.
+const BACK = new Set(['back', 'here']);
 
 /** The hand's swing and push at `p`: the feel's, eased from the step before's. */
 const handOf = (move, p) => {
@@ -129,25 +142,28 @@ const handOf = (move, p) => {
   return { amp, push };
 };
 
-export const PAPER_ORDER = ['coarse', 'fine', 'drag', 'resist', 'stuck', 'back', 'here', 'zero'];
+export const PAPER_ORDER = ['coarse', 'fine', 'drag', 'resist', 'stuck', 'back', 'here', 'zero', 'lift'];
 
 export const PAPER_GROUPS = [
   { id: 'coarse', key: 'probe.paper.barCoarse', folded: true, subs: [{ key: 'probe.paper.barCoarse', moves: ['coarse'] }] },
   { id: 'fine', key: 'probe.paper.barFine', folded: true, subs: [{ key: 'probe.paper.barFine', moves: ['fine', 'drag', 'resist', 'stuck'] }] },
   { id: 'back', key: 'probe.paper.barBack', folded: true, subs: [{ key: 'probe.paper.barBack', moves: ['back', 'here'] }] },
-  { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero'] }] },
+  { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
 ];
 
 // The figures beside the drawing: the sheet, and on a side the tool it is measured from.
 export const PAPER_PARAMS = [
   { id: 'paper', key: 'probe.group.paper', fields: ['paperThickness'] },
   { id: 'tool', key: 'probe.group.tool', fields: ['toolDiameter'], side: true },
+  { id: 'moves', key: 'probe.group.moves', fields: ['paperLift'] },
   // The top only, while Z0 is the work's thickness from the surface measured.
   { id: 'stock', key: 'probe.group.stock', fields: ['stockThickness'], top: true, shifts: true },
 ];
 
 // A figure being set loops the zero, its part lit.
-const EDIT = { paperThickness: 'zero', toolDiameter: 'zero', stockThickness: 'zero' };
+const EDIT = {
+  paperThickness: 'zero', toolDiameter: 'zero', stockThickness: 'zero', paperLift: 'lift',
+};
 
 export const moveOf = (name) => MOVES[name];
 
@@ -213,6 +229,22 @@ const fmt = (v) => String(Math.round(v * 1000) / 1000);
 /** How far the zero is from where the tool stands: the sheet, and on a side the tool's radius too. */
 export const offsetOf = (edge, mm) => mm.paperThickness + (edge === 'z' ? 0 : mm.toolDiameter / 2);
 
+/** The jog key a step of move `name` is pressed with, `{ way, step, on }`, or null for a move not jogged. */
+const clickOf = (name, p, edge) => {
+  const move = MOVES[name];
+  if (move.gap || move.steps.length < 2) {
+    return null;
+  }
+  const { axis, sign } = EDGES_BY_ID[edge];
+  const by = BACK.has(name) ? -sign : sign;
+  const i = stepAt(move.steps, p);
+  return {
+    way: `${axis.toUpperCase()}${by > 0 ? '+' : '−'}`,
+    step: name === 'coarse' ? 'probe.paper.mm1' : 'probe.paper.mm01',
+    on: i > 0 && p - move.steps[i][0] < CLICK,
+  };
+};
+
 /**
  * The drawing of move `name` at `p` — the sheet's history worked out up to
  * there; `texts` the figures, `say(field, text)` a figure as a label says it.
@@ -240,13 +272,20 @@ export const paperScene = (name, p, {
     // "Here" is said once it drags; the zero's figures say the rest.
     tag: name === 'zero' ? null : (feelAt(gap) === 'drag' && move.tag) || feel.tag || null,
     // The jog: from where the steps began down to the tip, a tick a step.
+    // Each step is one press of a jog key (review note, 2026-10-01): the key, lit as it is pressed.
+    click: clickOf(name, p, edge),
+    // The lift: a rapid off the surface, its figure beside it.
+    motion: name === 'lift' && gap > 0.6 && gap < LIFT + 0.4 ? { from: SHEET_Y - 0.5, to: SHEET_Y - gap, kind: 'rapid' } : null,
+    lift: name === 'lift' ? { text: say('paperLift', texts.paperLift ?? ''), lit: focus === 'paperLift' } : null,
     jog: name === 'coarse' && gap < HIGH ? { from: HIGH, to: gap, every: STEP } : null,
     fine: name === 'fine' && gap < NEAR - 1 ? { from: NEAR, to: gap } : null,
     zero,
     axis: EDGES_BY_ID[edge].axis.toUpperCase(),
-    dim: name === 'zero' ? {
+    dim: name === 'zero'
+? {
       top: SHEET_Y, bottom: FACE_Y, text: paper, field: 'paperThickness',
-    } : null,
+    }
+: null,
     dia: name === 'zero' && side ? { text: say('toolDiameter', texts.toolDiameter ?? '') } : null,
     side,
     mirror: mirrored(edge),
@@ -274,6 +313,9 @@ export const paperCode = (name, edge, texts, wcs = 1, surface = SURFACE, mm = {
   }
   if (name === 'back' || name === 'here') {
     return `$J=G91 ${A}${toward ? '' : '-'}0.1`;
+  }
+  if (name === 'lift') {
+    return `G0 ${A}${sign > 0 ? '-' : '+'}${fmt(number(texts.paperLift))}`;
   }
   const over = edge === 'z' ? overSurface(surface, mm.stockThickness) : 0;
   return `G10 L20 P${wcs} ${A}${fmt(-sign * offsetOf(edge, mm) + over)}`;
