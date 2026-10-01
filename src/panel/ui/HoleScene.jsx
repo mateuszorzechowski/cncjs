@@ -31,6 +31,9 @@ const WAY = { left: 'left', right: 'right' };
 // SVG's word for text ending at its x.
 const END = 'end';
 
+// How much larger the tool is drawn up high than down in the hole (review note, 2026-10-01: *"większa różnica rozmiaru"*).
+const HIGH = 1.2;
+
 // Y up in the drawing's figures, down on the screen.
 const sy = (y) => -y;
 
@@ -42,7 +45,7 @@ const HoleScene = ({
   const [measure, k] = useViewScale(VIEW[2], VIEW[3]);
   const size = kit(k);
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
-  const r = TOOL_R * (1 + 0.3 * Math.max(0, level));
+  const r = TOOL_R * (1 + HIGH * Math.max(0, level));
   const [cx, cy] = [tool[0], sy(tool[1])];
   // A figure's words, centred over `x` or right-aligned to it.
   const tag = (x, y, text, face, anchor = 'c') => {

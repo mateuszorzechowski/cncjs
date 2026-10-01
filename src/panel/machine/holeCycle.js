@@ -248,7 +248,7 @@ export const POSITION_MS = 6000;
 export const positionAt = (ms) => {
   const p = (ms % POSITION_MS) / POSITION_MS;
   const k = ease(clamp((p - 0.1) / 0.45));
-  const from = [-150, 70];
+  const from = [-150, 58];
   return {
     tool: [from[0] + (START[0] - from[0]) * k, from[1] + (START[1] - from[1]) * k],
     level: 1 - ease(clamp((p - 0.6) / 0.2)),
