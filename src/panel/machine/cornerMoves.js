@@ -51,7 +51,8 @@ export const MOVES = {
   },
   zSlow: {
     group: 'z', view: 'side', gap: [12, 0], kind: 'probe', feed: 'slow',
-    dim: { from: 134, to: 158, double: 'retract', limit: true },
+    // Twice the back-off, drawn as the two: back to the plate, and the margin past it (review note, 2026-10-01).
+    dim: { from: 134, to: 158, split: 'retract' },
     titleKey: 'probe.corner.move.zSlow',
     code: (v) => [`G38.2 Z-${number(v.retract) * 2} F${v.slow}`],
     uses: ['slow', 'retract'],

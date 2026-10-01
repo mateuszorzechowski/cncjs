@@ -63,7 +63,10 @@ describe('the Z plate cycle (probe proposal)', () => {
 
   test('the back-off is a rapid, the slow touch searches twice it', () => {
     expect(plateScene('retract', 0.8, { texts: TEXTS, say }).motion.kind).toBe('rapid');
-    expect(plateScene('slow', 0.5, { texts: TEXTS, say, upTo }).dim.text).toBe('maks. 10 mm');
+    // Back to the plate, then the margin past it to the limit.
+    const { dim } = plateScene('slow', 0.5, { texts: TEXTS, say, upTo });
+    expect(dim.text).toBe('5 mm');
+    expect(dim.beyond).toMatchObject({ top: TOP, limit: true, text: 'maks. +5 mm' });
   });
 
   test('touches green where the tip reaches the plate', () => {

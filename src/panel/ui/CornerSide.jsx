@@ -118,11 +118,18 @@ const CornerSide = ({
       const e = TOP - g1;
       words.push(<g key="feed" opacity={fade('feed')}>{tag(112, Math.abs(f - e) < 30 ? Math.min(f, e) - 12 : (f + e) / 2, said(move.feed), 'r', focus === 'feed' ? FACE.hot : FACE.plain)}</g>);
     }
-    const { from, to, limit } = move.dim;
+    const { from, to: end, limit } = move.dim;
+    const { split } = move.dim;
+    // Twice a figure (`split`): the way back plain, the margin past it a limit.
+    const to = split ? (from + end) / 2 : end;
     const small = to - from < 24;
     geometry.push(<g key="dim" opacity={fade('dim')}><Dimension at={190} from={from} to={to} limit={limit} lit={focus === 'dim'} size={size} /></g>);
-    const figure = move.dim.double ? say(move.dim.double, String((Number(String(texts[move.dim.double]).replace(',', '.')) || 0) * 2)) : said(move.dim.field);
+    const figure = said(split || move.dim.field);
     words.push(<g key="dimt" opacity={fade('dim')}>{tag(190, small ? from - 26 : from - 14, limit ? upTo(figure) : figure, 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
+    if (split) {
+      geometry.push(<g key="dim2" opacity={fade('dim')}><Dimension at={190} from={to} to={end} limit lit={focus === 'dim'} size={size} /></g>);
+      words.push(<g key="dimt2" opacity={fade('dim')}>{tag(204, end + 8, upTo(`+${figure}`), 'l', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
+    }
     if (gap < 0.3) {
       touch = [C0[0], TOP];
     }
