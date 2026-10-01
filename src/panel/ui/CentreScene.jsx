@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, ReachDimension, Tag, WorkHatch, kit, tagWidth,
+  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, WorkHatch, kit,
 } from './probeDraw';
+import { placeTags, shownView } from './probeLabels';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
 
@@ -29,16 +30,11 @@ const ALONG = 'v';
 const WAY = { left: 'left', right: 'right' };
 // SVG's word for text ending at its x.
 const END = 'end';
+// The diameter's ticks under the ball, half their length.
+const DIA_TICK = 5;
 
 // Y up in the drawing's figures, down on the screen.
 const sy = (y) => -y;
-
-/*
- * Where a dimension down the drawing has its words: half way, or `at` of
- * the way from its start — off the middle, where the touches across X sit,
- * or past its end (over 1), apart from the words it continues.
- */
-const along = (from, to, at = 0.5) => from + (to - from) * at;
 
 const BOSS = 'boss';
 
@@ -48,28 +44,22 @@ const CentreScene = ({
 }) => {
   const id = useId().replace(/:/g, '');
   const VIEW = part.view || WIDE;
-  const [measure, k] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
   const size = kit(k);
-  // How far a label's middle stands off its line, clear of the ticks — 6 off an arrow, 10 off a dimension —
-  // whatever the label's size; and a second row's step (review notes, 2026-10-01: *"etykiety nachodzą na strzałki"*).
-  const gap = { arrow: 7 + 0.8 * size.fs, dim: 11 + 0.8 * size.fs, row: 1.6 * size.fs + 2 };
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
   const r = part.toolR * (1 + part.grow * Math.max(0, level));
   const [cx, cy] = [tool[0], sy(tool[1])];
-  // A figure's words, centred over `x` or right-aligned to it.
-  const tag = (x, y, text, face, anchor = 'c') => {
-    if (bare || !text) {
-      return null;
-    }
-    const w = tagWidth(text, size.fs);
-    let left = anchor === 'r' ? x - w : x - w / 2;
-    if (anchor === 'l') {
-      left = x;
-    }
-    // Inside the drawing whatever its size: words grow as it shrinks (review note, 2026-10-01: *"są ucinane"*).
-    left = Math.max(VIEW[0] + 2, Math.min(VIEW[0] + VIEW[2] - w - 2, left));
-    return <Tag x={left} y={y} text={text} face={face} size={size} />;
-  };
+  // A line's figures, placed by the one rule (`placeTags`).
+  // Never on X0's or Y0's line (L15), on the ball's whole way through this move (L16), nor on the axes.
+  const way = motion ? [[motion.from[0], sy(motion.from[1])], [motion.to[0], sy(motion.to[1])]] : [[cx, cy]];
+  const [x0, x1] = [Math.min(...way.map(([x]) => x)), Math.max(...way.map(([x]) => x))];
+  const [y0, y1] = [Math.min(...way.map(([, y]) => y)), Math.max(...way.map(([, y]) => y))];
+  const sweep = [x0 - r, y0 - r, x1 - x0 + 2 * r, y1 - y0 + 2 * r];
+  const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep, ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]], [VIEW[0], -1, VIEW[2], 2]] : [])];
+  const place = (line) => (bare ? [] : placeTags({
+    ...line, view: shownView(VIEW, k, box), avoid, size,
+  }));
+  const tags = (line, face) => place(line).map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={face} size={size} />);
 
   let arrow = null;
   if (motion) {
@@ -80,7 +70,9 @@ const CentreScene = ({
     arrow = (
       <g opacity={motion.kind === 'rapid' ? 1 : fade('feed')}>
         <Motion axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} kind={motion.kind} size={size} />
-        {motion.feed ? (flat ? tag((from + to) / 2, at - gap.arrow, motion.feed, face) : tag(at - 8, (from + to) / 2, motion.feed, face, 'r')) : null}
+        {tags({
+          axis: flat ? ACROSS : ALONG, at, side: -1, parts: [[from, to, motion.feed]], ticks: [[from, MOTION_TICK]],
+        }, face)}
       </g>
     );
   }
@@ -94,9 +86,9 @@ const CentreScene = ({
     fence = (
       <g opacity={fade('dim')}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
-        {/* Down the drawing, the words stand beside the line rather than over it. */}
-        {flat ? tag((from + to) / 2, at + gap.dim, limit.text, face) : null}
-        {flat ? null : tag(at + 13, along(from, to, limit.tagAt), limit.text, face, 'l')}
+        {tags({
+          axis: flat ? ACROSS : ALONG, at, parts: [[from, to, limit.text]], ticks: [[from, DIM_TICK], [to, DIM_TICK]],
+        }, face)}
       </g>
     );
   }
@@ -110,8 +102,9 @@ const CentreScene = ({
     return (
       <g key={dim.id} opacity={fade(dim.id)}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} lit={dim.lit} size={size} />
-        {flat ? tag((from + to) / 2, at + gap.dim, dim.text, face) : null}
-        {flat ? null : tag(at + 13, along(from, to, dim.tagAt), dim.text, face, 'l')}
+        {tags({
+          axis: flat ? ACROSS : ALONG, at, parts: [[from, to, dim.text]], ticks: [[from, DIM_TICK], [to, DIM_TICK]],
+        }, face)}
       </g>
     );
   });
@@ -126,8 +119,9 @@ const CentreScene = ({
     reaching = (
       <g opacity={fade('retract')}>
         <ReachDimension axis={flat ? ACROSS : ALONG} at={at} from={from} mid={mid} to={to} lit={reach.lit} size={size} />
-        {flat ? tag((from + mid) / 2, at + gap.dim, reach.near, face) : tag(at + 13, along(from, mid, 0.15), reach.near, face, 'l')}
-        {flat ? tag((mid + to) / 2, at + gap.dim + gap.row, reach.far, face) : tag(at + 13, along(mid, to, 1.6), reach.far, face, 'l')}
+        {tags({
+          axis: flat ? ACROSS : ALONG, at, parts: [[from, mid, reach.near], [mid, to, reach.far]], ticks: [from, mid, to].map((a) => [a, DIM_TICK]),
+        }, face)}
       </g>
     );
   }
@@ -165,10 +159,12 @@ const CentreScene = ({
       {arrow}
       {dia && !bare ? (
         <g opacity={dia.lit ? 1 : dia.fade * fade('dim')}>
-          <path d={`M${cx - r} ${cy + r + 4} V${cy + r + 14} M${cx + r} ${cy + r + 4} V${cy + r + 14}`} className={dia.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />
+          <path d={`M${cx - r} ${cy + r + 9 - DIA_TICK} V${cy + r + 9 + DIA_TICK} M${cx + r} ${cy + r + 9 - DIA_TICK} V${cy + r + 9 + DIA_TICK}`} className={dia.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />
           <Head x={cx - r} y={cy + r + 9} dir={WAY.right} size={size} className={dia.lit ? 'fill-acc' : 'fill-mut'} />
           <Head x={cx + r} y={cy + r + 9} dir={WAY.left} size={size} className={dia.lit ? 'fill-acc' : 'fill-mut'} />
-          {tag(cx - r - 18, cy + r + 9, dia.text, dia.lit ? FACE.hot : FACE.plain, 'r')}
+          {tags({
+            axis: ACROSS, at: cy + r + 9, parts: [[cx - r, cx + r, dia.text]], ticks: [[cx - r, DIA_TICK], [cx + r, DIA_TICK]],
+          }, dia.lit ? FACE.hot : FACE.plain)}
         </g>
       ) : null}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.yPlus')} size={size} />

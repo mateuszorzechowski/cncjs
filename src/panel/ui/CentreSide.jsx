@@ -1,7 +1,10 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Motion, NS, ReachDimension, Tag, WorkHatch, kit, tagWidth,
+  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, WorkHatch, kit,
 } from './probeDraw';
+import {
+  lineRect, placeTags, shownView, tagRect,
+} from './probeLabels';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
 
@@ -31,31 +34,40 @@ const ALONG = 'v';
 const BOSS = 'boss';
 // Beside the ball, where its arrow goes: a way across over it, a way up or down to its left.
 const ASIDE = 16;
-// A dimension's words beside its line, clear of its ticks.
-const BESIDE = 13;
 
 const CentreSide = ({
   part, along, r, hidden = false, h, motion = null, gap = null, vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
-  const [measure, k] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
   const size = kit(k);
   const fade = (one) => (focus && focus !== one ? 0.3 : 1);
   // Up the drawing is up the machine: a height is drawn negative.
   const cy = -(h + r);
-  const right = VIEW[0] + VIEW[2] - 2;
-  const left = VIEW[0] + 2;
-  // Words from `x` rightwards, or leftwards (`toLeft`) — kept inside the drawing whatever its size (review note, 2026-10-01: *"są ucinane"*).
-  const words = (x, y, text, lit, toLeft = false) => {
-    if (bare || !text) {
-      return null;
-    }
-    const w = tagWidth(text, size.fs);
-    const at = Math.max(left, Math.min(right - w, toLeft ? x - w : x));
-    return <Tag x={at} y={y} text={text} face={lit ? FACE.hot : FACE.plain} size={size} />;
+  // What a label keeps off (L15, L16, L25): X0's line, the stylus and the ball down to the lowest this move
+  // takes them, every arrow and dimension
+  // but its own column, and the labels placed before it.
+  const lines = [
+    motion && { at: motion.at - ASIDE, rect: lineRect(ALONG, motion.at - ASIDE, -motion.from, -motion.to, MOTION_TICK) },
+    ...vdims.map((dim) => ({ at: dim.at, rect: lineRect(ALONG, dim.at, -dim.from, -dim.to, DIM_TICK) })),
+    gap && { at: gap.at, rect: lineRect(ALONG, gap.at, -gap.from, -gap.to, DIM_TICK) },
+  ].filter(Boolean);
+  const lowest = Math.max(cy + r, ...(motion ? [-motion.from, -motion.to] : []));
+  const fixed = [[along - r, VIEW[1], 2 * r, lowest - VIEW[1]], ...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]]] : [])];
+  const taken = [];
+  // A line's figures up and down the drawing, placed by the one rule (`placeTags`); the lines in its own column
+  // are its own (a split way's parts), the rest it keeps off.
+  const place = (line) => {
+    const avoid = [...fixed, ...lines.filter((one) => one.at !== line.at).map((one) => one.rect), ...taken];
+    const placed = bare ? [] : placeTags({
+      ...line, view: shownView(VIEW, k, box), avoid, size,
+    });
+    taken.push(...placed.map(tagRect));
+    return placed;
   };
-  // A vertical dimension's words: beside its line, away from the middle, where the drawing has room.
-  const besideV = (at, y, text, lit) => (at > 0 ? words(at + BESIDE, y, text, lit) : words(at - BESIDE, y, text, lit, true));
+  const words = (line, lit) => place(line).map((tag) => (
+    <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={lit ? FACE.hot : FACE.plain} size={size} />
+  ));
 
   // A Z move's arrow left of the ball, its feed beside it; the distances stand on the right.
   let arrow = null;
@@ -64,7 +76,9 @@ const CentreSide = ({
     arrow = (
       <g opacity={motion.kind === 'rapid' ? 1 : fade('feed')}>
         <Motion axis={ALONG} at={at} from={-motion.from} to={-motion.to} kind={motion.kind} size={size} />
-        {words(at - 6, -(motion.from + motion.to) / 2, motion.text, motion.lit, true)}
+        {words({
+          at, side: -1, parts: [[-motion.from, -motion.to, motion.text]], ticks: [[-motion.from, MOTION_TICK]],
+        }, motion.lit)}
       </g>
     );
   }
@@ -108,14 +122,20 @@ const CentreSide = ({
             <ReachDimension axis={ALONG} at={dim.at} from={-dim.from} mid={-dim.mid} to={-dim.to} lit={dim.lit} size={size} />
           )}
           {/* Right of the line, away from the arrow on the ball's left (review note, 2026-10-01: "10 mm" lay on the arrow). */}
-          {words(dim.at + BESIDE, -(dim.from + (dim.mid ?? dim.to)) / 2, dim.text, dim.lit)}
-          {dim.mid === undefined ? null : words(dim.at + BESIDE, -(dim.mid + dim.to) / 2, dim.far, dim.lit)}
+          {words({
+            at: dim.at,
+            parts: dim.mid === undefined ? [[-dim.from, -dim.to, dim.text]] : [[-dim.from, -dim.mid, dim.text], [-dim.mid, -dim.to, dim.far]],
+            ticks: [dim.from, dim.mid, dim.to].filter((a) => a !== undefined).map((a) => [-a, DIM_TICK]),
+          }, dim.lit)}
         </g>
       ))}
       {gap ? (
         <g>
           <Dimension axis={ALONG} at={gap.at} from={-gap.from} to={-gap.to} size={size} />
-          {besideV(gap.at, -(gap.from + gap.to) / 2, t(gap.key), false)}
+          {/* Away from the middle, where the drawing has room. */}
+          {words({
+            at: gap.at, side: gap.at > 0 ? 1 : -1, parts: [[-gap.from, -gap.to, t(gap.key)]], ticks: [[-gap.from, DIM_TICK], [-gap.to, DIM_TICK]],
+          }, false)}
         </g>
       ) : null}
       {arrow}

@@ -1,6 +1,7 @@
 import {
-  DASH, Dimension, FACE, NS, Tag,
+  DASH, DIM_TICK, Dimension, FACE, NS, Tag,
 } from './probeDraw';
+import { placeTags } from './probeLabels';
 
 /*
  * The ground a Z is measured on, for the Z plate's and the paper's
@@ -9,6 +10,14 @@ import {
 
 // How thick the work is drawn when the table shows under it or beside it — not to scale.
 const STOCK = 14;
+
+const ON_WORK = { on: 'work', z0: 'top' };
+
+// Where the Z0 line runs, for a surface on the ground with its top at `y`.
+export const zeroLineY = (y, surface = ON_WORK) => {
+  const top = surface.on === 'table' ? y - STOCK : y;
+  return surface.z0 === 'top' ? top : top + STOCK;
+};
 
 /*
  * What a Z is measured on and where Z0 goes (Mateusz, 2026-10-01): the work
@@ -19,13 +28,13 @@ const STOCK = 14;
  * the work's thickness, drawn where Z0 is that far from the surface.
  */
 export const SurfaceGround = ({
-  fill, y, width, surface = { on: 'work', z0: 'top' }, zero = 0, label, labelX, stock = null, blockX = 222, size,
+  fill, y, width, surface = ON_WORK, zero = 0, label, labelX, stock = null, blockX = 222, size,
 }) => {
   const onTable = surface.on === 'table';
   const shifts = (surface.on === 'work') !== (surface.z0 === 'top');
   const top = onTable ? y - STOCK : y;
   const tableY = onTable || shifts ? top + STOCK : null;
-  const zeroY = surface.z0 === 'top' ? top : tableY;
+  const zeroY = zeroLineY(y, surface);
   const stockX = width - 14;
   return (
     <g>
@@ -49,7 +58,10 @@ export const SurfaceGround = ({
       {stock && shifts ? (
         <g opacity={stock.fade ?? 1}>
           <Dimension at={stockX} from={top} to={top + STOCK} lit={stock.lit} size={size} />
-          <Tag x={stockX - 12} y={top + STOCK / 2} text={stock.text} right face={stock.lit ? FACE.hot : FACE.plain} size={size} />
+          {/* By the one rule: right of its line, which is past the edge, so on its left. */}
+          {placeTags({
+            at: stockX, parts: [[top, top + STOCK, stock.text]], ticks: [[top, DIM_TICK], [top + STOCK, DIM_TICK]], view: [0, 0, width, Infinity], size,
+          }).map((one) => <Tag key={one.text} x={one.x} y={one.y} text={one.text} face={stock.lit ? FACE.hot : FACE.plain} size={size} />)}
         </g>
       ) : null}
     </g>

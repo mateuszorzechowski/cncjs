@@ -179,8 +179,7 @@ export const bossScene = (name, p, {
     dims = [
       { id: 'clear', axis: move.axis, from: edge, to: move.out, text: said('clear'), lit: lit('clear') },
       {
-        // Its words a quarter of the way, off the middle where the touches across X sit.
-        id: 'size', axis: move.axis, from: setOn(move.axis, move.out, move.guess - move.sign * BOSS_R), to: edge, text: said('bossSize'), lit: lit('size'), tagAt: 0.25,
+        id: 'size', axis: move.axis, from: setOn(move.axis, move.out, move.guess - move.sign * BOSS_R), to: edge, text: said('bossSize'), lit: lit('size'),
       },
     ];
   }

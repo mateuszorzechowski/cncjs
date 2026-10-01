@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, ReachDimension, Tag, kit, tagWidth,
+  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
+import { placeTags, shownView } from './probeLabels';
 import useViewScale from './useViewScale';
 import {
   C0, cornerSides, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
@@ -35,15 +36,16 @@ const RAPID = 'rapid';
 const WAY = { left: 'left', right: 'right', up: 'up' };
 
 const SLANT = 'rotate(45)';
-const LEFT = 'l';
-const RIGHT = 'r';
-const MID = 'c';
+// The tool's diameter under it, half its ticks' length.
+const DIA_TICK = 5;
+// Ticks across a dimension from `from` to `to`.
+const dimTicks = (...along) => along.map((a) => [a, DIM_TICK]);
 
 // The tool's diameter from above, as the dimension under it says it.
 const ToolWidth = ({ cx, cy, size }) => (
   <g>
     <circle cx={cx} cy={cy} r={R} fill="none" className="stroke-acc" strokeWidth={2} vectorEffect={NS} />
-    <path d={`M${cx - R} ${cy + R + 2} V${cy + R + 12} M${cx + R} ${cy + R + 2} V${cy + R + 12} M${cx - R} ${cy + R + 7} H${cx + R}`} className="stroke-acc" strokeWidth={1} vectorEffect={NS} />
+    <path d={`M${cx - R} ${cy + R + 7 - DIA_TICK} V${cy + R + 7 + DIA_TICK} M${cx + R} ${cy + R + 7 - DIA_TICK} V${cy + R + 7 + DIA_TICK} M${cx - R} ${cy + R + 7} H${cx + R}`} className="stroke-acc" strokeWidth={1} vectorEffect={NS} />
     <Head x={cx - R} y={cy + R + 7} dir={WAY.left} size={size} className="fill-acc" />
     <Head x={cx + R} y={cy + R + 7} dir={WAY.right} size={size} className="fill-acc" />
   </g>
@@ -53,7 +55,7 @@ const CornerTop = ({
   name = 'zFast', p = 0, corner, texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, bare = false, place = null, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
-  const [measure, k] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
   const size = kit(k);
   const { flipX, flipY } = cornerSides(corner);
   const move = moveOf(name);
@@ -61,19 +63,31 @@ const CornerTop = ({
   const flip = `translate(${flipX ? 278 : 0} ${flipY ? 260 : 0}) scale(${flipX ? -1 : 1} ${flipY ? -1 : 1})`;
   const mx = (x) => (flipX ? 278 - x : x);
   const my = (y) => (flipY ? 260 - y : y);
-  // A figure's words at a place on the front-left drawing, placed on the mirror.
-  const tag = (x, y, text, anchor, face = FACE.plain, key = text) => {
-    if (bare) {
-      return null;
+  // A line's figures on the front-left drawing, placed by the one rule (`placeTags`) and then on the mirror.
+  // Never on the axes, nor on X0's or Y0's line (L15).
+  const avoid = [
+    ...axisRects(VIEW[0], VIEW[1] + VIEW[3], size).map(([x, y, w, h]) => [flipX ? 278 - x - w : x, flipY ? 260 - y - h : y, w, h]),
+    ...(move.zero && !place ? [[129, VIEW[1], 2, VIEW[3]], [VIEW[0], 139, VIEW[2], 2]] : []),
+  ];
+  // Nor on the tool's whole way through the move, or the leg under way (L16) — not only where it is now.
+  const toolRect = () => {
+    let ends = [0, 1];
+    if (move.legs) {
+      const [from, to] = move.legs[legAt(move, p)];
+      ends = [from, to];
     }
-    const w = tagWidth(text, size.fs);
-    let left = anchor === MID ? x - w / 2 : x;
-    if (anchor === RIGHT) {
-      left = x - w;
-    }
-    const placed = flipX ? 278 - left - w : left;
-    return <Tag key={key} x={placed} y={my(y)} text={text} face={face} size={size} />;
+    const way = place || !move.frames ? [[cx, cy, level]] : ends.map((at) => positionOf(move.frames, at));
+    const rr = R * (1 + 0.3 * Math.max(0, level, ...way.map(([, , z]) => z)));
+    const [x0, x1] = [Math.min(...way.map(([x]) => x)), Math.max(...way.map(([x]) => x))];
+    const [y0, y1] = [Math.min(...way.map(([, y]) => y)), Math.max(...way.map(([, y]) => y))];
+    return [x0 - rr, y0 - rr, x1 - x0 + 2 * rr, y1 - y0 + 2 * rr];
   };
+  const placed = (line) => (bare ? [] : placeTags({
+    ...line, view: shownView(VIEW, k, box), avoid: [...avoid, toolRect()], size,
+  }));
+  const tags = (line, face = FACE.plain) => placed(line).map((tag) => (
+    <Tag key={tag.text} x={flipX ? 278 - tag.x - tag.w : tag.x} y={my(tag.y)} text={tag.text} face={face} size={size} />
+  ));
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
   const lit = (part) => focus === part;
 
@@ -118,7 +132,10 @@ const CornerTop = ({
         geometry.push(flat
           ? <Dimension key="legd" axis={ACROSS} at={fy + 20} from={fx} to={tx} size={size} />
           : <Dimension key="legd" axis={ALONG} at={fx - 36} from={fy} to={ty} size={size} />);
-        words.push(flat ? tag((fx + tx) / 2, fy + 34, figure, MID, FACE.plain, 'legt') : tag(fx - 44, (fy + ty) / 2, figure, RIGHT, FACE.plain, 'legt'));
+        const line = flat
+          ? { axis: ACROSS, at: fy + 20, parts: [[fx, tx, figure]], ticks: dimTicks(fx, tx) }
+          : { at: fx - 36, side: -1, parts: [[fy, ty, figure]], ticks: dimTicks(fy, ty) };
+        words.push(<g key="legt">{tags(line)}</g>);
       }
     });
   } else if (move.view === 'top' && move.kind) {
@@ -138,12 +155,20 @@ const CornerTop = ({
           <Dimension axis={flat ? ACROSS : ALONG} at={flat ? fy + 18 : fx + 18} from={flat ? fx : fy} to={flat ? tx : ty} lit={lit('dim')} size={size} />
         </g>,
       );
-      words.push(<g key="wayt" opacity={fade('dim')}>{flat ? tag((fx + tx) / 2, fy + 40, said(move.by), MID, face) : tag(fx + 30, (fy + ty) / 2, said(move.by), LEFT, face)}</g>);
+      words.push(
+        <g key="wayt" opacity={fade('dim')}>
+          {flat ? tags({ axis: ACROSS, at: fy + 18, parts: [[fx, tx, said(move.by)]], ticks: dimTicks(fx, tx) }, face) : tags({ at: fx + 18, parts: [[fy, ty, said(move.by)]], ticks: dimTicks(fy, ty) }, face)}
+        </g>,
+      );
     } else if (move.feed) {
       const face = focus === 'feed' ? FACE.hot : FACE.plain;
       words.push(
         <g key="by" opacity={fade('feed')}>
-          {flat ? tag((fx + tx) / 2, fy - 34, said(move.feed), MID, face) : tag(fx - 26, (fy + ty) / 2, said(move.feed), RIGHT, face)}
+          {flat ? tags({
+            axis: ACROSS, at: fy - 18, side: -1, parts: [[fx, tx, said(move.feed)]], ticks: [[fx, MOTION_TICK]],
+          }, face) : tags({
+            at: fx - 18, side: -1, parts: [[fy, ty, said(move.feed)]], ticks: [[fy, MOTION_TICK]],
+          }, face)}
         </g>,
       );
     }
@@ -158,8 +183,12 @@ const CornerTop = ({
       );
       words.push(
         <g key="reacht" opacity={fade('dim')}>
-          {flat ? tag((fx + mid) / 2, fy + 34, said('retract'), MID, face, 'reach1') : tag(fx + 30, (fy + mid) / 2, said('retract'), LEFT, face, 'reach1')}
-          {flat ? tag((mid + end) / 2, fy + 50, upTo(said('retract')), MID, face, 'reach2') : tag(fx + 30, (mid + end) / 2 - 6, upTo(said('retract')), LEFT, face, 'reach2')}
+          {tags({
+            axis: flat ? ACROSS : 'v',
+            at: flat ? fy + 18 : fx + 18,
+            parts: flat ? [[fx, mid, said('retract')], [mid, end, upTo(said('retract'))]] : [[fy, mid, said('retract')], [mid, end, upTo(said('retract'))]],
+            ticks: flat ? dimTicks(fx, mid, end) : dimTicks(fy, mid, end),
+          }, face)}
         </g>,
       );
     }
@@ -170,20 +199,27 @@ const CornerTop = ({
   // Nothing to dimension on the way into place.
   if (!place) {
     if (move.dim?.name === 'limitX') {
-      dims.push(['limitX', <Dimension key="limitX" axis={ACROSS} at={134} from={75} to={111} limit lit={lit('dim')} size={size} />, tag(93, 150, upTo(said('maxXY')), MID, lit('dim') ? FACE.hot : FACE.plain, 'limitXt')]);
+      dims.push(['limitX', <Dimension key="limitX" axis={ACROSS} at={134} from={75} to={111} limit lit={lit('dim')} size={size} />, <g key="limitXt">{tags({ axis: ACROSS, at: 134, parts: [[75, 111, upTo(said('maxXY'))]], ticks: dimTicks(75, 111) }, lit('dim') ? FACE.hot : FACE.plain)}</g>]);
     }
     if (move.dim?.name === 'limitY') {
-      dims.push(['limitY', <Dimension key="limitY" axis={ALONG} at={172} from={195} to={159} limit lit={lit('dim')} size={size} />, tag(172, 214, upTo(said('maxXY')), MID, lit('dim') ? FACE.hot : FACE.plain, 'limitYt')]);
+      dims.push(['limitY', <Dimension key="limitY" axis={ALONG} at={172} from={195} to={159} limit lit={lit('dim')} size={size} />, <g key="limitYt">{tags({ at: 172, parts: [[195, 159, upTo(said('maxXY'))]], ticks: dimTicks(195, 159) }, lit('dim') ? FACE.hot : FACE.plain)}</g>]);
     }
     const walls = Boolean(move.walls);
     if (walls || focus === 'wallX') {
-      dims.push(['wallX', <Dimension key="wallX" axis={ACROSS} at={79} from={106} to={130} lit={lit('wallX')} size={size} />, tag(136, 79, said('wallX'), LEFT, lit('wallX') ? FACE.hot : FACE.plain, 'wallXt')]);
+      // At the zero, X's figure over its dimension and Y's under its own (Mateusz, 2026-10-01).
+      const line = {
+        axis: ACROSS, at: 79, side: -1, parts: [[106, 130, said('wallX')]], ticks: dimTicks(106, 130),
+      };
+      dims.push(['wallX', <Dimension key="wallX" axis={ACROSS} at={79} from={106} to={130} lit={lit('wallX')} size={size} />, <g key="wallXt">{tags(line, lit('wallX') ? FACE.hot : FACE.plain)}</g>]);
     }
     if (walls || focus === 'wallY') {
-      dims.push(['wallY', <Dimension key="wallY" axis={ALONG} at={203} from={140} to={164} lit={lit('wallY')} size={size} />, tag(203, 126, said('wallY'), MID, lit('wallY') ? FACE.hot : FACE.plain, 'wallYt')]);
+      const line = {
+        at: 203, parts: [[140, 164, said('wallY')]], ticks: dimTicks(140, 164), past: 'after',
+      };
+      dims.push(['wallY', <Dimension key="wallY" axis={ALONG} at={203} from={140} to={164} lit={lit('wallY')} size={size} />, <g key="wallYt">{tags(line, lit('wallY') ? FACE.hot : FACE.plain)}</g>]);
     }
     if (focus === 'clear') {
-      dims.push(['clear', <Dimension key="clear" axis={ACROSS} at={139} from={82} to={106} lit size={size} />, tag(44, 160, said('clear'), LEFT, FACE.hot, 'cleart')]);
+      dims.push(['clear', <Dimension key="clear" axis={ACROSS} at={139} from={82} to={106} lit size={size} />, <g key="cleart">{tags({ axis: ACROSS, at: 139, parts: [[82, 106, said('clear')]], ticks: dimTicks(82, 106) }, FACE.hot)}</g>]);
     }
   }
   const dimFade = (part) => {
@@ -232,7 +268,9 @@ const CornerTop = ({
       ) : null}
       {words}
       {dims.map(([part, , words2]) => <g key={`${part}w`} opacity={dimFade(part)}>{words2}</g>)}
-      {focus === 'tool' ? tag(cx - R - 4, cy + R + 16, `Ø${said('toolDiameter')}`, RIGHT, FACE.hot, 'dia') : null}
+      {focus === 'tool' ? tags({
+        axis: ACROSS, at: cy + R + 7, parts: [[cx - R, cx + R, `Ø${said('toolDiameter')}`]], ticks: [[cx - R, DIA_TICK], [cx + R, DIA_TICK]],
+      }, FACE.hot) : null}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.yPlus')} size={size} />
     </svg>
   );
