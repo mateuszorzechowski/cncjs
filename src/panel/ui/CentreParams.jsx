@@ -54,7 +54,7 @@ const CentreParams = ({
   };
   const code = codeOf(name, texts, systemNumber(wcs), p);
   const read = readout(name);
-  const title = t(...titleOf(name, p));
+  const title = t(...titleOf(name));
 
   const groups = namedGroups(groupsOf(passes), t, (id) => t(...titleOf(id)));
   const sections = PARAMS.map((one) => (one.passes

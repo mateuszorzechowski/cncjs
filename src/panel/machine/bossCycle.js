@@ -20,7 +20,7 @@
  */
 
 import {
-  AXES, BACK, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, build, clamp, ease, isGoing, legAt, setOn, toolAt,
+  AXES, BACK, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, build, clamp, ease, isGoing, setOn, toolAt,
 } from './bossMoves';
 import { bossSide } from './bossSide';
 import { frameAt, layOut, totalOf } from './timeline';
@@ -32,13 +32,13 @@ const { moves: MOVES, order: ORDER } = build();
 export const bossOrder = (passes = 2) => ORDER.filter((name) => passes !== 1 || MOVES[name].pass !== 2);
 export const moveOf = (name) => MOVES[name];
 
-/** A move's spoken name at `p`, a set-up's by the leg under way: `t(key, vars)`. */
-export const titleOf = (name, p = 0) => {
+/** A move's spoken name: `t(key, vars)`. */
+export const titleOf = (name) => {
   const move = MOVES[name];
-  return [move.legs ? legAt(p).titleKey : move.titleKey, { pass: move.pass, axis: move.way }];
+  return [move.titleKey, { pass: move.pass, axis: move.way }];
 };
 
-const STEPS = ['Set', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
+const STEPS = ['Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
 
 /*
  * The bar's stages, as the corner's: the top's search and measuring, each
@@ -73,9 +73,9 @@ export const BOSS_PARAMS = [
 
 // A figure being set loops the step it changes, its part lit.
 const EDIT = {
-  bossSize: ['x1pSet', 'size'],
-  clear: ['x1pSet', 'clear'],
-  depth: ['x1pSet', 'depth'],
+  bossSize: ['x1pOut', 'size'],
+  clear: ['x1pOut', 'clear'],
+  depth: ['x1pDown', 'depth'],
   fast: ['x1pFast', 'feed'],
   slow: ['x1pSlow', 'feed'],
   retract: ['x1pBack', 'retract'],
@@ -85,8 +85,8 @@ const EDIT = {
 
 const runOf = (name) => RUNS[MOVES[name].kind];
 
-// A set-up's legs are a segment each on the bar, as the corner's.
-const partsOf = (name) => (MOVES[name].legs ? MOVES[name].legs.map((leg) => [leg.from, leg.to]) : [[0, MOVES[name].end]]);
+// A move is one segment on the bar.
+const partsOf = (name) => [[0, MOVES[name].end]];
 
 export const bossTimeline = (passes = 2) => layOut(bossOrder(passes), {
   spanOf: (name) => runOf(name) + HOLD_MS,
@@ -134,7 +134,7 @@ const above = (move, p, going, said, upTo, lit, half) => {
   }
 : null);
   switch (move.kind) {
-    case 'set': return legAt(p).name === 'out' ? { motion: arrow(move.from, move.out, 'rapid') } : {};
+    case 'out': return { motion: arrow(move.from, move.out, 'rapid') };
     // The search goes in no further than the middle thought. Its reach is two of the form's figures, so one
     // dimension split at the part's side, each part its figure (composite rule; L27, to confirm): the way out
     // past the side, and half the part's width.
@@ -183,7 +183,7 @@ export const bossScene = (name, p, {
   const { motion: way = null } = above(move, p, true, said, upTo, lit, '');
   // The part's rough width, and how far out past it, on a set-up.
   let dims = stepDims;
-  if (move.kind === 'set') {
+  if (move.kind === 'out') {
     const edge = setOn(move.axis, move.out, move.guess + move.sign * BOSS_R);
     dims = [
       { id: 'clear', axis: move.axis, from: edge, to: move.out, text: said('clear'), lit: lit('clear') },
@@ -234,7 +234,8 @@ export const bossCode = (name, texts, wcs = 1, p = 0) => {
     topBack: () => `G0 Z+${texts.retract}`,
     // The slow touch goes twice the way back, as the server's `touch` does.
     topSlow: () => `G38.2 Z-${twice} F${texts.slow}`,
-    set: () => (legAt(p).name === 'down' ? `G38.3 Z-${down} F${texts.fast}` : ['probe.boss.outCode']),
+    out: () => ['probe.boss.outCode'],
+    down: () => `G38.3 Z-${down} F${texts.fast}`,
     fast: () => `G38.2 ${inward}${fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear))} F${texts.fast}`,
     back: () => `G0 ${outward}${texts.retract}`,
     slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
@@ -246,7 +247,7 @@ export const bossCode = (name, texts, wcs = 1, p = 0) => {
 };
 
 /** What lights at `p` of a move: a set-up's leg's figures, or the whole move's. */
-export const usesAt = (name, p) => (MOVES[name].legs ? legAt(p).uses : MOVES[name].uses);
+export const usesAt = (name) => MOVES[name].uses;
 
 // An example of where the ball stood against the old zero.
 export const BEFORE = { x: 123.456, y: 78.9 };
@@ -275,7 +276,7 @@ export const positionAt = (ms) => {
 
 // The server's parts of a touch, as the steps drawn: `x1a-out`, `-down`, `-fast`, `-back`, `-settle`, the slow one bare, `-off`, `-up`.
 const STEP_OF = {
-  out: 'Set', down: 'Set', fast: 'Fast', back: 'Back', settle: 'Back', off: 'Off', up: 'Up',
+  out: 'Out', down: 'Down', fast: 'Fast', back: 'Back', settle: 'Back', off: 'Off', up: 'Up',
 };
 const TOP_OF = {
   fast: 'zFast', back: 'zBack', settle: 'zBack', off: 'zOff',
@@ -331,7 +332,7 @@ export const BOSS_CYCLE = {
   // Which view a phone shows by itself: the side for what goes up and down.
   viewOf: (name, p, focus) => {
     const move = MOVES[name];
-    const vertical = ['topFast', 'topBack', 'topSlow', 'up'].includes(move.kind) || (move.kind === 'set' && legAt(p).name === 'down');
+    const vertical = ['topFast', 'topBack', 'topSlow', 'down', 'up'].includes(move.kind);
     return vertical || focus === 'depth' ? 'side' : 'top';
   },
   place: 'probe.place.boss',
