@@ -83,6 +83,11 @@ const tick = () => {
     console.log(`▶ wypuszczone — ${fresh.length} otwartych uwag:\n`);
     fresh.forEach((note) => {
       console.log(`  #${note.id} [${note.screen}] <${note.tag}> ${note.label}`);
+      if (note.probe) {
+        const p = note.probe;
+        console.log(`     sonda: ${p.method} · ${[p.stage, p.sub].filter(Boolean).join(' / ')} · ${p.move} „${p.title}” · ${p.at}% · ${p.caption}`);
+        if (note.point && note.point.svg) { console.log(`     punkt na rysunku „${p.svg}”: ${note.point.svg.x}, ${note.point.svg.y}`); }
+      }
       console.log(`     ${note.text}`);
       (note.images || []).forEach((file) => console.log(`     zdjęcie: ${file}`));
       console.log(`     ${note.className.slice(0, 120)}\n`);

@@ -92,10 +92,37 @@
     return bits.join(', ');
   };
 
+  /*
+   * Where a probing animation is when the note is pinned: the method, the
+   * stage and sub-stage on its bar, the move, its title and how far through
+   * it — read off the panel's `data-probe-*` marks. A note about a drawing
+   * that moves means nothing without the moment it was taken at.
+   */
+  const probeOf = (el) => {
+    const method = el.closest('[data-probe-method]') || document.querySelector('[data-probe-method]');
+    const bar = document.querySelector('[data-probe-move]');
+    if (!method && !bar) { return null; }
+    const code = bar && bar.closest('section, [class*="rounded"]');
+    return {
+      method: method ? method.dataset.probeMethod : '',
+      stage: bar ? bar.dataset.probeStage || '' : '',
+      sub: bar ? bar.dataset.probeSub || '' : '',
+      move: bar ? bar.dataset.probeMove || '' : '',
+      title: bar ? bar.dataset.probeTitle || '' : '',
+      at: bar ? Number(bar.dataset.probeAt) : null,
+      // The drawing's last words: the step's title and its G-code line.
+      caption: code ? code.innerText.split(/\n/).filter(Boolean).slice(-2).join(' — ').slice(0, 120) : '',
+      // Inside a drawing: what the element is there — a label's words, a line's class.
+      svg: el.closest('svg') ? (el.closest('svg').getAttribute('aria-label') || 'svg') : '',
+    };
+  };
+
   const describe = (el) => {
     const box = el.getBoundingClientRect();
     const root = document.documentElement;
+    const probe = probeOf(el);
     return {
+      ...(probe ? { probe } : {}),
       // The frame being looked at. A note about spacing means one thing at
       // 1024 and another at 390, and the same sentence arrives for both.
       target: root.dataset.target || 'base',
@@ -463,8 +490,16 @@
     hovered = null;
   };
 
-  const ask = (el) => {
+  const ask = (el, x, y) => {
     const where = describe(el);
+    // The very place clicked, on the screen and — inside a drawing — in the drawing's own units, so a
+    // place on a moving animation can be found again in its source.
+    where.point = { x: Math.round(x), y: Math.round(y) };
+    const svg = el.closest('svg');
+    if (svg && svg.getScreenCTM()) {
+      const at = new DOMPoint(x, y).matrixTransform(svg.getScreenCTM().inverse());
+      where.point.svg = { x: Math.round(at.x * 10) / 10, y: Math.round(at.y * 10) / 10 };
+    }
     const form = document.createElement('div');
     form.id = 'rv-form';
     const box = el.getBoundingClientRect();
@@ -481,6 +516,7 @@
       : `${Math.max(8, box.top - FORM.h - 8)}px`;
     form.innerHTML = `
       <div class="what">${where.target} · ${where.screen}${where.card ? ` · ${where.card}` : ''} · &lt;${where.tag}&gt; ${where.label || ''}${where.state ? ` · ${where.state}` : ''}</div>
+      ${where.probe ? `<div class="what">sonda: ${where.probe.method} · ${[where.probe.stage, where.probe.sub].filter(Boolean).join(' / ')} · ${where.probe.title} · ${where.probe.at}%</div>` : ''}
       <textarea placeholder="Co jest nie tak w tym miejscu?"></textarea>
       <div class="shots"></div>
       <div class="hint">Ctrl+V wkleja zrzut ekranu albo zdjęcie.</div>
@@ -577,7 +613,7 @@
   const onSheetClick = (event) => {
     const el = under(event.clientX, event.clientY);
     setPicking(false);
-    if (el && !el.closest('#rv-bar, #rv-form')) { ask(el); }
+    if (el && !el.closest('#rv-bar, #rv-form')) { ask(el, event.clientX, event.clientY); }
   };
 
   const onKey = (event) => {
@@ -590,6 +626,9 @@
     pickButton.textContent = on ? 'Kliknij miejsce…' : 'Komentarz';
 
     if (on) {
+      // A moving drawing held still while a place on it is picked: the probe player's pause, if it plays.
+      const pause = document.querySelector('[role="group"] button[aria-pressed="false"][aria-label="Pauza"], [role="group"] button[aria-pressed="false"][aria-label="Pause"]');
+      if (pause) { pause.click(); }
       sheet = document.createElement('div');
       sheet.id = 'rv-sheet';
       document.body.appendChild(sheet);

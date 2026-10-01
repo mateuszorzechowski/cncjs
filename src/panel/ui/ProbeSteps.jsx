@@ -99,20 +99,23 @@ export const PrepareStep = ({
 }) => {
   const Editor = EDITORS[method.id];
   return (
-    <Editor
-      fields={fields}
-      texts={texts}
-      onText={onText}
-      bad={bad}
-      wcs={wcs}
-      corner={chosen}
-      chosen={chosen}
-      surface={surface}
-      onSurface={onSurface}
-      split={split}
-      intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
-      note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}
-    />
+    // The method, for a review note pinned on its drawing; `contents` keeps the layout the editor's own.
+    <div data-probe-method={method.id} className="contents">
+      <Editor
+        fields={fields}
+        texts={texts}
+        onText={onText}
+        bad={bad}
+        wcs={wcs}
+        corner={chosen}
+        chosen={chosen}
+        surface={surface}
+        onSurface={onSurface}
+        split={split}
+        intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
+        note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}
+      />
+    </div>
   );
 };
 

@@ -90,9 +90,21 @@ const MoveBar = ({
   // Whether a segment — or, without `part`, any of a move's — is in the part picked.
   const chosen = (id, part) => Boolean(picked && picked.ids.includes(id) && (picked.part === null || part === undefined || picked.part === part));
   const fillOf = (id, part = 0) => fills[`${id}:${part}`] || 0;
+  // Where the animation is, for a review note pinned on the drawing (`scripts/design-review-overlay.js`).
+  const group = groups.find((one) => one.subs.some((sub) => sub.moves.some((move) => move.id === active)));
+  const sub = group && group.subs.find((one) => one.moves.some((move) => move.id === active));
+  const move = sub && sub.moves.find((one) => one.id === active);
   return (
     // A press here keeps a figure's field focused: the bar is read with it (review note, 2026-10-01).
-    <div onMouseDown={(event) => event.preventDefault()} className="flex gap-2 border-t border-line px-3 pb-1 pt-2">
+    <div
+      onMouseDown={(event) => event.preventDefault()}
+      data-probe-move={active}
+      data-probe-title={move ? move.label : undefined}
+      data-probe-stage={group ? group.name : undefined}
+      data-probe-sub={sub ? sub.name : undefined}
+      data-probe-at={Math.round(fillOf(active) * 100)}
+      className="flex gap-2 border-t border-line px-3 pb-1 pt-2"
+    >
       {groups.map((group) => {
         const moves = group.subs.flatMap((sub) => sub.moves);
         const playing = moves.some((move) => move.id === active);
