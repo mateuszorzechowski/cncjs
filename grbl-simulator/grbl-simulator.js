@@ -51,6 +51,19 @@ const REPORT_WCO_REFRESH_IDLE_COUNT = 10; // WCO refresh when machine is idle
 const REPORT_OVR_REFRESH_BUSY_COUNT = 20; // Override refresh when machine is busy
 const REPORT_OVR_REFRESH_IDLE_COUNT = 10; // Override refresh when machine is idle
 
+// Contact is found to this, in mm; Grbl reports three decimals.
+const PROBE_RESOLUTION = 0.01;
+const PROBE_EPSILON = 1e-9;
+
+/**
+ * The default probing scene: a warped PCB surface at about Z -3, machine
+ * coordinates — the tool touches it wherever it goes below it.
+ */
+const warpedSurface = (x, y) => -3.0
+    + Math.sin(x * 0.1) * 0.15
+    + Math.cos(y * 0.1) * 0.15
+    + Math.sin((x + y) * 0.05) * 0.1;
+
 /**
  * Get default motion state
  * @returns {object} New motion state object
@@ -205,7 +218,11 @@ class GrblSimulator {
         // Probe state
         this.probePosition = { x: 0, y: 0, z: 0 };
         this.probeSuccess = false;
-        this.probeTriggered = false; // Simulated probe pin state (can be set for testing)
+        // What the probe touches: boxes in machine mm ({ x: [lo, hi], y, z })
+        // grown by the tool's radius in X and Y; with no boxes, the warped
+        // surface. The pin reads contact at the tool's position, or
+        // pinState.probe held by hand (a clip on the plate).
+        this.probeScene = { boxes: [], toolDiameter: 0 };
 
         // Start planner executor
         this.startPlannerExecutor();
@@ -513,6 +530,17 @@ class GrblSimulator {
                 }
             };
             waitForPlannerEmpty();
+        } else if (result && result.isProbe) {
+            // G38.x: the report and ok come once the probe motion is over
+            const waitForProbe = () => {
+                const plannerEmpty = this.#plannerBuffer.queue.length === 0 && !this.#motionState.active;
+                if (plannerEmpty) {
+                    callback(result.report());
+                } else {
+                    setTimeout(waitForProbe, 10);
+                }
+            };
+            waitForProbe();
         } else if (result && result.waitForCompletion) {
             // Motion command queued - send ok after adding to planner
             callback('ok\r\n');
@@ -536,6 +564,11 @@ class GrblSimulator {
         // Ignore empty lines
         if (!line) {
             return '';
+        }
+
+        // Simulator control, not Grbl: `#pin on|off`, `#scene <json>`
+        if (line.startsWith('#')) {
+            return this.processControl(line);
         }
 
         // Check line length (Grbl has a limit of 80 characters for line, but buffer includes \n)
@@ -992,12 +1025,7 @@ class GrblSimulator {
             const isToward = probeCmd === 'G38.2' || probeCmd === 'G38.3';
             const signalError = probeCmd === 'G38.2' || probeCmd === 'G38.4';
 
-            const result = this.executeProbe(parsed.coords, isToward, signalError);
-
-            if (result.error) {
-                return result.error;
-            }
-            return 'ok\r\n';
+            return this.executeProbe(parsed.coords, isToward, signalError);
         }
 
         // Handle motion commands (G0/G00, G1/G01, G2/G02, G3/G03)
@@ -1022,7 +1050,7 @@ class GrblSimulator {
                 return result;
             } else {
                 // Linear motion (G0, G1)
-                const result = this.executeLinearMotion(parsed.coords, line);
+                const result = this.executeLinearMotion(parsed.coords, parsed.commands.includes('G53'));
 
                 if (result.error) {
                     return result.error;
@@ -1041,64 +1069,47 @@ class GrblSimulator {
      * G38.3: Probe toward workpiece, stop on contact
      * G38.4: Probe away from workpiece, stop on loss of contact, signal error if failure
      * G38.5: Probe away from workpiece, stop on loss of contact
+     *
+     * Answers the way Grbl 1.1h did on COM3 (2026-09-29), once the motion is
+     * over: a touch is `[PRB:x,y,z:1]` then `ok`; G38.3 touching nothing is
+     * `[PRB:…:0]` then `ok`; G38.2 touching nothing is `ALARM:5`, `[PRB:…:0]`
+     * with the old position, then still `ok`. The pin already in the state the
+     * probe looks for is `ALARM:4` and `ok`, and nothing moves. PRB is in
+     * machine coordinates.
      * @param {object} coords - Target coordinates
      * @param {boolean} isToward - true for G38.2/G38.3 (toward), false for G38.4/G38.5 (away)
      * @param {boolean} signalError - true for G38.2/G38.4, false for G38.3/G38.5
-     * @returns {object} Result with error if any
+     * @returns {object|string} An error line, or `{ isProbe, report() }`
      */
     executeProbe(coords, isToward, signalError) {
         // Check feed rate
         if (this.feedRate === 0) {
-            return { error: 'error:22\r\n' }; // Undefined feed rate
+            return 'error:22\r\n'; // Undefined feed rate
         }
 
-        // Get the expected start position and end position
         const startPosition = this.getPlannedEndPosition();
         const endPosition = this.calculateMachinePosition(coords, startPosition);
+        const initial = this.pinState.probe || this.probeTouches(startPosition);
 
-        // Check initial probe state
-        const initialProbeState = this.probeTriggered;
-
-        // For "toward" probes (G38.2/G38.3), pin should NOT be triggered initially
-        // For "away" probes (G38.4/G38.5), pin SHOULD be triggered initially
-        const expectedInitialState = !isToward;
-
-        if (initialProbeState !== expectedInitialState) {
-            this.probeSuccess = false;
-            return { error: 'error:4\r\n' }; // Probe fail initial
+        if (initial !== !isToward) {
+            return {
+                isProbe: true,
+                report: () => `${this.triggerAlarm(4)}ok\r\n`,
+            };
         }
 
-        // Simulate realistic probe contact with surface warpage
-        // Calculate contact Z position based on XY coordinates (simulate warped PCB surface)
-        const simulateProbeContact = (x, y) => {
-            // Base height around -3mm with variation based on position
-            const baseZ = -3.0;
-            // Add warpage variation (±0.3mm) using deterministic function
-            const warpageX = Math.sin(x * 0.1) * 0.15;
-            const warpageY = Math.cos(y * 0.1) * 0.15;
-            const warpageDiagonal = Math.sin((x + y) * 0.05) * 0.1;
-            return baseZ + warpageX + warpageY + warpageDiagonal;
-        };
-
-        // Calculate where probe will contact (in machine coordinates)
-        const contactZ = simulateProbeContact(endPosition.x, endPosition.y);
-        const probeContactPosition = {
-            x: endPosition.x,
-            y: endPosition.y,
-            z: Math.max(contactZ, endPosition.z) // Don't go below target depth
-        };
-
-        // Calculate distance to contact point
-        const dx = probeContactPosition.x - startPosition.x;
-        const dy = probeContactPosition.y - startPosition.y;
-        const dz = probeContactPosition.z - startPosition.z;
+        const contact = this.pinState.probe ? null : this.probeContact(startPosition, endPosition, initial);
+        const stop = contact || endPosition;
+        const dx = stop.x - startPosition.x;
+        const dy = stop.y - startPosition.y;
+        const dz = stop.z - startPosition.z;
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
         // Apply feed override (10-200%)
         const probeFeedRate = this.feedRate * (this.feedOverride / 100);
         const probeTime = (distance / probeFeedRate) * 60 * 1000;
 
         this.#plannerBuffer.queue.push({
-            endPosition: probeContactPosition,
+            endPosition: stop,
             execute: () => {
                 this.machineState = 'Run';
                 this.setMotionState({
@@ -1107,29 +1118,110 @@ class GrblSimulator {
                     startTime: Date.now(),
                     endTime: Date.now() + probeTime,
                     startPosition,
-                    endPosition: probeContactPosition,
+                    endPosition: stop,
                     currentFeedRate: probeFeedRate,
                     data: {},
                 });
-
-                // Store probe result
-                this.probePosition = probeContactPosition;
-                this.probeSuccess = true;
             },
-            onComplete: () => {
-                // Emit PRB response when probe motion completes (simulates real Grbl behavior)
-                const wcsOffset = this.workCoordinateOffsets[this.activeWCS];
-                const workPos = {
-                    x: this.probePosition.x - wcsOffset.x - this.g92Offset.x,
-                    y: this.probePosition.y - wcsOffset.y - this.g92Offset.y,
-                    z: this.probePosition.z - wcsOffset.z - this.g92Offset.z
-                };
-                const prbResponse = `[PRB:${workPos.x.toFixed(3)},${workPos.y.toFixed(3)},${workPos.z.toFixed(3)}:1]\r\n`;
-                this.emit && this.emit('data', prbResponse);
-            }
         });
 
-        return { error: null, waitForCompletion: true, duration: probeTime };
+        return {
+            isProbe: true,
+            report: () => {
+                let alarm = '';
+                if (contact) {
+                    this.probePosition = { ...contact };
+                } else if (signalError) {
+                    alarm = this.triggerAlarm(5);
+                } else {
+                    this.probePosition = { ...endPosition };
+                }
+                this.probeSuccess = Boolean(contact);
+                const { x, y, z } = this.probePosition;
+                return `${alarm}[PRB:${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}:${contact ? 1 : 0}]\r\nok\r\n`;
+            },
+        };
+    }
+
+    /**
+     * Whether the tool at `pos` (machine mm) touches the scene.
+     * @param {object} pos - Tool position
+     * @returns {boolean}
+     */
+    probeTouches(pos) {
+        const { boxes, toolDiameter } = this.probeScene;
+        if (boxes.length === 0) {
+            return pos.z <= warpedSurface(pos.x, pos.y) + PROBE_EPSILON;
+        }
+        const r = toolDiameter / 2 + PROBE_EPSILON;
+        return boxes.some((box) => pos.x >= box.x[0] - r && pos.x <= box.x[1] + r
+            && pos.y >= box.y[0] - r && pos.y <= box.y[1] + r
+            && pos.z >= box.z[0] - PROBE_EPSILON && pos.z <= box.z[1] + PROBE_EPSILON);
+    }
+
+    /**
+     * Where on the way from `start` to `end` the contact first stops being
+     * `initial` — made for a toward probe, lost for an away one — or null.
+     * @returns {object|null} Machine position
+     */
+    probeContact(start, end, initial) {
+        const at = (t) => ({
+            x: start.x + (end.x - start.x) * t,
+            y: start.y + (end.y - start.y) * t,
+            z: start.z + (end.z - start.z) * t,
+        });
+        const length = Math.hypot(end.x - start.x, end.y - start.y, end.z - start.z);
+        const samples = Math.max(1, Math.ceil(length / PROBE_RESOLUTION));
+        for (let i = 1; i <= samples; i++) {
+            if (this.probeTouches(at(i / samples)) !== initial) {
+                let [lo, hi] = [(i - 1) / samples, i / samples];
+                for (let k = 0; k < 40; k++) {
+                    const mid = (lo + hi) / 2;
+                    if (this.probeTouches(at(mid)) !== initial) {
+                        hi = mid;
+                    } else {
+                        lo = mid;
+                    }
+                }
+                return at(hi);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The probe pin: held by hand, or the tool touching the scene.
+     * @returns {boolean}
+     */
+    probePin() {
+        return this.pinState.probe || this.probeTouches(this.getCurrentPosition());
+    }
+
+    /**
+     * Simulator control lines, which no Grbl has:
+     * `#pin on|off` holds the probe pin (a clip on the plate);
+     * `#scene {"boxes": [...], "toolDiameter": d}` sets what the probe
+     * touches, and `#scene` alone puts back the warped surface.
+     * @param {string} line - Control line
+     * @returns {string} Response
+     */
+    processControl(line) {
+        const [command, ...rest] = line.slice(1).split(' ');
+        const arg = rest.join(' ').trim();
+        if (command === 'pin' && (arg === 'on' || arg === 'off')) {
+            this.pinState.probe = arg === 'on';
+            return 'ok\r\n';
+        }
+        if (command === 'scene') {
+            try {
+                const { boxes = [], toolDiameter = 0 } = arg ? JSON.parse(arg) : {};
+                this.probeScene = { boxes, toolDiameter };
+                return 'ok\r\n';
+            } catch (err) {
+                return `[MSG:${err.message}]\r\nerror:3\r\n`;
+            }
+        }
+        return 'error:3\r\n';
     }
 
     /**
@@ -1231,12 +1323,13 @@ class GrblSimulator {
     /**
      * Execute linear motion (G0/G1)
      * @param {object} coords - Target coordinates
+     * @param {boolean} [machine] - G53: coordinates are machine coordinates
      * @returns {object} Result with error if any
      */
-    executeLinearMotion(coords) {
+    executeLinearMotion(coords, machine = false) {
         // Get the expected start position (end of last queued command or current position) and end position
         const startPosition = this.getPlannedEndPosition();
-        const endPosition = this.calculateMachinePosition(coords, startPosition);
+        const endPosition = this.calculateMachinePosition(coords, startPosition, machine);
 
         // Calculate distance from planned start to end
         const dx = endPosition.x - startPosition.x;
@@ -1567,9 +1660,10 @@ class GrblSimulator {
      * Calculate machine position from parsed G-code coordinates
      * @param {object} coords - Parsed coordinates from G-code
      * @param {object} [referencePosition] - Reference position for incremental mode and defaults
+     * @param {boolean} [machine] - G53: absolute machine coordinates, no offsets
      * @returns {object} Machine position (after applying units, distance mode, WCS offsets)
      */
-    calculateMachinePosition(coords, referencePosition = this.machinePosition) {
+    calculateMachinePosition(coords, referencePosition = this.machinePosition, machine = false) {
         const target = { ...referencePosition };
 
         // Apply coordinate system based on distance mode (G90/G91)
@@ -1589,7 +1683,9 @@ class GrblSimulator {
                     value *= MM_PER_INCH;
                 }
 
-                if (isAbsolute) {
+                if (machine) {
+                    target[axis] = value;
+                } else if (isAbsolute) {
                     // Absolute mode: MPos = WPos + WCS + G92
                     target[axis] = value + wcsOffset[axis] + this.g92Offset[axis];
                 } else {
@@ -1803,7 +1899,7 @@ class GrblSimulator {
         if (this.pinState.z) {
             pins += 'Z';
         }
-        if (this.pinState.probe || this.probeTriggered) {
+        if (this.probePin()) {
             pins += 'P';
         }
         if (this.pinState.door) {

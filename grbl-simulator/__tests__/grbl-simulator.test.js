@@ -1264,3 +1264,109 @@ describe('GrblSimulator - Laser Mode ($32)', () => {
         expect(sim.laserPower).toBe(0);
     });
 });
+
+describe('GrblSimulator - Probing a scene', () => {
+    const send = (sim, line) => new Promise((resolve) => sim.processLineAsync(line, resolve));
+    // Work top at machine Z -60, its front-left corner at X -150 Y -90; an L
+    // plate on that corner: 8 mm top, 6 mm X wall, 4 mm Y wall.
+    const scene = {
+        toolDiameter: 4,
+        boxes: [
+            { x: [-150, -50], y: [-90, 10], z: [-100, -60] },
+            { x: [-156, -110], y: [-94, -50], z: [-60, -52] },
+            { x: [-156, -150], y: [-94, -50], z: [-80, -60] },
+            { x: [-156, -110], y: [-94, -90], z: [-80, -60] },
+        ],
+    };
+    const prb = (response) => response.match(/\[PRB:([-\d.]+),([-\d.]+),([-\d.]+):(\d)\]/).slice(1).map(Number);
+
+    const onScene = async () => {
+        const sim = new GrblSimulator();
+        expect(await send(sim, `#scene ${JSON.stringify(scene)}`)).toBe('ok\r\n');
+        await send(sim, 'G10 L2 P1 X-120 Y-80 Z-40');
+        // Rapids fast enough for a test.
+        ['$110', '$111', '$112'].forEach((setting) => sim.processLine(`${setting}=600000`));
+        return sim;
+    };
+
+    it('moves in machine coordinates on G53, whatever the offset', async () => {
+        const sim = await onScene();
+        await send(sim, 'G90 G21 G53 G0 X-140 Y-80 Z-50');
+        await send(sim, 'G4 P0');
+
+        expect(sim.machinePosition).toEqual({ x: -140, y: -80, z: -50 });
+    });
+
+    it('answers a touch with the report in machine coordinates, then ok', async () => {
+        const sim = await onScene();
+        await send(sim, 'G53 G0 X-140 Y-80 Z-50');
+
+        const response = await send(sim, 'G90 G21 G38.2 Z-25 F6000');
+
+        expect(response).toMatch(/^\[PRB:[^\]]+:1\]\r\nok\r\n$/);
+        expect(prb(response)).toEqual([-140, -80, -52, 1]);
+        expect(sim.machinePosition.z).toBeCloseTo(-52, 6);
+    });
+
+    it('finds a wall with the side of the tool, a radius short of its face', async () => {
+        const sim = await onScene();
+        await send(sim, 'G53 G0 X-165 Y-80 Z-65');
+
+        const response = await send(sim, 'G38.2 X-20 F6000');
+
+        expect(prb(response)).toEqual([-158, -80, -65, 1]);
+    });
+
+    it('lights the pin while the tool rests on the plate', async () => {
+        const sim = await onScene();
+        await send(sim, 'G53 G0 X-140 Y-80 Z-50');
+        expect(sim.generateStatusReport()).not.toContain('Pn:');
+
+        await send(sim, 'G38.2 Z-25 F6000');
+
+        expect(sim.generateStatusReport()).toContain('|Pn:P');
+    });
+
+    it('G38.2 touching nothing: ALARM:5, the old position with :0, then still ok', async () => {
+        const sim = await onScene();
+        await send(sim, 'G53 G0 X-140 Y-80 Z-50');
+        await send(sim, 'G38.2 Z-25 F6000');
+        await send(sim, 'G53 G0 Z-40');
+
+        const response = await send(sim, 'G38.2 X20 F6000');
+
+        expect(response).toBe('ALARM:5\r\n[PRB:-140.000,-80.000,-52.000:0]\r\nok\r\n');
+        expect(sim.machineState).toBe('Alarm');
+        expect(sim.machinePosition.x).toBeCloseTo(-100, 6);
+    });
+
+    it('G38.3 touching nothing: the target with :0 and ok, no alarm', async () => {
+        const sim = await onScene();
+        await send(sim, 'G53 G0 X-165 Y-80 Z-40');
+
+        const response = await send(sim, 'G38.3 Z-30 F6000');
+
+        expect(response).toBe('[PRB:-165.000,-80.000,-70.000:0]\r\nok\r\n');
+        expect(sim.machineState).toBe('Idle');
+    });
+
+    it('a pin already closed is ALARM:4 and ok, and nothing moves', async () => {
+        const sim = await onScene();
+        await send(sim, 'G53 G0 X-140 Y-80 Z-50');
+        expect(await send(sim, '#pin on')).toBe('ok\r\n');
+        expect(sim.generateStatusReport()).toContain('|Pn:P');
+
+        const response = await send(sim, 'G38.2 Z-25 F6000');
+
+        expect(response).toBe('ALARM:4\r\nok\r\n');
+        expect(sim.machinePosition.z).toBe(-50);
+    });
+
+    it('refuses a scene it cannot read, and #scene alone puts the surface back', async () => {
+        const sim = await onScene();
+
+        expect(await send(sim, '#scene {boxes')).toContain('error:3');
+        expect(await send(sim, '#scene')).toBe('ok\r\n');
+        expect(sim.probeScene.boxes).toEqual([]);
+    });
+});
