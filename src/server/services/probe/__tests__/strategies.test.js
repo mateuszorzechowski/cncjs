@@ -110,6 +110,21 @@ describe('the Z plate', () => {
     expect(sent[sent.length - 1]).toBe('G90 G21');
   });
 
+  test('Z0 where it was measured, or the stock thickness away: the plate on the work, Z0 on the table, and back', () => {
+    const at = (options, plateOn) => {
+      const under = [{ x: [-200, 200], y: [-200, 200], z: [plateOn - 12.5, plateOn] }];
+      return measure({ method: 'z', options, params: { ...params, stockThickness: 18 }, boxes: under, start: { x: 0, y: 0, z: plateOn + 5 } }).zero;
+    };
+    // On the work, its top at -60.
+    close(at({ on: 'work', z0: 'top' }, -47.5), { z: -60 });
+    close(at({ on: 'work', z0: 'table' }, -47.5), { z: -78 });
+    // On the table, at -78.
+    close(at({ on: 'table', z0: 'table' }, -65.5), { z: -78 });
+    close(at({ on: 'table', z0: 'top' }, -65.5), { z: -60 });
+    expect(STRATEGIES.z.check({ on: 'floor' })).toBe('bad-surface');
+    expect(STRATEGIES.z.check({})).toBeNull();
+  });
+
   test('a plate further down than the limit is a failure, and the zero is not touched', () => {
     const { outcome, zero, pos } = measure({ method: 'z', params: { ...params, maxZ: 5 }, boxes, start: { x: 0, y: 0, z: -40 } });
 
@@ -183,6 +198,12 @@ describe('the paper', () => {
     expect(outcome.failure).toBeUndefined();
     close(zero, expected);
     expect(Object.keys(zero)).toEqual(Object.keys(expected));
+  });
+
+  test('on the top, Z0 on the table: down by the stock thickness; a side is never moved', () => {
+    const p = { ...params, stockThickness: 18 };
+    close(measure({ method: 'paper', options: { edge: 'z', on: 'work', z0: 'table' }, params: p, boxes: [], start }).zero, { z: -48.1 });
+    close(measure({ method: 'paper', options: { edge: 'x-left', on: 'work', z0: 'table' }, params: p, boxes: [], start }).zero, { x: -96.9 });
   });
 
   test('moves nothing: the only line is the modes put back', () => {

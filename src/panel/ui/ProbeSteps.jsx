@@ -11,7 +11,7 @@ import PaperScene from './PaperScene';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
-import { METHODS, failureKey, phaseWords } from '../machine/probe';
+import { METHODS, SURFACE, failureKey, phaseWords } from '../machine/probe';
 import { paperScene } from '../machine/paperCycle';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
@@ -37,16 +37,19 @@ const CYCLES = {
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
 
+// Where the measurement was made and Z0 went, as it was asked for.
+const surfaceOf = (probe) => ({ on: probe?.options?.on ?? SURFACE.on, z0: probe?.options?.z0 ?? SURFACE.z0 });
+
 const OUTCOMES = {
-  // Design 1a: the tool lifted clear, Z0 under the plate by its thickness.
-  z: ({ plate }) => (
-    <ZPlateScene gap={56} marks={THICKNESS} zero={1} badge={{ x: 304, y: 191, text: `T ${plate}` }} label={t('probe.method.z')} className="mx-auto w-full max-w-md" />
+  // Design 1a: the tool lifted clear, Z0 under the plate by its thickness — or on the table.
+  z: ({ plate, probe }) => (
+    <ZPlateScene gap={56} marks={THICKNESS} zero={1} surface={surfaceOf(probe)} badge={{ x: 304, y: 191, text: `T ${plate}` }} label={t('probe.method.z')} className="mx-auto w-full max-w-md" />
   ),
   // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
   corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} done className="mx-auto w-full max-w-md" />,
   // The paper's zero written: the sheet flat under the tool, the zero's line on the surface.
   paper: ({ probe }) => (
-    <PaperScene {...paperScene('zero', 1, { edge: probe?.options?.edge || 'z' })} dim={null} dia={null} label={t('probe.method.paper')} className="mx-auto w-full max-w-md" />
+    <PaperScene {...paperScene('zero', 1, { edge: probe?.options?.edge || 'z', surface: surfaceOf(probe) })} dim={null} dia={null} stock={null} label={t('probe.method.paper')} className="mx-auto w-full max-w-md" />
   ),
 };
 
@@ -76,7 +79,7 @@ export const MethodStep = ({ onPick }) => (
 );
 
 export const PrepareStep = ({
-  method, chosen, fields, texts, onText, bad, wcs, split = null,
+  method, chosen, surface, onSurface, fields, texts, onText, bad, wcs, split = null,
 }) => {
   const Editor = EDITORS[method.id];
   return (
@@ -88,6 +91,8 @@ export const PrepareStep = ({
       wcs={wcs}
       corner={chosen}
       chosen={chosen}
+      surface={surface}
+      onSurface={onSurface}
       split={split}
       intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
       note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}

@@ -14,6 +14,7 @@ export const FIELDS = {
   wallY: { key: 'probe.field.wallY', kind: 'length' },
   toolDiameter: { key: 'probe.field.toolDiameter', kind: 'length' },
   paperThickness: { key: 'probe.field.paperThickness', kind: 'length' },
+  stockThickness: { key: 'probe.field.stockThickness', kind: 'length' },
   clear: { key: 'probe.field.clear', kind: 'length' },
   depth: { key: 'probe.field.depth', kind: 'length' },
   maxZ: { key: 'probe.field.maxZ', kind: 'length' },

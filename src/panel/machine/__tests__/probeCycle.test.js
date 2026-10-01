@@ -107,7 +107,16 @@ describe('the Z plate cycle (probe proposal)', () => {
     const barred = PLATE_GROUPS.flatMap((group) => group.subs.flatMap((sub) => sub.moves));
     expect(barred).toEqual(PLATE_ORDER);
     const grouped = PLATE_PARAMS.flatMap((group) => group.fields).sort();
-    expect(grouped).toEqual(['fast', 'lift', 'maxZ', 'plateThickness', 'retract', 'slow']);
+    expect(grouped).toEqual(['fast', 'lift', 'maxZ', 'plateThickness', 'retract', 'slow', 'stockThickness']);
+  });
+
+  test('Z0 on the table: the zero written over the surface by the work, and read so', () => {
+    const texts = { ...TEXTS, stockThickness: '18' };
+    expect(plateCode('zero', texts, 1, { on: 'work', z0: 'table' })).toBe('G10 L20 P1 Z38');
+    expect(plateCode('zero', texts, 1, { on: 'table', z0: 'top' })).toBe('G10 L20 P1 Z2');
+    expect(plateCode('zero', texts, 1, { on: 'table', z0: 'table' })).toBe('G10 L20 P1 Z20');
+    expect(plateReadout('zero', { plateThickness: 20, stockThickness: 18 }, { on: 'work', z0: 'table' }).z).toBe(38);
+    expect(plateScene('zero', 1, { texts, say, surface: { on: 'work', z0: 'table' } }).stock).toMatchObject({ text: '18 mm' });
   });
 
   test('plays the move of the server\'s step on the measurement screen', () => {

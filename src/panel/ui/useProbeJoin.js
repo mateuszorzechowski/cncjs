@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import useProbeStage from './useProbeStage';
-import { methodOf } from '../machine/probe';
+import { SURFACE, methodOf } from '../machine/probe';
 import { t } from '../i18n';
 
 /**
@@ -19,14 +19,14 @@ import { t } from '../i18n';
  * The wizard's own state is the screen's; its setters are passed in.
  */
 const useProbeJoin = ({
-  machine, method, choice, step, feeling, ask, onAsked, setPicked, setChosen, setLocal, setJogging,
+  machine, method, choice, surface, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
 }) => {
   const shared = machine.probeStage;
   const [mode, setMode] = useState(null);
   const [takenBy, setTakenBy] = useState(null);
   const [declined, setDeclined] = useState(false);
   const { mine } = useProbeStage({
-    machine, method, choice, step, feeling, mode, onFollow: setLocal,
+    machine, method, choice, surface, step, feeling, mode, onFollow: setLocal,
     onTakenOver: (name) => {
       setTakenBy(name || t('probe.join.elsewhere'));
       setLocal(mode === 'own' ? 'prepare' : 'method');
@@ -45,6 +45,7 @@ const useProbeJoin = ({
     if (joined?.choice) {
       setChosen((now) => ({ ...now, [shared.method]: shared.options?.[joined.choice.option] }));
     }
+    setSurface({ on: shared.options?.on ?? SURFACE.on, z0: shared.options?.z0 ?? SURFACE.z0 });
     setLocal(shared.step);
   };
 

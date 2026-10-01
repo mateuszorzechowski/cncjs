@@ -16,6 +16,8 @@
 
 import { sheetAt, sheetShape } from './paperSheet';
 import { frameAt, layOut, totalOf } from './timeline';
+import { overSurface } from './probeCycle';
+import { SURFACE } from './surface';
 
 // The work's face, and the sheet's top on it — drawn thick, not to scale.
 export const FACE_Y = 156;
@@ -140,10 +142,12 @@ export const PAPER_GROUPS = [
 export const PAPER_PARAMS = [
   { id: 'paper', key: 'probe.group.paper', fields: ['paperThickness'] },
   { id: 'tool', key: 'probe.group.tool', fields: ['toolDiameter'], side: true },
+  // The top only, while Z0 is the work's thickness from the surface measured.
+  { id: 'stock', key: 'probe.group.stock', fields: ['stockThickness'], top: true, shifts: true },
 ];
 
 // A figure being set loops the zero, its part lit.
-const EDIT = { paperThickness: 'zero', toolDiameter: 'zero' };
+const EDIT = { paperThickness: 'zero', toolDiameter: 'zero', stockThickness: 'zero' };
 
 export const moveOf = (name) => MOVES[name];
 
@@ -213,7 +217,9 @@ export const offsetOf = (edge, mm) => mm.paperThickness + (edge === 'z' ? 0 : mm
  * The drawing of move `name` at `p` — the sheet's history worked out up to
  * there; `texts` the figures, `say(field, text)` a figure as a label says it.
  */
-export const paperScene = (name, p, { edge = 'z', texts = {}, say = (field, text) => text, focus = null } = {}) => {
+export const paperScene = (name, p, {
+  edge = 'z', texts = {}, say = (field, text) => text, focus = null, surface = SURFACE,
+} = {}) => {
   const move = MOVES[name];
   const at = startOf(name) + p * RUN_MS;
   const sheet = sheetAt(at, scriptAt);
@@ -245,11 +251,18 @@ export const paperScene = (name, p, { edge = 'z', texts = {}, say = (field, text
     side,
     mirror: mirrored(edge),
     focus,
+    // On the top, where the sheet lies and Z0 goes; the work's thickness drawn at the zero and while set.
+    surface: side ? SURFACE : surface,
+    stock: !side && (move.after || focus === 'stockThickness')
+      ? { text: say('stockThickness', texts.stockThickness ?? ''), lit: focus === 'stockThickness' }
+      : null,
   };
 };
 
 /** The move's line: the jog as the pad sends it — down, or back up — or the zero written. */
-export const paperCode = (name, edge, texts, wcs = 1, mm = { paperThickness: number(texts.paperThickness), toolDiameter: number(texts.toolDiameter) }) => {
+export const paperCode = (name, edge, texts, wcs = 1, surface = SURFACE, mm = {
+  paperThickness: number(texts.paperThickness), toolDiameter: number(texts.toolDiameter), stockThickness: number(texts.stockThickness),
+}) => {
   const { axis, sign } = EDGES_BY_ID[edge];
   const A = axis.toUpperCase();
   const toward = sign > 0 ? '' : '-';
@@ -262,15 +275,17 @@ export const paperCode = (name, edge, texts, wcs = 1, mm = { paperThickness: num
   if (name === 'back' || name === 'here') {
     return `$J=G91 ${A}${toward ? '' : '-'}0.1`;
   }
-  return `G10 L20 P${wcs} ${A}${fmt(-sign * offsetOf(edge, mm))}`;
+  const over = edge === 'z' ? overSurface(surface, mm.stockThickness) : 0;
+  return `G10 L20 P${wcs} ${A}${fmt(-sign * offsetOf(edge, mm) + over)}`;
 };
 
 // An example of where the tool stood against the old zero, before it is written.
 export const BEFORE_MM = 12.34;
 
 /** The readout: the axis against the old zero before, the offset after — held, not following the moves. */
-export const paperReadout = (name, edge, mm) => {
+export const paperReadout = (name, edge, mm, surface = SURFACE) => {
   const after = Boolean(MOVES[name].after);
   const { axis, sign } = EDGES_BY_ID[edge];
-  return { axis, value: after ? -sign * offsetOf(edge, mm) : BEFORE_MM, after };
+  const over = edge === 'z' ? overSurface(surface, mm.stockThickness ?? 0) : 0;
+  return { axis, value: after ? -sign * offsetOf(edge, mm) + over : BEFORE_MM, after };
 };

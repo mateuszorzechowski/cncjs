@@ -1,5 +1,8 @@
 import controller from './controller';
 import { currentToken } from './session';
+import { SURFACE } from './surface';
+
+export { SURFACE, surfaceShifts } from './surface';
 
 /**
  * The probe, from the panel — the server's half is `services/probe` and the
@@ -70,8 +73,14 @@ export const METHODS = [
 
 export const methodOf = (id) => METHODS.find((method) => method.id === id) || null;
 
-/** What a measurement is asked for with: the method's one choice, if it has one. */
-export const optionsFor = (method, chosen) => (method?.choice ? { [method.choice.option]: chosen } : {});
+// The Z plate, and the paper on the top, say where Z0 goes (`surface`).
+export const usesSurface = (method, chosen) => method?.id === 'z' || (method?.id === 'paper' && chosen === 'z');
+
+/** What a measurement is asked for with: the method's one choice, if it has one, and where Z0 goes. */
+export const optionsFor = (method, chosen, surface = SURFACE) => ({
+  ...(method?.choice ? { [method.choice.option]: chosen } : {}),
+  ...(usesSurface(method, chosen) ? { on: surface.on, z0: surface.z0 } : {}),
+});
 
 /*
  * Where the wizard is. The first four are the operator's own, one after

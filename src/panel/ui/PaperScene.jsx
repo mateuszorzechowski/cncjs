@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  Contact, DASH, Dimension, FACE, Head, Jog, Motion, NS, TONES, Tag, kit,
+  Contact, Dimension, FACE, Head, Jog, Motion, NS, SurfaceGround, TONES, Tag, kit,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { FACE_Y, SHEET_Y } from '../machine/paperCycle';
@@ -51,7 +51,7 @@ const TAG_FACE = { grn: FACE.touch, amb: FACE.warn, red: FACE.alarm };
 
 const PaperScene = ({
   gap = 60, shift = 0, motion = null, sheet, tone = null, jog = null, fine = null, tag = null, zero = 0, axis = 'Z',
-  dim = null, dia = null, side = false, mirror = false, focus = null, label, className = '',
+  dim = null, dia = null, side = false, mirror = false, focus = null, surface = undefined, stock = null, label, className = '',
 }) => {
   const toolX = TOOL_X + shift;
   const id = useId().replace(/:/g, '');
@@ -74,13 +74,19 @@ const PaperScene = ({
           <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
         </pattern>
       </defs>
-      <rect x={-2} y={FACE_Y} width={WIDTH + 4} height={40} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
-      {zero > 0 ? (
-        <g opacity={zero}>
-          <path d={`M0 ${FACE_Y} H${WIDTH}`} className="stroke-acc" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
-          <text x={mirror ? 6 : WIDTH - 30} y={FACE_Y - 5} fontSize={size.fs} className="fill-acc font-num font-semibold">{`${axis}0`}</text>
-        </g>
-      ) : null}
+      {/* The work, or the table with the work beside it past the sheet's end, and Z0 on the surface chosen. */}
+      <SurfaceGround
+        fill={`url(#${id})`}
+        y={FACE_Y}
+        width={WIDTH}
+        surface={surface}
+        zero={zero}
+        label={`${axis}0`}
+        labelX={mirror ? 6 : WIDTH - 30}
+        stock={stock ? { ...stock, fade: focus && !stock.lit ? 0.3 : 1 } : null}
+        blockX={240}
+        size={size}
+      />
       <path d={path} fill="none" className="stroke-plate" strokeWidth={BAND} strokeLinejoin="round" />
       <path d={path} transform={`translate(0 ${-EDGE})`} fill="none" className="stroke-plateEdge" strokeWidth={1.5} strokeLinejoin="round" vectorEffect={NS} />
       {/* The hand's to-and-fro at the sheet's end: grey while it slides freely, then in the feel's colour. */}

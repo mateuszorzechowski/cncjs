@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import MoveBar, { namedGroups } from './MoveBar';
 import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
+import SurfaceChoice from './SurfaceChoice';
 import { figureColumns } from './ProbeSections';
 import ZPlateScene from './ZPlateScene';
 import { useClock, useReducedMotion } from './useClock';
@@ -14,6 +15,7 @@ import {
   fillsAt, frameAt, rangeOf, timeAt,
 } from '../machine/timeline';
 import { inMm } from '../machine/units';
+import { SURFACE, surfaceShifts } from '../machine/surface';
 import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -42,8 +44,9 @@ const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53
  * as cards of their own.
  */
 const ZPlateParams = ({
-  fields, texts, onText, bad, wcs, intro = null, note = null, split = null,
+  fields, texts, onText, bad, wcs, surface = SURFACE, onSurface = () => {}, intro = null, note = null, split = null,
 }) => {
+  const shifts = surfaceShifts(surface);
   const units = useUnits();
   const wide = useIsWide();
   const [picked, setPicked] = useState(null);
@@ -60,16 +63,20 @@ const ZPlateParams = ({
   const pick = (ids, part = null) => player.seek({ ...rangeOf(items, ids, part), ids, part });
   const say = (field, text) => figureSaid(field, text, units.rule);
   const scene = plateScene(name, p, {
-    texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus,
+    texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus, surface,
   });
   const move = moveOf(name);
-  const code = plateCode(name, texts, systemNumber(wcs));
-  const mm = { plateThickness: inMm(numberOf(texts.plateThickness), units.rule) ?? 0 };
-  const read = plateReadout(name, mm);
+  const code = plateCode(name, texts, systemNumber(wcs), surface);
+  const mm = {
+    plateThickness: inMm(numberOf(texts.plateThickness), units.rule) ?? 0,
+    stockThickness: inMm(numberOf(texts.stockThickness), units.rule) ?? 0,
+  };
+  const read = plateReadout(name, mm, surface);
   const title = t(move.titleKey, { t: say('plateThickness', texts.plateThickness ?? '') });
 
   const groups = namedGroups(PLATE_GROUPS, t, (id) => t(moveOf(id).titleKey, { t: '' }));
-  const sections = PLATE_PARAMS.map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
+  const sections = PLATE_PARAMS.filter((one) => !one.shifts || shifts)
+    .map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
     .filter((one) => one.fields.length);
 
   const left = (
@@ -97,9 +104,27 @@ const ZPlateParams = ({
       </div>
     </div>
   );
+  // The work's thickness lit with the zero it moves.
+  const lit = name === 'zero' && shifts ? [...move.uses, 'stockThickness'] : move.uses;
   const { right, third } = figureColumns({
-    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField: setPicked, lit: move.uses, intro, note,
+    wide: wide && Boolean(split),
+    sections,
+    open,
+    onOpen: setOpen,
+    texts,
+    onText,
+    bad,
+    onField: setPicked,
+    lit,
+    intro: (
+      <>
+        {intro}
+        <SurfaceChoice value={surface} onChange={onSurface} />
+      </>
+    ),
+    note,
   });
+
   if (split) {
     return split(left, right, third);
   }

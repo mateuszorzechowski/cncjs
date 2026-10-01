@@ -136,6 +136,15 @@ describe('the paper cycle', () => {
     expect(paperCode('zero', 'y-back', texts)).toBe('G10 L20 P1 Y3.1');
   });
 
+  test('on the top, Z0 on the table: the work over it; a side keeps no surface', () => {
+    const texts = { paperThickness: '0.1', toolDiameter: '6', stockThickness: '18' };
+    const table = { on: 'work', z0: 'table' };
+    expect(paperCode('zero', 'z', texts, 1, table)).toBe('G10 L20 P1 Z18.1');
+    expect(paperCode('zero', 'x-left', texts, 1, table)).toBe('G10 L20 P1 X-3.1');
+    expect(paperReadout('zero', 'z', { paperThickness: 0.1, toolDiameter: 6, stockThickness: 18 }, table).value).toBeCloseTo(18.1, 6);
+    expect(paperScene('zero', 1, { edge: 'x-left', surface: table }).surface).toEqual({ on: 'work', z0: 'top' });
+  });
+
   test('reads the axis against the old zero, then the offset, held through the moves', () => {
     const mm = { paperThickness: 0.1, toolDiameter: 6 };
     expect(paperReadout('fine', 'z', mm)).toEqual({ axis: 'z', value: 12.34, after: false });
