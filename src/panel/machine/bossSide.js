@@ -116,7 +116,10 @@ export const bossSide = (move, p, {
   let contact = null;
   if (move.kind === 'place') {
     // Into place: a few millimetres over the top, said as the Z plate says it.
-    gap = { at: x + r + 12, from: 0, to: h, key: 'probe.position.few' };
+    // Once the ball is in place, not growing as it comes down.
+    gap = level <= 1.001 ? {
+      at: x + r + 12, from: 0, to: heightOf(1), key: 'probe.position.few',
+    } : null;
   }
   if (move.kind === 'set' && flat && (legAt(p).name === 'out' || lit('clear'))) {
     // How far out past the part, beside it under the top.
@@ -126,7 +129,10 @@ export const bossSide = (move, p, {
   }
   if ((move.kind === 'set' && (legAt(p).name === 'down' || lit('depth'))) || move.kind === 'fast') {
     // How far down beside the side, beside the part on the side away from the ball, where there is room for its words.
-    depth = { at: (flat ? -move.sign : -1) * (BOSS_R + 14), text: said('depth'), lit: lit('depth') };
+    // To where the ball goes, not where it is: the figure stands still while the ball moves (review note, 2026-10-01).
+    depth = {
+      at: (flat ? -move.sign : -1) * (BOSS_R + 14), to: heightOf(0) + TOOL_R, text: said('depth'), lit: lit('depth'),
+    };
   }
   if ((move.kind === 'fast' || move.kind === 'slow') && level < 0.01 && Math.hypot(x - move.wall[0], y - move.wall[1]) < 0.5) {
     // Across X the touch is at the ball's side; along Y it faces into the drawing, at its middle.

@@ -130,8 +130,8 @@ const CentreSide = ({
       ))}
       {depth ? (
         <g opacity={fade('depth')}>
-          <Dimension axis={ALONG} at={depth.at} from={0} to={cy} lit={depth.lit} size={size} />
-          {besideV(depth.at, cy / 2, depth.text, depth.lit)}
+          <Dimension axis={ALONG} at={depth.at} from={0} to={-depth.to} lit={depth.lit} size={size} />
+          {besideV(depth.at, -depth.to / 2, depth.text, depth.lit)}
         </g>
       ) : null}
       {gap ? (
