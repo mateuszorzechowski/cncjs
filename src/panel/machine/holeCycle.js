@@ -11,6 +11,7 @@
  * up; the figures said come from the form. Nothing here is the machine's.
  */
 
+import { holeSide } from './holeSide';
 import { frameAt, layOut, totalOf } from './timeline';
 
 export const SPAN_MS = 3400;
@@ -199,7 +200,8 @@ export const holeScene = (name, p, {
       };
     }
     limit = {
-      axis: move.axis, from: move.from, to: along(move.axis, move.wall, move.sign * PAST), text: upTo(said('holeSize')), lit: focus === 'dim',
+      // Its words near the wall, off the middle where the touches across X sit.
+      axis: move.axis, from: move.from, to: along(move.axis, move.wall, move.sign * PAST), text: upTo(said('holeSize')), lit: focus === 'dim', tagAt: 0.85,
     };
   } else if (move.kind === 'centre' && p > 0.15 && p < 0.6) {
     motion = {
@@ -292,8 +294,11 @@ export const holeWords = (phase) => {
 export const HOLE_CYCLE = {
   part: {
     // How much larger the ball is drawn up high than down in the hole (review note, 2026-10-01: *"większa różnica rozmiaru"*).
-    kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2,
+    kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2, view: [-101, -94, 202, 188],
   },
+  // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
+  side: (name, p, how) => holeSide({ ...MOVES[name], at: toolAt(MOVES[name], p) }, p, how, HOLE_CYCLE.part),
+  sidePlace: ({ tool, level }) => holeSide({ kind: 'place', at: tool, level }, 0, {}, HOLE_CYCLE.part),
   place: 'probe.place.hole',
   params: HOLE_PARAMS,
   hold: LOOP_HOLD_MS,

@@ -56,8 +56,13 @@ export const bossSide = (move, p, {
   const said = (field) => say(field, texts[field] ?? '');
   let motion = null;
   let depth = null;
+  let gap = null;
+  let dims = [];
   let contact = null;
-  if (move.kind === 'top') {
+  if (move.kind === 'place') {
+    // Into place: a few millimetres over the top, said as the Z plate says it.
+    gap = { at: x + r + 12, from: 0, to: h, key: 'probe.position.few' };
+  } else if (move.kind === 'top') {
     if (p > 0.15 && p < 0.5) {
       motion = {
         dir: 'v', at: x, from: heightOf(1), to: 0, kind: 'probe', text: upTo(said('maxZ')), lit: focus === 'dim',
@@ -73,6 +78,12 @@ export const bossSide = (move, p, {
       motion = {
         dir: 'h', at: heightOf(ABOVE), from: move.from[0], to: move.out[0], kind: 'rapid',
       };
+    }
+    // How far out past the part, beside it under the top: on the way out across X, or while set.
+    if (flat && (leg.name === 'out' || focus === 'clear')) {
+      dims = [{
+        id: 'clear', at: -10, from: move.sign * BOSS_R, to: move.out[0], text: said('clear'), lit: focus === 'clear',
+      }];
     } else if (leg.name === 'down') {
       motion = {
         dir: 'v', at: x, from: heightOf(ABOVE), to: heightOf(0), kind: 'probe',
@@ -88,9 +99,10 @@ export const bossSide = (move, p, {
     }
     // How far down beside the side, under the top: while it goes down and touches, or while set.
     if (leg.name === 'down' || leg.name === 'touch' || focus === 'depth') {
-      const out = flat ? move.sign : 1;
+      // Beside the part on the side away from the ball, where the drawing has room for its words.
+      const away = flat ? -move.sign : -1;
       depth = {
-        at: x + out * (r + 10), text: said('depth'), lit: focus === 'depth',
+        at: away * (BOSS_R + 14), text: said('depth'), lit: focus === 'depth',
       };
     }
     if (level < 0.01 && Math.hypot(x - move.wall[0], y - move.wall[1]) < 0.5) {
@@ -105,6 +117,8 @@ export const bossSide = (move, p, {
     h,
     motion,
     depth,
+    gap,
+    dims,
     contact,
     zero: move.zeroAt ? Math.max(0, Math.min(1, (p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0]))) : 0,
   };

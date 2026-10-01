@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import BossSide from './BossSide';
 import CentreScene from './CentreScene';
+import CentreSide from './CentreSide';
 import SegmentedChoice from './SegmentedChoice';
 import { useIsPhone } from './shell';
 import { t } from '../i18n';
@@ -9,8 +9,8 @@ const VIEWS = ['top', 'side'];
 const VIEW_KEYS = { top: 'probe.view.top', side: 'probe.view.side' };
 
 /**
- * A centre's drawing: from above, and — for a part touched from outside,
- * whose cycle has `side` — from the side beside it, as the corner's
+ * A centre's drawing: from above, and — where its cycle has `side` — from
+ * the front beside it, as the corner's
  * (review note, 2026-10-01). On a phone one view at a time: the one the
  * move is seen best from (`auto`), or one chosen by hand, held while that
  * move plays.
@@ -26,7 +26,7 @@ const CentreViews = ({
   if (!side) {
     return topView;
   }
-  const sideView = <BossSide {...side} focus={top.focus} bare={bare} label={label} className={`h-auto w-full ${className}`} />;
+  const sideView = <CentreSide part={cycle.part} {...side} focus={top.focus} bare={bare} label={label} className={`h-auto w-full ${className}`} />;
   if (!phone) {
     return (
       <div className="grid grid-cols-2 divide-x divide-line">

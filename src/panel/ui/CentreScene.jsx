@@ -35,6 +35,12 @@ const END = 'end';
 // Y up in the drawing's figures, down on the screen.
 const sy = (y) => -y;
 
+/*
+ * Where a dimension down the drawing has its words: half way, or `at` of
+ * the way from its start — off the middle, where the touches across X sit.
+ */
+const along = (from, to, at = 0.5) => from + (to - from) * at;
+
 const BOSS = 'boss';
 
 const CentreScene = ({
@@ -82,7 +88,7 @@ const CentreScene = ({
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
         {/* Down the drawing, the words stand beside the line rather than over it. */}
         {flat ? tag((from + to) / 2, at + 12, limit.text, face) : null}
-        {!flat && !bare && limit.text ? <Tag x={at + 12} y={(from + to) / 2} text={limit.text} face={face} size={size} /> : null}
+        {!flat && !bare && limit.text ? <Tag x={at + 12} y={along(from, to, limit.tagAt)} text={limit.text} face={face} size={size} /> : null}
       </g>
     );
   }
@@ -97,7 +103,7 @@ const CentreScene = ({
       <g key={dim.id} opacity={fade(dim.id)}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} lit={dim.lit} size={size} />
         {flat ? tag((from + to) / 2, at + 12, dim.text, face) : null}
-        {!flat && !bare && dim.text ? <Tag x={at + 12} y={(from + to) / 2} text={dim.text} face={face} size={size} /> : null}
+        {!flat && !bare && dim.text ? <Tag x={at + 12} y={along(from, to, dim.tagAt)} text={dim.text} face={face} size={size} /> : null}
       </g>
     );
   });
