@@ -83,6 +83,9 @@ const tick = () => {
     console.log(`▶ wypuszczone — ${fresh.length} otwartych uwag:\n`);
     fresh.forEach((note) => {
       console.log(`  #${note.id} [${note.screen}] <${note.tag}> ${note.label}`);
+      if (note.viewport) {
+        console.log(`     ekran: ${note.viewport.w}×${note.viewport.h}, dpr ${note.viewport.dpr}`);
+      }
       if (note.probe) {
         const p = note.probe;
         console.log(`     sonda: ${p.method} · ${[p.stage, p.sub].filter(Boolean).join(' / ')} · ${p.move} „${p.title}” · ${p.at}% · ${p.caption}`);
