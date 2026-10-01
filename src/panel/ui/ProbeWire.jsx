@@ -67,13 +67,60 @@ const Plate = ({ kind, x, y }) => {
   return <Shape x={x} y={y} />;
 };
 
-const ProbeWire = ({ lit, plate = 'flat' }) => {
-  // Unknown reads as neither: both halves as drawn.
-  const open = lit === null ? '' : (lit ? 'opacity-30' : '');
-  const closed = lit === null ? '' : (lit ? '' : 'opacity-30');
+/*
+ * A 3D probe in the holder, its stylus and ball under it, and its lead off
+ * to the side; `tilt` the stylus deflected, in degrees about where it leaves
+ * the body.
+ */
+const Stylus = ({ x, tilt = 0 }) => (
+  <>
+    <path d={`M${x + 18} 62 C ${x + 44} 62, ${x + 40} 30, ${x + 70} 24`} className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" />
+    <rect x={x - 10} y={14} width={20} height={22} className="fill-field stroke-ink" strokeWidth={2} />
+    <rect x={x - 20} y={36} width={40} height={72} rx={6} className="fill-field stroke-ink" strokeWidth={2} />
+    <g transform={`rotate(${tilt} ${x} 108)`}>
+      <path d={`M${x} 108 V172`} className="stroke-ink" strokeWidth={3} />
+      <circle cx={x} cy={180} r={8} className="fill-field stroke-ink" strokeWidth={2} />
+    </g>
+  </>
+);
+
+// The finger pushing the ball aside: a rounded tip coming in from the right.
+const Finger = ({ x, y }) => (
+  <path d={`M${x + 70} ${y - 13} H${x + 13} A13 13 0 0 0 ${x + 13} ${y + 13} H${x + 70}`} className="fill-surf stroke-ink" strokeWidth={2} strokeLinejoin="round" />
+);
+
+const TILT = -14;
+
+/*
+ * A 3D probe's test (Mateusz, 2026-10-01): at rest on the left, its tip
+ * pushed aside by a finger on the right — the probe opens or closes there.
+ */
+const ProbeHalves = ({ open, closed }) => {
+  // Where the ball is with the stylus tilted.
+  const bx = 330 + 72 * Math.sin((-TILT * Math.PI) / 180);
   return (
-    <svg viewBox="0 0 440 280" role="img" aria-label={t('probe.wire.picture')} className="mx-auto block w-full max-w-sm rounded-ctl border border-line bg-panel">
-      <path d="M220.5 0 V280" className="stroke-line" strokeWidth={1} />
+    <>
+      <g className={open}>
+        <Stylus x={110} />
+        <Pill x={24} closed={false} text={t('probe.wire.open')} />
+        <text x={110} y={270} textAnchor={MIDDLE} className="fill-mut text-note">{t('probe.wire.atRest')}</text>
+      </g>
+      <g className={closed}>
+        <Stylus x={330} tilt={TILT} />
+        <Finger x={bx + 8} y={178} />
+        <Contact x={330} y={108} r={4.5} />
+        <path d={`M${bx + 70} 204 H${bx + 30}`} className="stroke-acc" strokeWidth={2.5} />
+        <path d={`M${bx + 31} 196 V212 L${bx + 18} 204 Z`} className="fill-acc stroke-acc" strokeWidth={1.5} strokeLinejoin="round" />
+        <Pill x={244} closed text={t('probe.wire.closed')} />
+        <text x={330} y={270} textAnchor={MIDDLE} className="fill-mut text-note">{t('probe.wire.deflected')}</text>
+      </g>
+    </>
+  );
+};
+
+/* The plate's test: the clip on the tool, the plate on its lead — apart, then touching. */
+const PlateHalves = ({ open, closed, plate }) => (
+  <>
       <g className={open}>
         <path d="M62 178 C 48 178, 44 202, 30 202 C 14 202, 10 182, 14 152 C 18 120, 12 100, 22 90 C 30 82, 44 78, 58 78" className="stroke-ink" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         <Plate kind={plate} x={70} y={170} />
@@ -96,6 +143,18 @@ const ProbeWire = ({ lit, plate = 'flat' }) => {
         <Pill x={244} closed text={t('probe.wire.closed')} />
         <text x={330} y={270} textAnchor={MIDDLE} className="fill-mut text-note">{t('probe.wire.after')}</text>
       </g>
+  </>
+);
+
+const ProbeWire = ({ lit, plate = 'flat' }) => {
+  // Unknown reads as neither: both halves as drawn.
+  const open = lit === null ? '' : (lit ? 'opacity-30' : '');
+  const closed = lit === null ? '' : (lit ? '' : 'opacity-30');
+  const probe = plate === 'probe';
+  return (
+    <svg viewBox="0 0 440 280" role="img" aria-label={t(probe ? 'probe.wire.probePicture' : 'probe.wire.picture')} className="mx-auto block w-full max-w-sm rounded-ctl border border-line bg-panel">
+      <path d="M220.5 0 V280" className="stroke-line" strokeWidth={1} />
+      {probe ? <ProbeHalves open={open} closed={closed} /> : <PlateHalves open={open} closed={closed} plate={plate} />}
     </svg>
   );
 };

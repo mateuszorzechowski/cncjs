@@ -109,7 +109,7 @@ export const PrepareStep = ({
 };
 
 export const WireStep = ({
-  lit, touched, plate, how = 'probe.wire.how',
+  lit, touched, plate, how = 'probe.wire.how', stuck = null,
 }) => {
   let state = t('probe.wire.waiting');
   if (lit === null) {
@@ -129,6 +129,7 @@ export const WireStep = ({
         <StatTile label={t('diag.pin.probe')} value={state} tone={lit ? 'warn' : undefined} />
         {touched ? null : <Notice>{t('probe.wire.untested')}</Notice>}
       </div>
+      {lit && stuck ? <Notice>{t(stuck)}</Notice> : null}
       {lit === null ? <p className="m-0 text-note text-mut">{t('probe.wire.unknown')}</p> : null}
     </div>
   );

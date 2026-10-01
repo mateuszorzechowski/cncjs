@@ -1469,14 +1469,18 @@
       "touching": "Touching",
       "ok": "Works",
       "unknown": "The controller does not report its inputs, so the wire cannot be checked here.",
-      "untested": "The wire is not tested. If the clip is not on, the tool goes all the way to the travel limit when measuring, and only then stops with ALARM:5.",
+      "untested": "The wire is untested. If the plate or the probe is not plugged in, the machine will travel all the way to the travel limit while measuring and only then stop with ALARM:5.",
       "picture": "The clip on the tool, and the plate apart from it and touching it",
       "open": "PROBE · open",
       "closed": "PROBE · closed",
       "before": "before the touch",
       "after": "plate touching the tool",
       "touch": "touch",
-      "howHole": "Deflect the probe's tip with a finger and let go. The panel reads the probe from the controller: it shows “Touching” while deflected and “Works” once you let go."
+      "howHole": "Deflect the probe's tip with a finger and let go. The panel reads the probe from the controller: it shows “Touching” while deflected and “Works” once you let go.",
+      "probePicture": "A 3D probe in the holder: at rest, and its tip pushed aside by a finger",
+      "atRest": "at rest",
+      "deflected": "a finger pushes the tip",
+      "normallyClosed": "If “Touching” shows while you are not pushing the tip, the probe is normally closed (NC). Invert the probe input: $6=1 in the controller settings. Without it the measurement stops at once with ALARM:4."
     },
     "position": {
       "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",

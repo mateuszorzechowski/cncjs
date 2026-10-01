@@ -1469,14 +1469,18 @@
       "touching": "Dotyk",
       "ok": "Działa",
       "unknown": "Sterownik nie podaje stanu wejść, więc przewodu nie da się tu sprawdzić.",
-      "untested": "Przewód nie sprawdzony. Jeśli krokodylek nie jest wpięty, frez przy pomiarze zjedzie aż do limitu dojazdu i dopiero wtedy stanie z ALARM:5.",
+      "untested": "Przewód nie sprawdzony. Jeśli płytka albo sonda nie jest wpięta, maszyna przy pomiarze dojedzie aż do limitu dojazdu i dopiero wtedy stanie z ALARM:5.",
       "picture": "Krokodylek na frezie, płytka z dala od niego i dotykająca go",
       "open": "SONDA · otwarta",
       "closed": "SONDA · zwarta",
       "before": "przed dotknięciem",
       "after": "płytka dotyka frezu",
       "touch": "dotknij",
-      "howHole": "Wychyl palcem końcówkę sondy i puść. Panel czyta stan sondy ze sterownika: przy wychyleniu pokaże „Dotyk”, po puszczeniu „Działa”."
+      "howHole": "Wychyl palcem końcówkę sondy i puść. Panel czyta stan sondy ze sterownika: przy wychyleniu pokaże „Dotyk”, po puszczeniu „Działa”.",
+      "probePicture": "Sonda 3D w uchwycie: w spoczynku i z końcówką wychyloną palcem",
+      "atRest": "w spoczynku",
+      "deflected": "palec wychyla końcówkę",
+      "normallyClosed": "Jeśli „Dotyk” świeci, choć nie wychylasz końcówki, sonda jest normalnie zwarta (NC). Odwróć wejście sondy: $6=1 w ustawieniach sterownika. Bez tego pomiar zatrzyma się od razu z ALARM:4."
     },
     "position": {
       "clipOn": "Wejście sondy świeci: płytka dotyka freza albo przewód jest zwarty. Usuń to przed pomiarem.",

@@ -49,7 +49,9 @@ const BY_HAND = ['method', 'choose', 'prepare', 'position', 'measure', 'result']
 
 /*
  * The methods the wizard offers, in its order. `wire`, how its wire is
- * tested, where that is not the plate's. `choice` is the one thing
+ * tested, where that is not the plate's; `stuck`, what to say while the
+ * input reads a touch (a 3D probe may be normally closed). `plate`, what the
+ * wire step draws. `choice` is the one thing
  * chosen per measurement, sent as that option; `start` names the button that
  * sets it going — a probe measures, the paper says "here". `touches`, as the
  * server's strategy says it: works through the probe input, which must be
@@ -67,7 +69,7 @@ export const METHODS = [
   },
   {
     id: 'hole', key: 'probe.method.hole', note: 'probe.method.holeNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
-    wire: 'probe.wire.howHole', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true,
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe',
   },
   {
     id: 'paper', key: 'probe.method.paper', note: 'probe.method.paperNote', how: 'probe.how.paper', place: 'probe.place.paper',
