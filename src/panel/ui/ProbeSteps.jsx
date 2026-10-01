@@ -2,17 +2,17 @@ import Button from './Button';
 import Notice from './Notice';
 import ProbePicture from './ProbePicture';
 import ProbeWire from './ProbeWire';
-import SegmentedChoice from './SegmentedChoice';
 import StatTile from './StatTile';
-import TextField from './TextField';
 import WcsBadge from './WcsBadge';
 import CornerCycle from './CornerCycle';
 import CornerParams from './CornerParams';
+import PaperParams from './PaperParams';
+import PaperScene from './PaperScene';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
 import { METHODS, failureKey, phaseWords } from '../machine/probe';
-import { FIELDS, fieldUnit } from '../machine/probeFields';
+import { paperScene } from '../machine/paperCycle';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -22,20 +22,14 @@ import { t } from '../i18n';
  * decides which is shown and what the buttons at its foot do.
  */
 
-// A field the server would not take, framed in red.
-const BAD = 'bad';
-
-// The mask the jog steps use: a figure and nothing else, a comma taken as a point.
-const figureOnly = (text) => text.replace(/[^0-9.,]/g, '');
-
 const signed = (text) => (text.startsWith('-') || text === NO_READING ? text : `+${text}`);
 
 /*
- * The methods that have their design's drawings (the flat set, 2026-09-29):
- * the figures set on the drawing, the measurement played on it, the zero
- * shown on it. The others keep their plain picture and fields for now.
+ * Each method's drawings (the flat set, 2026-09-29, and the paper's,
+ * 2026-09-30): the figures set on the drawing, the measurement played on it,
+ * the zero shown on it.
  */
-const EDITORS = { z: ZPlateParams, corner: CornerParams };
+const EDITORS = { z: ZPlateParams, corner: CornerParams, paper: PaperParams };
 const CYCLES = {
   z: ZPlateCycle,
   corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
@@ -50,6 +44,10 @@ const OUTCOMES = {
   ),
   // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
   corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} done className="mx-auto w-full max-w-md" />,
+  // The paper's zero written: the sheet flat under the tool, the zero's line on the surface.
+  paper: ({ probe }) => (
+    <PaperScene {...paperScene('zero', 1, { edge: probe?.options?.edge || 'z' })} dim={null} dia={null} label={t('probe.method.paper')} className="mx-auto w-full max-w-md" />
+  ),
 };
 
 /** The buttons at the foot of a step: back on the left, the way on at the right. */
@@ -77,65 +75,24 @@ export const MethodStep = ({ onPick }) => (
   </div>
 );
 
-// Whether a method's figures are set beside a drawing of its own, which the
-// screen can split into two cards.
-export const hasEditor = (method) => Boolean(EDITORS[method?.id]);
-
 export const PrepareStep = ({
   method, chosen, onChoose, fields, texts, onText, bad, wcs, split = null,
 }) => {
-  const units = useUnits();
   const Editor = EDITORS[method.id];
-  if (Editor) {
-    return (
-      <Editor
-        fields={fields}
-        texts={texts}
-        onText={onText}
-        bad={bad}
-        wcs={wcs}
-        corner={chosen}
-        split={split}
-        intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
-        note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}
-      />
-    );
-  }
   return (
-    <div className="grid gap-4 @3xl/shell:grid-cols-[auto_minmax(0,1fr)]">
-      <div className="flex flex-col items-center gap-3">
-        <ProbePicture method={method.id} choice={chosen} label={t(method.key)} className="h-40 w-52" />
-        {method.choice ? (
-          <SegmentedChoice
-            options={method.choice.list.map((c) => c.id)}
-            value={chosen}
-            onChange={onChoose}
-            format={(id) => t(method.choice.list.find((c) => c.id === id).key)}
-            label={t(method.choice.key)}
-            columns={method.choice.columns}
-          />
-        ) : null}
-      </div>
-      <div className="flex min-w-0 flex-col gap-3">
-        <p className="m-0 text-base text-ink">{t(method.how)}</p>
-        <p className="m-0 text-note text-mut">{t('probe.remember')}</p>
-        <div className="grid gap-2 @xl/shell:grid-cols-2">
-          {fields.map((name) => (
-            <div key={name} className="flex flex-col gap-1">
-              <span className="text-note text-mut">{t(FIELDS[name].key)}</span>
-              <TextField
-                label={t(FIELDS[name].key)}
-                inputMode="decimal"
-                unit={fieldUnit(name, units.rule)}
-                value={texts[name] ?? ''}
-                state={bad === name ? BAD : undefined}
-                onChange={(event) => onText(name, figureOnly(event.target.value))}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <Editor
+      fields={fields}
+      texts={texts}
+      onText={onText}
+      bad={bad}
+      wcs={wcs}
+      corner={chosen}
+      chosen={chosen}
+      onChoose={onChoose}
+      split={split}
+      intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
+      note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}
+    />
   );
 };
 

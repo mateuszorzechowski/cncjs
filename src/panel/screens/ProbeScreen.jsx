@@ -8,7 +8,7 @@ import ZPlatePosition from '../ui/ZPlatePosition';
 import CornerChooser from '../ui/CornerChooser';
 import CornerPosition from '../ui/CornerPosition';
 import {
-  Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep, hasEditor,
+  Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
 import Sheet from '../ui/Sheet';
 import StepTrack from '../ui/StepTrack';
@@ -199,7 +199,7 @@ const ProbeScreen = ({ machine }) => {
    * and stay in the one card. On a PC the group chosen stands in a third,
    * as the controller's settings (review note, 2026-09-30).
    */
-  const split = step === 'prepare' && !phone && hasEditor(method);
+  const split = step === 'prepare' && !phone;
   if (step === 'method') {
     body = <MethodStep onPick={pick} />;
   } else if (step === 'choose') {

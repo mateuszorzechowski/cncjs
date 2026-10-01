@@ -12,7 +12,9 @@
 export const NS = 'non-scaling-stroke';
 export const DASH = '5 4';
 // A tag's face, named for what it marks.
-export const FACE = { plain: 'plain', hot: 'hot', rapid: 'rapid', alarm: 'alarm' };
+export const FACE = {
+  plain: 'plain', hot: 'hot', rapid: 'rapid', alarm: 'alarm', ink: 'ink', touch: 'touch', warn: 'warn',
+};
 
 /** Label and arrowhead sizes, in the drawing's units, for scale `k`. */
 // Arrowheads small on thin lines, every arrow alike (review note, 2026-09-30).
@@ -23,6 +25,10 @@ const TAG_FACES = {
   hot: { box: 'fill-accS stroke-acc', line: 1.5, text: 'fill-acc' },
   rapid: { box: 'fill-surf stroke-line', line: 1, text: 'fill-rapid' },
   alarm: { box: 'fill-redS stroke-red', line: 1.5, text: 'fill-red' },
+  // The jog's words, in the colour of its arrow; a touch's, and a warning's.
+  ink: { box: 'fill-surf stroke-line', line: 1, text: 'fill-ink' },
+  touch: { box: 'fill-surf stroke-line', line: 1, text: 'fill-grn' },
+  warn: { box: 'fill-surf stroke-line', line: 1, text: 'fill-ambT' },
 };
 
 // A figure's words a little under the drawing's, and lighter (review note, 2026-09-30).
@@ -128,6 +134,33 @@ export const Motion = ({
   );
 };
 
+const DOWN = 'down';
+
+/*
+ * A jog, the operator's own move (paper proposal, 2026-09-30): solid in the
+ * text's colour, a tick where it set off and one every step since, `every`
+ * apart; down the drawing from `from` to `to` at `at`.
+ */
+export const Jog = ({
+  at, from, to, every = null, size,
+}) => {
+  const ticks = [];
+  if (every) {
+    for (let y = from; y < to - 1e-6; y += every) {
+      ticks.push(`M${at - 6} ${y} H${at + 6}`);
+    }
+  } else {
+    ticks.push(`M${at - 6} ${from} H${at + 6}`);
+  }
+  return (
+    <g>
+      <path d={`M${at} ${from} V${to - size.hh}`} className="stroke-ink" fill="none" strokeWidth={1.25} vectorEffect={NS} />
+      <path d={ticks.join(' ')} className="stroke-ink" fill="none" strokeWidth={1} vectorEffect={NS} />
+      <Head x={at} y={to} dir={DOWN} size={size} className="fill-ink" />
+    </g>
+  );
+};
+
 /** The drawing's alarm: a red dot where the tip stopped and the words in the top left. */
 export const Alarm = ({
   x, y, text, size,
@@ -140,6 +173,13 @@ export const Alarm = ({
 
 // SMIL's words, kept out of the markup where they would read as text.
 const FOREVER = 'indefinite';
+// A touch's colours, whole class names so the stylesheet has them: green, and the paper's amber and red.
+export const TONES = {
+  grn: { stroke: 'stroke-grn', fill: 'fill-grn' },
+  amb: { stroke: 'stroke-amb', fill: 'fill-amb' },
+  red: { stroke: 'stroke-red', fill: 'fill-red' },
+  mut: { stroke: 'stroke-mut', fill: 'fill-mut' },
+};
 const PULSE = '1.2s';
 const RADIUS = 'r';
 const OPACITY = 'opacity';
@@ -152,17 +192,17 @@ const OPACITY = 'opacity';
  * `r` the dot's radius in the drawing's units, or a screen size by `size`.
  */
 export const Contact = ({
-  x, y, size = null, r: radius = null,
+  x, y, size = null, r: radius = null, tone = 'grn',
 }) => {
   // A quarter smaller than the dot it replaced, ring and all (review note, 2026-09-30).
   const r = 0.75 * (radius ?? 5.4 / size.k);
   return (
     <g>
-      <circle cx={x} cy={y} r={r} fill="none" className="stroke-grn" strokeWidth={1} vectorEffect={NS}>
+      <circle cx={x} cy={y} r={r} fill="none" className={TONES[tone].stroke} strokeWidth={1} vectorEffect={NS}>
         <animate attributeName={RADIUS} values={`${r};${r * 3.2}`} dur={PULSE} repeatCount={FOREVER} />
         <animate attributeName={OPACITY} values="0.5;0" dur={PULSE} repeatCount={FOREVER} />
       </circle>
-      <circle cx={x} cy={y} r={r} className="fill-grn">
+      <circle cx={x} cy={y} r={r} className={TONES[tone].fill}>
         <animate attributeName={RADIUS} values={`${r};${r * 1.15};${r}`} dur={PULSE} repeatCount={FOREVER} />
       </circle>
     </g>
