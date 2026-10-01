@@ -84,9 +84,9 @@ const CentreSide = ({
           <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
         </pattern>
         {/* Paler and closer: the work behind the hole, further back in the drawing (review notes, 2026-10-01). */}
-        <pattern id={`${id}b`} width={3.5} height={3.5} patternUnits={USER} patternTransform={SLANT}>
-          <rect width={3.5} height={3.5} className="fill-work" />
-          <path d="M0 0 V3.5" className="stroke-hatch" strokeOpacity={0.6} strokeWidth={1} />
+        <pattern id={`${id}b`} width={5} height={5} patternUnits={USER} patternTransform={SLANT}>
+          <rect width={5} height={5} className="fill-work" />
+          <path d="M0 0 V5" className="stroke-hatch" strokeOpacity={0.4} strokeWidth={1} />
         </pattern>
       </defs>
       {boss ? (
