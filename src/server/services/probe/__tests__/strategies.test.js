@@ -182,6 +182,53 @@ describe('the corner plate', () => {
   });
 });
 
+describe('the centre of a hole', () => {
+  const params = { ...probeParams(), toolDiameter: 6, holeSize: 30 };
+
+  /** A square hole `size` across centred on (hx, hy), its walls from Z -80 to -50. */
+  const holeAt = (hx, hy, size) => {
+    const h = size / 2;
+    const z = [-80, -50];
+    return [
+      { x: [hx - 200, hx - h], y: [hy - 200, hy + 200], z },
+      { x: [hx + h, hx + 200], y: [hy - 200, hy + 200], z },
+      { x: [hx - 200, hx + 200], y: [hy - 200, hy - h], z },
+      { x: [hx - 200, hx + 200], y: [hy + h, hy + 200], z },
+    ];
+  };
+
+  test('puts X0 Y0 at the centre, from a start off it, the tool there at the end', () => {
+    const [hx, hy] = [-120, -70];
+    const { outcome, zero, pos } = measure({
+      method: 'hole', params, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    close(zero, { x: hx, y: hy });
+    expect(Object.keys(zero)).toEqual(['x', 'y']);
+    close(pos, { x: hx, y: hy, z: -60 });
+  });
+
+  test('says how big the hole is each way, the tool added back', () => {
+    const [hx, hy] = [-120, -70];
+    const { outcome } = measure({
+      method: 'hole', params, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const found = STRATEGIES.hole.found(params, {}, outcome.seen);
+
+    close(found, { x: 24, y: 24 });
+  });
+
+  test('a hole wider than its rough size is a failure, nothing written', () => {
+    const { outcome, zero } = measure({
+      method: 'hole', params: { ...params, holeSize: 5 }, boxes: holeAt(-120, -70, 40), start: { x: -120, y: -70, z: -60 },
+    });
+
+    expect(outcome).toEqual({ failure: 'ALARM:5', phase: 'x1a-fast' });
+    expect(zero).toBeNull();
+  });
+});
+
 describe('the paper', () => {
   const params = { ...probeParams(), paperThickness: 0.1, toolDiameter: 6 };
   const start = { x: -100, y: -50, z: -30 };

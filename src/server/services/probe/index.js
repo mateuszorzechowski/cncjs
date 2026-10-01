@@ -27,6 +27,8 @@ export const FIELDS = {
   clear: { value: 20, min: 1, max: 100 },
   depth: { value: 5, min: 0.5, max: 50 },
   toolDiameter: { value: 6, min: 0.1, max: 50 },
+  // A hole's rough diameter: how far each search across it may go.
+  holeSize: { value: 20, min: 1, max: 300 },
   // The work's thickness, between its top and the table, for a zero on the other one (`surface`).
   stockThickness: { value: 18, min: 0.1, max: 500 },
   // Paper by hand: an office sheet is a tenth of a millimetre; off it by a little once measured.

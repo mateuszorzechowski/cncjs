@@ -2508,7 +2508,10 @@ class GrblController {
         });
         const current = this.reportedMm(parameters[wcs]);
         const shift = _.mapValues(offset, (v, axis) => v - (current[axis] || 0));
-        this.probe.result = { zero, offset, shift };
+        const found = strategy.found ? strategy.found(params, options, outcome.seen) : null;
+        this.probe.result = {
+          zero, offset, shift, found,
+        };
         this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, ...offset } });
       }
       this.emit('probe:state', this.probeReport());
