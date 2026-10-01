@@ -1,4 +1,5 @@
 import corner from './corner';
+import hole from './hole';
 import paper from './paper';
 import zPlate from './z-plate';
 
@@ -12,13 +13,16 @@ import zPlate from './z-plate';
  * - `check(options)` — why these choices will not do, or null;
  * - `steps(params, options)` — the moves, see `moves`;
  * - `zero(params, options, seen, start)` — the new work zero, machine
- *   coordinates, from the touches kept and where the tool started.
+ *   coordinates, from the touches kept and where the tool started;
+ * - `found(params, options, seen)`, if it has one — what else the touches
+ *   tell, for the operator to check (a hole's size).
  *
  * A new method is a new file here; nothing that runs them changes.
  */
 export const STRATEGIES = {
   z: zPlate,
   corner,
+  hole,
   paper,
 };
 

@@ -37,7 +37,10 @@ const contact = (boxes, radius, from, to) => {
 };
 
 /** Run one method on the bench to the end; the outcome and every line sent. */
-const measure = ({ method, options = {}, params, boxes, start }) => {
+// `radius`: what touches — the tool, or a 3D probe's ball.
+const measure = ({
+  method, options = {}, params, boxes, start, radius = params.toolDiameter / 2,
+}) => {
   const strategy = STRATEGIES[method];
   const queue = [];
   const sent = [];
@@ -65,7 +68,7 @@ const measure = ({ method, options = {}, params, boxes, start }) => {
       for (const axis of AXES.filter((a) => words[a] !== undefined)) {
         target[axis] = words[axis] + WCO[axis];
       }
-      const hit = contact(boxes, params.toolDiameter / 2, pos, target);
+      const hit = contact(boxes, radius, pos, target);
       if (hit) {
         pos = hit;
         run.prb({ ...pos, result: 1 });
@@ -179,6 +182,69 @@ describe('the corner plate', () => {
   test('a corner that is not one is refused before anything moves', () => {
     expect(STRATEGIES.corner.check({ corner: 'middle' })).toBe('bad-corner');
     expect(STRATEGIES.corner.check({ corner: 'back-right' })).toBeNull();
+  });
+});
+
+describe('the centre of a hole', () => {
+  const params = { ...probeParams(), ballDiameter: 4, holeSize: 30 };
+  const radius = params.ballDiameter / 2;
+
+  /** A square hole `size` across centred on (hx, hy), its walls from Z -80 to -50. */
+  const holeAt = (hx, hy, size) => {
+    const h = size / 2;
+    const z = [-80, -50];
+    return [
+      { x: [hx - 200, hx - h], y: [hy - 200, hy + 200], z },
+      { x: [hx + h, hx + 200], y: [hy - 200, hy + 200], z },
+      { x: [hx - 200, hx + 200], y: [hy - 200, hy - h], z },
+      { x: [hx - 200, hx + 200], y: [hy + h, hy + 200], z },
+    ];
+  };
+
+  test('puts X0 Y0 at the centre, from a start off it, the tool there at the end', () => {
+    const [hx, hy] = [-120, -70];
+    const { outcome, zero, pos } = measure({
+      method: 'hole', params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    close(zero, { x: hx, y: hy });
+    expect(Object.keys(zero)).toEqual(['x', 'y']);
+    close(pos, { x: hx, y: hy, z: -60 });
+  });
+
+  test('says how big the hole is each way, the ball added back', () => {
+    const [hx, hy] = [-120, -70];
+    const { outcome } = measure({
+      method: 'hole', params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const found = STRATEGIES.hole.found(params, {}, outcome.seen);
+
+    close(found, { x: 24, y: 24 });
+  });
+
+  test('one pass, if asked: half the touches, the same centre and size', () => {
+    const [hx, hy] = [-120, -70];
+    const once = { ...params, holePasses: 1 };
+    const { outcome, zero, sent } = measure({
+      method: 'hole', params: once, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const twice = measure({
+      method: 'hole', params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+
+    close(zero, { x: hx, y: hy });
+    close(STRATEGIES.hole.found(once, {}, outcome.seen), { x: 24, y: 24 });
+    expect(sent.filter((line) => line.includes('G38')).length * 2).toBe(twice.sent.filter((line) => line.includes('G38')).length);
+  });
+
+  test('a hole wider than its rough size is a failure, nothing written', () => {
+    const { outcome, zero } = measure({
+      method: 'hole', params: { ...params, holeSize: 5 }, radius, boxes: holeAt(-120, -70, 40), start: { x: -120, y: -70, z: -60 },
+    });
+
+    expect(outcome).toEqual({ failure: 'ALARM:5', phase: 'x1a-fast' });
+    expect(zero).toBeNull();
   });
 });
 
