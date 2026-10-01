@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import {
-  Contact, Dimension, FACE, Head, Jog, Motion, NS, SurfaceGround, TONES, Tag, kit,
+  Contact, Dimension, FACE, Head, Jog, Motion, NS, TONES, Tag, kit,
 } from './probeDraw';
+import { SurfaceGround } from './SurfaceGround';
 import useViewScale from './useViewScale';
 import { FACE_Y, SHEET_Y } from '../machine/paperCycle';
 import { TOOL_X } from '../machine/paperSheet';
@@ -143,7 +144,8 @@ const PaperScene = ({
       ) : null}
       {lift ? (
         <g opacity={focus && !lift.lit ? 0.3 : 1}>
-          <Tag x={mx(ARROW_X - 8)} y={SHEET_Y - 22} text={lift.text} right={!mirror} face={lift.lit ? FACE.hot : FACE.rapid} size={size} />
+          <Dimension at={mx(DIM_X)} from={lift.top} to={lift.bottom} lit={lift.lit} size={size} />
+          <Tag x={mx(DIM_X + (mirror ? -8 : 8))} y={lift.top - 12} text={lift.text} right={mirror} face={lift.lit ? FACE.hot : FACE.plain} size={size} />
         </g>
       ) : null}
     </svg>

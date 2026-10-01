@@ -1,10 +1,10 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, Tag, kit, tagWidth,
+  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, ReachDimension, Tag, kit, tagWidth,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import {
-  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, signedFor, tipOf,
+  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, tipOf,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -12,10 +12,10 @@ import { t } from '../i18n';
  * The L plate from the side, in the same drawing as from above (Claude
  * Design, `templates/probe-corner-proposal`, 2026-09-30): the plate's side
  * hanging over the work's edge, which is dashed under it; the tool the Z
- * plate's V bit, drawn a little larger the nearer it comes. Z is drawn here —
- * the Z touch with its arrow and limit, a set-up's rises and descents, the
- * zero's Z0 and the plate's top, the lift — and a move along X by an arrow
- * under the tool; along Y it only nears.
+ * plate's V bit, drawn a little larger the nearer it comes. Z is drawn here,
+ * and only Z (rule, Mateusz 2026-10-01) — the Z touch with its arrow and
+ * limit, a set-up's rises and descents, the zero's Z0 and the plate's top,
+ * the lift; along X the tool only moves, along Y it only nears.
  *
  * Drawn for a left-hand corner and mirrored for a right one; the words are
  * placed on the mirror. `bare`: without the form's figures (the machine
@@ -26,8 +26,8 @@ import { t } from '../i18n';
 const VIEW = [41, 36, 202, 188];
 const USER = 'userSpaceOnUse';
 // Words the drawing's pieces switch on, kept out of the markup.
-const ACROSS = 'h';
 const RAPID = 'rapid';
+const PROBE = 'probe';
 const UP = 'up';
 const DOWN = 'down';
 
@@ -54,11 +54,8 @@ const SOLID = [[130, 170, 200, 70], [106, TOP, 72, 60]];
 const SHOW = '#fff';
 const HIDE = '#000';
 
-// Beside the tool, where a rise or a descent is drawn: clear of the plate.
-const besideOf = (x, y1, y2) => {
-  const hits = (at) => at > 102 && at < 182 && Math.max(y1, y2) > TOP + 0.5;
-  return [x + 16, x - 16, 94].find((at) => !hits(at));
-};
+// Beside the tool, where a rise or a descent is drawn: on its left, the dimensions being on the right.
+const besideOf = (x) => x - 16;
 
 const CornerSide = ({
   name = 'zFast', p = 0, corner, texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, bare = false, place = null, label, className = '',
@@ -125,13 +122,12 @@ const CornerSide = ({
     // Twice a figure (`split`): the way back plain, the margin past it a limit.
     const to = split ? (from + end) / 2 : end;
     const small = to - from < 24;
-    geometry.push(<g key="dim" opacity={fade('dim')}><Dimension at={190} from={from} to={to} limit={limit} lit={focus === 'dim'} size={size} /></g>);
+    geometry.push(<g key="dim" opacity={fade('dim')}>{split ? <ReachDimension at={190} from={from} mid={to} to={end} lit={focus === 'dim'} size={size} /> : <Dimension at={190} from={from} to={to} limit={limit} lit={focus === 'dim'} size={size} />}</g>);
     const figure = said(split || move.dim.field);
     words.push(<g key="dimt" opacity={fade('dim')}>{tag(190, small ? from - 26 : from - 14, limit ? upTo(figure) : figure, 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
     if (split) {
-      geometry.push(<g key="dim2" opacity={fade('dim')}><Dimension at={190} from={to} to={end} limit lit={focus === 'dim'} size={size} /></g>);
-      // Under the dashed margin's end, where there is room for it.
-      words.push(<g key="dimt2" opacity={fade('dim')}>{tag(190, end + 16, upTo(`+${figure}`), 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
+      // Under the margin's end, where there is room for it.
+      words.push(<g key="dimt2" opacity={fade('dim')}>{tag(190, end + 16, upTo(figure), 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
     }
     if (gap < 0.3) {
       touch = [C0[0], TOP];
@@ -141,29 +137,34 @@ const CornerSide = ({
     const [x, , level] = positionOf(move.frames, p);
     bit = { cx: x, tip: tipOf(level) };
     geometry.push(<path key="edge" d="M20 170 H106" className="stroke-mut" strokeWidth={1} vectorEffect={NS} strokeDasharray={DASH} />);
-    geometry.push(<g key="arrow" opacity={0.3}><Motion at={56} from={tipOf(1)} to={tipOf(0)} kind={RAPID} size={size} /></g>);
+    geometry.push(<g key="arrow" opacity={0.3}><Motion at={56} from={tipOf(1)} to={tipOf(0)} kind={PROBE} size={size} /></g>);
     geometry.push(<Dimension key="dim" at={190} from={170} to={182} lit size={size} />);
     words.push(tag(190, 140, said('depth'), 'c', FACE.hot));
   } else {
-    // A move on the walls' plane, seen edge-on: X by an arrow under the tool, Y only nearing.
+    // A move on the walls' plane, seen edge-on: the tool moves along X, nears along Y; no arrows.
     const [x, y, level] = positionOf(move.frames, p);
     bit = { cx: x, tip: tipOf(level), scale: nearness(y, flipY) };
     behind = flipY && y > Y_FACE;
     if (move.legs) {
       const now = legAt(move, p);
-      move.legs.forEach(([from, to, plane, sayLeg, , , parts], i) => {
+      move.legs.forEach(([from, to, plane, , , legName, parts], i) => {
         // The leg under way's arrow alone: the ones before do not pile up (review note, 2026-09-30).
         if (i !== now) {
           return;
         }
         const [fx, , fz] = positionOf(move.frames, from);
-        const [tx, , tz] = positionOf(move.frames, to);
+        const [, , tz] = positionOf(move.frames, to);
         const y1 = tipOf(fz);
         const y2 = tipOf(tz);
         let drawn = null;
         if (Math.abs(y1 - y2) > 0.5) {
-          const at = besideOf(fx, y1, y2);
-          drawn = <Motion at={at} from={y1} to={y2} kind={RAPID} size={size} />;
+          const at = besideOf(fx);
+          // Down beside a wall is a G38.3, a probing move with its feed; up a G0, bare.
+          const down = legName === 'down';
+          drawn = <Motion at={at} from={y1} to={y2} kind={down ? PROBE : RAPID} size={size} />;
+          if (down && !focus) {
+            words.push(tag(at - 8, (y1 + y2) / 2, said('fast'), 'r', FACE.plain, 'legf'));
+          }
           if (parts && !focus) {
             // A rise or descent that adds two figures: each drawn as its own dimension, split at the plate's top (review notes, 2026-09-30).
             // One chained dimension past the plate's far side, ticked at the plate's top, the figures beside it (review note, 2026-09-30).
@@ -179,22 +180,12 @@ const CornerSide = ({
             words.push(tag(col + 10, (TOP + low) / 2, said(parts[0]), 'l', FACE.plain, 'partLow'));
             words.push(tag(col + 10, (high + TOP) / 2, said(parts[1]), 'l', FACE.plain, 'partHigh'));
           }
-        } else if (Math.abs(fx - tx) > 0.5) {
-          drawn = <Motion axis={ACROSS} at={128} from={fx} to={tx} kind={RAPID} size={size} />;
         }
-        if (drawn) {
+        if (drawn && plane === 'z') {
           geometry.push(<g key={`leg${i}`} opacity={focus ? 0.3 : 1}>{drawn}</g>);
-        }
-        if (i === now && plane === 'z' && !focus && sayLeg(texts, say)) {
-          words.push(tag(50, 50, signedFor(corner)(sayLeg(texts, say)), 'l', FACE.rapid, 'leg', true));
         }
       });
     } else if (move.kind && move.view === 'top') {
-      const [fx] = positionOf(move.frames, 0);
-      const [tx] = positionOf(move.frames, 1);
-      if (Math.abs(fx - tx) > 0.5) {
-        geometry.push(<g key="arrow" opacity={fade('feed')}><Motion axis={ACROSS} at={tipOf(0) + 14} from={fx} to={tx} kind={move.kind} size={size} /></g>);
-      }
       if (move.touch && move.touch[1] === 116 && p > 0.75) {
         touch = [move.touch[0], tipOf(level) - 6];
       }
@@ -214,11 +205,9 @@ const CornerSide = ({
       }
     }
     if (move.rise && focus === 'rise') {
-      // The lift itself, over the plate once the tool is back over it: lit when its figure is being set.
-      const y1 = tipOf(1);
-      const y2 = tipOf(LIFTED);
-      geometry.push(<g key="rise" opacity={focus && focus !== 'rise' ? 0.3 : 1}><Motion at={besideOf(x, y1, y2)} from={y1} to={y2} kind={RAPID} size={size} /></g>);
-      words.push(tag(50, 50, `Z↑ ${said('lift')}`, 'l', focus === 'rise' ? FACE.hot : FACE.rapid, 'rise', true));
+      // The lift being set: its way over the plate's top, lit, its figure beside it.
+      geometry.push(<Dimension key="rise" at={190} from={tipOf(LIFTED)} to={TOP} lit size={size} />);
+      words.push(tag(200, (tipOf(LIFTED) + TOP) / 2, said('lift'), 'l', FACE.hot, 'rise'));
     }
   }
 

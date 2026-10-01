@@ -1,10 +1,10 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, Tag, kit, tagWidth,
+  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, ReachDimension, Tag, kit, tagWidth,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import {
-  C0, cornerSides, signedFor, LEG_WORDS, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
+  C0, cornerSides, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -13,9 +13,10 @@ import { t } from '../i18n';
  * 2026-09-30): the work a faint hatch, the plate over its corner with the
  * work's edge under it dashed, the tool a circle — drawn larger in step with
  * its height, whichever move raises or lowers it.
- * Moves on the wall's plane are drawn here: a set-up's legs one by one, a
- * touch's arrow with its figure, the search limit and the walls as
- * dimensions, X0 and Y0 when written. Z touches leave the tool over the
+ * Moves on the wall's plane are drawn here, by the rules in `probeDraw`: a
+ * set-up's legs one by one, each move's arrow on one side of its way — a
+ * touch's with its feed, a G0's bare — and its distance a grey dimension on
+ * the other, X0 and Y0 when written. Z touches leave the tool over the
  * plate; they are the side view's.
  *
  * Drawn for the front-left corner and mirrored for the others; the words are
@@ -74,6 +75,7 @@ const CornerTop = ({
     return <Tag key={key} x={placed} y={my(y)} text={text} face={face} size={size} />;
   };
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
+  const lit = (part) => focus === part;
 
   // Where the tool is: a Z touch or the descent beside a wall leaves it standing.
   let [cx, cy, level] = [C0[0], C0[1], 1];
@@ -94,7 +96,7 @@ const CornerTop = ({
     geometry.length = 0;
   } else if (move.legs) {
     const now = legAt(move, p);
-    move.legs.forEach(([from, to, plane, sayLeg, , legName], i) => {
+    move.legs.forEach(([from, to, plane, sayLeg], i) => {
       // The leg under way's arrow alone: the ones before do not pile up (review note, 2026-09-30).
       if (i !== now || plane !== 'xy') {
         return;
@@ -109,11 +111,14 @@ const CornerTop = ({
           {flat ? null : <Motion axis={ALONG} at={190} from={fy} to={ty} kind={RAPID} size={size} />}
         </g>,
       );
-      // Its signs turned for the corner, as the drawing is; a way to a place rather than by a
-      // figure — over the plate, over X0 Y0 — says where (review notes, 2026-10-01).
-      const text = signedFor(corner)(sayLeg(texts, say)) || t(LEG_WORDS[legName]);
-      if (i === now && !focus && text) {
-        words.push(flat ? tag((fx + tx) / 2, 66, text, MID, FACE.rapid) : tag(196, 207, text, MID, FACE.rapid));
+      // A G0 carries nothing: a leg by a figure of the form's has it as a dimension on the
+      // other side of its way; one to a place (over the plate, over X0 Y0) none.
+      const figure = sayLeg(texts, say);
+      if (figure && !focus) {
+        geometry.push(flat
+          ? <Dimension key="legd" axis={ACROSS} at={fy + 20} from={fx} to={tx} size={size} />
+          : <Dimension key="legd" axis={ALONG} at={fx - 36} from={fy} to={ty} size={size} />);
+        words.push(flat ? tag((fx + tx) / 2, fy + 34, figure, MID, FACE.plain, 'legt') : tag(fx - 44, (fy + ty) / 2, figure, RIGHT, FACE.plain, 'legt'));
       }
     });
   } else if (move.view === 'top' && move.kind) {
@@ -125,24 +130,47 @@ const CornerTop = ({
         <Motion axis={flat ? ACROSS : ALONG} at={flat ? fy - 18 : fx - 18} from={flat ? fx : fy} to={flat ? tx : ty} kind={move.kind} size={size} />
       </g>,
     );
-    if (move.by) {
-      const text = said(move.by);
+    if (move.kind === RAPID) {
+      // A G0 bare; its way, the back-off, a grey dimension on the other side.
+      const face = lit('dim') ? FACE.hot : FACE.plain;
+      geometry.push(
+        <g key="way" opacity={fade('dim')}>
+          <Dimension axis={flat ? ACROSS : ALONG} at={flat ? fy + 18 : fx + 18} from={flat ? fx : fy} to={flat ? tx : ty} lit={lit('dim')} size={size} />
+        </g>,
+      );
+      words.push(<g key="wayt" opacity={fade('dim')}>{flat ? tag((fx + tx) / 2, fy + 40, said(move.by), MID, face) : tag(fx + 30, (fy + ty) / 2, said(move.by), LEFT, face)}</g>);
+    } else if (move.feed) {
       const face = focus === 'feed' ? FACE.hot : FACE.plain;
       words.push(
         <g key="by" opacity={fade('feed')}>
-          {flat ? tag((fx + tx) / 2, move.dim ? fy + 30 : fy - 34, text, MID, face) : tag(fx - 26, (fy + ty) / 2, text, RIGHT, face)}
+          {flat ? tag((fx + tx) / 2, fy - 34, said(move.feed), MID, face) : tag(fx - 26, (fy + ty) / 2, said(move.feed), RIGHT, face)}
+        </g>,
+      );
+    }
+    if (move.feed === 'slow') {
+      // The slow touch's reach, twice the back-off: back to the wall, and the margin past it.
+      const [mid, end] = flat ? [tx, tx + (tx - fx)] : [ty, ty + (ty - fy)];
+      const face = lit('dim') ? FACE.hot : FACE.plain;
+      geometry.push(
+        <g key="reach" opacity={fade('dim')}>
+          <ReachDimension axis={flat ? ACROSS : ALONG} at={flat ? fy + 18 : fx + 18} from={flat ? fx : fy} mid={mid} to={end} lit={lit('dim')} size={size} />
+        </g>,
+      );
+      words.push(
+        <g key="reacht" opacity={fade('dim')}>
+          {flat ? tag((fx + mid) / 2, fy + 34, said('retract'), MID, face, 'reach1') : tag(fx + 30, (fy + mid) / 2, said('retract'), LEFT, face, 'reach1')}
+          {flat ? tag((mid + end) / 2, fy + 50, upTo(said('retract')), MID, face, 'reach2') : tag(fx + 30, (mid + end) / 2 - 6, upTo(said('retract')), LEFT, face, 'reach2')}
         </g>,
       );
     }
   }
 
   // The dimensions this move shows: its search limit, the walls at the zero, a figure being set.
-  const lit = (part) => focus === part;
   const dims = [];
   // Nothing to dimension on the way into place.
   if (!place) {
     if (move.dim?.name === 'limitX') {
-      dims.push(['limitX', <Dimension key="limitX" axis={ACROSS} at={80} from={75} to={111} limit lit={lit('dim')} size={size} />, tag(75, 63, upTo(said('maxXY')), LEFT, lit('dim') ? FACE.hot : FACE.plain, 'limitXt')]);
+      dims.push(['limitX', <Dimension key="limitX" axis={ACROSS} at={134} from={75} to={111} limit lit={lit('dim')} size={size} />, tag(93, 150, upTo(said('maxXY')), MID, lit('dim') ? FACE.hot : FACE.plain, 'limitXt')]);
     }
     if (move.dim?.name === 'limitY') {
       dims.push(['limitY', <Dimension key="limitY" axis={ALONG} at={172} from={195} to={159} limit lit={lit('dim')} size={size} />, tag(172, 214, upTo(said('maxXY')), MID, lit('dim') ? FACE.hot : FACE.plain, 'limitYt')]);

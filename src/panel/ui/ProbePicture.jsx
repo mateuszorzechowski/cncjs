@@ -68,18 +68,19 @@ const HolePictogram = ({ label, className }) => (
 );
 
 /*
- * The part's pictogram, cut through: the part standing on the table, the 3D
- * probe down beside it on one side, and the accent heads pointing in — it
- * touches the part from outside, each side in turn.
+ * The part's pictogram, cut through: a wide work with a boss standing out of
+ * it, no table (review note, 2026-10-01: *"stół i detal czy sam detal z
+ * czopem?"* — the work with its boss), the 3D probe down beside the boss, and
+ * the accent heads pointing in — it touches the boss from outside, each side
+ * in turn.
  */
 const BossPictogram = ({ label, className }) => (
   <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
-    <rect x={4} y={40} width={40} height={4} className="fill-mutS stroke-line" strokeWidth={1.6} />
-    <rect x={16} y={24} width={16} height={16} className="fill-mutS stroke-line" strokeWidth={1.6} />
-    <path d="M3 3 H11 V13 L8.5 15.5 H5.5 L3 13 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
-    <path d="M7 15.5 V28" className="stroke-ink" strokeWidth={1.6} />
-    <circle cx={7} cy={30.4} r={2.4} className="fill-field stroke-ink" strokeWidth={1.6} />
-    <path d="M10.6 27.4 L13.4 30.4 L10.6 33.4 Z M37.4 27.4 L34.6 30.4 L37.4 33.4 Z" className="fill-acc" />
+    <path d="M4 34 H17 V22 H31 V34 H44 V44 H4 Z" className="fill-mutS stroke-line" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M7 3 H15 V13 L12.5 15.5 H9.5 L7 13 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M11 15.5 V26.6" className="stroke-ink" strokeWidth={1.6} />
+    <circle cx={11} cy={29} r={2.4} className="fill-field stroke-ink" strokeWidth={1.6} />
+    <path d="M14 26 L16.8 29 L14 32 Z M34 26 L31.2 29 L34 32 Z" className="fill-acc" />
   </svg>
 );
 

@@ -5,6 +5,49 @@
  * other; lines at screen widths — shapes 2 px, dimension lines 1.5, ticks 1 —
  * one dash (5 4), labels rounded as the controls are.
  *
+ * The animation rules, for every probing drawing and without exceptions
+ * (Mateusz, 2026-10-01: *"bez wyjątków, zapisz to jako reguły animacji"*):
+ *
+ * Arrows
+ * - an arrow shows only while its move runs, from where it starts to where
+ *   it ends, beside the tool's way, never on it;
+ * - a probing move (G38) solid in the accent, a G0 dashed in the rapid
+ *   colour with a tick where it sets off;
+ * - an arrow carries only its feed (F50, F15); a G0 carries nothing.
+ *
+ * Distances
+ * - every distance is a grey dimension on the other side of the way from the
+ *   arrow, its figure beside it, never on it;
+ * - a search's reach is a dashed dimension, one head, its figure "≤ v";
+ * - a slow touch's reach is one dashed line, ticks where it sets off, at the
+ *   surface and at its limit, heads only at the outer two, with two figures:
+ *   the way to the surface and the margin past it ("5 mm", "≤ 5 mm");
+ * - a dimension is fixed to the move's geometry, never to where the tool is;
+ * - a way made of several of the form's figures (back-off and depth, lift
+ *   and back-off) is one dimension split by ticks where they meet, each part
+ *   with its own figure — on the dimension only, never on the arrow
+ *   (Mateusz, 2026-10-01).
+ *
+ * Labels
+ * - a little smaller than the drawing's words, in rounded boxes;
+ * - over the lines and the tool, never under them; never on a line, on
+ *   another label, or past the drawing's edge;
+ * - a touch a green beating dot; walls touched before stay as faint dots;
+ * - a zero written a dashed accent line, named X0, Y0 or Z0.
+ *
+ * Views
+ * - a move is drawn in the view it lies in: X and Y from above, Z from the
+ *   side — and nowhere else, with no words standing in for it;
+ * - the Z plate and the paper have a side view only; the corner, the hole
+ *   and the part both side by side, one at a time on a phone with a switch;
+ * - the side view is always from the front, along X; a way along Y is depth
+ *   — the tool larger nearer, smaller further, dashed behind the work;
+ * - from above, height is the tool's size: higher, larger.
+ *
+ * A figure being set
+ * - its field focused loops its step; its part of the drawing lit, the rest
+ *   faded to 30%.
+ *
  * `k` is the drawing's screen pixels per unit (`useViewScale`): sizes that
  * must read the same at any scale are divided by it.
  */
@@ -34,8 +77,10 @@ const TAG_FACES = {
 // A figure's words a little under the drawing's, and lighter (review note, 2026-09-30).
 const TAG_SCALE = 0.88;
 
-// The figures face is monospaced at about 0.62 em; `fs` the drawing's size.
-export const tagWidth = (text, fs) => (text.length * 0.64 + 1) * fs * TAG_SCALE;
+// The figures face (Azeret Mono) is 0.65 em a glyph, the em dash two (measured in the panel,
+// 2026-10-01: "stoi — za nisko" ran out of its box); `fs` the drawing's size.
+const glyphs = (text) => text.length + (text.match(/—/g) || []).length;
+export const tagWidth = (text, fs) => (glyphs(text) * 0.66 + 1) * fs * TAG_SCALE;
 
 /** A figure in a small box centred on `y`, from `x` rightwards — or leftwards, `right`. */
 export const Tag = ({ x, y, text, right = false, face = 'plain', size }) => {
@@ -100,6 +145,34 @@ export const Dimension = ({
       <path d={`${tick(from)} ${tick(to)}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />
       <path d={line} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} strokeDasharray={limit && !small ? DASH : undefined} />
       {heads}
+    </g>
+  );
+};
+
+/*
+ * A slow touch's reach (review note, 2026-10-01: *"groty tylko na
+ * zewnętrznych kreskach, dwie etykiety"*): one dashed line, as a reach is
+ * (Mateusz, 2026-10-01), from where it sets off (`from`) past the surface (`mid`) to its limit
+ * (`to`), a tick at each, heads only at the outer two. Its two figures — the
+ * way to the surface and the margin past it — are the drawing's to place.
+ */
+export const ReachDimension = ({
+  axis = 'v', at, from, mid, to, lit = false, size,
+}) => {
+  const stroke = lit ? 'stroke-acc' : 'stroke-mut';
+  const fill = lit ? 'fill-acc' : 'fill-mut';
+  const { hh } = size;
+  const [lo, hi] = from < to ? [from, to] : [to, from];
+  const v = axis === 'v';
+  const pt = (along, cross) => (v ? `${cross} ${along}` : `${along} ${cross}`);
+  const tick = (along) => (v ? `M${at - 10} ${along} H${at + 10}` : `M${along} ${at - 10} V${at + 10}`);
+  const [toLo, toHi] = v ? ['up', 'down'] : ['left', 'right'];
+  return (
+    <g>
+      <path d={`${tick(from)} ${tick(mid)} ${tick(to)}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />
+      <path d={`M${pt(lo + hh, at)} L${pt(hi - hh, at)}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} strokeDasharray={DASH} />
+      <Head x={v ? at : lo} y={v ? lo : at} dir={toLo} size={size} className={fill} />
+      <Head x={v ? at : hi} y={v ? hi : at} dir={toHi} size={size} className={fill} />
     </g>
   );
 };
@@ -222,6 +295,8 @@ export const Contact = ({
  * The axes in a drawing's bottom-left corner (`x`, `y` the corner): thin, each
  * with a small filled half head on the side facing the other, smaller words,
  * close to the edge whatever the drawing's size (review notes, 2026-09-30).
+ * Each letter centred on its line a little past its end, its "+" beside it:
+ * X+ to the right of the end, Y+ or Z+ above it (Mateusz, 2026-10-01).
  */
 export const AxisPair = ({
   x, y, across, up, size,
@@ -230,7 +305,8 @@ export const AxisPair = ({
   const fs = size.fs * 0.85;
   const hw = size.hw * 1.33;
   const hh = size.hh * 1.33;
-  const ox = x + 3 / k;
+  // In by half the up letter, which stands centred on its line.
+  const ox = x + fs * 0.31 + 2 / k;
   // Raised by half the words' height, so X+ beside its head stays inside.
   const oy = y - 3 / k - fs * 0.4;
   const long = 26;
@@ -241,56 +317,7 @@ export const AxisPair = ({
       <path d={`M${ox} ${oy} H${tx} M${ox} ${oy} V${ty}`} className="stroke-mut" strokeWidth={1} vectorEffect={NS} />
       <path d={`M${tx} ${oy} L${tx - hh} ${oy - hw} L${tx - hh} ${oy} Z M${ox} ${ty} L${ox + hw} ${ty + hh} L${ox} ${ty + hh} Z`} className="fill-mut" />
       <text x={tx + 3 / k} y={oy + fs * 0.36} fontSize={fs} className="fill-mut font-num font-semibold">{across}</text>
-      <text x={ox + hw + 3 / k} y={ty + fs * 0.36} fontSize={fs} className="fill-mut font-num font-semibold">{up}</text>
-    </g>
-  );
-};
-
-// How thick the work is drawn when the table shows under it or beside it — not to scale.
-export const STOCK = 14;
-
-/*
- * What a Z is measured on and where Z0 goes (Mateusz, 2026-10-01): the work
- * a hatch (`fill`) with its top at `y`, as before; with Z0 on the table, the
- * table under it and the line there; the plate or the sheet on the table,
- * the table at `y` and the work standing beside it, from `blockX`. `zero`
- * fades the Z0 line in, `label` at `labelX`; `stock`, `{ text, lit, fade }`,
- * the work's thickness, drawn where Z0 is that far from the surface.
- */
-export const SurfaceGround = ({
-  fill, y, width, surface = { on: 'work', z0: 'top' }, zero = 0, label, labelX, stock = null, blockX = 222, size,
-}) => {
-  const onTable = surface.on === 'table';
-  const shifts = (surface.on === 'work') !== (surface.z0 === 'top');
-  const top = onTable ? y - STOCK : y;
-  const tableY = onTable || shifts ? top + STOCK : null;
-  const zeroY = surface.z0 === 'top' ? top : tableY;
-  const stockX = width - 14;
-  return (
-    <g>
-      {onTable ? (
-        <>
-          <rect x={-2} y={y} width={width + 4} height={40} className="fill-mutS stroke-line" strokeWidth={1.5} vectorEffect={NS} />
-          <rect x={blockX} y={top} width={width + 2 - blockX} height={STOCK} fill={fill} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
-        </>
-      ) : (
-        <>
-          <rect x={-2} y={y} width={width + 4} height={shifts ? STOCK : 40} fill={fill} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
-          {shifts ? <rect x={-2} y={tableY} width={width + 4} height={40} className="fill-mutS stroke-line" strokeWidth={1.5} vectorEffect={NS} /> : null}
-        </>
-      )}
-      {zero > 0 ? (
-        <g opacity={zero}>
-          <path d={`M0 ${zeroY} H${width}`} className="stroke-acc" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
-          <text x={labelX} y={zeroY - 5} fontSize={size.fs} className="fill-acc font-num font-semibold">{label}</text>
-        </g>
-      ) : null}
-      {stock && shifts ? (
-        <g opacity={stock.fade ?? 1}>
-          <Dimension at={stockX} from={top} to={top + STOCK} lit={stock.lit} size={size} />
-          <Tag x={stockX - 12} y={top + STOCK / 2} text={stock.text} right face={stock.lit ? FACE.hot : FACE.plain} size={size} />
-        </g>
-      ) : null}
+      <text x={ox - fs * 0.31} y={ty - 4 / k} fontSize={fs} className="fill-mut font-num font-semibold">{up}</text>
     </g>
   );
 };
