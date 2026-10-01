@@ -21,21 +21,27 @@
  * part)` is told the moves tapped — a stage's, a step's, one — and the leg;
  * without it — the machine playing — nothing can be tapped. `picked`, the
  * same, is the part a repeat plays, underlined; `marked`, moves to point
- * out — those using the figures of a group open — on a pale track.
+ * out — those using the figures of a group open — by a dot over them, not a
+ * colour: the bar's blues are the playing's alone (review note, 2026-10-01:
+ * *"nie mam jak odróżnić zaznaczonej kategorii od animacji i wykonanego
+ * etapu"*).
  */
 
 // A bar in SVG, so its fill can follow the progress without a style written into the page;
 // what is done a pale accent, the move playing the full one (review note, 2026-09-30). In
 // per cent of its width with the corners in pixels, so a short bar is the same rounded
 // rectangle as a long one, not an oval (review note, 2026-09-30).
-const Bar = ({ on, fill, mark = false }) => (
+const Bar = ({ on, fill }) => (
   <svg aria-hidden="true" className="block h-1.5 w-full">
-    <rect width="100%" height="100%" rx={2} className={mark ? 'fill-accS' : 'fill-line'} />
+    <rect width="100%" height="100%" rx={2} className="fill-line" />
     {fill > 0 ? <rect width={`${100 * Math.min(1, fill)}%`} height="100%" rx={2} className={on ? 'fill-acc' : 'fill-accM'} /> : null}
   </svg>
 );
 
 const BUTTON = 'button';
+
+// The mark over a segment whose move an open group's figures act in.
+const Dot = () => <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-0.5 size-1.5 -translate-x-1/2 rounded-full bg-acc" />;
 
 // Holds a nameless stage's line at the height of a name.
 const NO_NAME = ' ';
@@ -58,7 +64,9 @@ export const namedGroups = (groups, t, titleOf, partsOf = () => 1) => groups.map
 }));
 
 // A segment's tap target, underlined when it is the part a repeat plays.
-const segment = (chosen) => `flex h-9 min-w-0 flex-1 items-center border-b-2 ${chosen ? 'border-acc' : 'border-transparent'}`;
+// Positioned, so the dot stands over it.
+const PLACED = 'relative';
+const segment = (chosen) => `${PLACED} flex h-9 min-w-0 flex-1 items-center border-b-2 ${chosen ? 'border-acc' : 'border-transparent'}`;
 
 // A move made of legs — a set-up's rise, crossing and descent — as a segment
 // each, each a tap of its own (review note, 2026-09-30).
@@ -69,7 +77,8 @@ const Parts = ({
     {Array.from({ length: move.parts }, (_, i) => (
       // eslint-disable-next-line react/no-array-index-key
       <button key={i} type={BUTTON} disabled={disabled} onClick={() => onPick([move.id], i)} aria-label={`${move.label} · ${i + 1}`} className={segment(chosen(i))}>
-        <Bar on={on} mark={mark} fill={fillOf(i)} />
+        {mark ? <Dot /> : null}
+        <Bar on={on} fill={fillOf(i)} />
       </button>
     ))}
   </span>
@@ -104,7 +113,8 @@ const MoveBar = ({
                           <Parts key={move.id} move={move} on={move.id === active} fillOf={(i) => fillOf(move.id, i)} mark={marked.includes(move.id)} chosen={(i) => chosen(move.id, i)} disabled={!onPick || !playing} onPick={onPick} />
                         ) : (
                           <button key={move.id} type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick([move.id])} aria-label={move.label} className={segment(chosen(move.id, 0))}>
-                            <Bar on={move.id === active} mark={marked.includes(move.id)} fill={fillOf(move.id)} />
+                            {marked.includes(move.id) ? <Dot /> : null}
+                            <Bar on={move.id === active} fill={fillOf(move.id)} />
                           </button>
                         )
                       ))}
@@ -115,7 +125,8 @@ const MoveBar = ({
             </div>
             {/* Folded: the stage as one bar, how far through it the cycle is; a tap goes to the stage. */}
             <button type={BUTTON} disabled={!onPick || playing} onClick={() => onPick(moves.map((move) => move.id))} aria-label={group.name || moves[0].label} className={`absolute inset-x-0 bottom-0 flex h-9 items-center border-b-2 transition-opacity duration-300 ${moves.some((move) => chosen(move.id)) ? 'border-acc' : 'border-transparent'} ${playing ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
-              <Bar on={false} mark={moves.some((move) => marked.includes(move.id))} fill={done} />
+              {moves.some((move) => marked.includes(move.id)) ? <Dot /> : null}
+              <Bar on={false} fill={done} />
             </button>
           </div>
         );
