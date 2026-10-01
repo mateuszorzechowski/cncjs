@@ -30,8 +30,9 @@ export const LOOP_HOLD_MS = 2500;
 // The tool's height over the sheet as the coarse steps start, and where the fine ones do: 5 units a step.
 const HIGH = 60;
 const NEAR = 10;
-const STEP = 5;
-const FINE = 0.5;
+// Few steps, held apart, so each press reads as one (review note, 2026-10-01: *"mniej kroków zejścia, ale dłuższe przerwy"*).
+const STEP = 10;
+const FINE = 2.25;
 
 // The hand's to-and-fro: its period's measure. How far it swings, and what the tool does to the sheet, by `FEEL`.
 const SWING_MS = 80;
@@ -99,8 +100,8 @@ const stepAt = (steps, p) => {
  * through its run the move stops changing; its title.
  */
 const MOVES = {
-  coarse: { steps: stepsOf(HIGH, STEP, 10), end: 0.85, titleKey: 'probe.paper.coarse' },
-  fine: { steps: stepsOf(NEAR, FINE, 18), end: 0.85, titleKey: 'probe.paper.fine' },
+  coarse: { steps: stepsOf(HIGH, STEP, 5), end: 0.85, titleKey: 'probe.paper.coarse' },
+  fine: { steps: stepsOf(NEAR, FINE, 4), end: 0.85, titleKey: 'probe.paper.fine' },
   // One more step each: it drags, it resists, it stands (Mateusz: each its own stage).
   drag: { steps: [[0, 1], [0.15, 0.5]], end: 0.8, titleKey: 'probe.paper.drags' },
   resist: { steps: [[0, 0.5], [0.15, 0]], end: 0.8, titleKey: 'probe.paper.resists' },
@@ -123,7 +124,7 @@ const MOVES = {
 const gapOf = (move, p) => (move.gap ? move.gap(p) : move.steps[stepAt(move.steps, p)][1]);
 
 // How long a jog key shows pressed after its step, as a part of a move's run.
-const CLICK = 0.05;
+const CLICK = 0.06;
 // Which way each jogged move goes: towards the surface, or back off it.
 const BACK = new Set(['back', 'here']);
 
@@ -278,7 +279,7 @@ export const paperScene = (name, p, {
     motion: name === 'lift' && gap > 0.6 && gap < LIFT + 0.4 ? { from: SHEET_Y - 0.5, to: SHEET_Y - gap, kind: 'rapid' } : null,
     lift: name === 'lift' ? { text: say('paperLift', texts.paperLift ?? ''), lit: focus === 'paperLift' } : null,
     jog: name === 'coarse' && gap < HIGH ? { from: HIGH, to: gap, every: STEP } : null,
-    fine: name === 'fine' && gap < NEAR - 1 ? { from: NEAR, to: gap } : null,
+    fine: name === 'fine' && gap < NEAR ? { from: NEAR, to: gap, every: FINE } : null,
     zero,
     axis: EDGES_BY_ID[edge].axis.toUpperCase(),
     dim: name === 'zero'
