@@ -89,7 +89,8 @@ const Finger = ({ x, y }) => (
   <path d={`M${x + 70} ${y - 13} H${x + 13} A13 13 0 0 0 ${x + 13} ${y + 13} H${x + 70}`} className="fill-surf stroke-ink" strokeWidth={2} strokeLinejoin="round" />
 );
 
-const TILT = -14;
+// Away from the finger, which comes from the right: it pushes the ball left.
+const TILT = 14;
 
 /*
  * A 3D probe's test (Mateusz, 2026-10-01): at rest on the left, its tip
@@ -97,7 +98,7 @@ const TILT = -14;
  */
 const ProbeHalves = ({ open, closed }) => {
   // Where the ball is with the stylus tilted.
-  const bx = 330 + 72 * Math.sin((-TILT * Math.PI) / 180);
+  const bx = 330 - 72 * Math.sin((TILT * Math.PI) / 180);
   return (
     <>
       <g className={open}>
