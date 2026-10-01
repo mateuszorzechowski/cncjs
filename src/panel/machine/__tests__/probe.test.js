@@ -94,6 +94,6 @@ describe('a kept figure in a field', () => {
 
   test('every method the server may name has words, and every figure a kind', () => {
     expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'hole', 'paper']);
-    expect(Object.values(FIELDS).every((f) => ['length', 'feed'].includes(f.kind))).toBe(true);
+    expect(Object.values(FIELDS).every((f) => ['length', 'feed', 'count'].includes(f.kind))).toBe(true);
   });
 });

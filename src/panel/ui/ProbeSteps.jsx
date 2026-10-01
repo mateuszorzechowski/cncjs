@@ -38,7 +38,7 @@ const EDITORS = {
 const CYCLES = {
   z: ZPlateCycle,
   corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
-  hole: ({ phase }) => <HoleCycle phase={phase} words={phase ? t(...holeWords(phase)) : null} />,
+  hole: ({ phase, probe }) => <HoleCycle phase={phase} words={phase ? t(...holeWords(phase)) : null} passes={probe?.params?.holePasses} />,
 };
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';

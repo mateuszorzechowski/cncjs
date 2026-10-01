@@ -31,6 +31,8 @@ export const FIELDS = {
   ballDiameter: { value: 2, min: 0.1, max: 20 },
   // A hole's rough diameter: how far each search across it may go.
   holeSize: { value: 20, min: 1, max: 300 },
+  // Across it once or twice: a count, never converted (`count`).
+  holePasses: { value: 2, min: 1, max: 2, count: true },
   // The work's thickness, between its top and the table, for a zero on the other one (`surface`).
   stockThickness: { value: 18, min: 0.1, max: 500 },
   // Paper by hand: an office sheet is a tenth of a millimetre; off it by a little once measured.
@@ -80,9 +82,9 @@ export const paramsPatch = (patch, units, current = {}) => {
     if (!field) {
       return { error: `\`${name}\` is not a probe setting` };
     }
-    const value = toMm(Number(given), units);
-    if (!(value >= field.min && value <= field.max)) {
-      return { error: `\`${name}\`: ${field.min} to ${field.max} mm`, name };
+    const value = field.count ? Number(given) : toMm(Number(given), units);
+    if (!(value >= field.min && value <= field.max) || (field.count && !Number.isInteger(value))) {
+      return { error: `\`${name}\`: ${field.min} to ${field.max}${field.count ? '' : ' mm'}`, name };
     }
     own[name] = value;
   }

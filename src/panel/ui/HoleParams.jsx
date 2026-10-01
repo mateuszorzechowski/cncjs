@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { passesSection } from './HolePasses';
 import HoleScene from './HoleScene';
 import MoveBar, { namedGroups } from './MoveBar';
 import PlayControls from './PlayControls';
@@ -8,7 +9,7 @@ import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
-  HOLE_GROUPS, HOLE_ORDER, HOLE_PARAMS, LOOP_HOLD_MS, holeCode, holeReadout, holeScene, holeTimeline, moveOf, playAt, titleOf,
+  HOLE_PARAMS, LOOP_HOLD_MS, holeCode, holeGroups, holeOrder, holeReadout, holeScene, holeTimeline, moveOf, playAt, titleOf,
 } from '../machine/holeCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
 import { useIsWide } from './shell';
@@ -37,11 +38,13 @@ const HoleParams = ({
   const [open, setOpen] = useState(null);
   const still = useReducedMotion();
   const group = HOLE_PARAMS.find((one) => one.id === open);
-  const items = useMemo(() => holeTimeline(), []);
+  // Once or twice across: the cycle drawn is the one that will run.
+  const passes = texts.holePasses === '1' ? 1 : 2;
+  const items = useMemo(() => holeTimeline(passes), [passes]);
   const {
     player, picked, loop, frame, p, onField, pick,
   } = useSetupPlayer({
-    items, hold: LOOP_HOLD_MS, playAt, still,
+    items, hold: LOOP_HOLD_MS, playAt: (ms, how) => playAt(ms, { ...how, passes }), still,
   });
   const { name, focus } = frame;
   const say = (field, text) => figureSaid(field, text, units.rule);
@@ -53,9 +56,11 @@ const HoleParams = ({
   const read = holeReadout(name);
   const title = t(...titleOf(name));
 
-  const groups = namedGroups(HOLE_GROUPS, t, (id) => t(...titleOf(id)));
-  const sections = HOLE_PARAMS.map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
-    .filter((one) => one.fields.length);
+  const groups = namedGroups(holeGroups(passes), t, (id) => t(...titleOf(id)));
+  const sections = HOLE_PARAMS.map((one) => (one.passes
+    ? passesSection(one, fields, texts, onText)
+    : { id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
+    .filter((one) => one.fields.length || one.head);
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
@@ -67,7 +72,7 @@ const HoleParams = ({
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
         // The moves a figure acts in: the one being set, or else the open group's (review note, 2026-10-01).
-        marked={picked || group ? HOLE_ORDER.filter((id) => moveOf(id).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
+        marked={picked || group ? holeOrder(passes).filter((id) => moveOf(id).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
       />
       <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={loop} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={read.axes} />

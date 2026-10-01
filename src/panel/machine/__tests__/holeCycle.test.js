@@ -1,5 +1,5 @@
 import {
-  HOLE_GROUPS, HOLE_ORDER, HOLE_PARAMS, HOLE_R, holeCode, holeReadout, holeScene, holeTimeline, holeWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, toolAt,
+  HOLE_PARAMS, HOLE_R, holeCode, holeGroups, holeOrder, holeReadout, holeScene, holeTimeline, holeWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, toolAt,
 } from '../holeCycle';
 import { methodOf, phaseWords, stepsOf } from '../probe';
 import { segmentsOf } from '../timeline';
@@ -12,16 +12,26 @@ const TEXTS = {
 
 describe('the hole centre cycle', () => {
   test('two passes, each across X and then Y, each pair then its middle; the zero last', () => {
-    expect(HOLE_ORDER).toEqual([
+    expect(holeOrder()).toEqual([
       'x1p', 'x1m', 'x1c', 'y1p', 'y1m', 'y1c', 'x2p', 'x2m', 'x2c', 'y2p', 'y2m', 'y2c', 'zero',
     ]);
   });
 
+  test('one pass: the first half and the zero, which the first pass already ends on', () => {
+    expect(holeOrder(1)).toEqual(['x1p', 'x1m', 'x1c', 'y1p', 'y1m', 'y1c', 'zero']);
+    expect(toolAt(moveOf('y1c'), 1)).toEqual(moveOf('zero').from);
+    expect(holeGroups(1).map((group) => group.id)).toEqual(['pass1', 'zero']);
+    expect(playAt(holeTimeline(1).find((item) => item.name === 'zero').start + 10, { passes: 1 }).name).toBe('zero');
+  });
+
   test('every move is on the bar once, and every figure the server asks for in one group', () => {
-    const barred = HOLE_GROUPS.flatMap((group) => group.subs.flatMap((sub) => sub.moves));
-    expect(barred).toEqual(HOLE_ORDER);
-    const grouped = HOLE_PARAMS.flatMap((group) => group.fields).sort();
-    expect(grouped).toEqual(['ballDiameter', 'fast', 'holeSize', 'retract', 'slow']);
+    [1, 2].forEach((passes) => {
+      const barred = holeGroups(passes).flatMap((group) => group.subs.flatMap((sub) => sub.moves));
+      expect(barred).toEqual(holeOrder(passes));
+    });
+    // The passes are a switch at the measuring group's head.
+    const grouped = HOLE_PARAMS.flatMap((group) => (group.passes ? [...group.fields, 'holePasses'] : group.fields)).sort();
+    expect(grouped).toEqual(['ballDiameter', 'fast', 'holePasses', 'holeSize', 'retract', 'slow']);
   });
 
   test('a touch ends with the tool off the wall, a way to the middle at the middle of its pair', () => {

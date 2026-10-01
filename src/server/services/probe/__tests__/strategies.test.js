@@ -223,6 +223,21 @@ describe('the centre of a hole', () => {
     close(found, { x: 24, y: 24 });
   });
 
+  test('one pass, if asked: half the touches, the same centre and size', () => {
+    const [hx, hy] = [-120, -70];
+    const once = { ...params, holePasses: 1 };
+    const { outcome, zero, sent } = measure({
+      method: 'hole', params: once, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const twice = measure({
+      method: 'hole', params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+
+    close(zero, { x: hx, y: hy });
+    close(STRATEGIES.hole.found(once, {}, outcome.seen), { x: 24, y: 24 });
+    expect(sent.filter((line) => line.includes('G38')).length * 2).toBe(twice.sent.filter((line) => line.includes('G38')).length);
+  });
+
   test('a hole wider than its rough size is a failure, nothing written', () => {
     const { outcome, zero } = measure({
       method: 'hole', params: { ...params, holeSize: 5 }, radius, boxes: holeAt(-120, -70, 40), start: { x: -120, y: -70, z: -60 },

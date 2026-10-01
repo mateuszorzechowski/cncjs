@@ -3,7 +3,9 @@
  * the server's `services/probe/strategies/hole`): seen from above, the tool
  * in a round hole touches the wall +X, then −X, goes to the middle of the
  * two, and does the same across Y — twice, the second pass from the centre
- * the first found. Then X0 Y0 is written there; Z is not touched.
+ * the first found, or once (`passes`). Then X0 Y0 is written there; Z is not
+ * touched. The first pass already ends at the centre, so one pass is the
+ * first half of the same moves and the zero.
  *
  * Positions are the drawing's units, the hole's centre at the origin and Y
  * up; the figures said come from the form. Nothing here is the machine's.
@@ -90,7 +92,8 @@ const build = () => {
 
 const { moves: MOVES, order: ORDER } = build();
 
-export const HOLE_ORDER = ORDER;
+/** The moves in order, for one pass or two. */
+export const holeOrder = (passes = 2) => ORDER.filter((name) => passes !== 1 || MOVES[name].pass !== 2);
 export const moveOf = (name) => MOVES[name];
 
 /** A move's spoken name: `t(key, vars)`. */
@@ -103,7 +106,8 @@ export const titleOf = (name) => {
 const PASS_KEYS = { 1: 'probe.hole.pass1', 2: 'probe.hole.pass2' };
 const AXIS_KEYS = { x: 'probe.hole.axis.x', y: 'probe.hole.axis.y' };
 
-export const HOLE_GROUPS = [1, 2].map((pass) => ({
+/** The bar's stages: each pass across X and Y, then the zero. */
+export const holeGroups = (passes = 2) => [1, 2].slice(0, passes).map((pass) => ({
   id: `pass${pass}`,
   key: PASS_KEYS[pass],
   subs: AXES.map((axis) => ({ key: AXIS_KEYS[axis], moves: ORDER.filter((name) => name.startsWith(`${axis}${pass}`)) })),
@@ -113,7 +117,8 @@ export const HOLE_GROUPS = [1, 2].map((pass) => ({
 
 export const HOLE_PARAMS = [
   { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'] },
-  { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
+  // How many passes, a switch at the group's head.
+  { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true },
   // Only for the hole's size said back: the centre needs no radius.
   { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
 ];
@@ -123,20 +128,22 @@ const EDIT = {
   holeSize: ['x1p', 'dim'], fast: ['x1p', 'feed'], slow: ['x1p', 'feed'], retract: ['x1p', 'feed'], ballDiameter: ['zero', 'dim'],
 };
 
-export const holeTimeline = () => layOut(ORDER, {
+export const holeTimeline = (passes = 2) => layOut(holeOrder(passes), {
   spanOf: () => SPAN_MS,
   runOf: () => RUN_MS,
   partsOf: (name) => [[0, MOVES[name].end]],
 });
 
-const ITEMS = holeTimeline();
-const TOTAL = totalOf(ITEMS);
+const ITEMS = { 1: holeTimeline(1), 2: holeTimeline(2) };
 
-/** Which move plays at `ms`: the cycle, a figure's loop, or `pinned` alone. */
-export const playAt = (ms, { pinned = null, field = null, still = false } = {}) => {
+/** Which move plays at `ms`: the cycle of `passes`, a figure's loop, or `pinned` alone. */
+export const playAt = (ms, {
+  pinned = null, field = null, still = false, passes = 2,
+} = {}) => {
   const [alone, focus] = (field && EDIT[field]) || (pinned ? [pinned, null] : [null, null]);
   if (!alone) {
-    const frame = frameAt(ITEMS, ms % TOTAL);
+    const items = ITEMS[passes] || ITEMS[2];
+    const frame = frameAt(items, ms % totalOf(items));
     return { ...frame, focus: null, p: still ? 1 : frame.p };
   }
   const span = RUN_MS * MOVES[alone].end + LOOP_HOLD_MS;

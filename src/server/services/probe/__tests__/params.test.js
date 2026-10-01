@@ -33,6 +33,14 @@ describe('the probe figures', () => {
     expect(probe.params()).toMatchObject({ plateThickness: 12.7, fast: 101.6 });
   });
 
+  test('a count is kept as given, whole, in any units', () => {
+    probe.set({ holePasses: 1 }, 'inch');
+
+    expect(probe.params().holePasses).toBe(1);
+    expect(paramsPatch({ holePasses: 1.5 }, 'mm')).toMatchObject({ error: expect.any(String), name: 'holePasses' });
+    expect(paramsPatch({ holePasses: 3 }, 'mm')).toMatchObject({ error: expect.any(String), name: 'holePasses' });
+  });
+
   test('only what was set is kept, so a new default reaches the rest', () => {
     probe.set({ wallX: 8 }, 'mm');
 

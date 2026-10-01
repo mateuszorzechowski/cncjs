@@ -6,9 +6,12 @@ import { move, touch } from '../moves';
  * between each pair. The ball's radius is on both sides of a pair, so it
  * falls out of the centre and need not be known.
  *
- * Two passes, as the common senders do: the first finds the centre from
- * wherever the tool stood, the second touches again from there, so a start
- * well off the axis costs nothing. The zero is X0 Y0 there; Z is left as it
+ * Two passes by default, as the common senders do: the first finds the
+ * centre from wherever the tool stood, the second touches again from there,
+ * square to the walls, so a start well off the axis costs nothing. One pass
+ * (`holePasses`, Mateusz, 2026-10-01) is enough in theory — the middle of
+ * any chord of a circle is on its centre line — and takes half the time,
+ * but a start far off the centre touches the walls at a slant. The zero is X0 Y0 there; Z is left as it
  * is — the top is measured by a plate or the paper. The tool ends at the
  * centre, still in the hole.
  *
@@ -27,22 +30,23 @@ const across = (axis, pass, params) => {
 
 const pass = (n, params) => [...across('x', n, params), ...across('y', n, params)];
 
-const centre = (seen, axis) => (seen[`${axis}2a`][axis] + seen[`${axis}2b`][axis]) / 2;
+// The last pass's touches are the ones that count.
+const centre = (seen, axis, n) => (seen[`${axis}${n}a`][axis] + seen[`${axis}${n}b`][axis]) / 2;
 
 export default {
-  fields: ['holeSize', 'ballDiameter', 'retract', 'fast', 'slow'],
+  fields: ['holeSize', 'holePasses', 'ballDiameter', 'retract', 'fast', 'slow'],
   options: {},
   touches: true,
 
   check: () => null,
 
-  steps: (params) => [...pass(1, params), ...pass(2, params)],
+  steps: (params) => (params.holePasses === 1 ? pass(1, params) : [...pass(1, params), ...pass(2, params)]),
 
-  zero: (params, options, seen) => ({ x: centre(seen, 'x'), y: centre(seen, 'y') }),
+  zero: (params, options, seen) => ({ x: centre(seen, 'x', params.holePasses), y: centre(seen, 'y', params.holePasses) }),
 
   // The hole's size each way, the ball's diameter added back: what the operator can check.
   found: (params, options, seen) => ({
-    x: Math.abs(seen.x2a.x - seen.x2b.x) + params.ballDiameter,
-    y: Math.abs(seen.y2a.y - seen.y2b.y) + params.ballDiameter,
+    x: Math.abs(seen[`x${params.holePasses}a`].x - seen[`x${params.holePasses}b`].x) + params.ballDiameter,
+    y: Math.abs(seen[`y${params.holePasses}a`].y - seen[`y${params.holePasses}b`].y) + params.ballDiameter,
   }),
 };

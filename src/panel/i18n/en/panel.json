@@ -1451,7 +1451,8 @@
       "stockThickness": "Work thickness",
       "paperLift": "Lift after measuring",
       "holeSize": "Hole diameter (roughly)",
-      "ballDiameter": "Ball diameter"
+      "ballDiameter": "Ball diameter",
+      "holePasses": "Passes"
     },
     "step": {
       "method": "Method",
@@ -1654,7 +1655,9 @@
       "phase": {
         "fast": "{{axis}}: looking for the wall",
         "centre": "{{axis}}: to the middle"
-      }
+      },
+      "passesWhy1": "One pass: 4 touches, half the time. The middle of any chord of a circle lies on its centre, so it is enough when the ball starts near the middle of the hole.",
+      "passesWhy2": "Two passes: the second from the centre the first found, its touches square to the walls. Surer when the start is far off the middle — then the first touches meet the wall at a slant."
     }
   }
 }

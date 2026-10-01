@@ -1451,7 +1451,8 @@
       "stockThickness": "Grubość materiału",
       "paperLift": "Odjazd po pomiarze",
       "holeSize": "Średnica otworu (w przybliżeniu)",
-      "ballDiameter": "Średnica kulki"
+      "ballDiameter": "Średnica kulki",
+      "holePasses": "Przejścia"
     },
     "step": {
       "method": "Metoda",
@@ -1654,7 +1655,9 @@
       "phase": {
         "fast": "{{axis}}: szukam ścianki",
         "centre": "{{axis}}: na środek"
-      }
+      },
+      "passesWhy1": "Jedno przejście: 4 dotyki, o połowę krócej. Środek każdej cięciwy okręgu leży na jego środku, więc wystarcza, gdy kulka startuje blisko środka otworu.",
+      "passesWhy2": "Dwa przejścia: drugie od środka znalezionego w pierwszym, z dotykami prostopadle do ścianek. Pewniejsze, gdy start jest daleko od środka — wtedy pierwsze dotyki trafiają ściankę ukośnie."
     }
   }
 }
