@@ -156,8 +156,8 @@ export const PAPER_PARAMS = [
   { id: 'paper', key: 'probe.group.paper', fields: ['paperThickness'] },
   { id: 'tool', key: 'probe.group.tool', fields: ['toolDiameter'], side: true },
   { id: 'moves', key: 'probe.group.moves', fields: ['paperLift'] },
-  // The top only, while Z0 is the work's thickness from the surface measured.
-  { id: 'stock', key: 'probe.group.stock', fields: ['stockThickness'], top: true, shifts: true },
+  // On the top: where Z0 goes, last and closed (`SurfaceChoice`).
+  { id: 'z0', key: 'probe.surface.title', fields: ['stockThickness'], top: true, surface: true },
 ];
 
 // A figure being set loops the zero, its part lit.

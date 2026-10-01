@@ -3,7 +3,7 @@ import MoveBar, { namedGroups } from './MoveBar';
 import PaperScene from './PaperScene';
 import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
-import SurfaceChoice from './SurfaceChoice';
+import { surfaceSection } from './SurfaceChoice';
 import { figureColumns } from './ProbeSections';
 import { useClock, useReducedMotion } from './useClock';
 import usePlayer from './usePlayer';
@@ -71,9 +71,11 @@ const PaperParams = ({
   // On the top, Z0 may go on the table: the work's thickness asked for while it is apart.
   const shifts = !side && surfaceShifts(surface);
   const groups = namedGroups(PAPER_GROUPS, t, (id) => t(moveOf(id).titleKey, { axis: scene.axis }));
-  const sections = PAPER_PARAMS.filter((one) => (side || !one.side) && (!one.shifts || shifts))
-    .map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
-    .filter((one) => one.fields.length);
+  const sections = PAPER_PARAMS.filter((one) => (side || !one.side) && (!side || !one.top))
+    .map((one) => (one.surface
+      ? surfaceSection(one, fields, surface, onSurface)
+      : { id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
+    .filter((one) => one.fields.length || one.head);
   const usable = ['paperThickness', 'paperLift', ...(side ? ['toolDiameter'] : []), ...(shifts ? ['stockThickness'] : [])];
   const uses = usable.filter((field) => MOVED_BY[field] === name);
   const openGroup = PAPER_PARAMS.find((one) => one.id === open);
@@ -107,12 +109,7 @@ const PaperParams = ({
     bad,
     onField: setPicked,
     lit: uses,
-    intro: (
-      <>
-        {intro}
-        {side ? null : <SurfaceChoice value={surface} onChange={onSurface} />}
-      </>
-    ),
+    intro,
     note,
   });
   if (split) {

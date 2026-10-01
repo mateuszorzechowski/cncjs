@@ -174,8 +174,8 @@ export const PLATE_PARAMS = [
   { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
   { id: 'reach', key: 'probe.group.reach', fields: ['maxZ'] },
   { id: 'moves', key: 'probe.group.moves', fields: ['lift'] },
-  // Only while Z0 is the work's thickness from the surface measured (`surface`).
-  { id: 'stock', key: 'probe.group.stock', fields: ['stockThickness'], shifts: true },
+  // Where Z0 goes, last and closed; the work's thickness in it only while needed (`SurfaceChoice`).
+  { id: 'z0', key: 'probe.surface.title', fields: ['stockThickness'], surface: true },
 ];
 
 export const moveOf = (name) => MOVES[name];

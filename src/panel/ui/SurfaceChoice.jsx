@@ -1,4 +1,6 @@
 import SegmentedChoice from './SegmentedChoice';
+import SettingRow from './SettingRow';
+import { surfaceShifts } from '../machine/surface';
 import { t } from '../i18n';
 
 const ON = ['work', 'table'];
@@ -8,34 +10,33 @@ const WORDS = { work: 'probe.surface.work', table: 'probe.surface.table', top: '
 
 /**
  * Where the plate or the sheet lies, and where Z0 goes (Mateusz, 2026-10-01:
- * two switches, *"Mierzysz na: materiał / stół"*, *"Z0 na: wierzch / stół"*).
- * Alike, the zero is where it is measured; apart, the work's thickness
- * between them — asked for in the figures (`probe.group.stock`).
+ * two switches, *"Mierzysz na: materiał / stół"*, *"Z0 na: wierzch / stół"*),
+ * as rows of the figures' group they head. Alike, the zero is where it is
+ * measured; apart, the work's thickness between them.
  */
 const SurfaceChoice = ({ value, onChange }) => (
-  <div className="flex flex-col gap-2">
-    <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{t('probe.surface.title')}</span>
-    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
-      <span className="text-note text-mut">{t('probe.surface.on')}</span>
-      <SegmentedChoice
-        options={ON}
-        value={value.on}
-        onChange={(on) => onChange({ ...value, on })}
-        format={(id) => t(WORDS[id])}
-        label={t('probe.surface.on')}
-        joined
-      />
-      <span className="text-note text-mut">{t('probe.surface.z0')}</span>
-      <SegmentedChoice
-        options={Z0}
-        value={value.z0}
-        onChange={(z0) => onChange({ ...value, z0 })}
-        format={(id) => t(WORDS[id])}
-        label={t('probe.surface.z0')}
-        joined
-      />
-    </div>
-  </div>
+  <>
+    <SettingRow title={t('probe.surface.on')}>
+      <SegmentedChoice options={ON} value={value.on} onChange={(on) => onChange({ ...value, on })} format={(id) => t(WORDS[id])} label={t('probe.surface.on')} joined />
+    </SettingRow>
+    <SettingRow title={t('probe.surface.z0')}>
+      <SegmentedChoice options={Z0} value={value.z0} onChange={(z0) => onChange({ ...value, z0 })} format={(id) => t(WORDS[id])} label={t('probe.surface.z0')} joined />
+    </SettingRow>
+  </>
 );
+
+/**
+ * The figures' group for it, last in the list and closed (review note,
+ * 2026-10-01: *"ukryj za kategorią i daj na dół, z domyślnymi wartościami"*):
+ * the two switches at its head, the work's thickness only while they differ,
+ * and what they are set to in its box.
+ */
+export const surfaceSection = (one, fields, surface, onSurface) => ({
+  id: one.id,
+  title: t(one.key),
+  fields: surfaceShifts(surface) ? one.fields.filter((field) => fields.includes(field)) : [],
+  head: <SurfaceChoice value={surface} onChange={onSurface} />,
+  summary: [[t('probe.surface.on'), t(WORDS[surface.on])], [t('probe.surface.z0'), t(WORDS[surface.z0])]],
+});
 
 export default SurfaceChoice;

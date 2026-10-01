@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import MoveBar, { namedGroups } from './MoveBar';
 import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
-import SurfaceChoice from './SurfaceChoice';
+import { surfaceSection } from './SurfaceChoice';
 import { figureColumns } from './ProbeSections';
 import ZPlateScene from './ZPlateScene';
 import { useClock, useReducedMotion } from './useClock';
@@ -75,9 +75,11 @@ const ZPlateParams = ({
   const title = t(move.titleKey, { t: say('plateThickness', texts.plateThickness ?? '') });
 
   const groups = namedGroups(PLATE_GROUPS, t, (id) => t(moveOf(id).titleKey, { t: '' }));
-  const sections = PLATE_PARAMS.filter((one) => !one.shifts || shifts)
-    .map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
-    .filter((one) => one.fields.length);
+  const sections = PLATE_PARAMS
+    .map((one) => (one.surface
+      ? surfaceSection(one, fields, surface, onSurface)
+      : { id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
+    .filter((one) => one.fields.length || one.head);
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
@@ -116,12 +118,7 @@ const ZPlateParams = ({
     bad,
     onField: setPicked,
     lit,
-    intro: (
-      <>
-        {intro}
-        <SurfaceChoice value={surface} onChange={onSurface} />
-      </>
-    ),
+    intro,
     note,
   });
 

@@ -28,6 +28,7 @@ export const ProbeFields = ({
   const units = useUnits();
   return (
     <div className="flex min-w-0 flex-col">
+      {section.head}
       {section.fields.map((name) => (
         <SettingRow key={name} title={t(FIELDS[name].key)}>
           <TextField
@@ -53,7 +54,9 @@ export const ProbeFields = ({
  * wide screen, as a sheet on a phone, a row per figure as the settings'
  * rows. The drawing plays the stage open.
  *
- * `sections` is `[{ id, title, fields }]`; `open` the one open, or null;
+ * `sections` is `[{ id, title, fields, head, summary }]` — `head` a group's
+ * own controls above its figures, `summary` `[label, value]` lines for them
+ * in its box; `open` the one open, or null;
  * `onField(name)` the figure being set, or null once it is left; `lit` the
  * figures the drawing's move uses. `selected`, on a PC: the list alone, the
  * group whose figures stand beside it lit — the fields are `ProbeFields`.
@@ -96,6 +99,12 @@ const ProbeSections = ({
           selected={selected === section.id}
           opens={selected ? null : OPENS[phone ? 'sheet' : 'view']}
         >
+          {(section.summary || []).map(([label, value]) => (
+            <span key={label} className="flex justify-between gap-2.5 px-2 py-0.5 text-note">
+              <span className="text-mut">{label}</span>
+              <span className="whitespace-nowrap text-ink">{value}</span>
+            </span>
+          ))}
           {section.fields.map((name) => {
             const on = lit.includes(name);
             return (
