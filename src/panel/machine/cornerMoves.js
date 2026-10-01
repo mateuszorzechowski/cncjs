@@ -99,8 +99,9 @@ export const MOVES = {
     legs: [
       [0, 0.2, 'xy', (v, say) => `X− ${say('retract', v.retract)}`, (v) => `G0 X-${v.retract}`, 'off'],
       [0.2, 0.4, 'z', (v, say) => `Z↑ ${say('depth', sum(v.retract, v.depth))}`, (v) => `G0 Z+${sum(v.retract, v.depth)}`, 'up', ['depth', 'retract']],
-      // Back over the plate: no figure of the form's to say.
-      [0.4, 0.6, 'xy', () => '', () => 'G0 X Y', 'over'],
+      // Back over the plate, to where Z was touched: a place, not a figure of the form's — its
+      // line says so in words, there being no numbers to show (review note, 2026-10-01).
+      [0.4, 0.6, 'xy', () => '', () => null, 'over'],
       [0.6, 0.8, 'xy', (v, say) => `Y− ${say('clear', v.clear)}`, (v) => `G0 Y-${v.clear}`, 'out'],
       [0.8, 1, 'z', (v, say) => `Z↓ ${say('depth', sum(v.retract, v.depth))}`, (v) => `G38.3 Z-${sum(v.retract, v.depth)} F${v.fast}`, 'down', ['depth', 'retract']],
     ],

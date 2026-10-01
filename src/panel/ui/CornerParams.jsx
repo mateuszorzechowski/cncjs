@@ -137,6 +137,8 @@ const CornerParams = ({
           {code.parts.map((part, i) => (
             <span key={part} className={i === code.now ? 'font-semibold text-ink underline underline-offset-4' : ''}>{part}</span>
           ))}
+          {/* A way to a place with no numbers to show says where it goes. */}
+          {code.parts.length ? null : <span>{t('probe.corner.overCode')}</span>}
         </span>
       </div>
     </div>

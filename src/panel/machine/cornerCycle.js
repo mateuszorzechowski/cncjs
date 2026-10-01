@@ -226,8 +226,9 @@ export const cornerCode = (name, p, texts, wcs = 1, corner = 'front-left') => {
   const turn = signedFor(corner);
   if (move.legs) {
     const leg = move.legs[legAt(move, p)];
+    const line = leg[4](texts);
     return {
-      parts: [turn(leg[4](texts))], now: -1, leg: leg[5], uses: leg[6] || LEG_USES[leg[5]] || move.uses,
+      parts: line ? [turn(line)] : [], now: -1, leg: leg[5], uses: leg[6] || LEG_USES[leg[5]] || move.uses,
     };
   }
   return {

@@ -1426,7 +1426,8 @@
         "off": "off the wall",
         "lift": "up by the lift",
         "corner": "over X0 Y0"
-      }
+      },
+      "overCode": "G0 over where Z was touched"
     },
     "field": {
       "plateThickness": "Plate thickness",

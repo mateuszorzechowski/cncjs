@@ -1426,7 +1426,8 @@
         "off": "od ścianki",
         "lift": "w górę o odjazd",
         "corner": "nad X0 Y0"
-      }
+      },
+      "overCode": "G0 nad punkt dotyku Z"
     },
     "field": {
       "plateThickness": "Grubość płytki",
