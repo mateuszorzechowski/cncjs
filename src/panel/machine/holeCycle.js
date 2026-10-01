@@ -225,7 +225,7 @@ export const holeScene = (name, p, {
   };
 };
 
-/** The move's line, with the figures typed; null for a way to the middle, said in words. */
+/** The move's line, with the figures typed; a way to the middle is said in words, `[key]`. */
 export const holeCode = (name, texts, wcs = 1) => {
   const move = MOVES[name];
   if (move.kind === 'touch') {
@@ -234,7 +234,7 @@ export const holeCode = (name, texts, wcs = 1) => {
   if (move.kind === 'zero') {
     return `G10 L20 P${wcs} X0 Y0`;
   }
-  return null;
+  return ['probe.hole.centreCode'];
 };
 
 // An example of where the tool stood against the old zero.
@@ -286,4 +286,28 @@ export const holeWords = (phase) => {
   const move = MOVES[moveOfPhase(phase)];
   const part = String(phase || '').split('-')[1];
   return [PHASE_KEYS[part] || 'probe.phase.touch', { axis: move.way }];
+};
+
+/** The hole as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */
+export const HOLE_CYCLE = {
+  part: {
+    // How much larger the ball is drawn up high than down in the hole (review note, 2026-10-01: *"większa różnica rozmiaru"*).
+    kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2,
+  },
+  place: 'probe.place.hole',
+  params: HOLE_PARAMS,
+  hold: LOOP_HOLD_MS,
+  order: holeOrder,
+  groups: holeGroups,
+  timeline: holeTimeline,
+  playAt,
+  moveOf,
+  titleOf,
+  scene: holeScene,
+  code: holeCode,
+  usesAt: (name) => MOVES[name].uses,
+  readout: holeReadout,
+  positionAt,
+  moveOfPhase,
+  words: holeWords,
 };

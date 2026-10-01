@@ -4,7 +4,7 @@ import Card from './Card';
 import ConfirmSheet from './ConfirmSheet';
 import CornerPosition from './CornerPosition';
 import FadeScroller from './FadeScroller';
-import HolePosition from './HolePosition';
+import CentrePosition from './CentrePosition';
 import Notice from './Notice';
 import PaperFeel from './PaperFeel';
 import PaperJog from './PaperJog';
@@ -13,6 +13,8 @@ import Sheet from './Sheet';
 import ZPlatePosition from './ZPlatePosition';
 import { Foot } from './ProbeSteps';
 import JogWidget from '../widgets/JogWidget';
+import { BOSS_CYCLE } from '../machine/bossCycle';
+import { HOLE_CYCLE } from '../machine/holeCycle';
 import { useIsPhone } from './shell';
 import { t } from '../i18n';
 
@@ -20,7 +22,8 @@ import { t } from '../i18n';
 const MOVES = {
   z: ZPlatePosition,
   corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
-  hole: HolePosition,
+  hole: () => <CentrePosition cycle={HOLE_CYCLE} />,
+  boss: () => <CentrePosition cycle={BOSS_CYCLE} />,
   paper: ({ choice }) => <PaperPosition edge={choice} />,
 };
 

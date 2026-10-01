@@ -76,7 +76,7 @@ describe('the hole centre cycle', () => {
   test('says each move in G-code as the server runs it', () => {
     expect(holeCode('x1p', TEXTS)).toBe('G38.2 X+20 F100');
     expect(holeCode('y2m', TEXTS)).toBe('G38.2 Y-20 F100');
-    expect(holeCode('x1c', TEXTS)).toBeNull();
+    expect(holeCode('x1c', TEXTS)).toEqual(['probe.hole.centreCode']);
     expect(holeCode('zero', TEXTS, 2)).toBe('G10 L20 P2 X0 Y0');
   });
 

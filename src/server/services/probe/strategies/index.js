@@ -1,3 +1,4 @@
+import boss from './boss';
 import corner from './corner';
 import hole from './hole';
 import paper from './paper';
@@ -23,6 +24,7 @@ export const STRATEGIES = {
   z: zPlate,
   corner,
   hole,
+  boss,
   paper,
 };
 

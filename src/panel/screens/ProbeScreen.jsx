@@ -284,7 +284,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       {split ? (
         <div className="flex min-h-0 flex-1 gap-gap">{body}</div>
       ) : (
-        <FadeScroller>
+        // A new step starts at its top, not where the last one was scrolled to — a method low in the list on a phone.
+        <FadeScroller key={step}>
           <div className="flex min-h-full flex-col">
             <Card label={choosing ? t('probe.title') : null} className="flex-1" bodyClassName="gap-3">
               {body}

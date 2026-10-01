@@ -1377,7 +1377,9 @@
       "paper": "Paper",
       "paperNote": "By hand with a sheet of paper: the top or any side, no probe.",
       "hole": "Hole centre",
-      "holeNote": "The centre of a round hole, by probe: X0 and Y0, Z unchanged."
+      "holeNote": "The centre of a round hole, by probe: X0 and Y0, Z unchanged.",
+      "boss": "Centre from outside",
+      "bossNote": "The centre of a boss or a part, by probe from outside: X0 and Y0, Z unchanged."
     },
     "how": {
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
@@ -1391,7 +1393,8 @@
       "z": "Jog the tool over the plate, a few millimetres above it — less than the Z travel limit.",
       "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls.",
       "paper": "Bring the tool a few millimetres over the surface chosen — in front of it for a side. Keep the sheet at hand.",
-      "hole": "Lower the probe's ball into the hole, a few millimetres below its edge, roughly in the middle — clear of the walls."
+      "hole": "Lower the probe's ball into the hole, a few millimetres below its edge, roughly in the middle — clear of the walls.",
+      "boss": "Set the probe's ball over the middle of the part, a few millimetres above its top — less than the Z travel limit."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1452,7 +1455,8 @@
       "paperLift": "Lift after measuring",
       "holeSize": "Hole diameter (roughly)",
       "ballDiameter": "Ball diameter",
-      "holePasses": "Passes"
+      "holePasses": "Passes",
+      "bossSize": "Part width (roughly)"
     },
     "step": {
       "method": "Method",
@@ -1521,7 +1525,7 @@
       "discard": "Discard",
       "close": "Close",
       "again": "Try again",
-      "found": "Hole diameter in {{axis}}"
+      "found": "Measured size in {{axis}}"
     },
     "edgeLabel": "Which surface of the work",
     "edge": {
@@ -1593,7 +1597,8 @@
       "measureAll": "Measuring · every axis",
       "paper": "Paper",
       "hole": "Hole",
-      "probe": "Probe"
+      "probe": "Probe",
+      "part": "Part"
     },
     "play": {
       "pause": "Pause",
@@ -1658,6 +1663,19 @@
       },
       "passesWhy1": "One pass: 4 touches, half the time. The middle of any chord of a circle lies on its centre, so it is enough when the ball starts near the middle of the hole.",
       "passesWhy2": "Two passes: the second from the centre the first found, its touches square to the walls. Surer when the start is far off the middle — then the first touches meet the wall at a slant."
+    },
+    "boss": {
+      "top": "top",
+      "move": {
+        "top": "Z · touch the top",
+        "side": "Pass {{pass}} · {{axis}}: touch the side from outside"
+      },
+      "outCode": "G0 past the side, over the top",
+      "phase": {
+        "top": "Z: looking for the top",
+        "fast": "{{axis}}: looking for the side",
+        "up": "{{axis}}: up over the part"
+      }
     }
   }
 }
