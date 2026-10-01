@@ -3,17 +3,15 @@ import MoveBar, { namedGroups } from './MoveBar';
 import PaperScene from './PaperScene';
 import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
-import SurfaceChoice from './SurfaceChoice';
+import { surfaceSection } from './SurfaceChoice';
 import { figureColumns } from './ProbeSections';
-import { useClock, useReducedMotion } from './useClock';
-import usePlayer from './usePlayer';
+import { useReducedMotion } from './useClock';
+import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
   LOOP_HOLD_MS, PAPER_GROUPS, PAPER_PARAMS, moveOf, paperCode, paperReadout, paperScene, paperTimeline, playAt,
 } from '../machine/paperCycle';
-import {
-  fillsAt, frameAt, rangeOf, timeAt,
-} from '../machine/timeline';
+import { fillsAt, timeAt } from '../machine/timeline';
 import { inMm } from '../machine/units';
 import { SURFACE, surfaceShifts } from '../machine/surface';
 import { useIsWide } from './shell';
@@ -22,8 +20,10 @@ import { t } from '../i18n';
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 
-// The one move the figures change: the zero.
-const ZERO_MOVE = ['zero'];
+// The moves each figure changes: the zero, and the lift after it.
+const MOVED_BY = {
+  paperThickness: 'zero', toolDiameter: 'zero', stockThickness: 'zero', paperLift: 'lift',
+};
 
 // The coordinate system's number in G10 L20 P…: G54 is 1.
 const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53;
@@ -41,16 +41,16 @@ const PaperParams = ({
 }) => {
   const units = useUnits();
   const wide = useIsWide();
-  const [picked, setPicked] = useState(null);
   const [open, setOpen] = useState(null);
   const still = useReducedMotion();
   const items = useMemo(() => paperTimeline(), []);
-  const player = usePlayer(items, { hold: LOOP_HOLD_MS, running: !picked });
-  const fieldMs = useClock(picked, Boolean(picked));
-  const frame = picked ? playAt(fieldMs, { field: picked, still }) : { ...frameAt(items, player.t), focus: null };
+  const {
+    player, picked, loop, frame, p: shownP, onField, pick,
+  } = useSetupPlayer({
+    items, hold: LOOP_HOLD_MS, playAt, still,
+  });
   const { name, focus } = frame;
-  const p = still && !picked ? 1 : frame.p;
-  const pick = (ids, part = null) => player.seek({ ...rangeOf(items, ids, part), ids, part });
+  const p = shownP;
   const say = (field, text) => figureSaid(field, text, units.rule);
   const scene = paperScene(name, p, {
     edge: chosen, texts, say, focus, surface,
@@ -69,10 +69,15 @@ const PaperParams = ({
   // On the top, Z0 may go on the table: the work's thickness asked for while it is apart.
   const shifts = !side && surfaceShifts(surface);
   const groups = namedGroups(PAPER_GROUPS, t, (id) => t(moveOf(id).titleKey, { axis: scene.axis }));
-  const sections = PAPER_PARAMS.filter((one) => (side || !one.side) && (!one.shifts || shifts))
-    .map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
-    .filter((one) => one.fields.length);
-  const uses = name === 'zero' ? ['paperThickness', ...(side ? ['toolDiameter'] : []), ...(shifts ? ['stockThickness'] : [])] : [];
+  const sections = PAPER_PARAMS.filter((one) => (side || !one.side) && (!side || !one.top))
+    .map((one) => (one.surface
+      ? surfaceSection(one, fields, surface, onSurface)
+      : { id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
+    .filter((one) => one.fields.length || one.head);
+  const usable = ['paperThickness', 'paperLift', ...(side ? ['toolDiameter'] : []), ...(shifts ? ['stockThickness'] : [])];
+  const uses = usable.filter((field) => MOVED_BY[field] === name);
+  const openGroup = PAPER_PARAMS.find((one) => one.id === open);
+  const marks = openGroup ? [...new Set([...openGroup.fields.map((field) => MOVED_BY[field]), ...(openGroup.surface ? ['zero'] : [])])] : [];
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
@@ -80,12 +85,13 @@ const PaperParams = ({
       <MoveBar
         groups={groups}
         active={name}
-        fills={picked ? fillsAt(items, timeAt(items, name, p), false) : fillsAt(items, player.t)}
+        fills={loop ? fillsAt(items, timeAt(items, name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
-        marked={open ? ZERO_MOVE : []}
+        // The moves a figure acts in: the one being set, or else the open group's (review note, 2026-10-01).
+        marked={picked ? [MOVED_BY[picked]] : marks}
       />
-      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
+      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={loop} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={[[read.axis, read.value]]} />
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
@@ -101,14 +107,9 @@ const PaperParams = ({
     texts,
     onText,
     bad,
-    onField: setPicked,
+    onField,
     lit: uses,
-    intro: (
-      <>
-        {intro}
-        {side ? null : <SurfaceChoice value={surface} onChange={onSurface} />}
-      </>
-    ),
+    intro,
     note,
   });
   if (split) {

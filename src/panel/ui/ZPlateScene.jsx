@@ -75,6 +75,12 @@ const ZPlateScene = ({
         <g opacity={fade('dim')}>
           <Dimension at={DIM_X} from={dim.limit ? dim.top : dim.top} to={dim.bottom} limit={dim.limit} lit={focus === 'dim'} size={size} />
           <Tag x={DIM_X + 8} y={small ? dim.top - 12 : (dim.top + dim.bottom) / 2} text={dim.text} face={focus === 'dim' ? FACE.hot : FACE.plain} size={size} />
+          {dim.beyond ? (
+            <>
+              <Dimension at={DIM_X} from={dim.beyond.top} to={dim.beyond.bottom} limit lit={focus === 'dim'} size={size} />
+              <Tag x={DIM_X + 8} y={(dim.beyond.top + dim.beyond.bottom) / 2 + 4} text={dim.beyond.text} face={focus === 'dim' ? FACE.hot : FACE.plain} size={size} />
+            </>
+          ) : null}
         </g>
       ) : null}
       {motion ? (

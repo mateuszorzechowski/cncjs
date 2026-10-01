@@ -35,6 +35,10 @@ const R = 12;
 // The band: its width, and how far above its middle the top edge runs.
 const BAND = 6;
 const EDGE = 3;
+// The jog key a step is pressed with, in the corner; SVG's word for centred text.
+const KEY_W = 46;
+const KEY_H = 34;
+const MIDDLE = 'middle';
 // Where the hand's to-and-fro is drawn, left of the sheet's end and above it.
 const SLIDE_W = 28;
 const SLIDE_UP = 26;
@@ -51,7 +55,8 @@ const TAG_FACE = { grn: FACE.touch, amb: FACE.warn, red: FACE.alarm };
 
 const PaperScene = ({
   gap = 60, shift = 0, motion = null, sheet, tone = null, jog = null, fine = null, tag = null, zero = 0, axis = 'Z',
-  dim = null, dia = null, side = false, mirror = false, focus = null, surface = undefined, stock = null, label, className = '',
+  dim = null, dia = null, side = false, mirror = false, focus = null, surface = undefined, stock = null, click = null, lift = null,
+  label, className = '',
 }) => {
   const toolX = TOOL_X + shift;
   const id = useId().replace(/:/g, '');
@@ -128,6 +133,19 @@ const PaperScene = ({
       )}
       {tone ? <Contact x={mx(TOOL_X)} y={SHEET_Y} tone={tone} size={size} /> : null}
       {tag ? <Tag x={mx(8)} y={SHEET_Y - 50} text={t(tag)} right={mirror} face={TAG_FACE[tone] || FACE.ink} size={size} /> : null}
+      {/* The jog key each step is pressed with, lit as it is (review note, 2026-10-01: *"pojedyncze kliknięcia"*). */}
+      {click ? (
+        <g>
+          <rect x={mirror ? WIDTH - 8 - KEY_W : 8} y={8} width={KEY_W} height={KEY_H} rx={size.rx} className={click.on ? 'fill-acc stroke-acc' : 'fill-accS stroke-line'} strokeWidth={1} vectorEffect={NS} />
+          <text x={mirror ? WIDTH - 8 - KEY_W / 2 : 8 + KEY_W / 2} y={8 + KEY_H * 0.45} textAnchor={MIDDLE} fontSize={size.fs} className={`font-num font-semibold ${click.on ? 'fill-white' : 'fill-acc'}`}>{click.way}</text>
+          <text x={mirror ? WIDTH - 8 - KEY_W / 2 : 8 + KEY_W / 2} y={8 + KEY_H * 0.8} textAnchor={MIDDLE} fontSize={size.fs * 0.75} className={click.on ? 'fill-white' : 'fill-acc'}>{t(click.step)}</text>
+        </g>
+      ) : null}
+      {lift ? (
+        <g opacity={focus && !lift.lit ? 0.3 : 1}>
+          <Tag x={mx(ARROW_X - 8)} y={SHEET_Y - 22} text={lift.text} right={!mirror} face={lift.lit ? FACE.hot : FACE.rapid} size={size} />
+        </g>
+      ) : null}
     </svg>
   );
 };

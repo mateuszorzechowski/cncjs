@@ -29,8 +29,9 @@ export const FIELDS = {
   toolDiameter: { value: 6, min: 0.1, max: 50 },
   // The work's thickness, between its top and the table, for a zero on the other one (`surface`).
   stockThickness: { value: 18, min: 0.1, max: 500 },
-  // Paper by hand: an office sheet is a tenth of a millimetre.
+  // Paper by hand: an office sheet is a tenth of a millimetre; off it by a little once measured.
   paperThickness: { value: 0.1, min: 0.01, max: 5 },
+  paperLift: { value: 2, min: 0, max: 20 },
   // The fence: the furthest one probing move may go.
   maxZ: { value: 15, min: 1, max: 100 },
   maxXY: { value: 15, min: 1, max: 100 },

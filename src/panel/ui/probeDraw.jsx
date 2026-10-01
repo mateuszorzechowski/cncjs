@@ -138,24 +138,33 @@ const DOWN = 'down';
 
 /*
  * A jog, the operator's own move (paper proposal, 2026-09-30): solid in the
- * text's colour, a tick where it set off and one every step since, `every`
- * apart; down the drawing from `from` to `to` at `at`.
+ * text's colour, a tick where each step set off, `every` apart; down the
+ * drawing from `from` to `to` at `at`. The last step reads clearly, its tick
+ * full; the ones before it faint, their ticks short (review note,
+ * 2026-10-01: *"ostatni krok wyraźny, poprzednie blade"*).
  */
 export const Jog = ({
   at, from, to, every = null, size,
 }) => {
-  const ticks = [];
+  const ticks = [from];
   if (every) {
-    for (let y = from; y < to - 1e-6; y += every) {
-      ticks.push(`M${at - 6} ${y} H${at + 6}`);
+    for (let y = from + every; y < to - 1e-6; y += every) {
+      ticks.push(y);
     }
-  } else {
-    ticks.push(`M${at - 6} ${from} H${at + 6}`);
   }
+  const last = ticks[ticks.length - 1];
+  const before = ticks.slice(0, -1);
+  const short = before.map((y) => `M${at - 3} ${y} H${at + 3}`).join(' ');
   return (
     <g>
-      <path d={`M${at} ${from} V${to - size.hh}`} className="stroke-ink" fill="none" strokeWidth={1.25} vectorEffect={NS} />
-      <path d={ticks.join(' ')} className="stroke-ink" fill="none" strokeWidth={1} vectorEffect={NS} />
+      {before.length ? (
+        <g opacity={0.3}>
+          <path d={`M${at} ${from} V${last}`} className="stroke-ink" fill="none" strokeWidth={1.25} vectorEffect={NS} />
+          <path d={short} className="stroke-ink" fill="none" strokeWidth={1} vectorEffect={NS} />
+        </g>
+      ) : null}
+      <path d={`M${at} ${last} V${to - size.hh}`} className="stroke-ink" fill="none" strokeWidth={1.25} vectorEffect={NS} />
+      <path d={`M${at - 6} ${last} H${at + 6}`} className="stroke-ink" fill="none" strokeWidth={1} vectorEffect={NS} />
       <Head x={at} y={to} dir={DOWN} size={size} className="fill-ink" />
     </g>
   );

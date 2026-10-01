@@ -6,15 +6,14 @@ import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
 import { figureColumns } from './ProbeSections';
 import SegmentedChoice from './SegmentedChoice';
-import { useClock, useReducedMotion } from './useClock';
-import usePlayer from './usePlayer';
+import { useReducedMotion } from './useClock';
+import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
+  LEG_WORDS,
   CORNER_GROUPS, CORNER_ORDER, CORNER_PARAMS, LOOP_HOLD_MS, cornerCode, cornerReadout, cornerTimeline, moveOf, playAt, TURN,
 } from '../machine/cornerCycle';
-import {
-  fillsAt, frameAt, rangeOf, timeAt,
-} from '../machine/timeline';
+import { fillsAt, timeAt } from '../machine/timeline';
 import { inMm } from '../machine/units';
 import { useIsPhone, useIsWide } from './shell';
 import { useUnits } from './units';
@@ -23,9 +22,6 @@ import { t } from '../i18n';
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 
 const AXES = ['x', 'y', 'z'];
-const LEG_KEYS = {
-  up: 'probe.corner.leg.up', over: 'probe.corner.leg.over', out: 'probe.corner.leg.out', down: 'probe.corner.leg.down', off: 'probe.corner.leg.off', lift: 'probe.corner.leg.lift', corner: 'probe.corner.leg.corner',
-};
 // The descent beside the wall is the X set-up's, on the bar.
 const BAR_OF = { depth: 'xSet' };
 const VIEWS = ['top', 'side'];
@@ -64,29 +60,29 @@ const CornerParams = ({
   const units = useUnits();
   const wide = useIsWide();
   const phone = useIsPhone();
-  const [picked, setPicked] = useState(null);
   const [open, setOpen] = useState(null);
   const [chosen, setChosen] = useState(null);
   const still = useReducedMotion();
   const group = CORNER_PARAMS.find((one) => one.id === open);
   // The cycle on the player's clock; a figure being set plays its own loop meanwhile, and the player waits.
   const items = useMemo(() => cornerTimeline({ apart: phone }), [phone]);
-  const player = usePlayer(items, { hold: LOOP_HOLD_MS, running: !picked });
-  const fieldMs = useClock(picked, Boolean(picked));
-  const frame = picked ? playAt(fieldMs, { field: picked, still }) : { ...frameAt(items, player.t), focus: null };
+  const {
+    player, picked, loop, frame, p: shownP, onField, pick,
+  } = useSetupPlayer({
+    items, hold: LOOP_HOLD_MS, playAt, still,
+  });
   const { name, focus } = frame;
-  const p = still && !picked ? 1 : frame.p;
-  const pick = (ids, part = null) => player.seek({ ...rangeOf(items, ids, part), ids, part });
+  const p = shownP;
   const move = moveOf(name);
   const say = (field, text) => figureSaid(field, text, units.rule);
   const drawing = {
     name, p, corner, texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus,
   };
-  const code = cornerCode(name, p, texts, systemNumber(wcs));
+  const code = cornerCode(name, p, texts, systemNumber(wcs), corner);
   const mm = Object.fromEntries(['toolDiameter', 'wallX', 'wallY', 'cornerThickness'].map((field) => [field, inMm(numberOf(texts[field]), units.rule) ?? 0]));
   const read = cornerReadout(name, corner, mm);
   const title = code.leg
-    ? t(move.legsKey || 'probe.corner.move.set', { axis: move.group.toUpperCase(), leg: t(LEG_KEYS[code.leg]) })
+    ? t(move.legsKey || 'probe.corner.move.set', { axis: move.group.toUpperCase(), leg: t(LEG_WORDS[code.leg]) })
     : t(move.titleKey);
   // A view picked by hand holds while its stage plays.
   const view = chosen && chosen.group === move.group ? chosen.view : viewOf(move, p, focus);
@@ -127,12 +123,13 @@ const CornerParams = ({
       <MoveBar
         groups={groups}
         active={BAR_OF[name] || name}
-        fills={picked ? fillsAt(items, timeAt(items, BAR_OF[name] || name, p), false) : fillsAt(items, player.t)}
+        fills={loop ? fillsAt(items, timeAt(items, BAR_OF[name] || name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
-        marked={group ? CORNER_ORDER.filter((id) => moveOf(id).uses.some((use) => group.fields.includes(use))) : []}
+        // The moves a figure acts in: the one being set, or else the open group's (review note, 2026-10-01).
+        marked={picked || group ? CORNER_ORDER.filter((id) => moveOf(id).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
       />
-      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
+      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={loop} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={AXES.map((axis) => [axis, read[axis]])} />
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
@@ -140,12 +137,14 @@ const CornerParams = ({
           {code.parts.map((part, i) => (
             <span key={part} className={i === code.now ? 'font-semibold text-ink underline underline-offset-4' : ''}>{part}</span>
           ))}
+          {/* A way to a place with no numbers to show says where it goes. */}
+          {code.parts.length ? null : <span>{t('probe.corner.overCode')}</span>}
         </span>
       </div>
     </div>
   );
   const { right, third } = figureColumns({
-    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField: setPicked, lit: move.uses, intro, note,
+    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField, lit: code.uses, intro, note,
   });
   if (split) {
     return split(left, right, third);

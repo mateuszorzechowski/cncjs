@@ -215,13 +215,25 @@ export const legAt = (move, p) => {
  * short word (`leg`) — the whole set-up said at once did not fit (review
  * note, 2026-09-30).
  */
-export const cornerCode = (name, p, texts, wcs = 1) => {
+// The figures a leg's way is made of, where the leg does not say: so the one
+// figure behind "G0 X-20" is the one lit (review note, 2026-10-01).
+const LEG_USES = {
+  up: ['retract'], out: ['clear'], off: ['retract'], over: [], corner: [],
+};
+
+export const cornerCode = (name, p, texts, wcs = 1, corner = 'front-left') => {
   const move = MOVES[name];
+  const turn = signedFor(corner);
   if (move.legs) {
     const leg = move.legs[legAt(move, p)];
-    return { parts: [leg[4](texts)], now: -1, leg: leg[5] };
+    const line = leg[4](texts);
+    return {
+      parts: line ? [turn(line)] : [], now: -1, leg: leg[5], uses: leg[6] || LEG_USES[leg[5]] || move.uses,
+    };
   }
-  return { parts: move.code(texts, wcs), now: -1, leg: null };
+  return {
+    parts: move.code(texts, wcs).map(turn), now: -1, leg: null, uses: move.uses,
+  };
 };
 
 // How far into a Z touch's way the tool is at `p`: still, moving, arrived.
@@ -258,6 +270,29 @@ const SIDES = {
 };
 
 export const cornerSides = (corner) => SIDES[corner] || SIDES['front-left'];
+
+// Each leg's words: the title's, and on the drawing for a leg with no figure of its own.
+export const LEG_WORDS = {
+  up: 'probe.corner.leg.up', over: 'probe.corner.leg.over', out: 'probe.corner.leg.out', down: 'probe.corner.leg.down', off: 'probe.corner.leg.off', lift: 'probe.corner.leg.lift', corner: 'probe.corner.leg.corner',
+};
+
+const OPPOSITE = { '+': '-', '-': '+', '−': '+' };
+
+/**
+ * A line or a leg's words written for the front-left corner, turned for
+ * `corner`: the moves' X and Y signs mirrored as the drawing is — `G0 X-20`
+ * out past a right corner's wall is `G0 X+20` (review note, 2026-10-01).
+ * The legs' words carry only minuses, written `−`.
+ */
+export const signedFor = (corner) => {
+  const { flipX, flipY } = cornerSides(corner);
+  return (line) => line.replace(/([XY])([+\-−])/g, (all, axis, sign) => {
+    if ((axis === 'X' && flipX) || (axis === 'Y' && flipY)) {
+      return `${axis}${OPPOSITE[sign]}`;
+    }
+    return all;
+  });
+};
 
 // An example tool position against the old zero.
 export const BEFORE_MM = { x: 123.456, y: 78.9, z: 37.482 };

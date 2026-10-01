@@ -1426,7 +1426,8 @@
         "off": "off the wall",
         "lift": "up by the lift",
         "corner": "over X0 Y0"
-      }
+      },
+      "overCode": "G0 over where Z was touched"
     },
     "field": {
       "plateThickness": "Plate thickness",
@@ -1443,7 +1444,8 @@
       "slow": "Slow touch",
       "paperThickness": "Paper thickness",
       "lift": "Lift",
-      "stockThickness": "Work thickness"
+      "stockThickness": "Work thickness",
+      "paperLift": "Lift after measuring"
     },
     "step": {
       "method": "Method",
@@ -1561,7 +1563,9 @@
       "jogTitle": "Paper · {{axis}}",
       "mm01": "0.1 mm",
       "mm001": "0.01 mm",
-      "feelHow": "Put the sheet between the tool and the surface and slide it while stepping in by 0.1 mm, then 0.01 mm. When it drags — still moving, but pulling — that is “Here”. If it resists or stands, step back."
+      "feelHow": "Put the sheet between the tool and the surface and slide it while stepping in by 0.1 mm, then 0.01 mm. When it drags — still moving, but pulling — that is “Here”. If it resists or stands, step back.",
+      "lift": "{{axis}} · off the surface",
+      "mm1": "1 mm"
     },
     "bar": {
       "measure": "measure",
@@ -1574,8 +1578,7 @@
       "moves": "Moves",
       "tool": "Tool",
       "measureAll": "Measuring · every axis",
-      "paper": "Paper",
-      "stock": "Work"
+      "paper": "Paper"
     },
     "play": {
       "pause": "Pause",
@@ -1619,7 +1622,7 @@
       "z0": "Z0 on",
       "work": "Work",
       "table": "Table",
-      "top": "Top"
+      "top": "Work top"
     }
   }
 }

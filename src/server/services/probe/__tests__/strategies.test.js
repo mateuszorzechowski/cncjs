@@ -206,10 +206,16 @@ describe('the paper', () => {
     close(measure({ method: 'paper', options: { edge: 'x-left', on: 'work', z0: 'table' }, params: p, boxes: [], start }).zero, { x: -96.9 });
   });
 
-  test('moves nothing: the only line is the modes put back', () => {
-    const { sent } = measure({ method: 'paper', options: { edge: 'z' }, params, boxes: [], start });
+  test('once said, off the surface by the lift — up off the top, back off a side — then the modes put back', () => {
+    const lifted = { ...params, paperLift: 2 };
+    expect(measure({ method: 'paper', options: { edge: 'z' }, params: lifted, boxes: [], start }).sent).toEqual(['G90 G21 G53 G0 Z-28', 'G90 G21']);
+    expect(measure({ method: 'paper', options: { edge: 'x-left' }, params: lifted, boxes: [], start }).sent).toEqual(['G90 G21 G53 G0 X-102', 'G90 G21']);
+    expect(measure({ method: 'paper', options: { edge: 'z' }, params: { ...params, paperLift: 0 }, boxes: [], start }).sent).toEqual(['G90 G21']);
+  });
 
-    expect(sent).toEqual(['G90 G21']);
+  test('the lift moves the tool, not the zero: it is where the tool was said to be', () => {
+    const { zero } = measure({ method: 'paper', options: { edge: 'z' }, params: { ...params, paperLift: 2 }, boxes: [], start });
+    close(zero, { z: -30.1 });
   });
 
   test('an edge that is not one is refused', () => {

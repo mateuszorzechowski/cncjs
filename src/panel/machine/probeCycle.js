@@ -94,8 +94,9 @@ const MOVES = {
   slow: {
     frames: [[0, BACK], [0.15, BACK], [0.75, 0, true], [1, 0]],
     from: BACK, to: 0, kind: 'probe', feed: 'slow',
-    // The slow touch searches twice the back-off (`services/probe/moves`).
-    dim: { top: TOP - BACK, bottom: TOP + 26, double: 'retract', limit: true, upTo: true },
+    // The slow touch searches twice the back-off (`services/probe/moves`): drawn as the two
+    // they are — back to the plate, and the margin past it to the limit (review note, 2026-10-01).
+    dim: { top: TOP - BACK, bottom: TOP + BACK, split: 'retract', upTo: true },
     titleKey: 'probe.plate.slow',
     code: (v) => [`G38.2 Z-${number(v.retract) * 2} F${v.slow}`],
     uses: ['slow', 'retract'],
@@ -174,8 +175,8 @@ export const PLATE_PARAMS = [
   { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
   { id: 'reach', key: 'probe.group.reach', fields: ['maxZ'] },
   { id: 'moves', key: 'probe.group.moves', fields: ['lift'] },
-  // Only while Z0 is the work's thickness from the surface measured (`surface`).
-  { id: 'stock', key: 'probe.group.stock', fields: ['stockThickness'], shifts: true },
+  // Where Z0 goes, last and closed; the work's thickness in it only while needed (`SurfaceChoice`).
+  { id: 'z0', key: 'probe.surface.title', fields: ['stockThickness'], surface: true },
 ];
 
 export const moveOf = (name) => MOVES[name];
@@ -242,8 +243,16 @@ export const plateScene = (name, p, {
   const gap = gapAt(move.frames, p);
   const dim = move.dim || null;
   let dimText = null;
-  if (dim) {
-    const figure = dim.double ? say(dim.double, String(number(texts[dim.double]) * 2)) : said(dim.field);
+  let beyond = null;
+  if (dim?.split) {
+    // Twice a figure: the first way plain, the second a limit — "≤" on the margin alone.
+    const mid = (dim.top + dim.bottom) / 2;
+    dimText = said(dim.split);
+    beyond = {
+      top: mid, bottom: dim.bottom, limit: true, text: upTo(`+${said(dim.split)}`),
+    };
+  } else if (dim) {
+    const figure = said(dim.field);
     dimText = dim.upTo ? upTo(figure) : figure;
   }
   let motion = null;
@@ -257,7 +266,9 @@ export const plateScene = (name, p, {
   }
   return {
     gap,
-    dim: dim ? { top: dim.top, bottom: dim.bottom, limit: Boolean(dim.limit), text: dimText } : null,
+    dim: dim ? {
+      top: dim.top, bottom: beyond ? beyond.top : dim.bottom, limit: Boolean(dim.limit), text: dimText, beyond,
+    } : null,
     motion,
     // The feed is said by the arrow's colour alone while a dimension is
     // drawn; its figure comes up only when it is the one being set.

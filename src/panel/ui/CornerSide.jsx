@@ -4,7 +4,7 @@ import {
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import {
-  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, tipOf,
+  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, signedFor, tipOf,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -84,6 +84,8 @@ const CornerSide = ({
     } else if (anchor === 'r') {
       left = x - w;
     }
+    // Never past the view's edges, however large the words are drawn small (review note, 2026-10-01).
+    left = Math.max(VIEW[0] + 2, Math.min(left, VIEW[0] + VIEW[2] - 2 - w));
     return <Tag key={key} x={flipX && !fixed ? 284 - left - w : left} y={y} text={text} face={face} size={size} />;
   };
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
@@ -118,11 +120,19 @@ const CornerSide = ({
       const e = TOP - g1;
       words.push(<g key="feed" opacity={fade('feed')}>{tag(112, Math.abs(f - e) < 30 ? Math.min(f, e) - 12 : (f + e) / 2, said(move.feed), 'r', focus === 'feed' ? FACE.hot : FACE.plain)}</g>);
     }
-    const { from, to, limit } = move.dim;
+    const { from, to: end, limit } = move.dim;
+    const { split } = move.dim;
+    // Twice a figure (`split`): the way back plain, the margin past it a limit.
+    const to = split ? (from + end) / 2 : end;
     const small = to - from < 24;
     geometry.push(<g key="dim" opacity={fade('dim')}><Dimension at={190} from={from} to={to} limit={limit} lit={focus === 'dim'} size={size} /></g>);
-    const figure = move.dim.double ? say(move.dim.double, String((Number(String(texts[move.dim.double]).replace(',', '.')) || 0) * 2)) : said(move.dim.field);
+    const figure = said(split || move.dim.field);
     words.push(<g key="dimt" opacity={fade('dim')}>{tag(190, small ? from - 26 : from - 14, limit ? upTo(figure) : figure, 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
+    if (split) {
+      geometry.push(<g key="dim2" opacity={fade('dim')}><Dimension at={190} from={to} to={end} limit lit={focus === 'dim'} size={size} /></g>);
+      // Under the dashed margin's end, where there is room for it.
+      words.push(<g key="dimt2" opacity={fade('dim')}>{tag(190, end + 16, upTo(`+${figure}`), 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
+    }
     if (gap < 0.3) {
       touch = [C0[0], TOP];
     }
@@ -176,7 +186,7 @@ const CornerSide = ({
           geometry.push(<g key={`leg${i}`} opacity={focus ? 0.3 : 1}>{drawn}</g>);
         }
         if (i === now && plane === 'z' && !focus && sayLeg(texts, say)) {
-          words.push(tag(50, 50, sayLeg(texts, say), 'l', FACE.rapid, 'leg', true));
+          words.push(tag(50, 50, signedFor(corner)(sayLeg(texts, say)), 'l', FACE.rapid, 'leg', true));
         }
       });
     } else if (move.kind && move.view === 'top') {

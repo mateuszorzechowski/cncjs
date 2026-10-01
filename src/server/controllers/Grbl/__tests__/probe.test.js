@@ -189,9 +189,11 @@ describe('probe:start', () => {
 
     controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
     controller.runner.parse('ok');
+    controller.runner.parse('ok');
 
     expect(refusals).toEqual([]);
-    expect(sent()).toEqual(['G91 G21']);
+    // Off the top by the paper's lift, then the modes put back.
+    expect(sent()).toEqual(['G90 G21 G53 G0 Z2', 'G91 G21']);
     // Machine Z0 less a tenth of paper, against G54's -30: the zero moves up 29.9.
     expect(probeStates().pop().result.shift.z).toBeCloseTo(29.9, 6);
   });

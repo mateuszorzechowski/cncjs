@@ -32,7 +32,26 @@ const feel = (name, p) => {
 
 describe('the paper cycle', () => {
   test('each feel a stage of its own: down through drags, resists, stands; back to resists, to drags — "here"; the zero', () => {
-    expect(PAPER_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['coarse', 'fine', 'drag', 'resist', 'stuck', 'back', 'here', 'zero']);
+    expect(PAPER_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['coarse', 'fine', 'drag', 'resist', 'stuck', 'back', 'here', 'zero', 'lift']);
+  });
+
+  test('after the zero, off the surface by the lift: a rapid, the sheet let go and lying flat', () => {
+    expect(paperScene('lift', 0.5).motion).toMatchObject({ kind: 'rapid' });
+    expect(paperScene('lift', 1).tone).toBeNull();
+    expect(paperScene('lift', 1).zero).toBe(1);
+    during('lift', 0.9, 1).forEach((f) => expect(f.state.slack).toBeLessThan(0.05));
+    const texts = { paperLift: '2' };
+    expect(paperCode('lift', 'z', texts)).toBe('G0 Z+2');
+    expect(paperCode('lift', 'x-left', texts)).toBe('G0 X-2');
+  });
+
+  test('each step is one press of a jog key: lit just after it, the way it goes', () => {
+    expect(paperScene('resist', 0.16).click).toEqual({ way: 'Z−', step: 'probe.paper.mm01', on: true });
+    expect(paperScene('resist', 0.5).click.on).toBe(false);
+    expect(paperScene('back', 0.16).click.way).toBe('Z+');
+    expect(paperScene('coarse', 0.5, { edge: 'x-left' }).click).toMatchObject({ way: 'X+', step: 'probe.paper.mm1' });
+    expect(paperScene('zero', 0.5).click).toBeNull();
+    expect(paperScene('lift', 0.5).click).toBeNull();
   });
 
   test('the feel is the tool\'s height over the sheet: free, drags, resists, stands', () => {

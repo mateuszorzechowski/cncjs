@@ -27,7 +27,8 @@ const PlayControls = ({
   const shown = locked ? LOOP : mode;
   const next = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
   return (
-    <div role="group" aria-label={t('probe.play.label')} className="flex items-center gap-1.5 border-t border-line px-3 py-2">
+    // A press here keeps a figure's field focused, as the bar does.
+    <div role="group" aria-label={t('probe.play.label')} onMouseDown={(event) => event.preventDefault()} className="flex items-center gap-1.5 border-t border-line px-3 py-2">
       <button type={BUTTON} disabled={locked} onClick={() => onStep(-1)} aria-label={t('probe.play.prev')} className="flex size-8 items-center justify-center rounded-ctl border border-line bg-surf text-ink hover:border-acc disabled:opacity-45 disabled:hover:border-line">
         <Icon name="prev" className="size-4" weight={2} />
       </button>
