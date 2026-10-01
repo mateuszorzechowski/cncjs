@@ -1,5 +1,5 @@
 import {
-  PAPER_ORDER, RUN_MS, SPAN_MS, feelAt, paperCode, paperReadout, paperScene, playAt, scriptAt,
+  FEEL_ORDER, PAPER_ORDER, RUN_MS, SPAN_MS, feelAt, feelLoopAt, paperCode, paperReadout, paperScene, playAt, scriptAt,
 } from '../paperCycle';
 import {
   END_X, HAND_X, TOOL_X, drawnLength, sheetAt, sheetShape,
@@ -140,6 +140,11 @@ describe('the paper cycle', () => {
     const mm = { paperThickness: 0.1, toolDiameter: 6 };
     expect(paperReadout('fine', 'z', mm)).toEqual({ axis: 'z', value: 12.34, after: false });
     expect(paperReadout('zero', 'x-right', mm)).toEqual({ axis: 'x', value: 3.1, after: true });
+  });
+
+  test('the measuring step loop plays the feel alone: drags, resists, stands, back, here', () => {
+    expect(FEEL_ORDER.map((_, i) => feelLoopAt(i * SPAN_MS + 10).name)).toEqual(['drag', 'resist', 'stuck', 'back', 'here']);
+    expect(feelLoopAt(FEEL_ORDER.length * SPAN_MS + 10).name).toBe('drag');
   });
 
   test('a figure being set loops the zero, its dimension lit', () => {

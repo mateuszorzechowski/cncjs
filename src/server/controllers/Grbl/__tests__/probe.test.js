@@ -244,3 +244,106 @@ describe('the offset it writes', () => {
     expect(offsetLine(2, { x: 1.23456, y: -4 })).toBe('G21 G10 L2 P2 X1.235 Y-4');
   });
 });
+
+describe('probe:stage', () => {
+  const stages = (controller) => controller.__events.filter(({ event }) => event === 'probe:stage').map(({ args }) => args[0]);
+
+  const watched = () => {
+    const made = setup();
+    const events = [];
+    made.controller.sockets.watching = { emit: (event, ...args) => events.push({ event, args }) };
+    made.controller.__events = events;
+    return made;
+  };
+  const as = (controller, id) => {
+    controller.commandSocket = { id, device: id, emit: () => {} };
+  };
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('where the wizard waits is said to every device with whose it is, and a measurement starting ends it', () => {
+    const { controller } = watched();
+
+    as(controller, 'pc');
+    controller.command('probe:stage', { method: 'paper', options: { edge: 'x-left' }, step: 'measure', own: true });
+    expect(controller.probeStage).toEqual({
+      method: 'paper', options: { edge: 'x-left' }, step: 'measure', owner: { device: 'pc', name: null },
+    });
+
+    controller.command('probe:start', { method: 'z' });
+    expect(controller.probeStage).toBeNull();
+    expect(stages(controller).pop()).toBeNull();
+  });
+
+  test('a device that joined moves the step on; the wizard stays with its owner', () => {
+    const { controller } = watched();
+
+    as(controller, 'pc');
+    controller.command('probe:stage', { method: 'paper', step: 'position', own: true });
+    as(controller, 'phone');
+    controller.command('probe:stage', { method: 'paper', step: 'measure' });
+
+    expect(controller.probeStage).toMatchObject({ step: 'measure', owner: { device: 'pc' } });
+  });
+
+  test('one at a time: a device reaching the step with a wizard of its own takes it over', () => {
+    const { controller } = watched();
+
+    as(controller, 'pc');
+    controller.command('probe:stage', { method: 'z', step: 'position', own: true });
+    as(controller, 'phone');
+    controller.command('probe:stage', { method: 'corner', options: { corner: 'back-left' }, step: 'position', own: true });
+
+    expect(controller.probeStage).toMatchObject({ method: 'corner', owner: { device: 'phone' } });
+    // The one taken over from leaving is not the owner's leaving.
+    controller.removeConnection({ id: 'pc' });
+    expect(controller.probeStage.owner).toEqual({ device: 'phone', name: null });
+  });
+
+  test('the owner going lets it go: a device in it takes it on, or after a while it ends', () => {
+    jest.useFakeTimers();
+    const { controller } = watched();
+
+    as(controller, 'pc');
+    controller.command('probe:stage', { method: 'z', step: 'position', own: true });
+    controller.removeConnection({ id: 'pc' });
+    expect(controller.probeStage).toMatchObject({ method: 'z', owner: null });
+
+    as(controller, 'phone');
+    controller.command('probe:stage', { method: 'z', step: 'position', own: true });
+    jest.advanceTimersByTime(10000);
+    expect(controller.probeStage.owner).toEqual({ device: 'phone', name: null });
+
+    // Let go on purpose, and nobody takes it on.
+    controller.command('probe:stage', { release: true });
+    expect(controller.probeStage.owner).toBeNull();
+    jest.advanceTimersByTime(10000);
+    expect(controller.probeStage).toBeNull();
+  });
+
+  test('only the owner lets it go', () => {
+    const { controller } = watched();
+
+    as(controller, 'pc');
+    controller.command('probe:stage', { method: 'z', step: 'position', own: true });
+    as(controller, 'phone');
+    controller.command('probe:stage', { release: true });
+
+    expect(controller.probeStage.owner).toEqual({ device: 'pc', name: null });
+  });
+
+  test('a stage that is not one ends it', () => {
+    const { controller } = watched();
+
+    as(controller, 'pc');
+    controller.command('probe:stage', { method: 'z', step: 'position', own: true });
+    controller.command('probe:stage', { method: 'nope', step: 'position' });
+    expect(controller.probeStage).toBeNull();
+  });
+
+  test('is said while a program runs: it reaches no machine', () => {
+    expect(programRefusal('probe:stage', { workflow: 'running', firmware: 'Run' })).toBeNull();
+  });
+});

@@ -39,9 +39,10 @@ export const EDGES = [
  * touches the probe input, the operator's eye and the paper do.
  */
 const THROUGH_PROBE = ['method', 'prepare', 'wire', 'position', 'measure', 'result'];
-const BY_HAND = ['method', 'prepare', 'position', 'measure', 'result'];
-// The corner is chosen first, on a step of its own (Mateusz, 2026-09-29: *"wybór narożnika 2a, jako 1. krok"*).
+// The corner is chosen first, on a step of its own (Mateusz, 2026-09-29: *"wybór narożnika 2a, jako 1. krok"*);
+// so is the paper's surface (review note, 2026-09-30).
 const CHOOSE_FIRST = ['method', 'choose', 'prepare', 'wire', 'position', 'measure', 'result'];
+const BY_HAND = ['method', 'choose', 'prepare', 'position', 'measure', 'result'];
 
 /*
  * The methods the wizard offers, in its order. `choice` is the one thing
@@ -58,12 +59,12 @@ export const METHODS = [
   {
     id: 'corner', key: 'probe.method.corner', note: 'probe.method.cornerNote', lay: 'probe.lay.corner', place: 'probe.place.corner',
     start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true, plate: 'l',
-    choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', columns: 2, step: 'probe.step.corner' },
+    choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', step: 'probe.step.corner' },
   },
   {
     id: 'paper', key: 'probe.method.paper', note: 'probe.method.paperNote', how: 'probe.how.paper', place: 'probe.place.paper',
     start: 'probe.position.here', steps: BY_HAND, touches: false,
-    choice: { option: 'edge', key: 'probe.edgeLabel', list: EDGES, first: 'z', columns: 1 },
+    choice: { option: 'edge', key: 'probe.edgeLabel', list: EDGES, first: 'z', step: 'probe.step.surface' },
   },
 ];
 
@@ -177,6 +178,16 @@ export const saveProbe = async (texts, rule) => {
     throw Object.assign(new Error(body.msg || String(res.status)), { name: body.name || null });
   }
   return body;
+};
+
+/**
+ * Tell every device where this wizard waits on the operator's hands —
+ * `{ method, options, step }` — or, null, that it no longer does. `own`:
+ * this is the device the wizard was begun on, so the server ends the stage
+ * if it goes away.
+ */
+export const sayProbeStage = (stage, own = false) => {
+  controller.command('probe:stage', stage && own ? { ...stage, own: true } : stage);
 };
 
 export const startProbe = (method, options = {}) => {

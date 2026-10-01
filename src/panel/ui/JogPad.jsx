@@ -1,4 +1,5 @@
 import Icon from './Icon';
+import JogKey from './JogKey';
 import { t } from '../i18n';
 import { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT } from './jogCorners';
 
@@ -28,28 +29,6 @@ import { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT } from './jogCorners';
  * the largest move this machine makes and takes the place Park had, off to
  * the side, where it is harder to hit by accident.
  */
-const Key = ({ children, onClick, hold, disabled, label, quiet, className = '' }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    {...(hold || {})}
-    disabled={disabled}
-    aria-label={label}
-    className={[
-      'flex min-h-jbtnh min-w-0 flex-col items-center justify-center rounded-ctl border leading-tight',
-      quiet
-        ? 'border-line bg-field text-cap font-medium text-mut hover:border-acc hover:text-acc'
-        // A faint wash of the accent: the one family of keys on the panel
-        // with a ground of its own, so the pad is found at a glance (review
-        // note, 2026-09-29: *"delikatny background … łatwiej identyfikowalne"*).
-        : 'border-line bg-accS text-lead font-semibold text-acc hover:border-acc',
-      'disabled:opacity-45 disabled:hover:border-line',
-      className,
-    ].join(' ')}
-  >
-    {children}
-  </button>
-);
 
 // The house marks a key that goes to a known place rather than nudging from
 // where the machine happens to be — a different kind of move, told apart
@@ -57,14 +36,14 @@ const Key = ({ children, onClick, hold, disabled, label, quiet, className = '' }
 const HOUSE = <span aria-hidden="true">&#8962;</span>;
 
 const Corner = ({ corner, onJog, disabled }) => (
-  <Key
+  <JogKey
     hold={onJog(corner.dir)}
     disabled={disabled}
     label={t('jog.corner', { x: corner.signs.x, y: corner.signs.y })}
     className={corner.round}
   >
     <Icon name="diagonal" className={`size-6 ${corner.rotate}`} weight={2} />
-  </Key>
+  </JogKey>
 );
 
 /*
@@ -83,23 +62,23 @@ const JogPad = ({ onJog, onHome, onGoZero, disabled, canJog, canHome, canGoZero 
     <div className="flex items-start gap-2" role="group" aria-label={t('jog.pad')}>
       <div className="grid min-w-0 flex-[3] grid-cols-3 grid-rows-[repeat(3,var(--jbtnh))] gap-2">
         <Corner corner={UP_LEFT} onJog={onJog} disabled={stuck} />
-        <Key hold={onJog({ y: 1 })} disabled={stuck} label={t('jog.yPlus')}>{t('jog.yPlus')}</Key>
+        <JogKey hold={onJog({ y: 1 })} disabled={stuck} label={t('jog.yPlus')}>{t('jog.yPlus')}</JogKey>
         <Corner corner={UP_RIGHT} onJog={onJog} disabled={stuck} />
-        <Key hold={onJog({ x: -1 })} disabled={stuck} label={t('jog.xMinus')}>{t('jog.xMinus')}</Key>
-        <Key onClick={onGoZero} disabled={stuck || !canGoZero} label={t('jog.goZero')}>
+        <JogKey hold={onJog({ x: -1 })} disabled={stuck} label={t('jog.xMinus')}>{t('jog.xMinus')}</JogKey>
+        <JogKey onClick={onGoZero} disabled={stuck || !canGoZero} label={t('jog.goZero')}>
           <Icon name="goZero" className="size-6" weight={2} />
           <span className="text-cap font-medium">{t('jog.goZero')}</span>
-        </Key>
-        <Key hold={onJog({ x: 1 })} disabled={stuck} label={t('jog.xPlus')}>{t('jog.xPlus')}</Key>
+        </JogKey>
+        <JogKey hold={onJog({ x: 1 })} disabled={stuck} label={t('jog.xPlus')}>{t('jog.xPlus')}</JogKey>
         <Corner corner={DOWN_LEFT} onJog={onJog} disabled={stuck} />
-        <Key hold={onJog({ y: -1 })} disabled={stuck} label={t('jog.yMinus')}>{t('jog.yMinus')}</Key>
+        <JogKey hold={onJog({ y: -1 })} disabled={stuck} label={t('jog.yMinus')}>{t('jog.yMinus')}</JogKey>
         <Corner corner={DOWN_RIGHT} onJog={onJog} disabled={stuck} />
       </div>
 
       <div className="grid min-w-0 flex-1 grid-cols-1 grid-rows-[repeat(3,var(--jbtnh))] gap-2">
-        <Key hold={onJog({ z: 1 })} disabled={stuck} label={t('jog.zPlus')}>{t('jog.zPlus')}</Key>
-        <Key onClick={onHome} disabled={disabled || !canHome} label={t('jog.home')} quiet>{HOUSE}<span>{t('jog.home')}</span></Key>
-        <Key hold={onJog({ z: -1 })} disabled={stuck} label={t('jog.zMinus')}>{t('jog.zMinus')}</Key>
+        <JogKey hold={onJog({ z: 1 })} disabled={stuck} label={t('jog.zPlus')}>{t('jog.zPlus')}</JogKey>
+        <JogKey onClick={onHome} disabled={disabled || !canHome} label={t('jog.home')} quiet>{HOUSE}<span>{t('jog.home')}</span></JogKey>
+        <JogKey hold={onJog({ z: -1 })} disabled={stuck} label={t('jog.zMinus')}>{t('jog.zMinus')}</JogKey>
       </div>
     </div>
   );

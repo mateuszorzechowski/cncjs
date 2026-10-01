@@ -2,17 +2,16 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
-import Notice from '../ui/Notice';
-import ProbePicture from '../ui/ProbePicture';
-import ZPlatePosition from '../ui/ZPlatePosition';
 import CornerChooser from '../ui/CornerChooser';
-import CornerPosition from '../ui/CornerPosition';
+import PaperChooser from '../ui/PaperChooser';
+import useProbeJoin from '../ui/useProbeJoin';
+import ProbeJoin from '../ui/ProbeJoin';
+import Notice from '../ui/Notice';
+import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
   Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
-import Sheet from '../ui/Sheet';
 import StepTrack from '../ui/StepTrack';
-import JogWidget from '../widgets/JogWidget';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
@@ -23,14 +22,8 @@ import { useIsPhone } from '../ui/shell';
 import { useUnits } from '../ui/units';
 import { t } from '../i18n';
 
-// The methods that show the move into place rather than a picture of it.
-const MOVES = {
-  z: ZPlatePosition,
-  corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
-};
-
 // The methods whose one choice is a step of its own, and what it is picked on.
-const CHOOSERS = { corner: CornerChooser };
+const CHOOSERS = { corner: CornerChooser, paper: PaperChooser };
 
 /**
  * Sonda: a wizard, one step after another, across the whole screen
@@ -46,7 +39,7 @@ const CHOOSERS = { corner: CornerChooser };
  * (*"pamiętaj parametry, przypominaj"*). The travel limit among them is the
  * fence: a probe that touches nothing goes that far and stops in an alarm.
  */
-const ProbeScreen = ({ machine }) => {
+const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const units = useUnits();
   const phone = useIsPhone();
   const { probe } = machine;
@@ -58,7 +51,7 @@ const ProbeScreen = ({ machine }) => {
   const [texts, setTexts] = useState({});
   const [bad, setBad] = useState(null);
   const [touched, setTouched] = useState(false);
-  // The jog's sheet open, on a phone at the position step.
+  // The jog's sheet open, on a phone.
   const [jogging, setJogging] = useState(false);
 
   useEffect(() => {
@@ -73,6 +66,14 @@ const ProbeScreen = ({ machine }) => {
   const choice = chosen[method?.id] ?? method?.choice?.first;
   const go = (by) => setLocal(stepBeside(method, step, by));
   const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
+  // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
+  const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
+
+  const {
+    shared, mine, mode, setMode, takenBy, setTakenBy, declined, setDeclined, join, leave,
+  } = useProbeJoin({
+    machine, method, choice, step, feeling, ask, onAsked, setPicked, setChosen, setLocal, setJogging,
+  });
 
   useEffect(() => {
     if (step === 'wire' && lit) {
@@ -82,6 +83,8 @@ const ProbeScreen = ({ machine }) => {
 
   const pick = (id) => {
     const uses = kept?.methods?.[id]?.fields ?? [];
+    setMode('own');
+    setTakenBy(null);
     setPicked(id);
     setTexts(Object.fromEntries(uses.map((name) => [name, fieldText(kept.params[name], name, units.rule)])));
     setBad(null);
@@ -95,6 +98,7 @@ const ProbeScreen = ({ machine }) => {
         setKept(next);
         setBad(null);
         setTouched(false);
+        setTakenBy(null);
         go(1);
       })
       .catch((error) => setBad(error.name || fields[0]));
@@ -108,6 +112,7 @@ const ProbeScreen = ({ machine }) => {
     }
     // Tried again here even if it was started on another device: its method and choice, then.
     const again = methodOf(probe?.method ?? picked);
+    setMode('own');
     setPicked(again?.id ?? null);
     if (again?.choice && probe?.options?.[again.choice.option]) {
       setChosen((now) => ({ ...now, [again.id]: probe.options[again.choice.option] }));
@@ -122,6 +127,7 @@ const ProbeScreen = ({ machine }) => {
     } else {
       discardProbe();
     }
+    setMode(null);
     setPicked(null);
     setLocal('method');
   };
@@ -140,51 +146,28 @@ const ProbeScreen = ({ machine }) => {
           className="order-3 w-full @3xl/shell:order-none @3xl/shell:w-auto @3xl/shell:flex-1"
         />
         {method ? <span className="ml-auto font-num text-note text-mut @3xl/shell:ml-0">{t(method.key)}</span> : null}
+        {takenBy ? <div className="order-4 w-full"><Notice>{t('probe.join.taken', { where: takenBy })}</Notice></div> : null}
       </div>
     </Card>
   );
 
-  if (step === 'position') {
-    // The methods that show the move into place rather than a picture of it.
-    const Moving = MOVES[method.id];
+  if (step === 'position' || feeling) {
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-gap">
         {track}
-        <div className="flex min-h-0 flex-1 flex-col gap-gap @4xl/shell:flex-row">
-          <Card className={`min-w-0 @4xl/shell:flex-1 ${phone ? 'flex-1' : 'shrink-0'}`} bodyClassName="gap-3">
-            {Moving ? (
-              <>
-                <Moving choice={choice} />
-                {/* Where the plate goes, then where the tool goes: the plate laid here, not on the Setup (review note, 2026-09-30). */}
-                <p className="m-0 text-base text-ink">{method.lay ? `${t(method.lay)} ${t(method.place)}` : t(method.place)}</p>
-              </>
-            ) : (
-              <div className="flex items-start gap-4">
-                <ProbePicture method={method.id} choice={choice} label={t(method.key)} className="h-24 w-32" />
-                <p className="m-0 text-base text-ink">{t(method.place)}</p>
-              </div>
-            )}
-            {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
-            {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
-            <Foot back={() => go(-1)}>
-              {phone ? <Button tone="outline" onClick={() => setJogging(true)} className="h-ctl">{t('nav.jog')}</Button> : null}
-              <Button tone="go" disabled={!machine.canProbe || (method.touches && lit !== false)} onClick={measure} className="h-ctl">
-                {t(method.start)}
-              </Button>
-            </Foot>
-          </Card>
-          {/*
-            * On a phone the jog is a sheet over the step, opened from its foot
-            * (review note, 2026-09-30: *"jog na telefonie w arkuszu"*) — under
-            * the card it had the half of the screen left, and the card none.
-            */}
-          {phone ? null : <JogWidget machine={machine} className="min-h-0 w-jcard shrink-0" />}
-          {phone && jogging ? (
-            <Sheet title={t('nav.jog')} onClose={() => setJogging(false)} tall>
-              <JogWidget machine={machine} className="min-h-0 flex-1" />
-            </Sheet>
-          ) : null}
-        </div>
+        <ProbeMoveStep
+          machine={machine}
+          method={method}
+          choice={choice}
+          feeling={feeling}
+          lit={lit}
+          jogging={jogging}
+          onJogging={setJogging}
+          onBack={mode === 'joined' ? leave : () => go(-1)}
+          leaving={mode === 'joined' ? shared?.owner?.name || t('probe.join.elsewhere') : null}
+          onNext={() => go(1)}
+          onMeasure={measure}
+        />
       </div>
     );
   }
@@ -201,7 +184,12 @@ const ProbeScreen = ({ machine }) => {
    */
   const split = step === 'prepare' && !phone;
   if (step === 'method') {
-    body = <MethodStep onPick={pick} />;
+    body = (
+      <>
+        {!mode && shared && !mine && !declined ? <ProbeJoin stage={shared} onJoin={join} onOwn={() => setDeclined(true)} /> : null}
+        <MethodStep onPick={pick} />
+      </>
+    );
   } else if (step === 'choose') {
     const Chooser = CHOOSERS[method.id];
     body = <Chooser value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;
@@ -215,7 +203,6 @@ const ProbeScreen = ({ machine }) => {
       <PrepareStep
         method={method}
         chosen={choice}
-        onChoose={(id) => setChosen((now) => ({ ...now, [method.id]: id }))}
         fields={fields}
         texts={texts}
         onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}

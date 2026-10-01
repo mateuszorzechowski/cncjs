@@ -3,11 +3,9 @@ import MoveBar, { namedGroups } from './MoveBar';
 import PaperScene from './PaperScene';
 import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
-import SegmentedChoice from './SegmentedChoice';
 import { figureColumns } from './ProbeSections';
 import { useClock, useReducedMotion } from './useClock';
 import usePlayer from './usePlayer';
-import { EDGES } from '../machine/probe';
 import { figureSaid } from '../machine/probeFields';
 import {
   LOOP_HOLD_MS, PAPER_GROUPS, PAPER_PARAMS, moveOf, paperCode, paperReadout, paperScene, paperTimeline, playAt,
@@ -31,13 +29,13 @@ const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53
 /**
  * The paper's Setup, laid out as the Z plate's (`ZPlateParams`): the drawing
  * large with its bar and player, the readout, the move's name with its line;
- * beside it the surface chosen, the instruction and the figures — the tool's
- * diameter only for a side, where the zero is its radius away.
+ * beside it the instruction and the figures — the tool's diameter only for
+ * a side, where the zero is its radius away.
  *
- * `chosen` is the surface, `onChoose` changes it.
+ * `chosen` is the surface, picked on the step before (`PaperChooser`).
  */
 const PaperParams = ({
-  fields, texts, onText, bad, wcs, chosen = 'z', onChoose, intro = null, note = null, split = null,
+  fields, texts, onText, bad, wcs, chosen = 'z', intro = null, note = null, split = null,
 }) => {
   const units = useUnits();
   const wide = useIsWide();
@@ -90,16 +88,6 @@ const PaperParams = ({
       </div>
     </div>
   );
-  const choice = (
-    <SegmentedChoice
-      options={EDGES.map((edge) => edge.id)}
-      value={chosen}
-      onChange={onChoose}
-      format={(id) => t(EDGES.find((edge) => edge.id === id).key)}
-      label={t('probe.edgeLabel')}
-      columns={1}
-    />
-  );
   const { right, third } = figureColumns({
     wide: wide && Boolean(split),
     sections,
@@ -110,12 +98,7 @@ const PaperParams = ({
     bad,
     onField: setPicked,
     lit: uses,
-    intro: (
-      <>
-        {intro}
-        {choice}
-      </>
-    ),
+    intro,
     note,
   });
   if (split) {

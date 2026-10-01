@@ -50,10 +50,10 @@ const OUTCOMES = {
   ),
 };
 
-/** The buttons at the foot of a step: back on the left, the way on at the right. */
-export const Foot = ({ back, children }) => (
+/** The buttons at the foot of a step: back on the left — or `backLabel`'s way out — the way on at the right. */
+export const Foot = ({ back, backLabel = null, children }) => (
   <div className="mt-auto flex shrink-0 justify-between gap-2 pt-4">
-    {back ? <Button tone="outline" onClick={back} className="h-ctl">{t('probe.back')}</Button> : <span />}
+    {back ? <Button tone="outline" onClick={back} className="h-ctl">{backLabel || t('probe.back')}</Button> : <span />}
     <div className="flex gap-2">{children}</div>
   </div>
 );
@@ -67,7 +67,7 @@ export const MethodStep = ({ onPick }) => (
         onClick={() => onPick(method.id)}
         className="flex flex-col items-center gap-3 rounded-ctl border border-line bg-field p-4 text-center hover:border-acc"
       >
-        <ProbePicture method={method.id} choice={method.choice?.first} label={t(method.key)} className="h-24 w-32" />
+        <ProbePicture method={method.id} label={t(method.key)} className="h-24 w-32" />
         <span className="text-base font-semibold text-ink">{t(method.key)}</span>
         <span className="text-note text-mut">{t(method.note)}</span>
       </button>
@@ -76,7 +76,7 @@ export const MethodStep = ({ onPick }) => (
 );
 
 export const PrepareStep = ({
-  method, chosen, onChoose, fields, texts, onText, bad, wcs, split = null,
+  method, chosen, fields, texts, onText, bad, wcs, split = null,
 }) => {
   const Editor = EDITORS[method.id];
   return (
@@ -88,7 +88,6 @@ export const PrepareStep = ({
       wcs={wcs}
       corner={chosen}
       chosen={chosen}
-      onChoose={onChoose}
       split={split}
       intro={method.how ? <p className="m-0 text-base text-ink">{t(method.how)}</p> : null}
       note={<p className="m-0 text-note text-mut">{t('probe.remember')}</p>}

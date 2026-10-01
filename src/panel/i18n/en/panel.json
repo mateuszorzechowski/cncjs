@@ -1387,7 +1387,7 @@
     "place": {
       "z": "Jog the tool over the plate, a few millimetres above it — less than the Z travel limit.",
       "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls.",
-      "paper": "Jog the tool onto the paper with the smallest step. Stop when the paper just starts to drag as you slide it — then say here."
+      "paper": "Bring the tool a few millimetres over the surface chosen — in front of it for a side. Keep the sheet at hand."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1447,6 +1447,7 @@
     "step": {
       "method": "Method",
       "corner": "Corner",
+      "surface": "Surface",
       "prepare": "Setup",
       "wire": "Wire",
       "position": "Position",
@@ -1553,7 +1554,13 @@
       "ok": "drags — Here",
       "barCoarse": "coarse",
       "barFine": "fine",
-      "barBack": "back off"
+      "barBack": "back off",
+      "chosen": "Surface: {{name}}",
+      "pickHow": "Tap a side or the middle of the work. The sheet jumps to the surface chosen; the arrow shows which way the tool comes.",
+      "jogTitle": "Paper · {{axis}}",
+      "mm01": "0.1 mm",
+      "mm001": "0.01 mm",
+      "feelHow": "Put the sheet between the tool and the surface and slide it while stepping in by 0.1 mm, then 0.01 mm. When it drags — still moving, but pulling — that is “Here”. If it resists or stands, step back."
     },
     "bar": {
       "measure": "measure",
@@ -1588,6 +1595,21 @@
       "label": "View",
       "top": "From above",
       "side": "From the side"
+    },
+    "jog": {
+      "open": "Probe waiting — jog"
+    },
+    "join": {
+      "elsewhere": "another device",
+      "waiting": "{{method}} on {{where}} is waiting: {{step}}",
+      "how": "Join to run this measurement from here — the steps move together on both devices. A wizard of your own takes the measurement over once you reach Position in it.",
+      "join": "Join",
+      "own": "Start my own",
+      "leave": "Leave",
+      "taken": "The wizard was taken over on {{where}}.",
+      "leaveTitle": "Leave the probing?",
+      "leaveNote": "The wizard keeps waiting on {{where}} — finish it there, or join it here again.",
+      "stay": "Stay"
     }
   }
 }

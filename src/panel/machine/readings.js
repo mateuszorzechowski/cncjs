@@ -289,7 +289,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
   envelope, motion, workflow, device, alarm, fileCheck, fits, units, machineSettings, settingsPreview, settingsPending, homedAt,
-  probe,
+  probe, probeStage,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -536,6 +536,8 @@ export const readMachine = ({
     // The measurement the server holds, and whether one may start: no
     // program, not in a pause either for now, Grbl standing Idle, none running.
     probe: connected ? (probe ?? null) : null,
+    // Where a probe wizard, on this device or another, waits on the operator's hands (`probe:stage`).
+    probeStage: connected ? (probeStage ?? null) : null,
     canProbe: connected && (workflow || 'idle') === 'idle' && active?.word === 'Idle' && probe?.state !== 'running' && !held,
     alarm: connected && active?.word === ALARM ? (alarm ?? null) : null,
     // When the machine was last homed, or null: not since it lost its position.

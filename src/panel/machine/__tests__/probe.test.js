@@ -23,8 +23,9 @@ describe('where the wizard is', () => {
 });
 
 describe('the steps a method goes through', () => {
-  test('the paper has no wire to test', () => {
-    expect(stepsOf(methodOf('paper')).map((s) => s.id)).toEqual(['method', 'prepare', 'position', 'measure', 'result']);
+  test('the paper has no wire to test, and its surface is chosen on a step of its own', () => {
+    expect(stepsOf(methodOf('paper')).map((s) => s.id)).toEqual(['method', 'choose', 'prepare', 'position', 'measure', 'result']);
+    expect(stepsOf(methodOf('paper'))[1].key).toBe('probe.step.surface');
     expect(stepBeside(methodOf('paper'), 'prepare', 1)).toBe('position');
     expect(stepBeside(methodOf('paper'), 'position', -1)).toBe('prepare');
   });

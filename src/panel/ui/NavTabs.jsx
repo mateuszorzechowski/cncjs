@@ -37,7 +37,7 @@ import { t } from '../i18n';
  * continuous grid does not leave that open, so these are drawn from what each
  * screen is *for* rather than from what it will contain.
  */
-const MARKS = {
+export const MARKS = {
   dashboard: 'M3 11l9-8 9 8M5 9.5V20h14V9.5',
   jog: 'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',
   zero: 'M12 3v18M3 12h18M12 12m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0',
