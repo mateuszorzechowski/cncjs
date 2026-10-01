@@ -1645,14 +1645,10 @@
       "top": "Work top"
     },
     "hole": {
-      "pass1": "Pass 1",
-      "pass2": "Pass 2",
-      "axis": {
-        "x": "across X",
-        "y": "across Y"
-      },
       "move": {
-        "touch": "Pass {{pass}} · {{axis}}: touch the wall",
+        "fast": "Pass {{pass}} · {{axis}}: fast touch",
+        "back": "Pass {{pass}} · {{axis}}: back off",
+        "slow": "Pass {{pass}} · {{axis}}: slow measure",
         "centre": "Pass {{pass}} · {{axis}}: to the middle",
         "zero": "Zero written: X0 and Y0"
       },
@@ -1662,13 +1658,19 @@
         "centre": "{{axis}}: to the middle"
       },
       "passesWhy1": "One pass: 4 touches, half the time. The middle of any chord of a circle lies on its centre, so it is enough when the ball starts near the middle of the hole.",
-      "passesWhy2": "Two passes: the second from the centre the first found, its touches square to the walls. Surer when the start is far off the middle — then the first touches meet the wall at a slant."
+      "passesWhy2": "Two passes: the second from the centre the first found, its touches square to the walls. Surer when the start is far off the middle — then the first touches meet the wall at a slant.",
+      "middle": "middle"
     },
     "boss": {
-      "top": "top",
       "move": {
-        "top": "Z · touch the top",
-        "side": "Pass {{pass}} · {{axis}}: touch the side from outside"
+        "topFast": "Z · fast down to the top",
+        "topBack": "Z · back off before measuring",
+        "topSlow": "Z · slow, exact measure",
+        "set": "Pass {{pass}} · {{axis}}: set up past the side",
+        "fast": "Pass {{pass}} · {{axis}}: fast touch of the side",
+        "back": "Pass {{pass}} · {{axis}}: back off",
+        "slow": "Pass {{pass}} · {{axis}}: slow measure",
+        "up": "Pass {{pass}} · {{axis}}: up over the part"
       },
       "outCode": "G0 past the side, over the top",
       "phase": {

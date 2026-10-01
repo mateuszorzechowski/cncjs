@@ -1,26 +1,22 @@
 /**
  * The part touched from outside, as moves on its drawing — the geometry
- * `bossCycle` plays and draws: where the ball goes on each side, its height,
- * its keyframes. See `bossCycle` for what the moves are.
+ * `bossCycle` plays and draws: the steps, where the ball goes on each, its
+ * height, its keyframes. See `bossCycle` for what the steps are.
  */
 
-export const SPAN_MS = 3400;
-export const RUN_MS = 2600;
 export const LOOP_HOLD_MS = 2500;
-// A side's move has four legs — out, down, the touch, up — so it runs longer.
-export const SIDE_RUN_MS = 4200;
+// How long each kind of step runs, and the hold after it; a set-up a second a leg.
+export const RUNS = {
+  topFast: 2000, topBack: 1000, topSlow: 2400, set: 2000, fast: 2000, back: 1000, slow: 2400, up: 1000, centre: 1600, zero: 2600,
+};
+export const HOLD_MS = 700;
 
 // The part's radius and the ball's, and how far out past the part the ball goes down.
 export const BOSS_R = 34;
 export const TOOL_R = 8;
 const OUT = BOSS_R + 26;
 // Off the side after a touch, and where the ball starts, off the centre.
-export const BACK = 6;
-// When in a side's touch, and in the top's, the fast one and the slow one run — the slow longer, as on the machine.
-export const SIDE_FAST_END = 0.55;
-export const SIDE_SLOW = [0.66, 0.86];
-export const TOP_FAST = [0.15, 0.4];
-export const TOP_SLOW = [0.55, 0.86];
+export const BACK = 14;
 export const START = [9, -6];
 // Heights: where the ball starts, touching the top, just over it, down beside a side.
 const HIGH = 1;
@@ -31,7 +27,6 @@ export const AXES = ['x', 'y'];
 export const clamp = (v) => Math.max(0, Math.min(1, v));
 export const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - ((-2 * u + 2) ** 3) / 2);
 
-const along = (axis, at, by) => (axis === 'x' ? [at[0] + by, at[1]] : [at[0], at[1] + by]);
 export const setOn = (axis, at, v) => (axis === 'x' ? [v, at[1]] : [at[0], v]);
 
 /** Where the ball's centre meets the part's side coming in along `axis` from the `sign` side, across `at`. */
@@ -41,62 +36,76 @@ const wallFrom = (at, axis, sign) => {
   return setOn(axis, at, sign * reach);
 };
 
-// The legs of a side's move, as fractions of its run, each with what it uses and its words.
+// A set-up's legs, as fractions of its run, each with what it uses: out past the side over the top, and down beside it.
 export const LEGS = [
-  { name: 'out', from: 0.06, to: 0.3, uses: ['bossSize', 'clear'] },
-  { name: 'down', from: 0.3, to: 0.42, uses: ['depth', 'retract'] },
-  { name: 'touch', from: 0.42, to: 0.9, uses: ['fast', 'slow', 'retract'] },
-  { name: 'up', from: 0.9, to: 1, uses: [] },
+  { name: 'out', from: 0, to: 0.5, uses: ['bossSize', 'clear'] },
+  { name: 'down', from: 0.5, to: 1, uses: ['depth', 'retract'] },
 ];
 
+/** The leg of a set-up under way at `p`. */
+export const legAt = (p) => (p < LEGS[0].to ? LEGS[0] : LEGS[1]);
+
 /*
- * The moves, each with keyframes `[t, place, level, eased]`: the top touched
- * as a plate's is; a side's four legs; the way to the middle; the zero, still.
+ * The steps, each with keyframes `[t, place, level, eased]` and how far into
+ * its run it stops changing (`end`): the top touched as a plate's is — fast,
+ * back, slow; for each side its set-up, the fast touch, back off it, the slow
+ * one, up again; the way to the middle; the zero, still.
  */
 export const build = () => {
+  const S = START;
   const moves = {
-    z: {
-      kind: 'top',
-      frames: [[0, START, HIGH], [TOP_FAST[0], START, HIGH], [TOP_FAST[1], START, ON_TOP, true], [0.45, START, ON_TOP], [0.5, START, ABOVE], [TOP_SLOW[0], START, ABOVE], [TOP_SLOW[1], START, ON_TOP], [1, START, ABOVE]],
-      titleKey: 'probe.boss.move.top',
-      uses: ['maxZ', 'fast', 'slow', 'retract'],
-      end: 1,
+    zFast: {
+      kind: 'topFast', frames: [[0, S, HIGH], [0.1, S, HIGH], [0.85, S, ON_TOP, true], [1, S, ON_TOP]], end: 0.85, titleKey: 'probe.boss.move.topFast', uses: ['maxZ', 'fast'],
+    },
+    zBack: {
+      kind: 'topBack', frames: [[0, S, ON_TOP], [0.15, S, ON_TOP], [0.7, S, ABOVE, true], [1, S, ABOVE]], end: 0.7, titleKey: 'probe.boss.move.topBack', uses: ['retract'],
+    },
+    zSlow: {
+      kind: 'topSlow', frames: [[0, S, ABOVE], [0.1, S, ABOVE], [0.7, S, ON_TOP], [0.78, S, ON_TOP], [1, S, ABOVE, true]], end: 1, titleKey: 'probe.boss.move.topSlow', uses: ['slow', 'retract'],
     },
   };
-  const order = ['z'];
+  const order = ['zFast', 'zBack', 'zSlow'];
   let at = START;
   const guess = [...START];
   [1, 2].forEach((pass) => {
     AXES.forEach((axis, i) => {
-      const touches = [];
+      const walls = [];
       [1, -1].forEach((sign) => {
         const out = setOn(axis, at, guess[i] + sign * OUT);
         const wall = wallFrom(out, axis, sign);
-        const off = along(axis, wall, sign * BACK);
-        const name = `${axis}${pass}${sign > 0 ? 'p' : 'm'}`;
-        moves[name] = {
-          kind: 'side', axis, sign, pass, from: at, out, wall, guess: guess[i], way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
-          frames: [
-            [0, at, ABOVE], [0.06, at, ABOVE], [0.3, out, ABOVE, true], [0.42, out, 0, true], [SIDE_FAST_END, wall, 0, true], [0.58, wall, 0],
-            [0.62, off, 0], [SIDE_SLOW[0], off, 0], [SIDE_SLOW[1], wall, 0], [0.9, off, 0], [1, off, ABOVE, true],
-          ],
-          titleKey: 'probe.boss.move.side',
-          uses: LEGS.flatMap((leg) => leg.uses),
-          end: 1,
+        const off = setOn(axis, wall, wall[i] + sign * BACK);
+        const side = `${axis}${pass}${sign > 0 ? 'p' : 'm'}`;
+        const common = {
+          axis, sign, pass, side, out, wall, off, guess: guess[i], way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
         };
-        order.push(name);
-        touches.push(wall);
+        moves[`${side}Set`] = {
+          ...common, kind: 'set', from: at, frames: [[0, at, ABOVE], [0.05, at, ABOVE], [0.5, out, ABOVE, true], [0.95, out, 0, true], [1, out, 0]], end: 1, legs: LEGS, titleKey: 'probe.boss.move.set', uses: ['bossSize', 'clear', 'depth', 'retract'],
+        };
+        moves[`${side}Fast`] = {
+          ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.boss.move.fast', uses: ['fast'],
+        };
+        moves[`${side}Back`] = {
+          ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.boss.move.back', uses: ['retract'],
+        };
+        moves[`${side}Slow`] = {
+          ...common, kind: 'slow', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.7, wall, 0], [0.78, wall, 0], [1, off, 0, true]], end: 1, titleKey: 'probe.boss.move.slow', uses: ['slow', 'retract'],
+        };
+        moves[`${side}Up`] = {
+          ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.boss.move.up', uses: ['depth', 'retract'],
+        };
+        order.push(`${side}Set`, `${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Up`);
+        walls.push(wall);
         at = off;
       });
-      const middle = setOn(axis, at, (touches[0][i] + touches[1][i]) / 2);
+      const middle = setOn(axis, at, (walls[0][i] + walls[1][i]) / 2);
       guess[i] = middle[i];
       const name = `${axis}${pass}c`;
       moves[name] = {
-        kind: 'centre', axis, pass, from: at, to: middle, touches, way: axis.toUpperCase(),
-        frames: [[0, at, ABOVE], [0.15, at, ABOVE], [0.6, middle, ABOVE, true], [1, middle, ABOVE]],
+        kind: 'centre', axis, pass, from: at, to: middle, way: axis.toUpperCase(),
+        frames: [[0, at, ABOVE], [0.15, at, ABOVE], [0.8, middle, ABOVE, true], [1, middle, ABOVE]],
         titleKey: 'probe.hole.move.centre',
         uses: [],
-        end: 0.6,
+        end: 0.8,
       };
       order.push(name);
       at = middle;
@@ -109,7 +118,7 @@ export const build = () => {
   return { moves, order };
 };
 
-/** The ball's centre and height at `p` through a move, from its keyframes. */
+/** The ball's centre and height at `p` through a step, from its keyframes. */
 export const toolAt = (move, p) => {
   const { frames } = move;
   for (let i = 0; i < frames.length - 1; i++) {
@@ -125,5 +134,5 @@ export const toolAt = (move, p) => {
   return { at, level };
 };
 
-/** The leg of a side's move under way at `p`. */
-export const legAt = (p) => LEGS.find((leg) => p < leg.to) || LEGS[LEGS.length - 1];
+/** Whether a step is on its way at `p`: from its second keyframe to its third — a set-up to its last; the zero never. */
+export const isGoing = (move, p) => move.frames.length > 2 && p > move.frames[1][0] && p < move.frames[move.kind === 'set' ? 3 : 2][0];

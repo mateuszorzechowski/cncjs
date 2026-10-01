@@ -1645,14 +1645,10 @@
       "top": "Wierzch materiału"
     },
     "hole": {
-      "pass1": "1. przejście",
-      "pass2": "2. przejście",
-      "axis": {
-        "x": "w X",
-        "y": "w Y"
-      },
       "move": {
-        "touch": "{{pass}}. przejście · {{axis}}: dotyk ścianki",
+        "fast": "{{pass}}. przejście · {{axis}}: szybki dotyk",
+        "back": "{{pass}}. przejście · {{axis}}: cofnięcie",
+        "slow": "{{pass}}. przejście · {{axis}}: wolny pomiar",
         "centre": "{{pass}}. przejście · {{axis}}: na środek",
         "zero": "Zapis zera: X0 i Y0"
       },
@@ -1662,13 +1658,19 @@
         "centre": "{{axis}}: na środek"
       },
       "passesWhy1": "Jedno przejście: 4 dotyki, o połowę krócej. Środek każdej cięciwy okręgu leży na jego środku, więc wystarcza, gdy kulka startuje blisko środka otworu.",
-      "passesWhy2": "Dwa przejścia: drugie od środka znalezionego w pierwszym, z dotykami prostopadle do ścianek. Pewniejsze, gdy start jest daleko od środka — wtedy pierwsze dotyki trafiają ściankę ukośnie."
+      "passesWhy2": "Dwa przejścia: drugie od środka znalezionego w pierwszym, z dotykami prostopadle do ścianek. Pewniejsze, gdy start jest daleko od środka — wtedy pierwsze dotyki trafiają ściankę ukośnie.",
+      "middle": "środek"
     },
     "boss": {
-      "top": "wierzch",
       "move": {
-        "top": "Z · dotyk wierzchu",
-        "side": "{{pass}}. przejście · {{axis}}: dotyk boku z zewnątrz"
+        "topFast": "Z · szybki zjazd do wierzchu",
+        "topBack": "Z · cofnięcie przed pomiarem",
+        "topSlow": "Z · wolny, dokładny pomiar",
+        "set": "{{pass}}. przejście · {{axis}}: ustawienie za bokiem",
+        "fast": "{{pass}}. przejście · {{axis}}: szybki dotyk boku",
+        "back": "{{pass}}. przejście · {{axis}}: cofnięcie",
+        "slow": "{{pass}}. przejście · {{axis}}: wolny pomiar",
+        "up": "{{pass}}. przejście · {{axis}}: w górę nad detal"
       },
       "outCode": "G0 za bok, nad wierzchem",
       "phase": {

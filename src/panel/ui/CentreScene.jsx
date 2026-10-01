@@ -35,7 +35,9 @@ const sy = (y) => -y;
 
 /*
  * Where a dimension down the drawing has its words: half way, or `at` of
- * the way from its start — off the middle, where the touches across X sit.
+ * the way from its start — off the middle, where the touches across X sit,
+ * or past its end (over 1), apart from the words of the one it continues.
+ * Across the drawing the same is a second row (`row`).
  */
 const along = (from, to, at = 0.5) => from + (to - from) * at;
 
@@ -49,6 +51,9 @@ const CentreScene = ({
   const VIEW = part.view || WIDE;
   const [measure, k] = useViewScale(VIEW[2], VIEW[3]);
   const size = kit(k);
+  // How far a label's middle stands off its line, clear of the ticks — 6 off an arrow, 10 off a dimension —
+  // whatever the label's size; and a second row's step (review notes, 2026-10-01: *"etykiety nachodzą na strzałki"*).
+  const gap = { arrow: 7 + 0.8 * size.fs, dim: 11 + 0.8 * size.fs, row: 1.6 * size.fs + 2 };
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
   const r = part.toolR * (1 + part.grow * Math.max(0, level));
   const [cx, cy] = [tool[0], sy(tool[1])];
@@ -76,7 +81,7 @@ const CentreScene = ({
     arrow = (
       <g opacity={motion.kind === 'rapid' ? 1 : fade('feed')}>
         <Motion axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} kind={motion.kind} size={size} />
-        {motion.feed ? (flat ? tag((from + to) / 2, at - 12, motion.feed, face) : tag(at - 8, (from + to) / 2, motion.feed, face, 'r')) : null}
+        {motion.feed ? (flat ? tag((from + to) / 2, at - gap.arrow, motion.feed, face) : tag(at - 8, (from + to) / 2, motion.feed, face, 'r')) : null}
       </g>
     );
   }
@@ -91,8 +96,8 @@ const CentreScene = ({
       <g opacity={fade('dim')}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
         {/* Down the drawing, the words stand beside the line rather than over it. */}
-        {flat ? tag((from + to) / 2, at + 12, limit.text, face) : null}
-        {flat ? null : tag(at + 12, along(from, to, limit.tagAt), limit.text, face, 'l')}
+        {flat ? tag((from + to) / 2, at + gap.dim + (limit.row ? gap.row : 0), limit.text, face) : null}
+        {flat ? null : tag(at + 13, along(from, to, limit.tagAt), limit.text, face, 'l')}
       </g>
     );
   }
@@ -106,13 +111,15 @@ const CentreScene = ({
     return (
       <g key={dim.id} opacity={fade(dim.id)}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} lit={dim.lit} size={size} />
-        {flat ? tag((from + to) / 2, at + 12, dim.text, face) : null}
-        {flat ? null : tag(at + 12, along(from, to, dim.tagAt), dim.text, face, 'l')}
+        {flat ? tag((from + to) / 2, at + gap.dim, dim.text, face) : null}
+        {flat ? null : tag(at + 13, along(from, to, dim.tagAt), dim.text, face, 'l')}
       </g>
     );
   });
 
   const boss = part.kind === BOSS;
+  // The words by the ball go left when it is right of the middle, or when dimensions down the drawing stand to its right.
+  const toLeft = cx > 0 || dims.some((dim) => dim.axis === 'y') || limit?.axis === 'y';
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />
@@ -140,7 +147,7 @@ const CentreScene = ({
       {contact ? <Contact x={contact[0]} y={sy(contact[1])} size={size} /> : null}
       {/* What the ball does up and down, beside it: the top's limit, the way down beside a side. */}
       {/* On the side of the ball towards the middle, so the words stay in the drawing. */}
-      {said ? tag(cx > 0 ? cx - r - 6 : cx + r + 6, cy, said.text, said.lit ? FACE.hot : FACE.plain, cx > 0 ? 'r' : 'l') : null}
+      {said ? tag(toLeft ? cx - r - 6 : cx + r + 6, cy, said.text, said.lit ? FACE.hot : FACE.plain, toLeft ? 'r' : 'l') : null}
       {/* Arrows, dimensions and their words over the ball, never under it (review note, 2026-10-01). */}
       {fence}
       {drawn}

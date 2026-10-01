@@ -53,14 +53,14 @@ const GROW = {
 
 /**
  * The bar's groups with their words: `groups` as the cycle modules keep them
- * (`name` a literal axis or `key` a translation), `titleOf(id)` a move's
- * spoken name.
+ * (`name` a literal axis or `key` a translation — a step the same),
+ * `titleOf(id)` a move's spoken name.
  */
 export const namedGroups = (groups, t, titleOf, partsOf = () => 1) => groups.map((group) => ({
   id: group.id,
   name: group.name || (group.key ? t(group.key) : ''),
   folded: Boolean(group.folded),
-  subs: group.subs.map((sub) => ({ name: t(sub.key), moves: sub.moves.map((id) => ({ id, label: titleOf(id), parts: partsOf(id) })) })),
+  subs: group.subs.map((sub) => ({ name: sub.name || t(sub.key), moves: sub.moves.map((id) => ({ id, label: titleOf(id), parts: partsOf(id) })) })),
 }));
 
 // A segment's tap target, underlined when it is the part a repeat plays.
