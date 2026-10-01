@@ -1,4 +1,5 @@
 import Icon from './Icon';
+import JogKey from './JogKey';
 import { t } from '../i18n';
 import { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT } from './jogCorners';
 
@@ -35,28 +36,8 @@ import { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT } from './jogCorners';
  * learns the pad at the machine already knows the one in their hand. Homing
  * moves into the bottom row where the dead Park key was.
  */
-const Key = ({ children, onClick, hold, disabled, label, quiet, className = '' }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    {...(hold || {})}
-    disabled={disabled}
-    aria-label={label}
-    className={[
-      'flex size-full flex-col items-center justify-center rounded-ctl border leading-tight',
-      quiet
-        ? 'border-line bg-field text-cap font-medium text-mut hover:border-acc hover:text-acc'
-        // A faint wash of the accent: the one family of keys on the panel
-        // with a ground of its own, so the pad is found at a glance (review
-        // note, 2026-09-29: *"delikatny background … łatwiej identyfikowalne"*).
-        : 'border-line bg-accS text-head font-semibold text-acc hover:border-acc',
-      'disabled:opacity-45 disabled:hover:border-line',
-      className,
-    ].join(' ')}
-  >
-    {children}
-  </button>
-);
+// The tall pad's keys fill their cells.
+const Key = (props) => <JogKey fill {...props} />;
 
 const HOUSE = <span aria-hidden="true">&#8962;</span>;
 

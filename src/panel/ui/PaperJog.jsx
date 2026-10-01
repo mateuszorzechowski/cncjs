@@ -1,4 +1,5 @@
 import Button from './Button';
+import JogKey from './JogKey';
 import { jog } from '../machine/jog';
 import { surfaceOf } from '../machine/paperCycle';
 import { useUnits } from './units';
@@ -39,12 +40,13 @@ const PaperJog = ({
   const at = machine.position?.[axis];
   const off = !machine.connected || !machine.canProbe;
   const key = (by, mm) => (
-    <Button key={`${by}${mm}`} tone="outline" compact disabled={off} onClick={() => step(by, mm)} className="flex h-jbtnh flex-col items-center justify-center gap-0.5">
-      <span className="font-num text-lead font-semibold">{way(axis, by)}</span>
-      <span className="whitespace-nowrap text-note text-mut">{t(STEP_WORDS[mm])}</span>
-    </Button>
+    <JogKey key={`${by}${mm}`} disabled={off} onClick={() => step(by, mm)} label={`${way(axis, by)} ${t(STEP_WORDS[mm])}`} className="gap-0.5">
+      <span className="font-num">{way(axis, by)}</span>
+      <span className="whitespace-nowrap text-note font-medium">{t(STEP_WORDS[mm])}</span>
+    </JogKey>
   );
-  const reading = <span className="font-num text-lead font-semibold text-ink">{units.figure(at)}</span>;
+  // The axis's reading, large: what the steps are read against (review note, 2026-10-01).
+  const reading = <span className="font-num text-head font-semibold text-ink">{units.figure(at)}</span>;
   /*
    * Laid along the axis, as the jog pad's keys are (review note, 2026-10-01:
    * *"w kolumnie/wierszu zgodnie z kierunkiem"*): Z and Y a column, plus at
