@@ -117,12 +117,9 @@ const CentreScene = ({
           <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
         </pattern>
       </defs>
-      {/* The work round the hole, or the table round the part. */}
+      {/* The work round the hole, or the part alone — no table under it, as no other drawing has (review note, 2026-10-01). */}
       {boss ? (
-        <>
-          <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} className="fill-mutS" />
-          <circle r={part.r} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
-        </>
+        <circle r={part.r} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} fill={`url(#${id})`} />

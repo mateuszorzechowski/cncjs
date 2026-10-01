@@ -8,8 +8,9 @@ import { t } from '../i18n';
 /**
  * A centre from the front (review notes, 2026-10-01: *"rzut z boku"*,
  * *"nie zmieniaj osi, tylko pokaż ruch osi Y w głębi"*): always along X, Z
- * up. A part touched from outside stands on the table, a faint hatch; a hole
- * goes down into the work, its walls dashed — the work in front hides them.
+ * up. A part touched from outside a faint hatch, a hole going down into the
+ * work, its walls dashed — the work in front hides them. No table: no other
+ * drawing has one (review note, 2026-10-01).
  * The 3D probe's stylus and ball: a way along Y goes into the drawing, the
  * ball larger nearer, smaller further, dashed while something hides it. A
  * move's arrow with its feed over the ball, a figure's dimension beside or
@@ -22,7 +23,8 @@ import { t } from '../i18n';
  */
 
 const VIEW = [-101, -110, 202, 188];
-const TABLE = 60;
+// The work runs out at the drawing's foot.
+const FOOT = VIEW[1] + VIEW[3];
 // How deep a hole is drawn.
 const HOLE_DEPTH = 46;
 const USER = 'userSpaceOnUse';
@@ -82,18 +84,17 @@ const CentreSide = ({
           <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
         </pattern>
       </defs>
-      <rect x={VIEW[0]} y={TABLE} width={VIEW[2]} height={VIEW[1] + VIEW[3] - TABLE} className="fill-mutS stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       {boss ? (
-        <rect x={-part.r} y={0} width={2 * part.r} height={TABLE} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+        <path d={`M${-part.r} ${FOOT} V0 H${part.r} V${FOOT}`} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
-          <rect x={VIEW[0] - 2} y={0} width={VIEW[2] + 4} height={TABLE} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+          <rect x={VIEW[0] - 2} y={0} width={VIEW[2] + 4} height={FOOT + 2} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
           <path d={`M${-part.r} 0 V${HOLE_DEPTH} H${part.r} V0`} fill="none" className="stroke-mut" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
         </>
       )}
       {zero > 0 ? (
         <g opacity={zero}>
-          <path d={`M0 ${VIEW[1]} V${TABLE}`} className="stroke-acc" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
+          <path d={`M0 ${VIEW[1]} V${FOOT}`} className="stroke-acc" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
           <text x={4} y={VIEW[1] + size.fs + 4} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.corner.zeroX')}</text>
         </g>
       ) : null}
