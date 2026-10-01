@@ -12,7 +12,7 @@ import { t } from '../i18n';
  *   way here brought us (`ask`, the jog open at the position step), or
  *   chosen on the screen when we came from the menu (`declined` once
  *   "start my own" was chosen instead);
- * - `leave` one joined: the choice again, the wizard going on where it is;
+ * - `leave` one joined: this device's methods, the wizard going on where it is;
  * - taken over — another device reached the step with its own — back a step
  *   with the device named (`takenBy`), or, joined, out of it.
  *
@@ -48,7 +48,9 @@ const useProbeJoin = ({
     setLocal(shared.step);
   };
 
+  // Left: the methods, not the offer again (review note, 2026-10-01).
   const leave = () => {
+    setDeclined(true);
     setMode(null);
     setPicked(null);
     setJogging(false);

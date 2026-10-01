@@ -164,7 +164,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
           jogging={jogging}
           onJogging={setJogging}
           onBack={mode === 'joined' ? leave : () => go(-1)}
-          backLabel={mode === 'joined' ? t('probe.join.leave') : null}
+          leaving={mode === 'joined' ? shared?.owner?.name || t('probe.join.elsewhere') : null}
           onNext={() => go(1)}
           onMeasure={measure}
         />
@@ -183,10 +183,13 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
    * as the controller's settings (review note, 2026-09-30).
    */
   const split = step === 'prepare' && !phone;
-  if (step === 'method' && !mode && shared && !mine && !declined) {
-    body = <ProbeJoin stage={shared} onJoin={join} onOwn={() => setDeclined(true)} />;
-  } else if (step === 'method') {
-    body = <MethodStep onPick={pick} />;
+  if (step === 'method') {
+    body = (
+      <>
+        {!mode && shared && !mine && !declined ? <ProbeJoin stage={shared} onJoin={join} onOwn={() => setDeclined(true)} /> : null}
+        <MethodStep onPick={pick} />
+      </>
+    );
   } else if (step === 'choose') {
     const Chooser = CHOOSERS[method.id];
     body = <Chooser value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;

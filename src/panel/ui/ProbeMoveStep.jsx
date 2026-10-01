@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import Button from './Button';
 import Card from './Card';
+import ConfirmSheet from './ConfirmSheet';
 import CornerPosition from './CornerPosition';
 import FadeScroller from './FadeScroller';
 import Notice from './Notice';
@@ -29,9 +31,12 @@ const MOVES = {
  * another screen — with the button that goes on.
  */
 const ProbeMoveStep = ({
-  machine, method, choice, feeling, lit, jogging, onJogging, onBack, backLabel = null, onNext, onMeasure,
+  machine, method, choice, feeling, lit, jogging, onJogging, onBack, leaving = null, onNext, onMeasure,
 }) => {
   const phone = useIsPhone();
+  // Joined, the way back is out of the wizard (`leaving`, whose it is) — on a phone asked first, in a sheet.
+  const [asking, setAsking] = useState(false);
+  const back = leaving && phone ? () => setAsking(true) : onBack;
   const Moving = MOVES[method.id];
   let onward = null;
   if (method.touches) {
@@ -55,7 +60,7 @@ const ProbeMoveStep = ({
       {phone ? paper : null}
       {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
       {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
-      <Foot back={onBack} backLabel={backLabel}>
+      <Foot back={back} backLabel={leaving ? t('probe.join.leave') : null}>
         {phone ? <Button tone="outline" onClick={() => onJogging(true)} className="h-ctl">{t('nav.jog')}</Button> : null}
         {onward}
       </Foot>
@@ -74,6 +79,20 @@ const ProbeMoveStep = ({
         * On a phone the pad is a sheet over the step (review note, 2026-09-30:
         * *"jog na telefonie w arkuszu"*), with the button that goes on.
         */}
+      {asking ? (
+        <ConfirmSheet
+          title={t('probe.join.leaveTitle')}
+          note={t('probe.join.leaveNote', { where: leaving })}
+          confirmLabel={t('probe.join.leave')}
+          tone="primary"
+          onConfirm={() => {
+            setAsking(false);
+            onBack();
+          }}
+          cancelLabel={t('probe.join.stay')}
+          onClose={() => setAsking(false)}
+        />
+      ) : null}
       {phone && jogging ? (
         <Sheet title={t('nav.jog')} onClose={() => onJogging(false)} tall>
           <JogWidget machine={machine} className="min-h-0 flex-1" />

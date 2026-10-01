@@ -1558,8 +1558,6 @@
       "chosen": "Surface: {{name}}",
       "pickHow": "Tap a side or the middle of the work. The sheet jumps to the surface chosen; the arrow shows which way the tool comes.",
       "jogTitle": "Paper · {{axis}}",
-      "toward": "Towards the surface",
-      "away": "Away from the surface",
       "mm01": "0.1 mm",
       "mm001": "0.01 mm",
       "feelHow": "Put the sheet between the tool and the surface and slide it while stepping in by 0.1 mm, then 0.01 mm. When it drags — still moving, but pulling — that is “Here”. If it resists or stands, step back."
@@ -1608,7 +1606,10 @@
       "join": "Join",
       "own": "Start my own",
       "leave": "Leave",
-      "taken": "The wizard was taken over on {{where}}."
+      "taken": "The wizard was taken over on {{where}}.",
+      "leaveTitle": "Leave the probing?",
+      "leaveNote": "The wizard keeps waiting on {{where}} — finish it there, or join it here again.",
+      "stay": "Stay"
     }
   }
 }
