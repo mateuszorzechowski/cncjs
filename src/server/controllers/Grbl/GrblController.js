@@ -12,7 +12,7 @@ import EventTrigger from '../../lib/EventTrigger';
 import Feeder from '../../lib/Feeder';
 import MessageSlot from '../../lib/MessageSlot';
 import Sender, { SP_TYPE_CHAR_COUNTING } from '../../lib/Sender';
-import SerialConnection from '../../lib/SerialConnection';
+import createConnection from '../../lib/create-connection';
 import Workflow, {
   WORKFLOW_STATE_IDLE,
   WORKFLOW_STATE_PAUSED,
@@ -285,7 +285,7 @@ class GrblController {
       };
 
       // Connection
-      this.connection = new SerialConnection({
+      this.connection = createConnection({
         path: port,
         baudRate: baudrate,
         rtscts: rtscts,
