@@ -1672,7 +1672,8 @@
         "topBack": "Z · cofnięcie przed pomiarem",
         "topSlow": "Z · wolny, dokładny pomiar",
         "topOff": "Z · odsunięcie po pomiarze",
-        "set": "{{pass}}. przejście · {{axis}}: ustawienie za bokiem",
+        "setOut": "{{pass}}. przejście · {{axis}}: ustawienie — za bok, nad wierzchem",
+        "setDown": "{{pass}}. przejście · {{axis}}: ustawienie — w dół przy boku",
         "fast": "{{pass}}. przejście · {{axis}}: szybki dotyk boku",
         "back": "{{pass}}. przejście · {{axis}}: cofnięcie",
         "slow": "{{pass}}. przejście · {{axis}}: wolny pomiar",
@@ -1680,6 +1681,7 @@
         "up": "{{pass}}. przejście · {{axis}}: w górę nad detal"
       },
       "outCode": "G0 za bok, nad wierzchem",
+      "half": "{{size}} / 2",
       "phase": {
         "top": "Z: szukam wierzchu",
         "fast": "{{axis}}: szukam boku",

@@ -36,10 +36,11 @@ const wallFrom = (at, axis, sign) => {
   return setOn(axis, at, sign * reach);
 };
 
-// A set-up's legs, as fractions of its run, each with what it uses: out past the side over the top, and down beside it.
+// A set-up's legs, as fractions of its run, each with what it uses and its own title (rule: a move is one
+// segment with its own title): out past the side over the top, and down beside it.
 export const LEGS = [
-  { name: 'out', from: 0, to: 0.5, uses: ['bossSize', 'clear'] },
-  { name: 'down', from: 0.5, to: 1, uses: ['depth', 'retract'] },
+  { name: 'out', from: 0, to: 0.5, uses: ['bossSize', 'clear'], titleKey: 'probe.boss.move.setOut' },
+  { name: 'down', from: 0.5, to: 1, uses: ['depth', 'retract'], titleKey: 'probe.boss.move.setDown' },
 ];
 
 /** The leg of a set-up under way at `p`. */
@@ -83,7 +84,7 @@ export const build = () => {
           axis, sign, pass, side, out, wall, off, guess: guess[i], way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
         };
         moves[`${side}Set`] = {
-          ...common, kind: 'set', from: at, frames: [[0, at, ABOVE], [0.05, at, ABOVE], [0.5, out, ABOVE, true], [0.95, out, 0, true], [1, out, 0]], end: 1, legs: LEGS, titleKey: 'probe.boss.move.set', uses: ['bossSize', 'clear', 'depth', 'retract'],
+          ...common, kind: 'set', from: at, frames: [[0, at, ABOVE], [0.05, at, ABOVE], [0.5, out, ABOVE, true], [0.95, out, 0, true], [1, out, 0]], end: 1, legs: LEGS, uses: ['bossSize', 'clear', 'depth', 'retract'],
         };
         moves[`${side}Fast`] = {
           ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.boss.move.fast', uses: ['fast'],

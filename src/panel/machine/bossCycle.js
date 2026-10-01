@@ -24,6 +24,7 @@ import {
 } from './bossMoves';
 import { bossSide } from './bossSide';
 import { frameAt, layOut, totalOf } from './timeline';
+import { t } from '../i18n';
 
 const { moves: MOVES, order: ORDER } = build();
 
@@ -31,10 +32,10 @@ const { moves: MOVES, order: ORDER } = build();
 export const bossOrder = (passes = 2) => ORDER.filter((name) => passes !== 1 || MOVES[name].pass !== 2);
 export const moveOf = (name) => MOVES[name];
 
-/** A move's spoken name: `t(key, vars)`. */
-export const titleOf = (name) => {
+/** A move's spoken name at `p`, a set-up's by the leg under way: `t(key, vars)`. */
+export const titleOf = (name, p = 0) => {
   const move = MOVES[name];
-  return [move.titleKey, { pass: move.pass, axis: move.way }];
+  return [move.legs ? legAt(p).titleKey : move.titleKey, { pass: move.pass, axis: move.way }];
 };
 
 const STEPS = ['Set', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
@@ -126,7 +127,7 @@ const TOUCHED = ['back', 'slow', 'up'];
  * by the ball for what goes up and down. `said` a figure's words, `lit(part)`
  * whether the figure being set is that part.
  */
-const above = (move, p, going, said, upTo, lit, reach) => {
+const above = (move, p, going, said, upTo, lit, half) => {
   const arrow = (from, to, kind, feed = null, on = false) => (going
 ? {
     axis: move.axis, from, to, kind, feed, lit: on,
@@ -134,9 +135,15 @@ const above = (move, p, going, said, upTo, lit, reach) => {
 : null);
   switch (move.kind) {
     case 'set': return legAt(p).name === 'out' ? { motion: arrow(move.from, move.out, 'rapid') } : {};
-    // The search goes in no further than the middle thought.
-    // Its reach: half the part's width and the way out past it (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*).
-    case 'fast': return { motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')), limit: { axis: move.axis, from: move.out, to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false } };
+    // The search goes in no further than the middle thought. Its reach is two of the form's figures, so one
+    // dimension split at the part's side, each part its figure (composite rule; L27, to confirm): the way out
+    // past the side, and half the part's width.
+    case 'fast': return {
+      motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')),
+      limit: {
+        axis: move.axis, from: move.out, mid: setOn(move.axis, move.out, move.guess + move.sign * BOSS_R), to: setOn(move.axis, move.out, move.guess), near: said('clear'), far: half, lit: false,
+      },
+    };
     // As the Z plate's: the arrow bare, the way back a dimension with its figure.
     case 'back': return { motion: arrow(move.wall, move.off, 'rapid'), dims: [{ id: 'retract', axis: move.axis, from: move.wall, to: move.off, text: said('retract'), lit: lit('retract') }] };
     // The slow touch, from off the side, with its own feed; it searches twice the back-off, drawn as the two they
@@ -171,7 +178,9 @@ export const bossScene = (name, p, {
     .map((one) => MOVES[one].side))];
   const {
     motion = null, limit = null, reach = null, dims: stepDims = [],
-  } = above(move, p, isGoing(move, p), said, upTo, lit, say('clear', fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear))));
+  } = above(move, p, isGoing(move, p), said, upTo, lit, t('probe.boss.half', { size: said('bossSize') }));
+  // The step's arrow over its whole run, drawn or not: labels keep off it all along (L16).
+  const { motion: way = null } = above(move, p, true, said, upTo, lit, '');
   // The part's rough width, and how far out past it, on a set-up.
   let dims = stepDims;
   if (move.kind === 'set') {
@@ -194,6 +203,7 @@ export const bossScene = (name, p, {
     tool,
     level,
     motion,
+    way,
     limit,
     dims,
     reach,

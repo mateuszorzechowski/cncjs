@@ -1672,7 +1672,8 @@
         "topBack": "Z · back off before measuring",
         "topSlow": "Z · slow, exact measure",
         "topOff": "Z · off after measuring",
-        "set": "Pass {{pass}} · {{axis}}: set up past the side",
+        "setOut": "Pass {{pass}} · {{axis}}: set up — past the side, over the top",
+        "setDown": "Pass {{pass}} · {{axis}}: set up — down beside the side",
         "fast": "Pass {{pass}} · {{axis}}: fast touch of the side",
         "back": "Pass {{pass}} · {{axis}}: back off",
         "slow": "Pass {{pass}} · {{axis}}: slow measure",
@@ -1680,6 +1681,7 @@
         "up": "Pass {{pass}} · {{axis}}: up over the part"
       },
       "outCode": "G0 past the side, over the top",
+      "half": "{{size}} / 2",
       "phase": {
         "top": "Z: looking for the top",
         "fast": "{{axis}}: looking for the side",
