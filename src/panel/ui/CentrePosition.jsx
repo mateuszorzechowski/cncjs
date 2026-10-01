@@ -14,7 +14,8 @@ const DOWN_VIEW = 'side';
 const CentrePosition = ({ cycle }) => {
   const place = cycle.positionAt(useTicker('position'));
   return (
-    <div className={`w-full self-center overflow-hidden rounded-ctl border border-line bg-panel ${cycle.sidePlace ? 'max-w-2xl' : 'max-w-md'}`}>
+    // Not squeezed by a short card: it would cut the drawing off (review note, 2026-10-01).
+    <div className={`w-full shrink-0 self-center overflow-hidden rounded-ctl border border-line bg-panel ${cycle.sidePlace ? 'max-w-2xl' : 'max-w-md'}`}>
       <CentreViews
         cycle={cycle}
         top={place}

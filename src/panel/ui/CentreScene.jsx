@@ -58,7 +58,13 @@ const CentreScene = ({
       return null;
     }
     const w = tagWidth(text, size.fs);
-    return <Tag x={anchor === 'r' ? x - w : x - w / 2} y={y} text={text} face={face} size={size} />;
+    let left = anchor === 'r' ? x - w : x - w / 2;
+    if (anchor === 'l') {
+      left = x;
+    }
+    // Inside the drawing whatever its size: words grow as it shrinks (review note, 2026-10-01: *"są ucinane"*).
+    left = Math.max(VIEW[0] + 2, Math.min(VIEW[0] + VIEW[2] - w - 2, left));
+    return <Tag x={left} y={y} text={text} face={face} size={size} />;
   };
 
   let arrow = null;
@@ -86,7 +92,7 @@ const CentreScene = ({
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
         {/* Down the drawing, the words stand beside the line rather than over it. */}
         {flat ? tag((from + to) / 2, at + 12, limit.text, face) : null}
-        {!flat && !bare && limit.text ? <Tag x={at + 12} y={along(from, to, limit.tagAt)} text={limit.text} face={face} size={size} /> : null}
+        {flat ? null : tag(at + 12, along(from, to, limit.tagAt), limit.text, face, 'l')}
       </g>
     );
   }
@@ -101,7 +107,7 @@ const CentreScene = ({
       <g key={dim.id} opacity={fade(dim.id)}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} lit={dim.lit} size={size} />
         {flat ? tag((from + to) / 2, at + 12, dim.text, face) : null}
-        {!flat && !bare && dim.text ? <Tag x={at + 12} y={along(from, to, dim.tagAt)} text={dim.text} face={face} size={size} /> : null}
+        {flat ? null : tag(at + 12, along(from, to, dim.tagAt), dim.text, face, 'l')}
       </g>
     );
   });
@@ -127,9 +133,6 @@ const CentreScene = ({
           <text x={VIEW[0] + VIEW[2] - 6} y={-6} textAnchor={END} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.corner.zeroY')}</text>
         </g>
       ) : null}
-      {fence}
-      {drawn}
-      {arrow}
       {/* The walls touched before, still: the one under way beats. */}
       {touched.map(([x, y]) => <circle key={`${x} ${y}`} cx={x} cy={sy(y)} r={3 / k} className="fill-grn" opacity={0.6} />)}
       {centre ? <path d={`M${centre[0] - 6} ${sy(centre[1])} H${centre[0] + 6} M${centre[0]} ${sy(centre[1]) - 6} V${sy(centre[1]) + 6}`} className="stroke-mut" strokeWidth={1} vectorEffect={NS} /> : null}
@@ -137,7 +140,11 @@ const CentreScene = ({
       {contact ? <Contact x={contact[0]} y={sy(contact[1])} size={size} /> : null}
       {/* What the ball does up and down, beside it: the top's limit, the way down beside a side. */}
       {/* On the side of the ball towards the middle, so the words stay in the drawing. */}
-      {said && !bare ? <Tag x={cx > 0 ? cx - r - 6 : cx + r + 6} y={cy} text={said.text} right={cx > 0} face={said.lit ? FACE.hot : FACE.plain} size={size} /> : null}
+      {said ? tag(cx > 0 ? cx - r - 6 : cx + r + 6, cy, said.text, said.lit ? FACE.hot : FACE.plain, cx > 0 ? 'r' : 'l') : null}
+      {/* Arrows, dimensions and their words over the ball, never under it (review note, 2026-10-01). */}
+      {fence}
+      {drawn}
+      {arrow}
       {dia && !bare ? (
         <g opacity={dia.lit ? 1 : dia.fade * fade('dim')}>
           <path d={`M${cx - r} ${cy + r + 4} V${cy + r + 14} M${cx + r} ${cy + r + 4} V${cy + r + 14}`} className={dia.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />

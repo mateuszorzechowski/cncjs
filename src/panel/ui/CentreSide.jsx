@@ -46,9 +46,15 @@ const CentreSide = ({
   const cy = -(h + r);
   const right = VIEW[0] + VIEW[2] - 2;
   const left = VIEW[0] + 2;
-  const words = (x, y, text, lit, toLeft = false) => (bare || !text ? null : (
-    <Tag x={toLeft ? x - tagWidth(text, size.fs) : x} y={y} text={text} face={lit ? FACE.hot : FACE.plain} size={size} />
-  ));
+  // Words from `x` rightwards, or leftwards (`toLeft`) — kept inside the drawing whatever its size (review note, 2026-10-01: *"są ucinane"*).
+  const words = (x, y, text, lit, toLeft = false) => {
+    if (bare || !text) {
+      return null;
+    }
+    const w = tagWidth(text, size.fs);
+    const at = Math.max(left, Math.min(right - w, toLeft ? x - w : x));
+    return <Tag x={at} y={y} text={text} face={lit ? FACE.hot : FACE.plain} size={size} />;
+  };
   // Words centred on `x`, kept inside the drawing.
   const centred = (x, y, text, lit) => {
     if (!text) {
@@ -63,12 +69,17 @@ const CentreSide = ({
   let arrow = null;
   if (motion) {
     const flat = motion.dir === 'h';
-    const at = flat ? -(motion.at + r) - ASIDE : motion.at - ASIDE;
+    // A touch across goes under the ball, where the stylus is not; a way over the top above it.
+    const under = flat && motion.kind !== 'rapid';
+    let at = motion.at - ASIDE;
+    if (flat) {
+      at = under ? -motion.at + ASIDE : -(motion.at + 2 * r) - ASIDE / 2;
+    }
     const [from, to] = flat ? [motion.from, motion.to] : [-motion.from, -motion.to];
     arrow = (
       <g opacity={motion.kind === 'rapid' ? 1 : fade(motion.lit ? 'feed' : 'dim')}>
         <Motion axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} kind={motion.kind} size={size} />
-        {flat ? centred((from + to) / 2, at - 10, motion.text, motion.lit) : words(at - 6, (from + to) / 2, motion.text, motion.lit, true)}
+        {flat ? centred((from + to) / 2, under ? at + 10 : at - 10, motion.text, motion.lit) : words(at - 6, (from + to) / 2, motion.text, motion.lit, true)}
       </g>
     );
   }
@@ -92,6 +103,16 @@ const CentreSide = ({
           <text x={4} y={VIEW[1] + size.fs + 4} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.corner.zeroX')}</text>
         </g>
       ) : null}
+      {/* What hides the ball dashes the stylus under the top and the ball, seen through it. */}
+      <path d={`M${along} ${VIEW[1]} V${hidden ? Math.min(0, cy - r) : cy - r}`} className="stroke-ink" strokeWidth={2} vectorEffect={NS} />
+      {hidden ? (
+        <>
+          {cy - r < 0 ? null : <path d={`M${along} 0 V${cy - r}`} className="stroke-ink" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />}
+          <circle cx={along} cy={cy} r={r} fill="none" className="stroke-ink" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
+        </>
+      ) : <circle cx={along} cy={cy} r={r} className="fill-surf stroke-ink" strokeWidth={2} vectorEffect={NS} />}
+      {contact ? <Contact x={contact[0]} y={-contact[1]} size={size} /> : null}
+      {/* Arrows, dimensions and their words over the stylus and the ball, never under them (review note, 2026-10-01: *"strzałki i etykiety są zakryte"*). */}
       {dims.map((dim) => (
         <g key={dim.id} opacity={fade(dim.id)}>
           <Dimension axis={ACROSS} at={-dim.at} from={dim.from} to={dim.to} lit={dim.lit} size={size} />
@@ -111,15 +132,6 @@ const CentreSide = ({
         </g>
       ) : null}
       {arrow}
-      {/* What hides the ball dashes the stylus under the top and the ball, seen through it. */}
-      <path d={`M${along} ${VIEW[1]} V${hidden ? Math.min(0, cy - r) : cy - r}`} className="stroke-ink" strokeWidth={2} vectorEffect={NS} />
-      {hidden ? (
-        <>
-          {cy - r < 0 ? null : <path d={`M${along} 0 V${cy - r}`} className="stroke-ink" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />}
-          <circle cx={along} cy={cy} r={r} fill="none" className="stroke-ink" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
-        </>
-      ) : <circle cx={along} cy={cy} r={r} className="fill-surf stroke-ink" strokeWidth={2} vectorEffect={NS} />}
-      {contact ? <Contact x={contact[0]} y={-contact[1]} size={size} /> : null}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.zPlus')} size={size} />
     </svg>
   );

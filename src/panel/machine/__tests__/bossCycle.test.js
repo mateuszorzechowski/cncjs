@@ -33,16 +33,16 @@ describe('the centre from outside cycle', () => {
     expect(toolAt(side, 0).level).toBeGreaterThan(0);
     expect(toolAt(side, 0.3).at[0]).toBeGreaterThan(BOSS_R);
     expect(toolAt(side, 0.42).level).toBe(0);
-    expect(toolAt(side, 0.62).at).toEqual(side.wall);
+    expect(toolAt(side, 0.55).at).toEqual(side.wall);
     expect(toolAt(side, 1).level).toBeGreaterThan(0);
     expect(['out', 'down', 'touch', 'up'].map((leg, i) => legAt([0.2, 0.35, 0.6, 0.95][i]).name)).toEqual(['out', 'down', 'touch', 'up']);
   });
 
   test('the touch is drawn where the ball meets the part, the top where the ball stands', () => {
-    const at = bossScene('x1p', 0.64);
+    const at = bossScene('x1p', 0.56);
     expect(Math.hypot(...at.contact)).toBeCloseTo(BOSS_R);
     expect(bossScene('x1m', 0.1).touched).toHaveLength(1);
-    expect(bossScene('z', 0.54).contact).toEqual(toolAt(moveOf('z'), 0.54).at);
+    expect(bossScene('z', 0.42).contact).toEqual(toolAt(moveOf('z'), 0.42).at);
     // The first pass ends on the centre.
     expect(toolAt(moveOf('y1c'), 1).at[0]).toBeCloseTo(0);
     expect(toolAt(moveOf('y1c'), 1).at[1]).toBeCloseTo(0);
@@ -69,6 +69,10 @@ describe('the centre from outside cycle', () => {
     expect(bossCode('x1p', TEXTS, 1, 0.2)).toEqual(['probe.boss.outCode']);
     expect(bossCode('x1p', TEXTS, 1, 0.35)).toBe('G38.3 Z-7 F100');
     expect(bossCode('x1p', TEXTS, 1, 0.6)).toBe('G38.2 X-25 F100');
+    // The slow touches: twice the way back, their own feed — drawn too (review note, 2026-10-01).
+    expect(bossCode('x1p', TEXTS, 1, 0.82)).toBe('G38.2 X-4 F20');
+    expect(bossCode('z', TEXTS, 1, 0.8)).toBe('G38.2 Z-4 F20');
+    expect(bossScene('x1p', 0.82, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '20' });
     expect(bossCode('y1m', TEXTS, 1, 0.6)).toBe('G38.2 Y+25 F100');
     expect(bossCode('x1p', TEXTS, 1, 0.95)).toBe('G0 Z+7');
     expect(bossCode('zero', TEXTS, 2)).toBe('G10 L20 P2 X0 Y0');

@@ -15,7 +15,12 @@ export const BOSS_R = 34;
 export const TOOL_R = 8;
 const OUT = BOSS_R + 26;
 // Off the side after a touch, and where the ball starts, off the centre.
-const BACK = 6;
+export const BACK = 6;
+// When in a side's touch, and in the top's, the fast one and the slow one run — the slow longer, as on the machine.
+export const SIDE_FAST_END = 0.55;
+export const SIDE_SLOW = [0.66, 0.86];
+export const TOP_FAST = [0.15, 0.4];
+export const TOP_SLOW = [0.55, 0.86];
 export const START = [9, -6];
 // Heights: where the ball starts, touching the top, just over it, down beside a side.
 const HIGH = 1;
@@ -52,7 +57,7 @@ export const build = () => {
   const moves = {
     z: {
       kind: 'top',
-      frames: [[0, START, HIGH], [0.15, START, HIGH], [0.5, START, ON_TOP, true], [0.58, START, ON_TOP], [0.66, START, ABOVE], [0.74, START, ABOVE], [0.86, START, ON_TOP], [1, START, ABOVE]],
+      frames: [[0, START, HIGH], [TOP_FAST[0], START, HIGH], [TOP_FAST[1], START, ON_TOP, true], [0.45, START, ON_TOP], [0.5, START, ABOVE], [TOP_SLOW[0], START, ABOVE], [TOP_SLOW[1], START, ON_TOP], [1, START, ABOVE]],
       titleKey: 'probe.boss.move.top',
       uses: ['maxZ', 'fast', 'slow', 'retract'],
       end: 1,
@@ -72,8 +77,8 @@ export const build = () => {
         moves[name] = {
           kind: 'side', axis, sign, pass, from: at, out, wall, guess: guess[i], way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
           frames: [
-            [0, at, ABOVE], [0.06, at, ABOVE], [0.3, out, ABOVE, true], [0.42, out, 0, true], [0.62, wall, 0, true], [0.67, wall, 0],
-            [0.72, off, 0], [0.78, off, 0], [0.86, wall, 0], [0.9, off, 0], [1, off, ABOVE, true],
+            [0, at, ABOVE], [0.06, at, ABOVE], [0.3, out, ABOVE, true], [0.42, out, 0, true], [SIDE_FAST_END, wall, 0, true], [0.58, wall, 0],
+            [0.62, off, 0], [SIDE_SLOW[0], off, 0], [SIDE_SLOW[1], wall, 0], [0.9, off, 0], [1, off, ABOVE, true],
           ],
           titleKey: 'probe.boss.move.side',
           uses: LEGS.flatMap((leg) => leg.uses),

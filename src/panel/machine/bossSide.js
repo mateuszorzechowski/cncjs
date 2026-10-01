@@ -1,5 +1,5 @@
 import {
-  ABOVE, BOSS_R, ON_TOP, TOOL_R, legAt, toolAt,
+  ABOVE, BACK, BOSS_R, ON_TOP, SIDE_FAST_END, SIDE_SLOW, TOOL_R, TOP_FAST, TOP_SLOW, legAt, toolAt,
 } from './bossMoves';
 
 /**
@@ -63,9 +63,13 @@ export const bossSide = (move, p, {
     // Into place: a few millimetres over the top, said as the Z plate says it.
     gap = { at: x + r + 12, from: 0, to: h, key: 'probe.position.few' };
   } else if (move.kind === 'top') {
-    if (p > 0.15 && p < 0.5) {
+    if (p > TOP_FAST[0] && p < TOP_FAST[1]) {
       motion = {
         dir: 'v', at: x, from: heightOf(1), to: 0, kind: 'probe', text: upTo(said('maxZ')), lit: focus === 'dim',
+      };
+    } else if (p > TOP_SLOW[0] && p < TOP_SLOW[1]) {
+      motion = {
+        dir: 'v', at: x, from: heightOf(ABOVE), to: 0, kind: 'probe', text: said('slow'), lit: focus === 'feed',
       };
     }
     if (Math.abs(level - ON_TOP) < 0.01) {
@@ -78,24 +82,29 @@ export const bossSide = (move, p, {
       motion = {
         dir: 'h', at: heightOf(ABOVE), from: move.from[0], to: move.out[0], kind: 'rapid',
       };
+    } else if (leg.name === 'down') {
+      motion = {
+        dir: 'v', at: x, from: heightOf(ABOVE), to: heightOf(0), kind: 'probe',
+      };
+    } else if (leg.name === 'touch' && p < SIDE_FAST_END && flat) {
+      motion = {
+        dir: 'h', at: heightOf(0), from: move.out[0], to: move.wall[0], kind: 'probe', text: said('fast'), lit: focus === 'feed',
+      };
+    } else if (p > SIDE_SLOW[0] && p < SIDE_SLOW[1] && flat) {
+      // The slow touch, from off the side, with its own feed (review note, 2026-10-01).
+      motion = {
+        dir: 'h', at: heightOf(0), from: move.wall[0] + move.sign * BACK, to: move.wall[0], kind: 'probe', text: said('slow'), lit: focus === 'feed',
+      };
+    } else if (leg.name === 'up' && p > leg.from) {
+      motion = {
+        dir: 'v', at: x, from: heightOf(0), to: heightOf(ABOVE), kind: 'rapid',
+      };
     }
     // How far out past the part, beside it under the top: on the way out across X, or while set.
     if (flat && (leg.name === 'out' || focus === 'clear')) {
       dims = [{
         id: 'clear', at: -10, from: move.sign * BOSS_R, to: move.out[0], text: said('clear'), lit: focus === 'clear',
       }];
-    } else if (leg.name === 'down') {
-      motion = {
-        dir: 'v', at: x, from: heightOf(ABOVE), to: heightOf(0), kind: 'probe',
-      };
-    } else if (leg.name === 'touch' && p < 0.62 && flat) {
-      motion = {
-        dir: 'h', at: heightOf(0), from: move.out[0], to: move.wall[0], kind: 'probe', text: said('fast'), lit: focus === 'feed',
-      };
-    } else if (leg.name === 'up' && p > leg.from) {
-      motion = {
-        dir: 'v', at: x, from: heightOf(0), to: heightOf(ABOVE), kind: 'rapid',
-      };
     }
     // How far down beside the side, under the top: while it goes down and touches, or while set.
     if (leg.name === 'down' || leg.name === 'touch' || focus === 'depth') {

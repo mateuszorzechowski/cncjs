@@ -18,7 +18,7 @@ describe('the centres from the front', () => {
   });
 
   test('the part: the depth beside the side away from the ball, the touch at the ball\'s side', () => {
-    const side = BOSS_CYCLE.side('x1p', 0.62, { texts: { depth: '5' } });
+    const side = BOSS_CYCLE.side('x1p', 0.56, { texts: { depth: '5' } });
     expect(side.depth).toMatchObject({ text: '5' });
     expect(side.depth.at).toBeLessThan(0);
     expect(side.contact[0]).toBeCloseTo(bossMove('x1p').wall[0] - side.r);

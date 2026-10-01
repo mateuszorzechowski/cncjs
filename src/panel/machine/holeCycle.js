@@ -27,6 +27,9 @@ const BACK = 6;
 const START = [14, -9];
 // How far past the wall a search may go, on the drawing.
 const PAST = 10;
+// When in a touch the fast one runs, and the slow one — longer, as on the machine — back off the wall to it again.
+const FAST = [0.1, 0.4];
+export const SLOW = [0.55, 0.9];
 
 const AXES = ['x', 'y'];
 const clamp = (v) => Math.max(0, Math.min(1, v));
@@ -60,7 +63,7 @@ const build = () => {
         const way = `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`;
         moves[name] = {
           kind: 'touch', axis, sign, pass, from: at, wall, way,
-          frames: [[0, at], [0.15, at], [0.55, wall, true], [0.62, wall], [0.7, off], [0.78, off], [0.9, wall], [1, off]],
+          frames: [[0, at], [FAST[0], at], [FAST[1], wall, true], [0.45, wall], [0.5, off], [SLOW[0], off], [SLOW[1], wall], [1, off]],
           titleKey: 'probe.hole.move.touch',
           uses: ['holeSize', 'fast', 'slow', 'retract'],
           end: 1,
@@ -193,10 +196,14 @@ export const holeScene = (name, p, {
   let motion = null;
   let limit = null;
   if (move.kind === 'touch') {
-    const going = p > 0.15 && p < 0.55;
-    if (going) {
+    if (p > FAST[0] && p < FAST[1]) {
       motion = {
         axis: move.axis, from: move.from, to: move.wall, kind: 'probe', feed: said('fast'), lit: focus === 'feed',
+      };
+    } else if (p > SLOW[0] && p < SLOW[1]) {
+      // The slow touch, from off the wall, with its own feed (review note, 2026-10-01: *"wolny pomiar nie jest pokazywany"*).
+      motion = {
+        axis: move.axis, from: along(move.axis, move.wall, -move.sign * BACK), to: move.wall, kind: 'probe', feed: said('slow'), lit: focus === 'feed',
       };
     }
     limit = {
@@ -227,11 +234,18 @@ export const holeScene = (name, p, {
   };
 };
 
-/** The move's line, with the figures typed; a way to the middle is said in words, `[key]`. */
-export const holeCode = (name, texts, wcs = 1) => {
+const numberOf = (text) => Number(String(text ?? '').replace(',', '.'));
+
+/** The move's line at `p`, with the figures typed; a way to the middle is said in words, `[key]`. */
+export const holeCode = (name, texts, wcs = 1, p = 0) => {
   const move = MOVES[name];
+  const way = `${move.axis?.toUpperCase()}${move.sign > 0 ? '+' : '-'}`;
+  if (move.kind === 'touch' && p > SLOW[0] - 0.08) {
+    // The slow touch goes twice the way back, as the server's `touch` does.
+    return `G38.2 ${way}${2 * numberOf(texts.retract)} F${texts.slow}`;
+  }
   if (move.kind === 'touch') {
-    return `G38.2 ${move.axis.toUpperCase()}${move.sign > 0 ? '+' : '-'}${texts.holeSize} F${texts.fast}`;
+    return `G38.2 ${way}${texts.holeSize} F${texts.fast}`;
   }
   if (move.kind === 'zero') {
     return `G10 L20 P${wcs} X0 Y0`;
@@ -294,7 +308,7 @@ export const holeWords = (phase) => {
 export const HOLE_CYCLE = {
   part: {
     // How much larger the ball is drawn up high than down in the hole (review note, 2026-10-01: *"większa różnica rozmiaru"*).
-    kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2, view: [-101, -94, 202, 188],
+    kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2, view: [-101, -94, 202, 188], fast: FAST, slow: SLOW, back: BACK,
   },
   // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
   side: (name, p, how) => holeSide({ ...MOVES[name], at: toolAt(MOVES[name], p) }, p, how, HOLE_CYCLE.part),

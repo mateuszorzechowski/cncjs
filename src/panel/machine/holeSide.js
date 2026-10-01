@@ -31,9 +31,13 @@ export const holeSide = (move, p, {
     gap = level < 0.01 ? { at: x + r + 12, from: 0, to: h + 2 * r, key: 'probe.position.few' } : null;
   } else if (move.kind === 'touch') {
     const flat = move.axis === 'x';
-    if (flat && p > 0.15 && p < 0.55) {
+    if (flat && p > part.fast[0] && p < part.fast[1]) {
       motion = {
         dir: 'h', at: h, from: move.from[0], to: move.wall[0], kind: 'probe', text: said('fast'), lit: focus === 'feed',
+      };
+    } else if (flat && p > part.slow[0] && p < part.slow[1]) {
+      motion = {
+        dir: 'h', at: h, from: move.wall[0] - move.sign * part.back, to: move.wall[0], kind: 'probe', text: said('slow'), lit: focus === 'feed',
       };
     }
     if (Math.hypot(x - move.wall[0], y - move.wall[1]) < 0.5) {

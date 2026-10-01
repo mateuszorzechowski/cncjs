@@ -36,7 +36,7 @@ describe('the hole centre cycle', () => {
 
   test('a touch ends with the tool off the wall, a way to the middle at the middle of its pair', () => {
     const touch = moveOf('x1p');
-    expect(toolAt(touch, 0.55)).toEqual(touch.wall);
+    expect(toolAt(touch, 0.4)).toEqual(touch.wall);
     expect(toolAt(touch, 1)[0]).toBeLessThan(touch.wall[0]);
     const middle = moveOf('x1c');
     const [a, b] = middle.touches;
@@ -47,7 +47,7 @@ describe('the hole centre cycle', () => {
   });
 
   test('the touch is drawn where the tool\'s edge meets the wall, and stays for the pass', () => {
-    const at = holeScene('x1p', 0.58);
+    const at = holeScene('x1p', 0.42);
     expect(Math.hypot(...at.contact)).toBeCloseTo(HOLE_R);
     expect(holeScene('x1m', 0.2).touched).toHaveLength(1);
     expect(holeScene('x1c', 0.2).touched).toHaveLength(2);
@@ -75,6 +75,9 @@ describe('the hole centre cycle', () => {
 
   test('says each move in G-code as the server runs it', () => {
     expect(holeCode('x1p', TEXTS)).toBe('G38.2 X+20 F100');
+    // The slow touch: twice the way back, its own feed — drawn too (review note, 2026-10-01).
+    expect(holeCode('x1p', TEXTS, 1, 0.85)).toBe('G38.2 X+4 F20');
+    expect(holeScene('x1p', 0.84, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '20' });
     expect(holeCode('y2m', TEXTS)).toBe('G38.2 Y-20 F100');
     expect(holeCode('x1c', TEXTS)).toEqual(['probe.hole.centreCode']);
     expect(holeCode('zero', TEXTS, 2)).toBe('G10 L20 P2 X0 Y0');

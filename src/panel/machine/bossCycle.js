@@ -15,7 +15,7 @@
  */
 
 import {
-  AXES, BOSS_R, LOOP_HOLD_MS, ON_TOP, RUN_MS, SIDE_RUN_MS, SPAN_MS, START, TOOL_R, build, clamp, ease, legAt, setOn, toolAt,
+  AXES, BACK, BOSS_R, LOOP_HOLD_MS, ON_TOP, RUN_MS, SIDE_FAST_END, SIDE_RUN_MS, SIDE_SLOW, SPAN_MS, START, TOOL_R, TOP_SLOW, build, clamp, ease, legAt, setOn, toolAt,
 } from './bossMoves';
 import { bossSide } from './bossSide';
 import { frameAt, layOut, totalOf } from './timeline';
@@ -131,9 +131,14 @@ export const bossScene = (name, p, {
     } else if (leg.name === 'down' || (leg.name === 'up' && p > leg.from)) {
       tag = { text: leg.name === 'down' ? `↓ ${said('depth')}` : '↑', lit: focus === 'depth' };
     } else if (leg.name === 'touch') {
-      if (p > leg.from && p < 0.62) {
+      if (p > leg.from && p < SIDE_FAST_END) {
         motion = {
           axis: move.axis, from: move.out, to: move.wall, kind: 'probe', feed: said('fast'), lit: focus === 'feed',
+        };
+      } else if (p > SIDE_SLOW[0] && p < SIDE_SLOW[1]) {
+        // The slow touch, from off the side, with its own feed (review note, 2026-10-01).
+        motion = {
+          axis: move.axis, from: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] + move.sign * BACK), to: move.wall, kind: 'probe', feed: said('slow'), lit: focus === 'feed',
         };
       }
       // The search goes in no further than the middle thought.
@@ -190,7 +195,7 @@ const fmt = (v) => String(Math.round(v * 1000) / 1000);
 export const bossCode = (name, texts, wcs = 1, p = 0) => {
   const move = MOVES[name];
   if (move.kind === 'top') {
-    return `G38.2 Z-${texts.maxZ} F${texts.fast}`;
+    return p > TOP_SLOW[0] - 0.06 ? `G38.2 Z-${fmt(2 * numberOf(texts.retract))} F${texts.slow}` : `G38.2 Z-${texts.maxZ} F${texts.fast}`;
   }
   if (move.kind === 'side') {
     const leg = legAt(p).name;
@@ -199,6 +204,10 @@ export const bossCode = (name, texts, wcs = 1, p = 0) => {
     const axis = move.axis.toUpperCase();
     if (leg === 'down') {
       return `G38.3 Z-${fmt(down)} F${texts.fast}`;
+    }
+    if (leg === 'touch' && p > SIDE_SLOW[0] - 0.06) {
+      // The slow touch goes twice the way back, as the server's `touch` does.
+      return `G38.2 ${axis}${move.sign > 0 ? '-' : '+'}${fmt(2 * numberOf(texts.retract))} F${texts.slow}`;
     }
     if (leg === 'touch') {
       return `G38.2 ${axis}${move.sign > 0 ? '-' : '+'}${fmt(out)} F${texts.fast}`;
