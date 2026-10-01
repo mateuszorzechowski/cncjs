@@ -89,7 +89,7 @@ const PaperParams = ({
         fills={picked ? fillsAt(items, timeAt(items, name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
-        marked={openGroup ? [...new Set(openGroup.fields.map((field) => MOVED_BY[field]))] : []}
+        marked={openGroup ? [...new Set([...openGroup.fields.map((field) => MOVED_BY[field]), ...(openGroup.surface ? ['zero'] : [])])] : []}
       />
       <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={[[read.axis, read.value]]} />
