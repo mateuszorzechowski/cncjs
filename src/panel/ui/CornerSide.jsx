@@ -84,6 +84,8 @@ const CornerSide = ({
     } else if (anchor === 'r') {
       left = x - w;
     }
+    // Never past the view's edges, however large the words are drawn small (review note, 2026-10-01).
+    left = Math.max(VIEW[0] + 2, Math.min(left, VIEW[0] + VIEW[2] - 2 - w));
     return <Tag key={key} x={flipX && !fixed ? 284 - left - w : left} y={y} text={text} face={face} size={size} />;
   };
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
@@ -128,7 +130,8 @@ const CornerSide = ({
     words.push(<g key="dimt" opacity={fade('dim')}>{tag(190, small ? from - 26 : from - 14, limit ? upTo(figure) : figure, 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
     if (split) {
       geometry.push(<g key="dim2" opacity={fade('dim')}><Dimension at={190} from={to} to={end} limit lit={focus === 'dim'} size={size} /></g>);
-      words.push(<g key="dimt2" opacity={fade('dim')}>{tag(204, end + 8, upTo(`+${figure}`), 'l', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
+      // Under the dashed margin's end, where there is room for it.
+      words.push(<g key="dimt2" opacity={fade('dim')}>{tag(190, end + 16, upTo(`+${figure}`), 'c', focus === 'dim' ? FACE.hot : FACE.plain)}</g>);
     }
     if (gap < 0.3) {
       touch = [C0[0], TOP];
