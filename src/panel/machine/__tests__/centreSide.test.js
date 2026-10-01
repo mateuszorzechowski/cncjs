@@ -17,6 +17,9 @@ describe('the centres from the front', () => {
     expect(BOSS_CYCLE.side('x1pSet', 0.7).motion).toMatchObject({ dir: 'v', kind: 'probe' });
     expect(BOSS_CYCLE.side('x1pSlow', 0.4).motion).toMatchObject({ dir: 'h', kind: 'probe' });
     expect(BOSS_CYCLE.side('zBack', 0.4).motion).toMatchObject({ dir: 'v', kind: 'rapid' });
+    // The top's back-off and slow reach as the Z plate's: the way back, then back to the top and the margin past it.
+    expect(BOSS_CYCLE.side('zBack', 0.4, { texts: { retract: '2' } }).vdims).toEqual([expect.objectContaining({ text: '2' })]);
+    expect(BOSS_CYCLE.side('zSlow', 0.4, { texts: { retract: '2' } }).vdims.map((dim) => [dim.text, Boolean(dim.limit)])).toEqual([['2', false], ['2', true]]);
   });
 
   test('the part: the depth beside the side away from the ball, the touch at the ball\'s side', () => {

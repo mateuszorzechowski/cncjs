@@ -122,7 +122,7 @@ const TOUCHED = ['back', 'slow', 'up'];
  * by the ball for what goes up and down. `said` a figure's words, `lit(part)`
  * whether the figure being set is that part.
  */
-const above = (move, p, going, said, upTo, lit) => {
+const above = (move, p, going, said, upTo, lit, { reach, rise }) => {
   const arrow = (from, to, kind, feed = null, on = false) => (going
 ? {
     axis: move.axis, from, to, kind, feed, lit: on,
@@ -134,7 +134,8 @@ const above = (move, p, going, said, upTo, lit) => {
     case 'topSlow': return { tag: { text: `↓ ${said('slow')}`, lit: lit('feed') } };
     case 'set': return legAt(p).name === 'out' ? { motion: arrow(move.from, move.out, 'rapid') } : { tag: { text: `↓ ${said('depth')}`, lit: lit('depth') } };
     // The search goes in no further than the middle thought.
-    case 'fast': return { motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')), limit: { axis: move.axis, from: move.out, to: setOn(move.axis, move.out, move.guess), lit: false } };
+    // Its reach: half the part's width and the way out past it (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*).
+    case 'fast': return { motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')), limit: { axis: move.axis, from: move.out, to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false } };
     // As the Z plate's: the arrow bare, the way back a dimension with its figure.
     case 'back': return { motion: arrow(move.wall, move.off, 'rapid'), dims: [{ id: 'retract', axis: move.axis, from: move.wall, to: move.off, text: said('retract'), lit: lit('retract') }] };
     // The slow touch, from off the side, with its own feed; it searches twice the back-off, drawn as the two they
@@ -147,7 +148,7 @@ const above = (move, p, going, said, upTo, lit) => {
         axis: move.axis, from: move.wall, to: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] - move.sign * BACK), text: upTo(said('retract')), lit: lit('retract'), tagAt: 1.6, row: 1,
       },
     };
-    case 'up': return { tag: { text: '↑', lit: false } };
+    case 'up': return { tag: { text: `↑ ${rise}`, lit: false } };
     case 'centre': return { motion: arrow(move.from, move.to, 'rapid') };
     default: return {};
   }
@@ -172,7 +173,10 @@ export const bossScene = (name, p, {
     .map((one) => MOVES[one].side))];
   const {
     motion = null, limit = null, tag = null, dims: stepDims = [],
-  } = above(move, p, isGoing(move, p), said, upTo, lit);
+  } = above(move, p, isGoing(move, p), said, upTo, lit, {
+    reach: say('clear', fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear))),
+    rise: say('depth', fmt(numberOf(texts.depth) + numberOf(texts.retract))),
+  });
   // The part's rough width, and how far out past it, on a set-up.
   let dims = stepDims;
   if (move.kind === 'set') {

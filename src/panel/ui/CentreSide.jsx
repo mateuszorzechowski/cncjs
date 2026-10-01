@@ -36,7 +36,7 @@ const ASIDE = 16;
 const BESIDE = 13;
 
 const CentreSide = ({
-  part, along, r, hidden = false, h, motion = null, depth = null, gap = null, dims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
+  part, along, r, hidden = false, h, motion = null, depth = null, gap = null, dims = [], vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
   const [measure, k] = useViewScale(VIEW[2], VIEW[3]);
@@ -119,6 +119,13 @@ const CentreSide = ({
         <g key={dim.id} opacity={fade(dim.id)}>
           <Dimension axis={ACROSS} at={-dim.at} from={dim.from} to={dim.to} lit={dim.lit} size={size} />
           {centred((dim.from + dim.to) / 2, -dim.at + off.dim, dim.text, dim.lit)}
+        </g>
+      ))}
+      {/* Up and down the drawing, as the Z plate's: a way, or a limit dashed, its words beside it. */}
+      {vdims.map((dim) => (
+        <g key={dim.id} opacity={fade(dim.lit ? dim.id : 'retract')}>
+          <Dimension axis={ALONG} at={dim.at} from={-dim.from} to={-dim.to} limit={dim.limit} lit={dim.lit} size={size} />
+          {besideV(dim.at, -(dim.from + dim.to) / 2, dim.text, dim.lit)}
         </g>
       ))}
       {depth ? (
