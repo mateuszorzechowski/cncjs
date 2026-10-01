@@ -98,11 +98,14 @@ const MoveBar = ({
         const playing = moves.some((move) => move.id === active);
         const parts = moves.flatMap((move) => Array.from({ length: move.parts }, (_, i) => fillOf(move.id, i)));
         const done = parts.reduce((all, one) => all + one, 0) / parts.length;
+        // A stage picked whole, or — dotted — its first move dotted (review note, 2026-10-01).
+        const dotted = moves.find((move) => marked.includes(move.id));
+        const stage = () => onPick(dotted ? [dotted.id] : moves.map((move) => move.id));
         return (
           <div key={group.id} className={`relative flex min-w-0 flex-col gap-0.5 overflow-hidden transition-[flex-grow] duration-500 ease-out ${playing ? 'flex-[6_6_0]' : 'flex-[1_1_0]'}`}>
             {/* A stage with no name of its own keeps the line, so its bars stand level with the others'. */}
             {/* Its name goes to the stage folded or open, so a press on it never falls on a dead button and takes a field's focus. */}
-            <button type={BUTTON} disabled={!onPick} onClick={() => onPick(moves.map((move) => move.id))} className={`truncate text-left text-note ${playing ? 'font-semibold text-acc' : 'text-mut'} ${group.name && !(group.folded && playing) ? '' : 'invisible'}`}>{group.name || NO_NAME}</button>
+            <button type={BUTTON} disabled={!onPick} onClick={stage} className={`truncate text-left text-note ${playing ? 'font-semibold text-acc' : 'text-mut'} ${group.name && !(group.folded && playing) ? '' : 'invisible'}`}>{group.name || NO_NAME}</button>
             <div aria-hidden={!playing} className={`flex gap-2 transition-opacity duration-300 ${playing ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
               {group.subs.map((sub) => {
                 const on = sub.moves.some((move) => move.id === active);
@@ -126,7 +129,7 @@ const MoveBar = ({
               })}
             </div>
             {/* Folded: the stage as one bar, how far through it the cycle is; a tap goes to the stage. */}
-            <button type={BUTTON} disabled={!onPick || playing} onClick={() => onPick(moves.map((move) => move.id))} aria-label={group.name || moves[0].label} className={`absolute inset-x-0 bottom-0 flex h-9 items-center border-b-2 transition-opacity duration-300 ${moves.some((move) => chosen(move.id)) ? 'border-acc' : 'border-transparent'} ${playing ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+            <button type={BUTTON} disabled={!onPick || playing} onClick={stage} aria-label={group.name || moves[0].label} className={`absolute inset-x-0 bottom-0 flex h-9 items-center border-b-2 transition-opacity duration-300 ${moves.some((move) => chosen(move.id)) ? 'border-acc' : 'border-transparent'} ${playing ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
               {moves.some((move) => marked.includes(move.id)) ? <Dot /> : null}
               <Bar on={false} fill={done} />
             </button>
