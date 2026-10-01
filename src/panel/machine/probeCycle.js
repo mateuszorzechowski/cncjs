@@ -1,6 +1,6 @@
 /**
  * The Z plate's cycle as its drawing moves through it — the design's proposal
- * (`templates/probe-z-proposal`, Claude Design, 2026-09-30): four moves in
+ * (`templates/probe-z-proposal`, Claude Design, 2026-09-30): its moves in
  * two stages, each drawn by one rule — on the left the move's arrow with its
  * feed, on the right a grey dimension with the figure from the form.
  *
@@ -101,11 +101,20 @@ const MOVES = {
     code: (v) => [`G38.2 Z-${number(v.retract) * 2} F${v.slow}`],
     uses: ['slow', 'retract'],
   },
+  // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01).
+  off: {
+    frames: [[0, 0], [0.2, 0], [0.55, BACK, true], [1, BACK]],
+    from: 0, to: BACK, kind: 'rapid', feed: null,
+    dim: { top: TOP - BACK, bottom: TOP, field: 'retract' },
+    titleKey: 'probe.plate.off',
+    code: (v) => [`G0 Z+${v.retract}`],
+    uses: ['retract'],
+  },
   // The zero written at the touch, and the lift off the plate after it: two
   // moves, two segments of the bar (review note, 2026-09-30).
   zero: {
-    frames: [[0, 0], [1, 0]],
-    from: 0, to: 0, kind: null, feed: null, zeroAt: [0.25, 0.45],
+    frames: [[0, BACK], [1, BACK]],
+    from: BACK, to: BACK, kind: null, feed: null, zeroAt: [0.25, 0.45],
     dim: { top: TOP, bottom: TOP + 14, field: 'plateThickness' },
     titleKey: 'probe.plate.zero',
     code: (v, wcs, surface) => [`G10 L20 P${wcs} Z${fmt(number(v.plateThickness) + overSurface(surface, number(v.stockThickness)))}`],
@@ -113,13 +122,14 @@ const MOVES = {
     after: true,
   },
   lift: {
-    frames: [[0, 0], [0.2, 0], [0.6, LIFT, true], [1, LIFT]],
-    from: 0, to: LIFT, kind: 'rapid', feed: null,
+    frames: [[0, BACK], [0.2, BACK], [0.6, LIFT, true], [1, LIFT]],
+    from: BACK, to: LIFT, kind: 'rapid', feed: null,
     // The zero is written by now: its line stays.
     zeroAt: [-1, 0],
+    // The lift is over the touch (`liftOver`), so its dimension is; from the back-off it is the rest.
     dim: { top: TOP - LIFT, bottom: TOP, field: 'lift' },
     titleKey: 'probe.plate.lift',
-    code: (v) => [`G0 Z+${v.lift}`],
+    code: (v) => [`G0 Z+${fmt(number(v.lift) - number(v.retract))}`],
     uses: ['lift'],
     after: true,
   },
@@ -138,7 +148,7 @@ const MOVES = {
  * The whole cycle's moves in order, grouped as the bar under the drawing
  * shows them: the stage (Z, then the zero) and within it the step.
  */
-export const PLATE_ORDER = ['fast', 'retract', 'slow', 'zero', 'lift'];
+export const PLATE_ORDER = ['fast', 'retract', 'slow', 'off', 'zero', 'lift'];
 
 /*
  * Z being the one axis, its steps are the stages themselves — no Z above
@@ -147,7 +157,7 @@ export const PLATE_ORDER = ['fast', 'retract', 'slow', 'zero', 'lift'];
  */
 export const PLATE_GROUPS = [
   { id: 'search', key: 'probe.stage.search', folded: true, subs: [{ key: 'probe.stage.search', moves: ['fast'] }] },
-  { id: 'measure', key: 'probe.bar.measure', folded: true, subs: [{ key: 'probe.bar.measure', moves: ['retract', 'slow'] }] },
+  { id: 'measure', key: 'probe.bar.measure', folded: true, subs: [{ key: 'probe.bar.measure', moves: ['retract', 'slow', 'off'] }] },
   { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
 ];
 
@@ -249,7 +259,7 @@ export const plateScene = (name, p, {
     const mid = (dim.top + dim.bottom) / 2;
     dimText = said(dim.split);
     beyond = {
-      top: mid, bottom: dim.bottom, limit: true, text: upTo(`+${said(dim.split)}`),
+      top: mid, bottom: dim.bottom, limit: true, text: upTo(said(dim.split)),
     };
   } else if (dim) {
     const figure = said(dim.field);
@@ -270,9 +280,8 @@ export const plateScene = (name, p, {
       top: dim.top, bottom: beyond ? beyond.top : dim.bottom, limit: Boolean(dim.limit), text: dimText, beyond,
     } : null,
     motion,
-    // The feed is said by the arrow's colour alone while a dimension is
-    // drawn; its figure comes up only when it is the one being set.
-    feedTag: Boolean(motion?.feed && (focus || !dim)),
+    // An arrow carries its feed, always (rules in `ui/probeDraw`).
+    feedTag: Boolean(motion?.feed),
     zero,
     contact: !move.miss && gap < 0.5,
     ghost: Boolean(move.miss),
@@ -334,6 +343,7 @@ const PHASE_MOVE = {
   'z-back': 'retract',
   'z-settle': 'retract',
   z: 'slow',
+  'z-off': 'off',
   lift: 'lift',
 };
 

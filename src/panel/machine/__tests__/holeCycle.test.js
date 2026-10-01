@@ -10,7 +10,7 @@ const TEXTS = {
   holeSize: '20', ballDiameter: '6', retract: '2', fast: '100', slow: '20',
 };
 
-const STEPS = ['Fast', 'Back', 'Slow'];
+const STEPS = ['Fast', 'Back', 'Slow', 'Off'];
 const sideSteps = (side) => STEPS.map((step) => `${side}${step}`);
 
 describe('the hole centre cycle', () => {
@@ -18,7 +18,7 @@ describe('the hole centre cycle', () => {
     expect(holeOrder(1)).toEqual([
       ...sideSteps('x1p'), ...sideSteps('x1m'), 'x1c', ...sideSteps('y1p'), ...sideSteps('y1m'), 'y1c', 'zero',
     ]);
-    expect(holeOrder()).toHaveLength(2 * 14 + 1);
+    expect(holeOrder()).toHaveLength(2 * 18 + 1);
   });
 
   test('the bar: a stage per axis and pass, a wall\'s steps each, the middle; every move once', () => {
@@ -61,9 +61,8 @@ describe('the hole centre cycle', () => {
     expect(holeScene('x1pBack', 0.4, { texts: TEXTS }).dims).toEqual([expect.objectContaining({ id: 'retract', text: '2' })]);
     // The slow touch: its feed, and its reach — twice the back-off — as a limit.
     expect(holeScene('x1pSlow', 0.4, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '20' });
-    // Back to the wall, and the margin past it: the back-off each, as the Z plate's.
-    expect(holeScene('x1pSlow', 0.4, { texts: TEXTS }).dims).toEqual([expect.objectContaining({ id: 'retract', text: '2' })]);
-    expect(holeScene('x1pSlow', 0.4, { texts: TEXTS }).limit).toMatchObject({ text: '2' });
+    // One reach: back to the wall, and the margin past it — the back-off each.
+    expect(holeScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ near: '2', far: '2' });
     expect(holeScene('zero', 0.5).motion).toBeNull();
   });
 

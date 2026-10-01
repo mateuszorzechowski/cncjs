@@ -11,29 +11,36 @@ describe('the centres from the front', () => {
     // Down beside the back side (+Y): hidden; beside the front: not.
     expect(BOSS_CYCLE.side('y1pFast', 0.5).hidden).toBe(true);
     expect(BOSS_CYCLE.side('y1mFast', 0.5).hidden).toBe(false);
-    // A way along Y has no arrow; across X, and up and down, it has.
+    // From the side, Z moves only (the animation rules): X and Y are the view from above's.
     expect(BOSS_CYCLE.side('y1pFast', 0.5).motion).toBeNull();
-    expect(BOSS_CYCLE.side('x1pSet', 0.2).motion).toMatchObject({ dir: 'h', kind: 'rapid' });
-    expect(BOSS_CYCLE.side('x1pSet', 0.7).motion).toMatchObject({ dir: 'v', kind: 'probe' });
-    expect(BOSS_CYCLE.side('x1pSlow', 0.4).motion).toMatchObject({ dir: 'h', kind: 'probe' });
-    expect(BOSS_CYCLE.side('zBack', 0.4).motion).toMatchObject({ dir: 'v', kind: 'rapid' });
+    expect(BOSS_CYCLE.side('x1pFast', 0.5).motion).toBeNull();
+    expect(BOSS_CYCLE.side('x1pSet', 0.2).motion).toBeNull();
+    expect(BOSS_CYCLE.side('x1pSet', 0.7, { texts: { fast: '50' } }).motion).toMatchObject({ dir: 'v', kind: 'probe', text: '50' });
+    // A G0 bare, its distance a dimension beside it.
+    expect(BOSS_CYCLE.side('zBack', 0.4).motion).toMatchObject({ dir: 'v', kind: 'rapid', text: null });
+    expect(BOSS_CYCLE.side('x1pUp', 0.5, { texts: { depth: '5', retract: '2' } })).toMatchObject({ motion: { kind: 'rapid', text: null }, vdims: [{ id: 'retract', text: '2' }, { id: 'depth', text: '5' }] });
+    // The top's search: its feed on the arrow, its reach a dashed dimension.
+    expect(BOSS_CYCLE.side('zFast', 0.5, { texts: { fast: '50', maxZ: '20' } })).toMatchObject({ motion: { text: '50' }, vdims: [{ id: 'reach', text: '20', limit: true }] });
     // The top's back-off and slow reach as the Z plate's: the way back, then back to the top and the margin past it.
     expect(BOSS_CYCLE.side('zBack', 0.4, { texts: { retract: '2' } }).vdims).toEqual([expect.objectContaining({ text: '2' })]);
-    expect(BOSS_CYCLE.side('zSlow', 0.4, { texts: { retract: '2' } }).vdims.map((dim) => [dim.text, Boolean(dim.limit)])).toEqual([['2', false], ['2', true]]);
+    expect(BOSS_CYCLE.side('zSlow', 0.4, { texts: { retract: '2' } }).vdims).toEqual([expect.objectContaining({ id: 'reach', text: '2', far: '2' })]);
   });
 
-  test('the part: the depth beside the side away from the ball, the touch at the ball\'s side', () => {
-    const side = BOSS_CYCLE.side('x1pFast', 1, { texts: { depth: '5' } });
-    expect(side.depth).toMatchObject({ text: '5' });
-    expect(side.depth.at).toBeLessThan(0);
+  test('the part: down beside a side one dimension split at the top, beside the ball away from its arrow; the touch at the ball\'s side', () => {
+    const down = BOSS_CYCLE.side('x1pSet', 0.7, { texts: { depth: '5', retract: '2' } });
+    expect(down.vdims.map((dim) => [dim.id, dim.text])).toEqual([['retract', '2'], ['depth', '5']]);
+    expect(down.vdims[0].to).toBe(0);
+    expect(down.vdims[1].from).toBe(0);
+    expect(down.vdims[0].at).toBeGreaterThan(down.along);
+    const side = BOSS_CYCLE.side('x1pFast', 1);
+    expect(side.vdims).toEqual([]);
     expect(side.contact[0]).toBeCloseTo(bossMove('x1pFast').wall[0] - side.r);
   });
 
   test('the hole: cut through, the ball in it seen; a few millimetres once in place', () => {
     expect(HOLE_CYCLE.side('x1pFast', 0.3).hidden).toBeFalsy();
-    expect(HOLE_CYCLE.side('x1pFast', 0.3).motion).toMatchObject({ dir: 'h', kind: 'probe' });
-    expect(HOLE_CYCLE.side('x1pBack', 0.4).motion).toMatchObject({ dir: 'h', kind: 'rapid' });
-    expect(HOLE_CYCLE.side('y1pFast', 0.3).motion).toBeNull();
+    // No Z moves in a hole: no arrows from the side (the animation rules).
+    expect(HOLE_CYCLE.side('x1pFast', 0.3).motion).toBeUndefined();
     expect(HOLE_CYCLE.sidePlace({ tool: [0, 0], level: 1 }).gap).toBeNull();
     expect(HOLE_CYCLE.sidePlace({ tool: [0, 0], level: 0 }).gap).toMatchObject({ key: 'probe.position.few' });
     expect(BOSS_CYCLE.sidePlace({ tool: [0, 0], level: 1 }).gap).toMatchObject({ key: 'probe.position.few' });

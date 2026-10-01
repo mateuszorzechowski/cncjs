@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, Tag, WorkHatch, kit, tagWidth,
+  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, ReachDimension, Tag, WorkHatch, kit, tagWidth,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
@@ -36,15 +36,14 @@ const sy = (y) => -y;
 /*
  * Where a dimension down the drawing has its words: half way, or `at` of
  * the way from its start — off the middle, where the touches across X sit,
- * or past its end (over 1), apart from the words of the one it continues.
- * Across the drawing the same is a second row (`row`).
+ * or past its end (over 1), apart from the words it continues.
  */
 const along = (from, to, at = 0.5) => from + (to - from) * at;
 
 const BOSS = 'boss';
 
 const CentreScene = ({
-  part, tool, level = 0, motion = null, limit = null, dims = [], tag: said = null, touched = [], contact = null, centre = null, zero = 0, dia = null, focus = null,
+  part, tool, level = 0, motion = null, limit = null, dims = [], reach = null, touched = [], contact = null, centre = null, zero = 0, dia = null, focus = null,
   bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
@@ -96,7 +95,7 @@ const CentreScene = ({
       <g opacity={fade('dim')}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
         {/* Down the drawing, the words stand beside the line rather than over it. */}
-        {flat ? tag((from + to) / 2, at + gap.dim + (limit.row ? gap.row : 0), limit.text, face) : null}
+        {flat ? tag((from + to) / 2, at + gap.dim, limit.text, face) : null}
         {flat ? null : tag(at + 13, along(from, to, limit.tagAt), limit.text, face, 'l')}
       </g>
     );
@@ -117,9 +116,23 @@ const CentreScene = ({
     );
   });
 
+  // A slow touch's reach: one line from off the wall past it, its two figures apart.
+  let reaching = null;
+  if (reach) {
+    const flat = reach.axis === 'x';
+    const at = flat ? sy(reach.from[1]) + ASIDE : reach.from[0] + ASIDE;
+    const [from, mid, to] = flat ? [reach.from[0], reach.mid[0], reach.to[0]] : [sy(reach.from[1]), sy(reach.mid[1]), sy(reach.to[1])];
+    const face = reach.lit ? FACE.hot : FACE.plain;
+    reaching = (
+      <g opacity={fade('retract')}>
+        <ReachDimension axis={flat ? ACROSS : ALONG} at={at} from={from} mid={mid} to={to} lit={reach.lit} size={size} />
+        {flat ? tag((from + mid) / 2, at + gap.dim, reach.near, face) : tag(at + 13, along(from, mid, 0.15), reach.near, face, 'l')}
+        {flat ? tag((mid + to) / 2, at + gap.dim + gap.row, reach.far, face) : tag(at + 13, along(mid, to, 1.6), reach.far, face, 'l')}
+      </g>
+    );
+  }
+
   const boss = part.kind === BOSS;
-  // The words by the ball go left when it is right of the middle, or when dimensions down the drawing stand to its right.
-  const toLeft = cx > 0 || dims.some((dim) => dim.axis === 'y') || limit?.axis === 'y';
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />
@@ -145,12 +158,10 @@ const CentreScene = ({
       {centre ? <path d={`M${centre[0] - 6} ${sy(centre[1])} H${centre[0] + 6} M${centre[0]} ${sy(centre[1]) - 6} V${sy(centre[1]) + 6}`} className="stroke-mut" strokeWidth={1} vectorEffect={NS} /> : null}
       <circle cx={cx} cy={cy} r={r} className="fill-surf stroke-ink" strokeWidth={2} vectorEffect={NS} />
       {contact ? <Contact x={contact[0]} y={sy(contact[1])} size={size} /> : null}
-      {/* What the ball does up and down, beside it: the top's limit, the way down beside a side. */}
-      {/* On the side of the ball towards the middle, so the words stay in the drawing. */}
-      {said ? tag(toLeft ? cx - r - 6 : cx + r + 6, cy, said.text, said.lit ? FACE.hot : FACE.plain, toLeft ? 'r' : 'l') : null}
       {/* Arrows, dimensions and their words over the ball, never under it (review note, 2026-10-01). */}
       {fence}
       {drawn}
+      {reaching}
       {arrow}
       {dia && !bare ? (
         <g opacity={dia.lit ? 1 : dia.fade * fade('dim')}>

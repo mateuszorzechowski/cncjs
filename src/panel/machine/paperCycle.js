@@ -275,9 +275,11 @@ export const paperScene = (name, p, {
     // The jog: from where the steps began down to the tip, a tick a step.
     // Each step is one press of a jog key (review note, 2026-10-01): the key, lit as it is pressed.
     click: clickOf(name, p, edge),
-    // The lift: a rapid off the surface, its figure beside it.
+    // The lift: a rapid off the surface, bare; its way a dimension on the other side.
     motion: name === 'lift' && gap > 0.6 && gap < LIFT + 0.4 ? { from: SHEET_Y - 0.5, to: SHEET_Y - gap, kind: 'rapid' } : null,
-    lift: name === 'lift' ? { text: say('paperLift', texts.paperLift ?? ''), lit: focus === 'paperLift' } : null,
+    lift: name === 'lift' ? {
+      text: say('paperLift', texts.paperLift ?? ''), lit: focus === 'paperLift', top: SHEET_Y - 0.5 - LIFT, bottom: SHEET_Y - 0.5,
+    } : null,
     jog: name === 'coarse' && gap < HIGH ? { from: HIGH, to: gap, every: STEP } : null,
     fine: name === 'fine' && gap < NEAR ? { from: NEAR, to: gap, every: FINE } : null,
     zero,

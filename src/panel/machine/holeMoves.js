@@ -61,9 +61,13 @@ export const build = () => {
           ...common, kind: 'back', from: wall, frames: [[0, wall], [0.15, wall], [0.7, off, true], [1, off]], end: 0.7, titleKey: 'probe.hole.move.back', uses: ['retract'],
         };
         moves[`${side}Slow`] = {
-          ...common, kind: 'slow', from: off, frames: [[0, off], [0.1, off], [0.7, wall], [0.78, wall], [1, off, true]], end: 1, titleKey: 'probe.hole.move.slow', uses: ['slow', 'retract'],
+          ...common, kind: 'slow', from: off, frames: [[0, off], [0.1, off], [0.7, wall], [1, wall]], end: 0.7, titleKey: 'probe.hole.move.slow', uses: ['slow', 'retract'],
         };
-        order.push(`${side}Fast`, `${side}Back`, `${side}Slow`);
+        // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01).
+        moves[`${side}Off`] = {
+          ...common, kind: 'back', from: wall, frames: [[0, wall], [0.15, wall], [0.7, off, true], [1, off]], end: 0.7, titleKey: 'probe.hole.move.off', uses: ['retract'],
+        };
+        order.push(`${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Off`);
         walls.push(wall);
         at = off;
       });

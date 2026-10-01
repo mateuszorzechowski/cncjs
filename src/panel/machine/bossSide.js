@@ -23,9 +23,6 @@ const HEIGHTS = [[0, -26], [ON_TOP, 0], [ABOVE, 18], [1, 40], [2, 80]];
 const REACH = BOSS_R + 26;
 const NEARER = 0.3;
 
-const numberOf = (text) => Number(String(text ?? '').replace(',', '.'));
-const fmt = (v) => String(Math.round(v * 1000) / 1000);
-
 /** How high the ball's bottom is at `level`. */
 export const heightOf = (level) => {
   for (let i = 0; i < HEIGHTS.length - 1; i++) {
@@ -42,35 +39,48 @@ export const heightOf = (level) => {
 export const scaleAt = (y) => 1 - NEARER * Math.max(-1, Math.min(1, y / REACH));
 
 /*
- * Each step's arrow from the front, while it goes: up or down at the ball,
- * or across X at a height — a way along Y has none, it only nears. `said` a
- * figure's words, `lit(part)` whether the figure being set is that part.
+ * Each step's arrow from the front, while it goes: Z moves only, up or down
+ * at the ball — X and Y are drawn from above (the animation rules). An
+ * arrow carries its feed; a G0 nothing.
  */
-const arrowOf = (move, p, x, said, upTo, lit, rise) => {
-  const flat = move.axis === 'x';
+const arrowOf = (move, p, x, said, lit) => {
   const v = (from, to, kind, text = null, on = false) => ({
     dir: 'v', at: x, from: heightOf(from), to: heightOf(to), kind, text, lit: on,
   });
-  const h = (from, to, kind, text = null, on = false) => (flat ? {
-    dir: 'h', at: heightOf(0), from: from[0], to: to[0], kind, text, lit: on,
-  } : null);
   switch (move.kind) {
-    case 'topFast': return v(1, ON_TOP, 'probe', upTo(said('maxZ')), lit('dim'));
-    // The arrow bare: its figure is the dimension beside it, as the Z plate's.
+    case 'topFast': return v(1, ON_TOP, 'probe', said('fast'), lit('feed'));
     case 'topBack': return v(ON_TOP, ABOVE, 'rapid');
     case 'topSlow': return v(ABOVE, ON_TOP, 'probe', said('slow'), lit('feed'));
-    case 'set':
-      if (legAt(p).name === 'down') {
-        return v(ABOVE, 0, 'probe');
-      }
-      return flat ? {
-        dir: 'h', at: heightOf(ABOVE), from: move.from[0], to: move.out[0], kind: 'rapid', over: true,
-      } : null;
-    case 'fast': return h(move.out, move.wall, 'probe', said('fast'), lit('feed'));
-    case 'back': return h(move.wall, move.off, 'rapid');
-    case 'slow': return h(move.off, move.wall, 'probe', said('slow'), lit('feed'));
-    case 'up': return v(0, ABOVE, 'rapid', rise);
+    case 'set': return legAt(p).name === 'down' ? v(ABOVE, 0, 'probe', said('fast'), lit('feed')) : null;
+    case 'up': return v(0, ABOVE, 'rapid');
     default: return null;
+  }
+};
+
+/*
+ * Each Z step's distances beside the ball, on the other side from its arrow:
+ * the top's search reach, its back-off, the slow touch's way to the top and
+ * its margin past it; down beside a side and up again, the back-off over the
+ * top and the depth under it — one dimension split at the top, a figure each
+ * (rule, Mateusz 2026-10-01).
+ */
+const distancesOf = (move, p, beside, said, upTo, lit) => {
+  const one = (id, from, to, text, on, limit = false) => ({
+    id, at: beside, from, to, text, lit: on, limit,
+  });
+  const parts = () => [
+    one('retract', heightOf(ABOVE), 0, said('retract'), lit('retract')),
+    one('depth', 0, heightOf(0), said('depth'), lit('depth')),
+  ];
+  switch (move.kind) {
+    case 'topFast': return [one('reach', heightOf(1), -14, upTo(said('maxZ')), lit('dim'), true)];
+    case 'topBack': return [one('retract', 0, heightOf(ABOVE), said('retract'), lit('retract'))];
+    case 'topSlow': return [{
+      id: 'reach', at: beside, from: heightOf(ABOVE), mid: 0, to: -heightOf(ABOVE), text: said('retract'), far: upTo(said('retract')), lit: lit('retract'),
+    }];
+    case 'set': return legAt(p).name === 'down' || lit('depth') ? parts() : [];
+    case 'up': return parts();
+    default: return [];
   }
 };
 
@@ -91,28 +101,9 @@ export const bossSide = (move, p, {
   const lit = (part) => focus === part;
   // Behind the part, under its top: hidden.
   const hidden = y > 0 && h < 0 && Math.abs(x) < BOSS_R + r;
-  const rise = say('depth', fmt(numberOf(texts.depth) + numberOf(texts.retract)));
-  const motion = move.kind !== 'place' && isGoing(move, p) ? arrowOf(move, p, x, said, upTo, lit, rise) : null;
-  // The top's back-off and slow reach as the Z plate draws them: the way back, and the slow touch's way to the top and its margin past it.
-  let vdims = [];
-  const beside = x + r + 14;
-  if (move.kind === 'topBack') {
-    vdims = [{
-      id: 'retract', at: beside, from: 0, to: heightOf(ABOVE), text: said('retract'), lit: lit('retract'),
-    }];
-  } else if (move.kind === 'topSlow') {
-    vdims = [
-      {
-        id: 'retract', at: beside, from: heightOf(ABOVE), to: 0, text: said('retract'), lit: lit('retract'),
-      },
-      {
-        id: 'margin', at: beside, from: 0, to: -heightOf(ABOVE), text: upTo(said('retract')), lit: lit('retract'), limit: true,
-      },
-    ];
-  }
-  let depth = null;
+  const motion = move.kind !== 'place' && isGoing(move, p) ? arrowOf(move, p, x, said, lit) : null;
+  const vdims = move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit);
   let gap = null;
-  let dims = [];
   let contact = null;
   if (move.kind === 'place') {
     // Into place: a few millimetres over the top, said as the Z plate says it.
@@ -120,19 +111,6 @@ export const bossSide = (move, p, {
     gap = level <= 1.001 ? {
       at: x + r + 12, from: 0, to: heightOf(1), key: 'probe.position.few',
     } : null;
-  }
-  if (move.kind === 'set' && flat && (legAt(p).name === 'out' || lit('clear'))) {
-    // How far out past the part, beside it under the top.
-    dims = [{
-      id: 'clear', at: -10, from: move.sign * BOSS_R, to: move.out[0], text: said('clear'), lit: lit('clear'),
-    }];
-  }
-  if ((move.kind === 'set' && (legAt(p).name === 'down' || lit('depth'))) || move.kind === 'fast') {
-    // How far down beside the side, beside the part on the side away from the ball, where there is room for its words.
-    // To where the ball goes, not where it is: the figure stands still while the ball moves (review note, 2026-10-01).
-    depth = {
-      at: (flat ? -move.sign : -1) * (BOSS_R + 14), to: heightOf(0) + TOOL_R, text: said('depth'), lit: lit('depth'),
-    };
   }
   if ((move.kind === 'fast' || move.kind === 'slow') && level < 0.01 && Math.hypot(x - move.wall[0], y - move.wall[1]) < 0.5) {
     // Across X the touch is at the ball's side; along Y it faces into the drawing, at its middle.
@@ -146,9 +124,7 @@ export const bossSide = (move, p, {
     hidden,
     h,
     motion,
-    depth,
     gap,
-    dims,
     vdims,
     contact,
     zero: move.zeroAt ? Math.max(0, Math.min(1, (p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0]))) : 0,

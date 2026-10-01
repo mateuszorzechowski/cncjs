@@ -61,10 +61,14 @@ export const build = () => {
       kind: 'topBack', frames: [[0, S, ON_TOP], [0.15, S, ON_TOP], [0.7, S, ABOVE, true], [1, S, ABOVE]], end: 0.7, titleKey: 'probe.boss.move.topBack', uses: ['retract'],
     },
     zSlow: {
-      kind: 'topSlow', frames: [[0, S, ABOVE], [0.1, S, ABOVE], [0.7, S, ON_TOP], [0.78, S, ON_TOP], [1, S, ABOVE, true]], end: 1, titleKey: 'probe.boss.move.topSlow', uses: ['slow', 'retract'],
+      kind: 'topSlow', frames: [[0, S, ABOVE], [0.1, S, ABOVE], [0.7, S, ON_TOP], [1, S, ON_TOP]], end: 0.7, titleKey: 'probe.boss.move.topSlow', uses: ['slow', 'retract'],
+    },
+    // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01).
+    zOff: {
+      kind: 'topBack', frames: [[0, S, ON_TOP], [0.15, S, ON_TOP], [0.7, S, ABOVE, true], [1, S, ABOVE]], end: 0.7, titleKey: 'probe.boss.move.topOff', uses: ['retract'],
     },
   };
-  const order = ['zFast', 'zBack', 'zSlow'];
+  const order = ['zFast', 'zBack', 'zSlow', 'zOff'];
   let at = START;
   const guess = [...START];
   [1, 2].forEach((pass) => {
@@ -88,12 +92,15 @@ export const build = () => {
           ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.boss.move.back', uses: ['retract'],
         };
         moves[`${side}Slow`] = {
-          ...common, kind: 'slow', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.7, wall, 0], [0.78, wall, 0], [1, off, 0, true]], end: 1, titleKey: 'probe.boss.move.slow', uses: ['slow', 'retract'],
+          ...common, kind: 'slow', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.7, wall, 0], [1, wall, 0]], end: 0.7, titleKey: 'probe.boss.move.slow', uses: ['slow', 'retract'],
+        };
+        moves[`${side}Off`] = {
+          ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.boss.move.off', uses: ['retract'],
         };
         moves[`${side}Up`] = {
           ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.boss.move.up', uses: ['depth', 'retract'],
         };
-        order.push(`${side}Set`, `${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Up`);
+        order.push(`${side}Set`, `${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Off`, `${side}Up`);
         walls.push(wall);
         at = off;
       });

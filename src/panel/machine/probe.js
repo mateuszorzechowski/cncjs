@@ -139,6 +139,7 @@ const PHASES = {
   back: 'probe.phase.back',
   settle: 'probe.phase.settle',
   touch: 'probe.phase.touch',
+  off: 'probe.phase.off',
   out: 'probe.phase.out',
   down: 'probe.phase.down',
   up: 'probe.phase.up',

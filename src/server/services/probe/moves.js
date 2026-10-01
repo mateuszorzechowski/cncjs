@@ -54,5 +54,6 @@ export const touch = (axis, sign, max, key, { retract, fast, slow }) => [
   move(`${key}-back`, (here) => ({ [axis]: here[axis] - sign * retract })),
   dwell(`${key}-settle`, SETTLE_SECONDS),
   { kind: 'touch', phase: key, feed: slow, keep: key, to: (here) => ({ [axis]: here[axis] + sign * 2 * retract }) },
-  move(`${key}-back`, (here) => ({ [axis]: here[axis] - sign * retract })),
+  // Off the touch that counts: a move of its own, named apart from the back-off before it.
+  move(`${key}-off`, (here) => ({ [axis]: here[axis] - sign * retract })),
 ];
