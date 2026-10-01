@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  Alarm, Contact, DASH, Dimension, FACE, Motion, NS, Tag, kit,
+  Alarm, Contact, DASH, Dimension, FACE, Motion, NS, SurfaceGround, Tag, kit,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { TOP } from '../machine/probeCycle';
@@ -36,7 +36,7 @@ const DIM_X = 200;
 
 const ZPlateScene = ({
   gap = 84, shift = 0, dim = null, motion = null, feedTag = false, zero = 0, contact = false, ghost = false, alarm = false, focus = null,
-  label, className = '',
+  surface = undefined, stock = null, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
   const [measure, k] = useViewScale(WIDTH, HEIGHT);
@@ -53,7 +53,18 @@ const ZPlateScene = ({
           <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
         </pattern>
       </defs>
-      <rect x={-2} y={TOP + 14} width={WIDTH + 4} height={40} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+      {/* The work, or the table with the work beside it, and Z0 on the surface chosen (`surface`). */}
+      <SurfaceGround
+        fill={`url(#${id})`}
+        y={TOP + 14}
+        width={WIDTH}
+        surface={surface}
+        zero={zero}
+        label={t('probe.z0')}
+        labelX={6}
+        stock={stock ? { ...stock, fade: fade('stock') } : null}
+        size={size}
+      />
       {ghost ? (
         // Not there: the limit is what the probe does with nothing to touch.
         <rect x={PLATE_X} y={TOP} width={PLATE_W} height={14} fill="none" className="stroke-mut" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} opacity={0.6} />
@@ -64,12 +75,6 @@ const ZPlateScene = ({
         <g opacity={fade('dim')}>
           <Dimension at={DIM_X} from={dim.limit ? dim.top : dim.top} to={dim.bottom} limit={dim.limit} lit={focus === 'dim'} size={size} />
           <Tag x={DIM_X + 8} y={small ? dim.top - 12 : (dim.top + dim.bottom) / 2} text={dim.text} face={focus === 'dim' ? FACE.hot : FACE.plain} size={size} />
-        </g>
-      ) : null}
-      {zero > 0 ? (
-        <g opacity={zero}>
-          <path d={`M0 ${TOP + 14} H${WIDTH}`} className="stroke-acc" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
-          <text x={6} y={TOP + 9} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.z0')}</text>
         </g>
       ) : null}
       {motion ? (

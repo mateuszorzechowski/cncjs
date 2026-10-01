@@ -15,7 +15,7 @@ import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
+  SURFACE, applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
@@ -51,6 +51,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const [texts, setTexts] = useState({});
   const [bad, setBad] = useState(null);
   const [touched, setTouched] = useState(false);
+  // Where Z0 goes against where it is measured — per measurement, as the corner is.
+  const [surface, setSurface] = useState(SURFACE);
   // The jog's sheet open, on a phone.
   const [jogging, setJogging] = useState(false);
 
@@ -72,7 +74,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const {
     shared, mine, mode, setMode, takenBy, setTakenBy, declined, setDeclined, join, leave,
   } = useProbeJoin({
-    machine, method, choice, step, feeling, ask, onAsked, setPicked, setChosen, setLocal, setJogging,
+    machine, method, choice, surface, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
   });
 
   useEffect(() => {
@@ -104,7 +106,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       .catch((error) => setBad(error.name || fields[0]));
   };
 
-  const measure = () => startProbe(method.id, optionsFor(method, choice));
+  const measure = () => startProbe(method.id, optionsFor(method, choice, surface));
 
   const again = () => {
     if (machine.status?.word === 'Alarm') {
@@ -203,6 +205,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       <PrepareStep
         method={method}
         chosen={choice}
+        surface={surface}
+        onSurface={setSurface}
         fields={fields}
         texts={texts}
         onText={(name, text) => setTexts((now) => ({ ...now, [name]: text }))}

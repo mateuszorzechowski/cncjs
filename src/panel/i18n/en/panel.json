@@ -1442,7 +1442,8 @@
       "fast": "Fast touch",
       "slow": "Slow touch",
       "paperThickness": "Paper thickness",
-      "lift": "Lift"
+      "lift": "Lift",
+      "stockThickness": "Work thickness"
     },
     "step": {
       "method": "Method",
@@ -1573,7 +1574,8 @@
       "moves": "Moves",
       "tool": "Tool",
       "measureAll": "Measuring · every axis",
-      "paper": "Paper"
+      "paper": "Paper",
+      "stock": "Work"
     },
     "play": {
       "pause": "Pause",
@@ -1610,6 +1612,14 @@
       "leaveTitle": "Leave the probing?",
       "leaveNote": "The wizard keeps waiting on {{where}} — finish it there, or join it here again.",
       "stay": "Stay"
+    },
+    "surface": {
+      "title": "Z0",
+      "on": "Measured on",
+      "z0": "Z0 on",
+      "work": "Work",
+      "table": "Table",
+      "top": "Top"
     }
   }
 }

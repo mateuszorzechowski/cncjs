@@ -1,3 +1,5 @@
+import { checkSurface, surfaceOptions, surfaceShift } from '../surface';
+
 /**
  * A sheet of paper, by hand, no probe (Mateusz, 2026-09-29): the operator
  * jogs the tool onto the paper until it drags and says "here". Nothing moves
@@ -17,18 +19,20 @@ export const EDGES = {
 };
 
 export default {
-  fields: ['paperThickness', 'toolDiameter'],
-  options: { edge: Object.keys(EDGES) },
+  fields: ['paperThickness', 'toolDiameter', 'stockThickness'],
+  // On the top, the sheet may lie on the work or the table, and Z0 go on either (`surface`).
+  options: { edge: Object.keys(EDGES), ...surfaceOptions },
   // No probe on the tool, so nothing to find lit.
   touches: false,
 
-  check: ({ edge } = {}) => (EDGES[edge] ? null : 'bad-edge'),
+  check: (options = {}) => (EDGES[options.edge] ? checkSurface(options) : 'bad-edge'),
 
   steps: () => [],
 
-  zero: (params, { edge }, seen, start) => {
-    const { axis, sign, radius } = EDGES[edge];
+  zero: (params, options, seen, start) => {
+    const { axis, sign, radius } = EDGES[options.edge];
     const off = params.paperThickness + (radius ? params.toolDiameter / 2 : 0);
-    return { [axis]: start[axis] + sign * off };
+    const shift = axis === 'z' ? surfaceShift(params, options) : 0;
+    return { [axis]: start[axis] + sign * off + shift };
   },
 };

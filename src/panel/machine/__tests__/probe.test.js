@@ -1,5 +1,5 @@
 import {
-  METHODS, failureKey, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, wizardStep,
+  METHODS, failureKey, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, surfaceShifts, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -39,10 +39,19 @@ describe('the steps a method goes through', () => {
     expect(stepsOf(null)).toHaveLength(6);
   });
 
-  test('the one choice goes as its option', () => {
-    expect(optionsFor(methodOf('corner'), 'back-left')).toEqual({ corner: 'back-left' });
-    expect(optionsFor(methodOf('paper'), 'x-right')).toEqual({ edge: 'x-right' });
-    expect(optionsFor(methodOf('z'), undefined)).toEqual({});
+  test('the one choice goes as its option, and where Z0 goes with a method that finds a surface', () => {
+    const table = { on: 'work', z0: 'table' };
+    expect(optionsFor(methodOf('corner'), 'back-left', table)).toEqual({ corner: 'back-left' });
+    expect(optionsFor(methodOf('paper'), 'x-right', table)).toEqual({ edge: 'x-right' });
+    expect(optionsFor(methodOf('paper'), 'z', table)).toEqual({ edge: 'z', on: 'work', z0: 'table' });
+    expect(optionsFor(methodOf('z'), undefined)).toEqual({ on: 'work', z0: 'top' });
+  });
+
+  test('Z0 moves by the work only when it is not where it was measured', () => {
+    expect(surfaceShifts({ on: 'work', z0: 'top' })).toBe(false);
+    expect(surfaceShifts({ on: 'table', z0: 'table' })).toBe(false);
+    expect(surfaceShifts({ on: 'work', z0: 'table' })).toBe(true);
+    expect(surfaceShifts({ on: 'table', z0: 'top' })).toBe(true);
   });
 });
 

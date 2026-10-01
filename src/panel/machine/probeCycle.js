@@ -10,6 +10,7 @@
  * the form.
  */
 
+import { SURFACE, surfaceShifts } from './surface';
 import { frameAt, layOut, totalOf } from './timeline';
 
 // The plate's top, where the tip touches, in the drawing's units.
@@ -49,6 +50,20 @@ export const gapAt = (frames, p) => {
 };
 
 const number = (text) => Number(String(text ?? '').replace(',', '.')) || 0;
+const fmt = (v) => String(Math.round(v * 1000) / 1000);
+
+/**
+ * How far the surface measured on is above Z0 (Mateusz, 2026-10-01,
+ * `services/probe/surface`): the work's thickness when the plate is on the
+ * work and Z0 on the table, less it when the plate is on the table and Z0 on
+ * the top, nothing when they are the same.
+ */
+export const overSurface = (surface = SURFACE, stock = 0) => {
+  if (!surfaceShifts(surface)) {
+    return 0;
+  }
+  return surface.on === 'work' ? stock : -stock;
+};
 
 /*
  * Each move: its keyframes; the way it goes (`from` → `to`, heights) and how
@@ -92,7 +107,7 @@ const MOVES = {
     from: 0, to: 0, kind: null, feed: null, zeroAt: [0.25, 0.45],
     dim: { top: TOP, bottom: TOP + 14, field: 'plateThickness' },
     titleKey: 'probe.plate.zero',
-    code: (v, wcs) => [`G10 L20 P${wcs} Z${v.plateThickness}`],
+    code: (v, wcs, surface) => [`G10 L20 P${wcs} Z${fmt(number(v.plateThickness) + overSurface(surface, number(v.stockThickness)))}`],
     uses: ['plateThickness'],
     after: true,
   },
@@ -146,6 +161,7 @@ const EDIT = {
   retract: [['retract', 'dim']],
   slow: [['slow', 'feed']],
   plateThickness: [['zero', 'dim']],
+  stockThickness: [['zero', 'stock']],
   lift: [['lift', 'dim']],
 };
 
@@ -158,6 +174,8 @@ export const PLATE_PARAMS = [
   { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
   { id: 'reach', key: 'probe.group.reach', fields: ['maxZ'] },
   { id: 'moves', key: 'probe.group.moves', fields: ['lift'] },
+  // Only while Z0 is the work's thickness from the surface measured (`surface`).
+  { id: 'stock', key: 'probe.group.stock', fields: ['stockThickness'], shifts: true },
 ];
 
 export const moveOf = (name) => MOVES[name];
@@ -216,7 +234,9 @@ export const playAt = (ms, { pinned = null, field = null, still = false } = {}) 
  * as a search limit says it: everything the scene draws, in the drawing's
  * units.
  */
-export const plateScene = (name, p, { texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null } = {}) => {
+export const plateScene = (name, p, {
+  texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, surface = SURFACE,
+} = {}) => {
   const said = (field) => say(field, texts[field] ?? '');
   const move = MOVES[name];
   const gap = gapAt(move.frames, p);
@@ -247,11 +267,14 @@ export const plateScene = (name, p, { texts = {}, say = (field, text) => text, u
     ghost: Boolean(move.miss),
     alarm: Boolean(move.miss && p >= move.alarmAt),
     focus,
+    surface,
+    // The work's thickness, drawn once the zero is written and while it is being set.
+    stock: move.after || focus === 'stock' ? { text: said('stockThickness'), lit: focus === 'stock' } : null,
   };
 };
 
 /** The move's G-code, with the figures typed and the coordinate system's number. */
-export const plateCode = (name, texts, wcs = 1) => MOVES[name].code(texts, wcs).join(' ');
+export const plateCode = (name, texts, wcs = 1, surface = SURFACE) => MOVES[name].code(texts, wcs, surface).join(' ');
 
 /*
  * The tool's Z at the touch, as the readout says it: against the old zero
@@ -259,9 +282,9 @@ export const plateCode = (name, texts, wcs = 1) => MOVES[name].code(texts, wcs).
  * the moves (review note, 2026-09-30: *"stała wartość przed i stała wartość
  * po, bez zmiany przy ruchu, która może rozpraszać"*).
  */
-export const plateReadout = (name, mm) => {
+export const plateReadout = (name, mm, surface = SURFACE) => {
   const after = Boolean(MOVES[name].after);
-  return { z: after ? mm.plateThickness : BEFORE_MM, after };
+  return { z: after ? mm.plateThickness + overSurface(surface, mm.stockThickness ?? 0) : BEFORE_MM, after };
 };
 
 /*

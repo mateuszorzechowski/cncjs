@@ -3,6 +3,7 @@ import MoveBar, { namedGroups } from './MoveBar';
 import PaperScene from './PaperScene';
 import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
+import SurfaceChoice from './SurfaceChoice';
 import { figureColumns } from './ProbeSections';
 import { useClock, useReducedMotion } from './useClock';
 import usePlayer from './usePlayer';
@@ -14,6 +15,7 @@ import {
   fillsAt, frameAt, rangeOf, timeAt,
 } from '../machine/timeline';
 import { inMm } from '../machine/units';
+import { SURFACE, surfaceShifts } from '../machine/surface';
 import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -35,7 +37,7 @@ const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53
  * `chosen` is the surface, picked on the step before (`PaperChooser`).
  */
 const PaperParams = ({
-  fields, texts, onText, bad, wcs, chosen = 'z', intro = null, note = null, split = null,
+  fields, texts, onText, bad, wcs, chosen = 'z', surface = SURFACE, onSurface = () => {}, intro = null, note = null, split = null,
 }) => {
   const units = useUnits();
   const wide = useIsWide();
@@ -51,23 +53,26 @@ const PaperParams = ({
   const pick = (ids, part = null) => player.seek({ ...rangeOf(items, ids, part), ids, part });
   const say = (field, text) => figureSaid(field, text, units.rule);
   const scene = paperScene(name, p, {
-    edge: chosen, texts, say, focus,
+    edge: chosen, texts, say, focus, surface,
   });
   const move = moveOf(name);
   const mm = {
     paperThickness: inMm(numberOf(texts.paperThickness), units.rule) ?? 0,
     toolDiameter: inMm(numberOf(texts.toolDiameter), units.rule) ?? 0,
+    stockThickness: inMm(numberOf(texts.stockThickness), units.rule) ?? 0,
   };
-  const code = paperCode(name, chosen, texts, systemNumber(wcs));
-  const read = paperReadout(name, chosen, mm);
+  const code = paperCode(name, chosen, texts, systemNumber(wcs), surface);
+  const read = paperReadout(name, chosen, mm, surface);
   const title = t(move.titleKey, { axis: scene.axis });
 
   const side = chosen !== 'z';
+  // On the top, Z0 may go on the table: the work's thickness asked for while it is apart.
+  const shifts = !side && surfaceShifts(surface);
   const groups = namedGroups(PAPER_GROUPS, t, (id) => t(moveOf(id).titleKey, { axis: scene.axis }));
-  const sections = PAPER_PARAMS.filter((one) => side || !one.side)
+  const sections = PAPER_PARAMS.filter((one) => (side || !one.side) && (!one.shifts || shifts))
     .map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
     .filter((one) => one.fields.length);
-  const uses = name === 'zero' ? ['paperThickness', ...(side ? ['toolDiameter'] : [])] : [];
+  const uses = name === 'zero' ? ['paperThickness', ...(side ? ['toolDiameter'] : []), ...(shifts ? ['stockThickness'] : [])] : [];
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
@@ -98,7 +103,12 @@ const PaperParams = ({
     bad,
     onField: setPicked,
     lit: uses,
-    intro,
+    intro: (
+      <>
+        {intro}
+        {side ? null : <SurfaceChoice value={surface} onChange={onSurface} />}
+      </>
+    ),
     note,
   });
   if (split) {

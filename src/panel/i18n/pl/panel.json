@@ -1442,7 +1442,8 @@
       "fast": "Szybki dotyk",
       "slow": "Wolny dotyk",
       "paperThickness": "Grubość kartki",
-      "lift": "Odjazd w górę"
+      "lift": "Odjazd w górę",
+      "stockThickness": "Grubość materiału"
     },
     "step": {
       "method": "Metoda",
@@ -1573,7 +1574,8 @@
       "moves": "Przejazdy",
       "tool": "Frez",
       "measureAll": "Pomiar · wszystkie osie",
-      "paper": "Kartka"
+      "paper": "Kartka",
+      "stock": "Materiał"
     },
     "play": {
       "pause": "Pauza",
@@ -1610,6 +1612,14 @@
       "leaveTitle": "Opuścić sondowanie?",
       "leaveNote": "Kreator dalej czeka na {{where}} — tam możesz go dokończyć albo dołączyć tu ponownie.",
       "stay": "Zostań"
+    },
+    "surface": {
+      "title": "Z0",
+      "on": "Mierzysz na",
+      "z0": "Z0 na",
+      "work": "Materiał",
+      "table": "Stół",
+      "top": "Wierzch"
     }
   }
 }
