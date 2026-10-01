@@ -24,8 +24,8 @@ describe('the centres from the front', () => {
     expect(side.contact[0]).toBeCloseTo(bossMove('x1p').wall[0] - side.r);
   });
 
-  test('the hole: the ball down in it, hidden by the work in front; a few millimetres once in place', () => {
-    expect(HOLE_CYCLE.side('x1p', 0.3).hidden).toBe(true);
+  test('the hole: cut through, the ball in it seen; a few millimetres once in place', () => {
+    expect(HOLE_CYCLE.side('x1p', 0.3).hidden).toBeFalsy();
     expect(HOLE_CYCLE.side('x1p', 0.3).motion).toMatchObject({ dir: 'h', kind: 'probe' });
     expect(HOLE_CYCLE.side('y1p', 0.3).motion).toBeNull();
     expect(HOLE_CYCLE.sidePlace({ tool: [0, 0], level: 1 }).gap).toBeNull();

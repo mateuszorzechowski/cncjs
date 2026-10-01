@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, Tag, kit, tagWidth,
+  AxisPair, Contact, DASH, Dimension, FACE, Head, Motion, NS, Tag, WorkHatch, kit, tagWidth,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
@@ -22,8 +22,6 @@ import { t } from '../i18n';
 
 // The Z plate's shape, so the two Setups stand as tall at any width — or half of it, beside a side view (`part.view`).
 const WIDE = [-202, -94, 404, 188];
-const USER = 'userSpaceOnUse';
-const SLANT = 'rotate(45)';
 // The arrow on one side of the tool's way, the dimension on the other.
 const ASIDE = 22;
 const ACROSS = 'h';
@@ -111,19 +109,15 @@ const CentreScene = ({
   const boss = part.kind === BOSS;
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
-      <defs>
-        <pattern id={id} width={7} height={7} patternUnits={USER} patternTransform={SLANT}>
-          <rect width={7} height={7} className="fill-work" />
-          <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
-        </pattern>
-      </defs>
+      <WorkHatch id={id} />
       {/* The work round the hole, or the part alone — no table under it, as no other drawing has (review note, 2026-10-01). */}
       {boss ? (
         <circle r={part.r} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} fill={`url(#${id})`} />
-          <circle r={part.r} className="fill-mutS stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+          {/* Its bottom further back, as its far wall from the front (review note, 2026-10-01). */}
+          <circle r={part.r} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
         </>
       )}
       {zero > 0 ? (

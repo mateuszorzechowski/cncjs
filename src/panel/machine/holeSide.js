@@ -1,10 +1,10 @@
 /**
  * The hole seen from the front (review note, 2026-10-01: *"możesz też dodać
- * rzut z boku do pomiaru otworu"*), as the part's: always along X, Z up. The
- * ball is down in the hole the whole cycle, so the work in front hides it —
- * it is drawn dashed; a way along Y goes into the drawing, larger nearer the
- * front, smaller further back. On the way into place it comes down from
- * over the work to a few millimetres under the hole's edge.
+ * rzut z boku do pomiaru otworu"*), as the part's: always along X, Z up, the
+ * hole cut through so the ball in it is seen; a way along Y goes into the
+ * drawing, larger nearer the front, smaller further back. On the way into
+ * place it comes down from over the work to a few millimetres under the
+ * hole's edge.
  *
  * `move` is the hole's move with the ball's place `at` (and, into place, its
  * `level`: 1 over the work, 0 in the hole); `part` the hole's sizes.
@@ -48,8 +48,6 @@ export const holeSide = (move, p, {
   return {
     along: x,
     r,
-    // Under the top, the work in front hides it.
-    hidden: h < 0,
     h,
     motion,
     gap,

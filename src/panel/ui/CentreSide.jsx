@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, DASH, Dimension, FACE, Motion, NS, Tag, kit, tagWidth,
+  AxisPair, Contact, DASH, Dimension, FACE, Motion, NS, Tag, WorkHatch, kit, tagWidth,
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
@@ -8,9 +8,9 @@ import { t } from '../i18n';
 /**
  * A centre from the front (review notes, 2026-10-01: *"rzut z boku"*,
  * *"nie zmieniaj osi, tylko pokaż ruch osi Y w głębi"*): always along X, Z
- * up. A part touched from outside a faint hatch, a hole going down into the
- * work, its walls dashed — the work in front hides them. No table: no other
- * drawing has one (review note, 2026-10-01).
+ * up. A part touched from outside a faint hatch; a hole cut through, its far
+ * wall paler, the ball in it seen. No table: no other drawing has one
+ * (review note, 2026-10-01).
  * The 3D probe's stylus and ball: a way along Y goes into the drawing, the
  * ball larger nearer, smaller further, dashed while something hides it. A
  * move's arrow with its feed over the ball, a figure's dimension beside or
@@ -27,8 +27,6 @@ const VIEW = [-101, -110, 202, 188];
 const FOOT = VIEW[1] + VIEW[3];
 // How deep a hole is drawn.
 const HOLE_DEPTH = 46;
-const USER = 'userSpaceOnUse';
-const SLANT = 'rotate(45)';
 const ACROSS = 'h';
 const ALONG = 'v';
 const BOSS = 'boss';
@@ -78,24 +76,14 @@ const CentreSide = ({
   const boss = part.kind === BOSS;
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
-      <defs>
-        <pattern id={id} width={7} height={7} patternUnits={USER} patternTransform={SLANT}>
-          <rect width={7} height={7} className="fill-work" />
-          <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
-        </pattern>
-        {/* Paler and closer: the work behind the hole, further back in the drawing (review notes, 2026-10-01). */}
-        <pattern id={`${id}b`} width={5} height={5} patternUnits={USER} patternTransform={SLANT}>
-          <rect width={5} height={5} className="fill-work" />
-          <path d="M0 0 V5" className="stroke-hatch" strokeOpacity={0.4} strokeWidth={1} />
-        </pattern>
-      </defs>
+      <WorkHatch id={id} />
       {boss ? (
         <path d={`M${-part.r} ${FOOT} V0 H${part.r} V${FOOT}`} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0] - 2} y={0} width={VIEW[2] + 4} height={FOOT + 2} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
-          {/* The hole behind the work in front: its walls dashed, the work beyond it paler and closer hatched. */}
-          <path d={`M${-part.r} 0 V${HOLE_DEPTH} H${part.r} V0 Z`} fill={`url(#${id}b)`} className="stroke-mut" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
+          {/* The hole cut through, its far wall further back (review note, 2026-10-01: *"otwór jest w przekroju i narzędzie jest widoczne"*). */}
+          <path d={`M${-part.r} 0 V${HOLE_DEPTH} H${part.r} V0 Z`} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
         </>
       )}
       {zero > 0 ? (
