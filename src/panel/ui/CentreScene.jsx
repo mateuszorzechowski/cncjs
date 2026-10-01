@@ -2,7 +2,8 @@ import { useId } from 'react';
 import {
   AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, WorkHatch, kit,
 } from './probeDraw';
-import { placeTags, shownView } from './probeLabels';
+import { shownView } from './probeLabels';
+import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
 
@@ -44,7 +45,11 @@ const CentreScene = ({
 }) => {
   const id = useId().replace(/:/g, '');
   const VIEW = part.view || WIDE;
-  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box, node] = useViewScale(VIEW[2], VIEW[3]);
+  const other = usePairView('top', node);
+  const layer = usePairLayer(node);
+  // Labels crossing into the other view, drawn over both (`probePair`).
+  const crossing = [];
   const size = kit(k);
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
   const r = part.toolR * (1 + part.grow * Math.max(0, level));
@@ -56,10 +61,11 @@ const CentreScene = ({
   const [y0, y1] = [Math.min(...path.map(([, y]) => y)), Math.max(...path.map(([, y]) => y))];
   const sweep = [x0 - r, y0 - r, x1 - x0 + 2 * r, y1 - y0 + 2 * r];
   const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep, ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]], [VIEW[0], -1, VIEW[2], 2]] : [])];
-  const place = (line) => (bare ? [] : placeTags({
-    ...line, view: shownView(VIEW, k, box), avoid, size,
-  }));
-  const tags = (line, face) => place(line).map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={face} size={size} />);
+  const place = (line) => (bare ? [] : placePaired(line, { view: shownView(VIEW, k, box), avoid, size }, other));
+  const tags = (line, face) => place(line).map((tag) => {
+    const drawn = <Tag key={`${tag.text}${tag.x}`} x={tag.x} y={tag.y} text={tag.text} face={face} ext={tag.ext} size={size} />;
+    return tag.ext ? crossing.push(drawn) && null : drawn;
+  });
 
   let arrow = null;
   if (motion) {
@@ -177,6 +183,7 @@ const CentreScene = ({
         </g>
       ) : null}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.yPlus')} size={size} />
+      {layer(crossing)}
     </svg>
   );
 };

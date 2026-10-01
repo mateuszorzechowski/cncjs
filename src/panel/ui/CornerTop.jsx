@@ -2,7 +2,8 @@ import { useId } from 'react';
 import {
   AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
-import { placeTags, shownView } from './probeLabels';
+import { shownView } from './probeLabels';
+import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import {
   C0, cornerSides, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
@@ -55,7 +56,11 @@ const CornerTop = ({
   name = 'zFast', p = 0, corner, texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, bare = false, place = null, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
-  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box, node] = useViewScale(VIEW[2], VIEW[3]);
+  const paired = usePairView('top', node);
+  const layer = usePairLayer(node);
+  // Labels crossing into the other view, drawn over both (`probePair`).
+  const crossing = [];
   const size = kit(k);
   const { flipX, flipY } = cornerSides(corner);
   const move = moveOf(name);
@@ -82,12 +87,14 @@ const CornerTop = ({
     const [y0, y1] = [Math.min(...way.map(([, y]) => y)), Math.max(...way.map(([, y]) => y))];
     return [x0 - rr, y0 - rr, x1 - x0 + 2 * rr, y1 - y0 + 2 * rr];
   };
-  const placed = (line) => (bare ? [] : placeTags({
-    ...line, view: shownView(VIEW, k, box), avoid: [...avoid, toolRect()], size,
-  }));
-  const tags = (line, face = FACE.plain) => placed(line).map((tag) => (
-    <Tag key={tag.text} x={flipX ? 278 - tag.x - tag.w : tag.x} y={my(tag.y)} text={tag.text} face={face} size={size} />
-  ));
+  // The other view's box and what it covers, on the front-left drawing as these labels are placed.
+  const mirror = ([x, y, w, h]) => [flipX ? 278 - x - w : x, flipY ? 260 - y - h : y, w, h];
+  const other = paired ? { box: mirror(paired.box), rects: paired.rects.map(mirror) } : null;
+  const placed = (line) => (bare ? [] : placePaired(line, { view: shownView(VIEW, k, box), avoid: [...avoid, toolRect()], size }, other));
+  const tags = (line, face = FACE.plain) => placed(line).map((tag) => {
+    const drawn = <Tag key={`${tag.text}${tag.x}`} x={flipX ? 278 - tag.x - tag.w : tag.x} y={my(tag.y)} text={tag.text} face={face} ext={tag.ext} size={size} />;
+    return tag.ext ? crossing.push(drawn) && null : drawn;
+  });
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
   const lit = (part) => focus === part;
 
@@ -272,6 +279,7 @@ const CornerTop = ({
         axis: ACROSS, at: cy + R + 7, parts: [[cx - R, cx + R, `Ø${said('toolDiameter')}`]], ticks: [[cx - R, DIA_TICK], [cx + R, DIA_TICK]],
       }, FACE.hot) : null}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.yPlus')} size={size} />
+      {layer(crossing)}
     </svg>
   );
 };

@@ -46,7 +46,8 @@ const overlaps = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[
  * `[x, y, w, h]`; `avoid`, rects `[x, y, w, h]` it must not cross nor come
  * nearer than g to — a zero's line; `past`, 'before' or 'after', a single
  * label asked past that end of its line first.
- * Returns `{ x, y, w, h, text }` — the left edge and the middle, as `Tag` takes them.
+ * Returns `{ x, y, w, h, text, ok }` — the left edge and the middle, as `Tag` takes them; `ok` false
+ * when nothing was clear and the least bad try stands.
  */
 export const placeTags = ({
   axis = 'v', at, side = 1, parts, ticks = [], view, avoid = [], past = null, size,
@@ -160,5 +161,7 @@ export const placeTags = ({
   }, 0), 0);
   const visible = tries.filter(inside);
   const least = visible.reduce((best, one) => (best && over(best) <= over(one) ? best : one), null);
-  return (tries.find(fits) || least || tries[0]).map((one) => ({ ...one, h }));
+  // `ok`: clear of everything, inside the drawing; else the least bad of what was tried.
+  const best = tries.find(fits);
+  return (best || least || tries[0]).map((one) => ({ ...one, h, ok: Boolean(best) }));
 };

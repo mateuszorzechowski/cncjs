@@ -2,6 +2,7 @@ import { useState } from 'react';
 import CentreScene from './CentreScene';
 import CentreSide from './CentreSide';
 import SegmentedChoice from './SegmentedChoice';
+import { PairOfViews, usePair } from './probePair';
 import { useIsPhone } from './shell';
 import { t } from '../i18n';
 
@@ -22,17 +23,19 @@ const CentreViews = ({
 }) => {
   const phone = useIsPhone();
   const [chosen, setChosen] = useState(null);
+  const pair = usePair();
   const topView = <CentreScene part={cycle.part} {...top} bare={bare} label={label} className={side ? `h-auto w-full ${className}` : `aspect-[404/188] h-auto w-full ${className}`} />;
   if (!side) {
     return topView;
   }
   const sideView = <CentreSide part={cycle.part} {...side} focus={top.focus} bare={bare} label={label} className={`h-auto w-full ${className}`} />;
   if (!phone) {
+    // One drawing in two views: no line between them, and a label short of room in one may stand in the other's free edge.
     return (
-      <div className="grid grid-cols-2 divide-x divide-line">
+      <PairOfViews pair={pair}>
         {topView}
         {sideView}
-      </div>
+      </PairOfViews>
     );
   }
   const view = chosen && chosen.name === name ? chosen.view : (auto || VIEWS[0]);

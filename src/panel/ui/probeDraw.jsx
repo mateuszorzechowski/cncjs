@@ -89,14 +89,17 @@ const TAG_FACES = {
 };
 
 /** A figure in a small box centred on `y`, from `x` rightwards — or leftwards, `right`. */
-export const Tag = ({ x, y, text, right = false, face = 'plain', size }) => {
+export const Tag = ({
+  x, y, text, right = false, face = 'plain', ext = false, size,
+}) => {
   const { rx } = size;
   const w = tagWidth(text, size.fs);
   const fs = size.fs * TAG_SCALE;
   const left = right ? x - w : x;
   const look = TAG_FACES[face];
   return (
-    <g>
+    // `ext`: a label standing out in the other view of a pair (`probePair`).
+    <g data-tag={ext ? 'ext' : 'own'}>
       <rect x={left} y={y - fs * 0.9} width={w} height={fs * 1.8} rx={rx} className={look.box} strokeWidth={look.line} vectorEffect={NS} />
       <text x={left + fs / 2} y={y + fs * 0.36} fontSize={fs} className={`${look.text} font-num font-medium`}>{text}</text>
     </g>

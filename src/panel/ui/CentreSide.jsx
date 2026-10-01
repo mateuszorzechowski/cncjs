@@ -3,8 +3,9 @@ import {
   AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, WorkHatch, kit,
 } from './probeDraw';
 import {
-  lineRect, placeTags, shownView, tagRect,
+  lineRect, shownView, tagRect,
 } from './probeLabels';
+import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
 
@@ -39,7 +40,11 @@ const CentreSide = ({
   part, along, r, hidden = false, h, motion = null, way = motion, gap = null, vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
-  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box, node] = useViewScale(VIEW[2], VIEW[3]);
+  const other = usePairView('side', node);
+  const layer = usePairLayer(node);
+  // Labels crossing into the other view, drawn over both (`probePair`).
+  const crossing = [];
   const size = kit(k);
   const fade = (one) => (focus && focus !== one ? 0.3 : 1);
   // Up the drawing is up the machine: a height is drawn negative.
@@ -59,15 +64,14 @@ const CentreSide = ({
   // are its own (a split way's parts), the rest it keeps off.
   const place = (line) => {
     const avoid = [...fixed, ...lines.filter((one) => one.at !== line.at).map((one) => one.rect), ...taken];
-    const placed = bare ? [] : placeTags({
-      ...line, view: shownView(VIEW, k, box), avoid, size,
-    });
+    const placed = bare ? [] : placePaired(line, { view: shownView(VIEW, k, box), avoid, size }, other);
     taken.push(...placed.map(tagRect));
     return placed;
   };
-  const words = (line, lit) => place(line).map((tag) => (
-    <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={lit ? FACE.hot : FACE.plain} size={size} />
-  ));
+  const words = (line, lit) => place(line).map((tag) => {
+    const drawn = <Tag key={`${tag.text}${tag.x}`} x={tag.x} y={tag.y} text={tag.text} face={lit ? FACE.hot : FACE.plain} ext={tag.ext} size={size} />;
+    return tag.ext ? crossing.push(drawn) && null : drawn;
+  });
 
   // A Z move's arrow left of the ball, its feed beside it; the distances stand on the right.
   let arrow = null;
@@ -140,6 +144,7 @@ const CentreSide = ({
       ) : null}
       {arrow}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.zPlus')} size={size} />
+      {layer(crossing)}
     </svg>
   );
 };
