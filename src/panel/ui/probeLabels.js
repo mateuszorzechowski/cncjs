@@ -32,8 +32,10 @@ export const shownView = (view, k, box) => {
 /** A placed label as a rect, `[x, y, w, h]`, for the next to keep off. */
 export const tagRect = ({ x, y, w, h }) => [x, y - h / 2, w, h];
 
-// The gap round a label, in screen px (Mateusz, 2026-10-01: "G 6").
+// The gap round a label, in screen px (Mateusz, 2026-10-01: "G 6"); and off the drawing's edge (review
+// note #4, 2026-10-02: "1 albo 2 px marginesu od krawędzi rysunku").
 const LABEL_GAP = 6;
+const EDGE_GAP = 2;
 const overlaps = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 
 /*
@@ -54,6 +56,7 @@ export const placeTags = ({
     return [];
   }
   const g = LABEL_GAP / size.k;
+  const e = EDGE_GAP / size.k;
   const h = size.fs * TAG_SCALE * 1.8;
   const v = axis === 'v';
   const width = (text) => tagWidth(text, size.fs);
@@ -91,7 +94,7 @@ export const placeTags = ({
   };
   // What it must not cross keeps the gap too.
   const keepOff = avoid.map(([x, y, w, ht]) => [x - g, y - g, w + 2 * g, ht + 2 * g]);
-  const inside = (placed) => placed.every(({ x, y, w }) => x >= view[0] && y - h / 2 >= view[1] && x + w <= view[0] + view[2] && y + h / 2 <= view[1] + view[3]);
+  const inside = (placed) => placed.every(({ x, y, w }) => x >= view[0] + e && y - h / 2 >= view[1] + e && x + w <= view[0] + view[2] - e && y + h / 2 <= view[1] + view[3] - e);
   const fits = (placed) => inside(placed) && placed.every(({ x, y, w }) => !keepOff.some((rect) => overlaps([x, y - h / 2, w, h], rect)));
   // Centred, then aligned to the line's first end, then its last; on its side, then the other.
   const first = lo - Math.min(...layout.map((one) => one.a0));
@@ -127,8 +130,8 @@ export const placeTags = ({
   // na górze druga na dole", "F50 nad strzałką, wyrównanie do kreski górnej"). Centred on the line, or
   // flush with the ends of its ticks, reaching out to its side.
   // Centred on the line, pulled in to stay inside the drawing.
-  const inX = (x, w) => Math.max(view[0], Math.min(view[0] + view[2] - w, x));
-  const inY = (y) => Math.max(view[1] + h / 2, Math.min(view[1] + view[3] - h / 2, y));
+  const inX = (x, w) => Math.max(view[0] + e, Math.min(view[0] + view[2] - e - w, x));
+  const inY = (y) => Math.max(view[1] + e + h / 2, Math.min(view[1] + view[3] - e - h / 2, y));
   const beyond = (text, after, flush) => {
     const w = width(text);
     if (v) {
