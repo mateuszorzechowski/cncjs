@@ -1,4 +1,5 @@
 import {
+  signedFor,
   BEFORE_MM, CORNER_GROUPS, cornerTimeline, CORNER_ORDER, CORNER_PARAMS, HOLD_MS, LOOP_HOLD_MS, motionEnd, SPAN_MS, cornerCode, cornerReadout, cornerSides, legAt, moveOf, moveOfPhase, playAt, positionAt, positionOf, tipOf,
 } from '../cornerCycle';
 import { methodOf, stepBeside, stepsOf } from '../probe';
@@ -55,6 +56,12 @@ describe('the L plate cycle (probe proposal)', () => {
     expect(cornerCode('lift', 0.5, TEXTS)).toMatchObject({ parts: ['G0 Z+25'], leg: 'lift' });
     expect(cornerCode('lift', 0.9, TEXTS)).toMatchObject({ parts: ['G0 X0 Y0'], leg: 'corner' });
     expect(cornerCode('lift', 0.1, TEXTS)).toMatchObject({ parts: ['G0 Y-5'], leg: 'off' });
+    // Turned for the corner, as the drawing is: out past a right corner's wall is X+, its touch X−.
+    expect(cornerCode('xSet', 0.5, TEXTS, 1, 'back-right').parts).toEqual(['G0 X+10']);
+    expect(cornerCode('xSlow', 0.5, TEXTS, 1, 'front-right').parts).toEqual(['G38.2 X-10 F15']);
+    expect(cornerCode('lift', 0.1, TEXTS, 1, 'back-left').parts).toEqual(['G0 Y+5']);
+    expect(cornerCode('lift', 0.9, TEXTS, 1, 'back-right').parts).toEqual(['G0 X0 Y0']);
+    expect(signedFor('front-right')('X− 20 mm')).toBe('X+ 20 mm');
   });
 
   test('a figure being set loops the move it changes, over the part that shows it, held longer', () => {

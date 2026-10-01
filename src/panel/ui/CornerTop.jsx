@@ -4,7 +4,7 @@ import {
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import {
-  C0, cornerSides, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
+  C0, cornerSides, signedFor, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -109,7 +109,8 @@ const CornerTop = ({
           {flat ? null : <Motion axis={ALONG} at={190} from={fy} to={ty} kind={RAPID} size={size} />}
         </g>,
       );
-      const text = sayLeg(texts, say);
+      // Its signs turned for the corner, as the drawing is (review note, 2026-10-01).
+      const text = signedFor(corner)(sayLeg(texts, say));
       if (i === now && !focus && text) {
         words.push(flat ? tag((fx + tx) / 2, 66, text, MID, FACE.rapid) : tag(196, 207, text, MID, FACE.rapid));
       }

@@ -80,7 +80,7 @@ const CornerParams = ({
   const drawing = {
     name, p, corner, texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus,
   };
-  const code = cornerCode(name, p, texts, systemNumber(wcs));
+  const code = cornerCode(name, p, texts, systemNumber(wcs), corner);
   const mm = Object.fromEntries(['toolDiameter', 'wallX', 'wallY', 'cornerThickness'].map((field) => [field, inMm(numberOf(texts[field]), units.rule) ?? 0]));
   const read = cornerReadout(name, corner, mm);
   const title = code.leg

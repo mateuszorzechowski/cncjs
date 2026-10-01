@@ -4,7 +4,7 @@ import {
 } from './probeDraw';
 import useViewScale from './useViewScale';
 import {
-  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, tipOf,
+  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, signedFor, tipOf,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -186,7 +186,7 @@ const CornerSide = ({
           geometry.push(<g key={`leg${i}`} opacity={focus ? 0.3 : 1}>{drawn}</g>);
         }
         if (i === now && plane === 'z' && !focus && sayLeg(texts, say)) {
-          words.push(tag(50, 50, sayLeg(texts, say), 'l', FACE.rapid, 'leg', true));
+          words.push(tag(50, 50, signedFor(corner)(sayLeg(texts, say)), 'l', FACE.rapid, 'leg', true));
         }
       });
     } else if (move.kind && move.view === 'top') {
