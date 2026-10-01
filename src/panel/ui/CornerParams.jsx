@@ -130,7 +130,8 @@ const CornerParams = ({
         fills={picked ? fillsAt(items, timeAt(items, BAR_OF[name] || name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
-        marked={group ? CORNER_ORDER.filter((id) => moveOf(id).uses.some((use) => group.fields.includes(use))) : []}
+        // The moves a figure acts in: the one being set, or else the open group's (review note, 2026-10-01).
+        marked={picked || group ? CORNER_ORDER.filter((id) => moveOf(id).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
       />
       <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={AXES.map((axis) => [axis, read[axis]])} />

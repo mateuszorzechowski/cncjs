@@ -79,6 +79,7 @@ const PaperParams = ({
   const usable = ['paperThickness', 'paperLift', ...(side ? ['toolDiameter'] : []), ...(shifts ? ['stockThickness'] : [])];
   const uses = usable.filter((field) => MOVED_BY[field] === name);
   const openGroup = PAPER_PARAMS.find((one) => one.id === open);
+  const marks = openGroup ? [...new Set([...openGroup.fields.map((field) => MOVED_BY[field]), ...(openGroup.surface ? ['zero'] : [])])] : [];
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
@@ -89,7 +90,8 @@ const PaperParams = ({
         fills={picked ? fillsAt(items, timeAt(items, name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
-        marked={openGroup ? [...new Set([...openGroup.fields.map((field) => MOVED_BY[field]), ...(openGroup.surface ? ['zero'] : [])])] : []}
+        // The moves a figure acts in: the one being set, or else the open group's (review note, 2026-10-01).
+        marked={picked ? [MOVED_BY[picked]] : marks}
       />
       <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={[[read.axis, read.value]]} />
