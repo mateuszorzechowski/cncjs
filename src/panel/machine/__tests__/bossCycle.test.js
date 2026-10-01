@@ -1,0 +1,132 @@
+import {
+  BOSS_PARAMS, bossCode, bossGroups, bossOrder, bossReadout, bossScene, bossTimeline, bossWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, usesAt,
+} from '../bossCycle';
+import { BOSS_R, legAt, toolAt } from '../bossMoves';
+import { methodOf, stepsOf } from '../probe';
+import { segmentsOf } from '../timeline';
+
+jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
+
+const TEXTS = {
+  bossSize: '30', clear: '10', depth: '5', maxZ: '15', ballDiameter: '2', retract: '2', fast: '100', slow: '20',
+};
+
+const STEPS = ['Set', 'Fast', 'Back', 'Slow', 'Up'];
+const sideSteps = (side) => STEPS.map((step) => `${side}${step}`);
+
+describe('the centre from outside cycle', () => {
+  test('the top\'s steps as the corner\'s, then each side\'s, the middle after each pair, the zero last', () => {
+    expect(bossOrder(1)).toEqual([
+      'zFast', 'zBack', 'zSlow', ...sideSteps('x1p'), ...sideSteps('x1m'), 'x1c', ...sideSteps('y1p'), ...sideSteps('y1m'), 'y1c', 'zero',
+    ]);
+    expect(bossOrder()).toHaveLength(3 + 2 * 22 + 1);
+  });
+
+  test('the bar: Z searched and measured, a stage per axis and pass, every move once; set-ups by their legs', () => {
+    [1, 2].forEach((passes) => {
+      const barred = bossGroups(passes).flatMap((group) => group.subs.flatMap((sub) => sub.moves));
+      expect(barred).toEqual(bossOrder(passes));
+    });
+    expect(bossGroups(1).map((group) => group.name || group.key)).toEqual(['Z', 'X', 'Y', 'probe.bar.zero']);
+    expect(segmentsOf(bossTimeline(1)).filter((one) => one.name === 'x1pSet')).toHaveLength(2);
+    const grouped = BOSS_PARAMS.flatMap((group) => (group.passes ? [...group.fields, 'holePasses'] : group.fields)).sort();
+    expect(grouped).toEqual(['ballDiameter', 'bossSize', 'clear', 'depth', 'fast', 'holePasses', 'maxZ', 'retract', 'slow']);
+  });
+
+  test('a side: set up out over the top and down beside it, the touches, up again', () => {
+    expect(toolAt(moveOf('x1pSet'), 0).level).toBeGreaterThan(0);
+    expect(toolAt(moveOf('x1pSet'), 0.5).at[0]).toBeGreaterThan(BOSS_R);
+    expect(toolAt(moveOf('x1pSet'), 1).level).toBe(0);
+    expect(toolAt(moveOf('x1pFast'), 1).at).toEqual(moveOf('x1pFast').wall);
+    expect(toolAt(moveOf('x1pUp'), 1).level).toBeGreaterThan(0);
+    expect([0.2, 0.7].map((p) => legAt(p).name)).toEqual(['out', 'down']);
+  });
+
+  test('the touch is drawn where the ball meets the part, the top where the ball stands', () => {
+    expect(Math.hypot(...bossScene('x1pFast', 1).contact)).toBeCloseTo(BOSS_R);
+    expect(bossScene('x1pBack', 0.3).touched).toHaveLength(1);
+    expect(bossScene('x1mSet', 0.1).touched).toHaveLength(1);
+    expect(bossScene('zFast', 1).contact).toEqual(toolAt(moveOf('zFast'), 1).at);
+    // The first pass ends on the centre.
+    expect(toolAt(moveOf('y1c'), 1).at[0]).toBeCloseTo(0);
+    expect(toolAt(moveOf('y1c'), 1).at[1]).toBeCloseTo(0);
+  });
+
+  test('each step its arrow or its word', () => {
+    expect(bossScene('x1pSet', 0.3).motion).toMatchObject({ kind: 'rapid' });
+    expect(bossScene('x1pSet', 0.7, { texts: TEXTS }).tag).toMatchObject({ text: '↓ 5' });
+    expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '100' });
+    // The back-off as the Z plate's: the arrow bare, its figure a dimension.
+    expect(bossScene('x1pBack', 0.4, { texts: TEXTS }).motion).toMatchObject({ kind: 'rapid', feed: null });
+    expect(bossScene('x1pBack', 0.4, { texts: TEXTS }).dims).toEqual([expect.objectContaining({ id: 'retract', text: '2' })]);
+    // The slow touch: its feed, and its reach — twice the back-off — as a limit.
+    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '20' });
+    // Back to the side, and the margin past it: the back-off each, as the Z plate's.
+    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).dims).toEqual([expect.objectContaining({ id: 'retract', text: '2' })]);
+    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).limit).toMatchObject({ text: '2' });
+    expect(bossScene('zSlow', 0.4, { texts: TEXTS }).tag).toMatchObject({ text: '↓ 20' });
+    // The distances (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*): the fast touch's reach, the way up.
+    expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).limit).toMatchObject({ text: '25' });
+    expect(bossScene('x1pUp', 0.5, { texts: TEXTS }).tag).toMatchObject({ text: '↑ 7' });
+  });
+
+  test('a segment\'s end frame is its own move\'s', () => {
+    [1, 2].forEach((passes) => {
+      segmentsOf(bossTimeline(passes)).forEach((one) => {
+        expect(playAt(one.b - 1, { passes }).name).toBe(one.name);
+      });
+    });
+  });
+
+  test('a figure being set loops the step it changes, its part lit', () => {
+    expect(playAt(10, { field: 'clear' })).toMatchObject({ name: 'x1pSet', focus: 'clear' });
+    expect(playAt(10, { field: 'maxZ' })).toMatchObject({ name: 'zFast', focus: 'dim' });
+    expect(playAt(10, { field: 'retract' })).toMatchObject({ name: 'x1pBack', focus: 'retract' });
+    expect(bossScene('x1pSet', 0.2, { texts: TEXTS, focus: 'clear' }).dims.find((one) => one.id === 'clear')).toMatchObject({ lit: true, text: '10' });
+  });
+
+  test('says each step in G-code as the server runs it, and lights its figures', () => {
+    expect(bossCode('zFast', TEXTS)).toBe('G38.2 Z-15 F100');
+    expect(bossCode('zBack', TEXTS)).toBe('G0 Z+2');
+    expect(bossCode('zSlow', TEXTS)).toBe('G38.2 Z-4 F20');
+    expect(bossCode('x1pSet', TEXTS, 1, 0.2)).toEqual(['probe.boss.outCode']);
+    expect(bossCode('x1pSet', TEXTS, 1, 0.7)).toBe('G38.3 Z-7 F100');
+    expect(bossCode('x1pFast', TEXTS)).toBe('G38.2 X-25 F100');
+    expect(bossCode('y1mFast', TEXTS)).toBe('G38.2 Y+25 F100');
+    expect(bossCode('x1pBack', TEXTS)).toBe('G0 X+2');
+    expect(bossCode('x1pSlow', TEXTS)).toBe('G38.2 X-4 F20');
+    expect(bossCode('x1pUp', TEXTS)).toBe('G0 Z+7');
+    expect(bossCode('zero', TEXTS, 2)).toBe('G10 L20 P2 X0 Y0');
+    expect(usesAt('x1pSet', 0.7)).toEqual(['depth', 'retract']);
+    expect(usesAt('zFast', 0.5)).toEqual(['maxZ', 'fast']);
+  });
+
+  test('names each step, reads X and Y, plays the server\'s step with its words', () => {
+    expect(titleOf('y2mUp')).toEqual(['probe.boss.move.up', { pass: 2, axis: 'Y−' }]);
+    expect(bossReadout('zero').after).toBe(true);
+    expect(moveOfPhase('z-fast')).toBe('zFast');
+    expect(moveOfPhase('z-settle')).toBe('zBack');
+    expect(moveOfPhase('z')).toBe('zSlow');
+    expect(moveOfPhase('x1a-out')).toBe('x1pSet');
+    expect(moveOfPhase('x1a-down')).toBe('x1pSet');
+    expect(moveOfPhase('x1a-fast')).toBe('x1pFast');
+    expect(moveOfPhase('x1a')).toBe('x1pSlow');
+    expect(moveOfPhase('y2b-up')).toBe('y2mUp');
+    expect(moveOfPhase('x2-centre')).toBe('x2c');
+    expect(bossWords('z-fast')).toEqual(['probe.boss.phase.top', { axis: 'Z' }]);
+    expect(bossWords('x1a-down')).toEqual(['probe.phase.down', { axis: 'X+' }]);
+    expect(bossWords('x1b-up')).toEqual(['probe.boss.phase.up', { axis: 'X−' }]);
+    expect(bossWords('y1b')).toEqual(['probe.phase.touch', { axis: 'Y−' }]);
+  });
+
+  test('comes into place across, then down to just over the top', () => {
+    expect(positionAt(0).level).toBe(2);
+    expect(positionAt(5900).level).toBe(1);
+  });
+});
+
+describe('the centre from outside\'s steps', () => {
+  test('through the probe, nothing chosen first', () => {
+    expect(stepsOf(methodOf('boss')).map((s) => s.id)).toEqual(['method', 'prepare', 'wire', 'position', 'measure', 'result']);
+  });
+});

@@ -6,15 +6,16 @@ import StatTile from './StatTile';
 import WcsBadge from './WcsBadge';
 import CornerCycle from './CornerCycle';
 import CornerParams from './CornerParams';
-import HoleCycle from './HoleCycle';
-import HoleParams from './HoleParams';
+import CentreCycle from './CentreCycle';
+import CentreParams from './CentreParams';
 import PaperParams from './PaperParams';
 import PaperScene from './PaperScene';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
 import { METHODS, SURFACE, failureKey, phaseWords } from '../machine/probe';
-import { holeWords } from '../machine/holeCycle';
+import { BOSS_CYCLE } from '../machine/bossCycle';
+import { HOLE_CYCLE } from '../machine/holeCycle';
 import { paperScene } from '../machine/paperCycle';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
@@ -33,12 +34,17 @@ const signed = (text) => (text.startsWith('-') || text === NO_READING ? text : `
  * the zero shown on it.
  */
 const EDITORS = {
-  z: ZPlateParams, corner: CornerParams, hole: HoleParams, paper: PaperParams,
+  z: ZPlateParams,
+  corner: CornerParams,
+  hole: (props) => <CentreParams cycle={HOLE_CYCLE} {...props} />,
+  boss: (props) => <CentreParams cycle={BOSS_CYCLE} {...props} />,
+  paper: PaperParams,
 };
 const CYCLES = {
   z: ZPlateCycle,
   corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
-  hole: ({ phase, probe }) => <HoleCycle phase={phase} words={phase ? t(...holeWords(phase)) : null} passes={probe?.params?.holePasses} />,
+  hole: ({ phase, probe }) => <CentreCycle cycle={HOLE_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
+  boss: ({ phase, probe }) => <CentreCycle cycle={BOSS_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
 };
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
@@ -54,7 +60,9 @@ const OUTCOMES = {
   // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
   corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} done className="mx-auto w-full max-w-md" />,
   // X0 Y0 from above, at the middle of the hole.
-  hole: () => <HoleCycle done className="mx-auto w-full max-w-md" />,
+  hole: () => <CentreCycle cycle={HOLE_CYCLE} done className="mx-auto w-full max-w-md" />,
+  // X0 Y0 from above, at the middle of the part.
+  boss: () => <CentreCycle cycle={BOSS_CYCLE} done className="mx-auto w-full max-w-md" />,
   // The paper's zero written: the sheet flat under the tool, the zero's line on the surface.
   paper: ({ probe }) => (
     <PaperScene {...paperScene('zero', 1, { edge: probe?.options?.edge || 'z', surface: surfaceOf(probe) })} dim={null} dia={null} stock={null} label={t('probe.method.paper')} className="mx-auto w-full max-w-md" />

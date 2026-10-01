@@ -72,6 +72,10 @@ export const METHODS = [
     wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe',
   },
   {
+    id: 'boss', key: 'probe.method.boss', note: 'probe.method.bossNote', lay: 'probe.lay.hole', place: 'probe.place.boss',
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe',
+  },
+  {
     id: 'paper', key: 'probe.method.paper', note: 'probe.method.paperNote', how: 'probe.how.paper', place: 'probe.place.paper',
     start: 'probe.position.here', steps: BY_HAND, touches: false,
     choice: { option: 'edge', key: 'probe.edgeLabel', list: EDGES, first: 'z', step: 'probe.step.surface' },

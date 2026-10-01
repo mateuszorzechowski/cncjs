@@ -67,8 +67,24 @@ const HolePictogram = ({ label, className }) => (
   </svg>
 );
 
+/*
+ * The part's pictogram, cut through: the part standing on the table, the 3D
+ * probe down beside it on one side, and the accent heads pointing in — it
+ * touches the part from outside, each side in turn.
+ */
+const BossPictogram = ({ label, className }) => (
+  <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <rect x={4} y={40} width={40} height={4} className="fill-mutS stroke-line" strokeWidth={1.6} />
+    <rect x={16} y={24} width={16} height={16} className="fill-mutS stroke-line" strokeWidth={1.6} />
+    <path d="M3 3 H11 V13 L8.5 15.5 H5.5 L3 13 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M7 15.5 V28" className="stroke-ink" strokeWidth={1.6} />
+    <circle cx={7} cy={30.4} r={2.4} className="fill-field stroke-ink" strokeWidth={1.6} />
+    <path d="M10.6 27.4 L13.4 30.4 L10.6 33.4 Z M37.4 27.4 L34.6 30.4 L37.4 33.4 Z" className="fill-acc" />
+  </svg>
+);
+
 const PICTOGRAMS = {
-  z: ZPlatePictogram, corner: CornerPictogram, hole: HolePictogram, paper: PaperPictogram,
+  z: ZPlatePictogram, corner: CornerPictogram, hole: HolePictogram, boss: BossPictogram, paper: PaperPictogram,
 };
 
 const ProbePicture = ({ method, label, className = '' }) => {

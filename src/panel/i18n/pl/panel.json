@@ -1377,7 +1377,9 @@
       "paper": "Kartka",
       "paperNote": "Ręcznie, kartką papieru: wierzch albo dowolny bok, bez sondy.",
       "hole": "Środek otworu",
-      "holeNote": "Środek okrągłego otworu sondą: X0 i Y0, Z bez zmian."
+      "holeNote": "Środek okrągłego otworu sondą: X0 i Y0, Z bez zmian.",
+      "boss": "Środek z zewnątrz",
+      "bossNote": "Środek czopu albo detalu, sondą od zewnątrz: X0 i Y0, Z bez zmian."
     },
     "how": {
       "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
@@ -1391,7 +1393,8 @@
       "z": "Podjedź frezem nad płytkę, kilka milimetrów nad nią — mniej niż limit dojazdu Z.",
       "corner": "Podjedź frezem nad płytkę, kilka milimetrów nad nią i ok. 8 mm od obu ścianek.",
       "paper": "Podjedź frezem kilka milimetrów nad wybraną powierzchnię — przy boku przed nią. Kartkę trzymaj pod ręką.",
-      "hole": "Opuść kulkę sondy do otworu, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek."
+      "hole": "Opuść kulkę sondy do otworu, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek.",
+      "boss": "Ustaw kulkę sondy nad środkiem detalu, kilka milimetrów nad jego wierzchem — mniej niż limit dojazdu Z."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1452,7 +1455,8 @@
       "paperLift": "Odjazd po pomiarze",
       "holeSize": "Średnica otworu (w przybliżeniu)",
       "ballDiameter": "Średnica kulki",
-      "holePasses": "Przejścia"
+      "holePasses": "Przejścia",
+      "bossSize": "Szerokość detalu (w przybliżeniu)"
     },
     "step": {
       "method": "Metoda",
@@ -1521,7 +1525,7 @@
       "discard": "Odrzuć",
       "close": "Zamknij",
       "again": "Spróbuj ponownie",
-      "found": "Średnica otworu w {{axis}}"
+      "found": "Zmierzony wymiar w {{axis}}"
     },
     "edgeLabel": "Która powierzchnia materiału",
     "edge": {
@@ -1593,7 +1597,8 @@
       "measureAll": "Pomiar · wszystkie osie",
       "paper": "Kartka",
       "hole": "Otwór",
-      "probe": "Sonda"
+      "probe": "Sonda",
+      "part": "Detal"
     },
     "play": {
       "pause": "Pauza",
@@ -1640,14 +1645,10 @@
       "top": "Wierzch materiału"
     },
     "hole": {
-      "pass1": "1. przejście",
-      "pass2": "2. przejście",
-      "axis": {
-        "x": "w X",
-        "y": "w Y"
-      },
       "move": {
-        "touch": "{{pass}}. przejście · {{axis}}: dotyk ścianki",
+        "fast": "{{pass}}. przejście · {{axis}}: szybki dotyk",
+        "back": "{{pass}}. przejście · {{axis}}: cofnięcie",
+        "slow": "{{pass}}. przejście · {{axis}}: wolny pomiar",
         "centre": "{{pass}}. przejście · {{axis}}: na środek",
         "zero": "Zapis zera: X0 i Y0"
       },
@@ -1657,7 +1658,26 @@
         "centre": "{{axis}}: na środek"
       },
       "passesWhy1": "Jedno przejście: 4 dotyki, o połowę krócej. Środek każdej cięciwy okręgu leży na jego środku, więc wystarcza, gdy kulka startuje blisko środka otworu.",
-      "passesWhy2": "Dwa przejścia: drugie od środka znalezionego w pierwszym, z dotykami prostopadle do ścianek. Pewniejsze, gdy start jest daleko od środka — wtedy pierwsze dotyki trafiają ściankę ukośnie."
+      "passesWhy2": "Dwa przejścia: drugie od środka znalezionego w pierwszym, z dotykami prostopadle do ścianek. Pewniejsze, gdy start jest daleko od środka — wtedy pierwsze dotyki trafiają ściankę ukośnie.",
+      "middle": "środek"
+    },
+    "boss": {
+      "move": {
+        "topFast": "Z · szybki zjazd do wierzchu",
+        "topBack": "Z · cofnięcie przed pomiarem",
+        "topSlow": "Z · wolny, dokładny pomiar",
+        "set": "{{pass}}. przejście · {{axis}}: ustawienie za bokiem",
+        "fast": "{{pass}}. przejście · {{axis}}: szybki dotyk boku",
+        "back": "{{pass}}. przejście · {{axis}}: cofnięcie",
+        "slow": "{{pass}}. przejście · {{axis}}: wolny pomiar",
+        "up": "{{pass}}. przejście · {{axis}}: w górę nad detal"
+      },
+      "outCode": "G0 za bok, nad wierzchem",
+      "phase": {
+        "top": "Z: szukam wierzchu",
+        "fast": "{{axis}}: szukam boku",
+        "up": "{{axis}}: w górę nad detal"
+      }
     }
   }
 }

@@ -294,3 +294,25 @@ export const SurfaceGround = ({
     </g>
   );
 };
+
+const USER = 'userSpaceOnUse';
+const SLANT = 'rotate(45)';
+
+/*
+ * The work's hatch, as `<defs>` for `id`: the work cut or seen face on; and,
+ * `${id}far`, the same paler and a little closer — work further back, the
+ * bottom of a hole from above or its far wall from the front (review notes,
+ * 2026-10-01: *"bledsze i trochę gęstsze"*).
+ */
+export const WorkHatch = ({ id }) => (
+  <defs>
+    <pattern id={id} width={7} height={7} patternUnits={USER} patternTransform={SLANT}>
+      <rect width={7} height={7} className="fill-work" />
+      <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
+    </pattern>
+    <pattern id={`${id}far`} width={5} height={5} patternUnits={USER} patternTransform={SLANT}>
+      <rect width={5} height={5} className="fill-work" />
+      <path d="M0 0 V5" className="stroke-hatch" strokeOpacity={0.4} strokeWidth={1} />
+    </pattern>
+  </defs>
+);

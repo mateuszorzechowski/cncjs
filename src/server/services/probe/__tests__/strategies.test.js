@@ -248,6 +248,54 @@ describe('the centre of a hole', () => {
   });
 });
 
+describe('the centre of a part, from outside', () => {
+  const params = { ...probeParams(), ballDiameter: 4, bossSize: 30, clear: 10, depth: 5 };
+  const radius = params.ballDiameter / 2;
+  const [hx, hy] = [-120, -70];
+
+  /** A square part `size` across centred on (hx, hy), its top at Z -50. */
+  const partAt = (size) => [{ x: [hx - size / 2, hx + size / 2], y: [hy - size / 2, hy + size / 2], z: [-80, -50] }];
+  const start = { x: hx + 3, y: hy - 2, z: -45 };
+
+  test('touches the top, then each side from outside: X0 Y0 at the centre, the ball over it', () => {
+    const { outcome, zero, pos } = measure({
+      method: 'boss', params, radius, boxes: partAt(24), start,
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    close(zero, { x: hx, y: hy });
+    expect(Object.keys(zero)).toEqual(['x', 'y']);
+    close(pos, { x: hx, y: hy, z: -50 + params.retract });
+    close(STRATEGIES.boss.found(params, {}, outcome.seen), { x: 24, y: 24 });
+  });
+
+  test('goes down beside a side by the depth under the top it found, not under where it started', () => {
+    const { sent } = measure({
+      method: 'boss', params, radius, boxes: partAt(24), start: { ...start, z: -38 },
+    });
+    // The first way down beside a side, in work coordinates: from the top plus the retract to the depth under it.
+    const down = sent.find((line) => line.includes('G38.3'));
+    expect(wordsOf(down).z + WCO.z).toBeCloseTo(-50 - params.depth, 6);
+  });
+
+  test('one pass, if asked: the same centre', () => {
+    const { zero } = measure({
+      method: 'boss', params: { ...params, holePasses: 1 }, radius, boxes: partAt(24), start,
+    });
+
+    close(zero, { x: hx, y: hy });
+  });
+
+  test('a part wider than its rough size lands the ball on its top: a failure, nothing written', () => {
+    const { outcome, zero } = measure({
+      method: 'boss', params: { ...params, bossSize: 10, clear: 2 }, radius, boxes: partAt(40), start,
+    });
+
+    expect(outcome).toMatchObject({ failure: 'touched', phase: 'x1a-down' });
+    expect(zero).toBeNull();
+  });
+});
+
 describe('the paper', () => {
   const params = { ...probeParams(), paperThickness: 0.1, toolDiameter: 6 };
   const start = { x: -100, y: -50, z: -30 };
