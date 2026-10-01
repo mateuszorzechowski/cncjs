@@ -20,36 +20,39 @@ const WORK = {
   x: 90, y: 60, w: 260, h: 160,
 };
 
-// Each surface: its ring, the sheet on it, and where the tool touches it and from which way.
+// Each surface: its ring, the sheet on it and its edge the tool meets, and where the tool touches it and from which way.
 const SURFACES = {
-  z: { ring: [220, 140], sheet: [190, 110, 60, 60] },
+  z: { ring: [220, 140], sheet: [190, 110, 60, 60], edge: 'M190 110 H250' },
   'x-left': {
-    ring: [90, 140], sheet: [83, 105, 7, 70], wall: [83, 140], angle: 0, dir: 'X+',
+    ring: [90, 140], sheet: [83, 105, 7, 70], edge: 'M83 105 V175', wall: [83, 140], angle: 0, dir: 'X+',
   },
   'x-right': {
-    ring: [350, 140], sheet: [350, 105, 7, 70], wall: [357, 140], angle: 180, dir: 'X−',
+    ring: [350, 140], sheet: [350, 105, 7, 70], edge: 'M357 105 V175', wall: [357, 140], angle: 180, dir: 'X−',
   },
   'y-front': {
-    ring: [220, 220], sheet: [185, 220, 70, 7], wall: [220, 227], angle: -90, dir: 'Y+',
+    ring: [220, 220], sheet: [185, 220, 70, 7], edge: 'M185 227 H255', wall: [220, 227], angle: -90, dir: 'Y+',
   },
   'y-back': {
-    ring: [220, 60], sheet: [185, 53, 70, 7], wall: [220, 53], angle: 90, dir: 'Y−',
+    ring: [220, 60], sheet: [185, 53, 70, 7], edge: 'M185 53 H255', wall: [220, 53], angle: 90, dir: 'Y−',
   },
 };
 
 const Chosen = ({ edge }) => {
   const one = SURFACES[edge];
   const [x, y, w, h] = one.sheet;
+  // The sheet as the drawings have it (review note, 2026-10-01): a soft band, no outline, its one edge darker.
   return (
     <>
-      <rect x={x} y={y} width={w} height={h} className="fill-plate stroke-plateEdge" strokeWidth={1.5} />
+      <rect x={x} y={y} width={w} height={h} className="fill-plate" />
+      <path d={one.edge} className="stroke-plateEdge" fill="none" strokeWidth={1.5} />
       {one.wall ? (
         <ProbeDrop wall={one.wall} angle={one.angle} dir={one.dir} />
       ) : (
-        // The top: the tool from above over the sheet, and the way it comes.
+        // The top, from above: the drops' mark with no point — the tool comes down into the page.
         <>
-          <circle cx={one.ring[0]} cy={one.ring[1]} r={16} className="fill-field stroke-ink" strokeWidth={2} />
-          <text x={one.ring[0]} y={one.ring[1] + 34} textAnchor={MIDDLE} fontSize={12} className="fill-acc font-num font-semibold">{DOWN}</text>
+          <circle cx={one.ring[0]} cy={one.ring[1]} r={13} className="fill-acc" />
+          <circle cx={one.ring[0]} cy={one.ring[1]} r={10.5} className="fill-surf" />
+          <text x={one.ring[0]} y={one.ring[1] + 2.8} textAnchor={MIDDLE} fontSize={8} className="fill-acc font-num font-semibold">{DOWN}</text>
         </>
       )}
     </>
@@ -85,7 +88,8 @@ const PaperChooser = ({ value, onChange }) => {
             >
               {/* The corner's tap target, well past the ring. */}
               <circle cx={cx} cy={cy} r={36} className="fill-transparent" />
-              <circle cx={cx} cy={cy} r={7} className={on ? 'fill-acc stroke-acc' : 'fill-panel stroke-mut'} strokeWidth={2} />
+              {/* The top chosen shows its mark, the ring under it would hide. */}
+              {on && edge.id === 'z' ? null : <circle cx={cx} cy={cy} r={7} className={on ? 'fill-acc stroke-acc' : 'fill-panel stroke-mut'} strokeWidth={2} />}
             </g>
           );
         })}

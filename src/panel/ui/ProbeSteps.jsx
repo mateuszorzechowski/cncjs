@@ -67,7 +67,7 @@ export const MethodStep = ({ onPick }) => (
         onClick={() => onPick(method.id)}
         className="flex flex-col items-center gap-3 rounded-ctl border border-line bg-field p-4 text-center hover:border-acc"
       >
-        <ProbePicture method={method.id} choice={method.choice?.first} label={t(method.key)} className="h-24 w-32" />
+        <ProbePicture method={method.id} label={t(method.key)} className="h-24 w-32" />
         <span className="text-base font-semibold text-ink">{t(method.key)}</span>
         <span className="text-note text-mut">{t(method.note)}</span>
       </button>

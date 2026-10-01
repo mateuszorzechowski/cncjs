@@ -96,7 +96,8 @@ const ProbeMoveStep = ({
       {phone && jogging ? (
         <Sheet title={t('nav.jog')} onClose={() => onJogging(false)} tall>
           <JogWidget machine={machine} className="min-h-0 flex-1" />
-          {onward ? <div className="flex shrink-0 justify-end pt-3">{onward}</div> : null}
+          {/* Going on closes the sheet (review note, 2026-10-01). */}
+          {onward ? <div className="flex shrink-0 justify-end pt-3" onClickCapture={() => onJogging(false)}>{onward}</div> : null}
         </Sheet>
       ) : null}
     </div>
