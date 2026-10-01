@@ -83,13 +83,19 @@ const CentreSide = ({
           <rect width={7} height={7} className="fill-work" />
           <path d="M0 0 V7" className="stroke-hatch" strokeWidth={1} />
         </pattern>
+        {/* Paler and closer: the work behind the hole, further back in the drawing (review notes, 2026-10-01). */}
+        <pattern id={`${id}b`} width={3.5} height={3.5} patternUnits={USER} patternTransform={SLANT}>
+          <rect width={3.5} height={3.5} className="fill-work" />
+          <path d="M0 0 V3.5" className="stroke-hatch" strokeOpacity={0.6} strokeWidth={1} />
+        </pattern>
       </defs>
       {boss ? (
         <path d={`M${-part.r} ${FOOT} V0 H${part.r} V${FOOT}`} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0] - 2} y={0} width={VIEW[2] + 4} height={FOOT + 2} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
-          <path d={`M${-part.r} 0 V${HOLE_DEPTH} H${part.r} V0`} fill="none" className="stroke-mut" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
+          {/* The hole behind the work in front: its walls dashed, the work beyond it paler and closer hatched. */}
+          <path d={`M${-part.r} 0 V${HOLE_DEPTH} H${part.r} V0 Z`} fill={`url(#${id}b)`} className="stroke-mut" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
         </>
       )}
       {zero > 0 ? (
