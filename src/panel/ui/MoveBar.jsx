@@ -91,7 +91,8 @@ const MoveBar = ({
   const chosen = (id, part) => Boolean(picked && picked.ids.includes(id) && (picked.part === null || part === undefined || picked.part === part));
   const fillOf = (id, part = 0) => fills[`${id}:${part}`] || 0;
   return (
-    <div className="flex gap-2 border-t border-line px-3 pb-1 pt-2">
+    // A press here keeps a figure's field focused: the bar is read with it (review note, 2026-10-01).
+    <div onMouseDown={(event) => event.preventDefault()} className="flex gap-2 border-t border-line px-3 pb-1 pt-2">
       {groups.map((group) => {
         const moves = group.subs.flatMap((sub) => sub.moves);
         const playing = moves.some((move) => move.id === active);
@@ -100,7 +101,8 @@ const MoveBar = ({
         return (
           <div key={group.id} className={`relative flex min-w-0 flex-col gap-0.5 overflow-hidden transition-[flex-grow] duration-500 ease-out ${playing ? 'flex-[6_6_0]' : 'flex-[1_1_0]'}`}>
             {/* A stage with no name of its own keeps the line, so its bars stand level with the others'. */}
-            <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(moves.map((move) => move.id))} className={`truncate text-left text-note ${playing ? 'font-semibold text-acc' : 'text-mut'} ${group.name && !(group.folded && playing) ? '' : 'invisible'}`}>{group.name || NO_NAME}</button>
+            {/* Its name goes to the stage folded or open, so a press on it never falls on a dead button and takes a field's focus. */}
+            <button type={BUTTON} disabled={!onPick} onClick={() => onPick(moves.map((move) => move.id))} className={`truncate text-left text-note ${playing ? 'font-semibold text-acc' : 'text-mut'} ${group.name && !(group.folded && playing) ? '' : 'invisible'}`}>{group.name || NO_NAME}</button>
             <div aria-hidden={!playing} className={`flex gap-2 transition-opacity duration-300 ${playing ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
               {group.subs.map((sub) => {
                 const on = sub.moves.some((move) => move.id === active);

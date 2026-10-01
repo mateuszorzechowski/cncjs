@@ -6,15 +6,13 @@ import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
 import { figureColumns } from './ProbeSections';
 import SegmentedChoice from './SegmentedChoice';
-import { useClock, useReducedMotion } from './useClock';
-import usePlayer from './usePlayer';
+import { useReducedMotion } from './useClock';
+import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
   CORNER_GROUPS, CORNER_ORDER, CORNER_PARAMS, LOOP_HOLD_MS, cornerCode, cornerReadout, cornerTimeline, moveOf, playAt, TURN,
 } from '../machine/cornerCycle';
-import {
-  fillsAt, frameAt, rangeOf, timeAt,
-} from '../machine/timeline';
+import { fillsAt, timeAt } from '../machine/timeline';
 import { inMm } from '../machine/units';
 import { useIsPhone, useIsWide } from './shell';
 import { useUnits } from './units';
@@ -64,19 +62,19 @@ const CornerParams = ({
   const units = useUnits();
   const wide = useIsWide();
   const phone = useIsPhone();
-  const [picked, setPicked] = useState(null);
   const [open, setOpen] = useState(null);
   const [chosen, setChosen] = useState(null);
   const still = useReducedMotion();
   const group = CORNER_PARAMS.find((one) => one.id === open);
   // The cycle on the player's clock; a figure being set plays its own loop meanwhile, and the player waits.
   const items = useMemo(() => cornerTimeline({ apart: phone }), [phone]);
-  const player = usePlayer(items, { hold: LOOP_HOLD_MS, running: !picked });
-  const fieldMs = useClock(picked, Boolean(picked));
-  const frame = picked ? playAt(fieldMs, { field: picked, still }) : { ...frameAt(items, player.t), focus: null };
+  const {
+    player, picked, loop, frame, p: shownP, onField, pick,
+  } = useSetupPlayer({
+    items, hold: LOOP_HOLD_MS, playAt, still,
+  });
   const { name, focus } = frame;
-  const p = still && !picked ? 1 : frame.p;
-  const pick = (ids, part = null) => player.seek({ ...rangeOf(items, ids, part), ids, part });
+  const p = shownP;
   const move = moveOf(name);
   const say = (field, text) => figureSaid(field, text, units.rule);
   const drawing = {
@@ -127,13 +125,13 @@ const CornerParams = ({
       <MoveBar
         groups={groups}
         active={BAR_OF[name] || name}
-        fills={picked ? fillsAt(items, timeAt(items, BAR_OF[name] || name, p), false) : fillsAt(items, player.t)}
+        fills={loop ? fillsAt(items, timeAt(items, BAR_OF[name] || name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
         // The moves a figure acts in: the one being set, or else the open group's (review note, 2026-10-01).
         marked={picked || group ? CORNER_ORDER.filter((id) => moveOf(id).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
       />
-      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
+      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={loop} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={AXES.map((axis) => [axis, read[axis]])} />
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
@@ -146,7 +144,7 @@ const CornerParams = ({
     </div>
   );
   const { right, third } = figureColumns({
-    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField: setPicked, lit: move.uses, intro, note,
+    wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField, lit: move.uses, intro, note,
   });
   if (split) {
     return split(left, right, third);

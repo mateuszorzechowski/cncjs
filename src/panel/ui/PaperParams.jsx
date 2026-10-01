@@ -5,15 +5,13 @@ import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
 import { surfaceSection } from './SurfaceChoice';
 import { figureColumns } from './ProbeSections';
-import { useClock, useReducedMotion } from './useClock';
-import usePlayer from './usePlayer';
+import { useReducedMotion } from './useClock';
+import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
   LOOP_HOLD_MS, PAPER_GROUPS, PAPER_PARAMS, moveOf, paperCode, paperReadout, paperScene, paperTimeline, playAt,
 } from '../machine/paperCycle';
-import {
-  fillsAt, frameAt, rangeOf, timeAt,
-} from '../machine/timeline';
+import { fillsAt, timeAt } from '../machine/timeline';
 import { inMm } from '../machine/units';
 import { SURFACE, surfaceShifts } from '../machine/surface';
 import { useIsWide } from './shell';
@@ -43,16 +41,16 @@ const PaperParams = ({
 }) => {
   const units = useUnits();
   const wide = useIsWide();
-  const [picked, setPicked] = useState(null);
   const [open, setOpen] = useState(null);
   const still = useReducedMotion();
   const items = useMemo(() => paperTimeline(), []);
-  const player = usePlayer(items, { hold: LOOP_HOLD_MS, running: !picked });
-  const fieldMs = useClock(picked, Boolean(picked));
-  const frame = picked ? playAt(fieldMs, { field: picked, still }) : { ...frameAt(items, player.t), focus: null };
+  const {
+    player, picked, loop, frame, p: shownP, onField, pick,
+  } = useSetupPlayer({
+    items, hold: LOOP_HOLD_MS, playAt, still,
+  });
   const { name, focus } = frame;
-  const p = still && !picked ? 1 : frame.p;
-  const pick = (ids, part = null) => player.seek({ ...rangeOf(items, ids, part), ids, part });
+  const p = shownP;
   const say = (field, text) => figureSaid(field, text, units.rule);
   const scene = paperScene(name, p, {
     edge: chosen, texts, say, focus, surface,
@@ -87,13 +85,13 @@ const PaperParams = ({
       <MoveBar
         groups={groups}
         active={name}
-        fills={picked ? fillsAt(items, timeAt(items, name, p), false) : fillsAt(items, player.t)}
+        fills={loop ? fillsAt(items, timeAt(items, name, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
         // The moves a figure acts in: the one being set, or else the open group's (review note, 2026-10-01).
         marked={picked ? [MOVED_BY[picked]] : marks}
       />
-      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={Boolean(picked)} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
+      <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={loop} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <ProbeReadout wcs={wcs} after={read.after} axes={[[read.axis, read.value]]} />
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
@@ -109,7 +107,7 @@ const PaperParams = ({
     texts,
     onText,
     bad,
-    onField: setPicked,
+    onField,
     lit: uses,
     intro,
     note,
