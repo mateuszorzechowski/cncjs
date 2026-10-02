@@ -1788,7 +1788,10 @@
         "area": "Obszar",
         "centre": "Środek"
       },
-      "scale": "Skala wysokości"
+      "scale": "Skala wysokości",
+      "smooth": "Wygładzenie",
+      "heat": "Heatmapa",
+      "look": "Wygląd mapy"
     }
   }
 }

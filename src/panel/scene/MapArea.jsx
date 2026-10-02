@@ -3,18 +3,26 @@ import * as THREE from 'three';
 
 /**
  * A height map's area on the machine (Mateusz, 2026-10-02: "opcja A"): a
- * sheet lying at the work's Z0 — a faint plane, its edge a hairline and a
- * paler grid through the points inside — and each point to measure a thin
- * ring flat on it, filled once measured (`done`, `{ i, j }`), the sheet shaded
- * by the heights measured so far (`heights`). No line crosses
- * a ring: the edge and the grid stop at it. A point the area was given by is
- * a small cross round it, its arms clear of the ring.
+ * sheet lying at the work's Z0 — its edge a hairline, a paler grid through
+ * the points inside — each point to measure a thin ring flat on it, filled
+ * once measured (`done`, `{ i, j }`). No line crosses a ring: the edge and the
+ * grid stop at it. A point the area was given by is a small cross round it.
+ *
+ * Measured (`heights`, `{ heights: [{ i, j, dz }], low, high }`), the sheet
+ * is raised by each height times `scale` and shaded by it (2026-10-03): pale
+ * to deep in the accent, or — `heat` — through the heatmap's colours.
+ * `smooth` draws it as a smooth surface through the points rather than flat
+ * between them: for the eye only, the program is still bent between the
+ * points as measured.
  *
  * `area` and `given` in work millimetres, placed by `offset` as the
  * program's path is; `nx` × `ny` points edge to edge as the server measures.
  */
 
-const along = (from, to, n, k) => (n > 1 ? from + ((to - from) * k) / (n - 1) : from);
+// Each cell drawn this many times finer when smooth.
+const FINE = 8;
+// Samples along each line of the grid, so it lies on a smooth sheet too.
+const LINE_STEPS = 8;
 
 /** A geometry made once per change and let go of after. */
 const useGeometry = (make, deps) => {
@@ -35,80 +43,115 @@ const Lines = ({ segments, color, opacity }) => {
   );
 };
 
-/** From point `a` to `b`, `[x, y, z]`, less `r` at each end: a line that stops at the rings. */
-const between = (a, b, r) => {
-  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-  const length = Math.hypot(...d) || 1;
-  const u = d.map((v) => (v / length) * r);
-  return [[a[0] + u[0], a[1] + u[1], a[2] + u[2]], [b[0] - u[0], b[1] - u[1], b[2] - u[2]]];
+// Catmull-Rom between `b` and `c`, `t` from 0 to 1: a smooth curve through every point.
+const smoothly = (a, b, c, d, t) => 0.5 * ((2 * b) + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
+
+/** The height at grid position `(u, v)` — `0 … nx-1`, `0 … ny-1` — flat between points, or smooth through them. */
+const surfaceOf = (values, nx, ny, smooth) => (u, v) => {
+  const at = (i, j) => values[Math.min(ny - 1, Math.max(0, j))][Math.min(nx - 1, Math.max(0, i))];
+  const i = Math.min(nx - 2, Math.max(0, Math.floor(u)));
+  const j = Math.min(ny - 2, Math.max(0, Math.floor(v)));
+  const a = u - i;
+  const b = v - j;
+  if (!smooth) {
+    return at(i, j) * (1 - a) * (1 - b) + at(i + 1, j) * a * (1 - b) + at(i, j + 1) * (1 - a) * b + at(i + 1, j + 1) * a * b;
+  }
+  const row = (jj) => smoothly(at(i - 1, jj), at(i, jj), at(i + 1, jj), at(i + 2, jj), a);
+  return smoothly(row(j - 1), row(j), row(j + 1), row(j + 2), b);
 };
 
-/*
- * The sheet itself, a vertex at each point: raised by the heights measured
- * so far, times `scale` (Mateusz, 2026-10-03: a slider to bring the
- * differences out), and shaded by them — pale low, deeper high, blended
- * between points — an even middle shade where nothing is measured yet.
- */
-const Sheet = ({
-  nodes, nx, ny, shares, color, ground,
-}) => {
-  const key = JSON.stringify([nodes, shares]);
-  const geometry = useGeometry(() => {
-    const base = new THREE.Color(ground);
-    const deep = new THREE.Color(color);
-    const colors = shares.flatMap((share) => {
-      const tint = base.clone().lerp(deep, share);
-      return [tint.r, tint.g, tint.b];
-    });
-    const index = [];
-    for (let j = 0; j < ny - 1; j++) {
-      for (let i = 0; i < nx - 1; i++) {
-        const a = j * nx + i;
-        index.push(a, a + 1, a + nx, a + 1, a + nx + 1, a + nx);
-      }
+/** A colour for a share of the range, 0 low to 1 high — the accent's shades, or the heatmap's colours; null, not measured. */
+const tintOf = (palette, ground, color) => {
+  const base = new THREE.Color(ground);
+  const deep = new THREE.Color(color);
+  const heat = palette ? palette.map((one) => new THREE.Color(one)) : null;
+  return (share) => {
+    if (share === null) {
+      return base.clone().lerp(deep, 0.35);
     }
-    const made = new THREE.BufferGeometry();
-    made.setAttribute('position', new THREE.Float32BufferAttribute(nodes.flat(), 3));
-    made.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    made.setIndex(index);
-    return made;
-  }, [key, color, ground]);
-  return (
-    <mesh geometry={geometry}>
-      <meshBasicMaterial vertexColors transparent opacity={0.45} depthWrite={false} side={THREE.DoubleSide} />
-    </mesh>
-  );
+    if (!heat) {
+      return base.clone().lerp(deep, 0.1 + 0.6 * share);
+    }
+    const at = Math.min(heat.length - 1.0001, share * (heat.length - 1));
+    const k = Math.floor(at);
+    return heat[k].clone().lerp(heat[k + 1], at - k).lerp(base, 0.35);
+  };
 };
 
 const MapArea = ({
-  area, nx, ny, given = [], done = [], heights = null, scale = 1, offset, color, ground,
+  area, nx, ny, given = [], done = [], heights = null, scale = 1, smooth = false, heat = null, offset, color, ground,
 }) => {
   const z = offset.z;
   const x0 = area.x[0] + offset.x;
   const x1 = area.x[1] + offset.x;
   const y0 = area.y[0] + offset.y;
   const y1 = area.y[1] + offset.y;
-  const xs = Array.from({ length: nx }, (_, i) => along(x0, x1, nx, i));
-  const ys = Array.from({ length: ny }, (_, j) => along(y0, y1, ny, j));
+  const xAt = (u) => x0 + ((x1 - x0) * u) / Math.max(1, nx - 1);
+  const yAt = (v) => y0 + ((y1 - y0) * v) / Math.max(1, ny - 1);
   const step = Math.min((x1 - x0) / Math.max(1, nx - 1), (y1 - y0) / Math.max(1, ny - 1));
   // A ring a sixteenth of the step, no larger than 1.5 mm: a coarse grid's rings do not swell.
   const r = Math.min(1.5, Math.max(0.25, step / 16));
 
-  // Each point where it is drawn: raised by its height measured, times the scale; and its shade.
+  // Each point's height measured, 0 where none is yet.
   const byPoint = new Map((heights?.heights || []).map(({ i, j, dz }) => [`${i},${j}`, dz]));
+  const values = Array.from({ length: ny }, (_, j) => Array.from({ length: nx }, (__, i) => byPoint.get(`${i},${j}`) ?? 0));
+  const surface = surfaceOf(values, nx, ny, smooth);
   const span = heights ? heights.high - heights.low : 0;
-  const node = (i, j) => [xs[i], ys[j], z + (byPoint.get(`${i},${j}`) ?? 0) * scale];
-  const nodes = ys.flatMap((y, j) => xs.map((x, i) => node(i, j)));
-  const shares = ys.flatMap((y, j) => xs.map((x, i) => {
-    const dz = byPoint.get(`${i},${j}`);
-    return dz === undefined || span < 1e-6 ? 0.35 : 0.1 + 0.6 * ((dz - heights.low) / span);
-  }));
+  const lift = (u, v) => z + surface(u, v) * scale;
+  const point = (u, v) => [xAt(u), yAt(v), lift(u, v)];
 
-  // From one point to the next along each row and each column, stopping at the rings: the edge's, and the grid's inside.
+  // The sheet, finer when smooth, each vertex shaded by its height — or the middle shade near a point not measured.
+  const fine = smooth ? FINE : 1;
+  const cols = (nx - 1) * fine + 1;
+  const rows = (ny - 1) * fine + 1;
+  const sheetKey = JSON.stringify([x0, x1, y0, y1, z, nx, ny, heights, scale, smooth, heat, color, ground]);
+  const sheet = useGeometry(() => {
+    const tint = tintOf(heat, ground, color);
+    const positions = [];
+    const colors = [];
+    for (let rr = 0; rr < rows; rr++) {
+      for (let c = 0; c < cols; c++) {
+        const u = c / fine;
+        const v = rr / fine;
+        positions.push(...point(u, v));
+        const near = `${Math.round(u)},${Math.round(v)}`;
+        const share = byPoint.has(near) && span > 1e-6 ? Math.min(1, Math.max(0, (surface(u, v) - heights.low) / span)) : null;
+        const shade = tint(share);
+        colors.push(shade.r, shade.g, shade.b);
+      }
+    }
+    const index = [];
+    for (let rr = 0; rr < rows - 1; rr++) {
+      for (let c = 0; c < cols - 1; c++) {
+        const a = rr * cols + c;
+        index.push(a, a + 1, a + cols, a + 1, a + cols + 1, a + cols);
+      }
+    }
+    const made = new THREE.BufferGeometry();
+    made.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    made.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    made.setIndex(index);
+    return made;
+  }, [sheetKey]);
+
+  // Along each row and column from one point to the next on the sheet, stopping a ring's width short of each.
+  const gapU = r / Math.max(1e-6, (x1 - x0) / Math.max(1, nx - 1));
+  const gapV = r / Math.max(1e-6, (y1 - y0) / Math.max(1, ny - 1));
+  const run = (from, to, at) => Array.from({ length: LINE_STEPS }, (_, s) => [
+    at(from + ((to - from) * s) / LINE_STEPS), at(from + ((to - from) * (s + 1)) / LINE_STEPS),
+  ]);
   const edge = [];
   const inner = [];
-  ys.forEach((y, j) => xs.slice(1).forEach((x, k) => (j === 0 || j === ny - 1 ? edge : inner).push(between(node(k, j), node(k + 1, j), r))));
-  xs.forEach((x, i) => ys.slice(1).forEach((y, k) => (i === 0 || i === nx - 1 ? edge : inner).push(between(node(i, k), node(i, k + 1), r))));
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx - 1; i++) {
+      (j === 0 || j === ny - 1 ? edge : inner).push(...run(i + gapU, i + 1 - gapU, (u) => point(u, j)));
+    }
+  }
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < ny - 1; j++) {
+      (i === 0 || i === nx - 1 ? edge : inner).push(...run(j + gapV, j + 1 - gapV, (v) => point(i, v)));
+    }
+  }
   // A cross round each point given, its arms from just off the ring outwards.
   const crosses = given.flatMap(({ x, y }) => {
     const cx = x + offset.x;
@@ -123,11 +166,13 @@ const MapArea = ({
 
   return (
     <>
-      <Sheet nodes={nodes} nx={nx} ny={ny} shares={shares} color={color} ground={ground} />
+      <mesh geometry={sheet}>
+        <meshBasicMaterial vertexColors transparent opacity={heat ? 0.6 : 0.45} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
       <Lines segments={edge} color={color} opacity={0.9} />
       <Lines segments={inner} color={color} opacity={0.25} />
-      {ys.flatMap((y, j) => xs.map((x, i) => (
-        <mesh key={`${i},${j}`} geometry={measured.has(`${i},${j}`) ? disc : ring} position={node(i, j)}>
+      {values.flatMap((row, j) => row.map((_, i) => (
+        <mesh key={`${i},${j}`} geometry={measured.has(`${i},${j}`) ? disc : ring} position={[xAt(i), yAt(j), lift(i, j)]}>
           <meshBasicMaterial color={color} side={THREE.DoubleSide} />
         </mesh>
       )))}

@@ -1788,7 +1788,10 @@
         "area": "Area",
         "centre": "Centre"
       },
-      "scale": "Height scale"
+      "scale": "Height scale",
+      "smooth": "Smooth",
+      "heat": "Heatmap",
+      "look": "How the map is drawn"
     }
   }
 }

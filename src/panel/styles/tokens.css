@@ -103,6 +103,13 @@
   --rapid: #a86f00;
   --cutTop: #3f93cf;
   --cutDeep: #12266b;
+  /* A height map's heatmap, low to high (Mateusz, 2026-10-03): blue, cyan,
+   * green, yellow, red — the order every reader of a heatmap already knows. */
+  --heat0: #2b5fd9;
+  --heat1: #1aa7c4;
+  --heat2: #2fa84f;
+  --heat3: #e0b416;
+  --heat4: #d4362a;
   --red: #c62525;
   --grn: #12794a;
   --amb: #a96400;
@@ -316,6 +323,11 @@
   --rapid: #e0a53c;
   --cutTop: #7fd0ff;
   --cutDeep: #4a70e0;
+  --heat0: #5b8cff;
+  --heat1: #3cc8e0;
+  --heat2: #4cc46c;
+  --heat3: #f0c93a;
+  --heat4: #ff5a4a;
 }
 
 [data-density='compact'] {

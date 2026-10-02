@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import HeightMapGrid from './HeightMapGrid';
 import MapPreview3D from './MapPreview3D';
+import SegmentedChoice from './SegmentedChoice';
 import Slider from './Slider';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
@@ -30,7 +31,10 @@ export const HeightMapPosition = ({ grid, outline }) => (grid?.xs ? (
 
 // How much the heights are brought out in 3D: a step on the slider, kept from the measuring to the result.
 const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
-let lastScale = 20;
+// How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, and in the heatmap's colours; either, both or neither.
+const LOOKS = ['smooth', 'heat'];
+const LOOK_WORDS = { smooth: 'probe.map.smooth', heat: 'probe.map.heat' };
+const kept = { scale: 20, looks: [] };
 
 /**
  * The height map on the machine in 3D, the same while it is measured and once
@@ -45,7 +49,8 @@ const HeightMapView = ({
   probe, machine, done, heights, children = null,
 }) => {
   const units = useUnits();
-  const [scale, setScale] = useState(lastScale);
+  const [scale, setScale] = useState(kept.scale);
+  const [looks, setLooks] = useState(kept.looks);
   const options = probe?.options;
   if (!options?.x) {
     return null;
@@ -59,18 +64,35 @@ const HeightMapView = ({
         done={done}
         heights={heights}
         scale={scale}
+        smooth={looks.includes('smooth')}
+        heat={looks.includes('heat')}
         className="h-64 @3xl/shell:h-80"
       />
-      <Slider
-        steps={SCALES}
-        value={scale}
-        onChange={(next) => {
-          lastScale = next;
-          setScale(next);
-        }}
-        label={t('probe.map.scale')}
-        say={(value) => `×${value}`}
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Slider
+          steps={SCALES}
+          value={scale}
+          onChange={(next) => {
+            kept.scale = next;
+            setScale(next);
+          }}
+          label={t('probe.map.scale')}
+          say={(value) => `×${value}`}
+          className="min-w-64 flex-1"
+        />
+        <SegmentedChoice
+          options={LOOKS}
+          isOn={(one) => looks.includes(one)}
+          onChange={(one) => {
+            const next = looks.includes(one) ? looks.filter((other) => other !== one) : [...looks, one];
+            kept.looks = next;
+            setLooks(next);
+          }}
+          format={(one) => t(LOOK_WORDS[one])}
+          label={t('probe.map.look')}
+          compact
+        />
+      </div>
       {children}
       <div className="grid gap-2 @3xl/shell:grid-cols-3">
         <StatTile label={t('probe.map.low')} value={said(heights?.low)} unit={units.length} />

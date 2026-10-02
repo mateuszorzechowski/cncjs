@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Scene from '../scene/Scene';
 import MapArea from '../scene/MapArea';
 import { useSceneColors } from '../scene/colors';
@@ -12,32 +12,28 @@ import { readToolpath } from '../machine/toolpath';
  * Ścieżka's and the jog's scene, not a drawing of its own): the travel, the
  * loaded program's path, the work zero and the tool where it stands — so a
  * corner taken by jog is seen where it is — and the area with its points at
- * Z0 (`MapArea`). It turns and zooms, and after a few seconds untouched
- * glides back to the isometric view, as the file preview does.
+ * Z0 (`MapArea`). It turns and zooms.
+ *
+ * Framed on the area the first time it is drawn, and again when the area
+ * changes — until the operator moves the camera: from then on it stays where
+ * they put it, and comes back there on the next of these steps (Mateusz,
+ * 2026-10-03: *"jak zmienię ustawienia kamery to nie przywracaj"*). The
+ * scene's memory (`memory="map"`) keeps the pose between them.
  */
 
 const LAYERS = { machineArea: true, path: true, wcsAxes: true };
 const NO_OFFSET = { x: 0, y: 0, z: 0 };
-const IDLE_MS = 4000;
-const GLIDE_MS = 700;
+
+// Kept across these steps, as the camera is: the area last framed, and whether the operator has moved the view since.
+const framing = { area: null, moved: false };
 
 const MapPreview3D = ({
-  machine, grid, mode = null, done = [], heights = null, scale = 1, className = '',
+  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, className = '',
 }) => {
   const colors = useSceneColors();
-  const [home, setHome] = useState(0);
-  // The view fills the frame with the area (Mateusz, 2026-10-02), first and after every return home.
   const [fit, setFit] = useState(0);
-  const idle = useRef(null);
-  const hold = () => clearTimeout(idle.current);
-  const release = () => {
-    clearTimeout(idle.current);
-    idle.current = setTimeout(() => {
-      setHome((n) => n + 1);
-      setFit((n) => n + 1);
-    }, IDLE_MS);
-  };
-  useEffect(() => () => clearTimeout(idle.current), []);
+  // A fit asked before the scene has drawn has no camera to move.
+  const [ready, setReady] = useState(false);
 
   const toolpath = useMemo(() => readToolpath(machine.gcode), [machine.gcode]);
   // Settled to a value, so a status report four times a second does not rebuild the scene (see `PathWidget`).
@@ -51,11 +47,13 @@ const MapPreview3D = ({
     min: { x: area.x[0] + offset.x, y: area.y[0] + offset.y, z: offset.z },
     max: { x: area.x[1] + offset.x, y: area.y[1] + offset.y, z: offset.z },
   }] : []), [areaKey, offset]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Framed on a new area, unless the operator has put the camera somewhere of their own.
   useEffect(() => {
-    if (areaKey) {
+    if (ready && areaKey && !framing.moved && framing.area !== areaKey) {
+      framing.area = areaKey;
       setFit((n) => n + 1);
     }
-  }, [areaKey]);
+  }, [ready, areaKey]);
   const scene = useMemo(() => composeScene({
     settings: machine.settings, envelope: machine.envelope, wcs: machine.modal?.wcs, offset, toolpath, layers: LAYERS, factor: machine.units?.factor, also,
   }), [machine.settings, machine.envelope, machine.modal?.wcs, offset, toolpath, machine.units?.factor, also]);
@@ -67,15 +65,14 @@ const MapPreview3D = ({
         tool={toolPoint(machine.machinePosition)}
         layers={LAYERS}
         view={DEFAULT_VIEW}
-        revision={home}
+        revision={0}
         memory="map"
         fit={fit}
         focus={also[0] || null}
-        // Framed on the area once the scene has drawn: a fit asked before that has no camera to move.
-        onReady={() => setFit((n) => n + 1)}
-        onFree={release}
-        onGrab={hold}
-        glideMs={GLIDE_MS}
+        onReady={() => setReady(true)}
+        onGrab={() => {
+          framing.moved = true;
+        }}
       >
         {area ? (
           <MapArea
@@ -87,6 +84,8 @@ const MapPreview3D = ({
             done={done}
             heights={heights}
             scale={scale}
+            smooth={smooth}
+            heat={heat ? [colors.heat0, colors.heat1, colors.heat2, colors.heat3, colors.heat4] : null}
             offset={offset}
             color={colors.work}
             ground={colors.ground}
