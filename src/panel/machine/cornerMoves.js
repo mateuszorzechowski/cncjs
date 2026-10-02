@@ -9,6 +9,18 @@
 const number = (text) => Number(String(text ?? '').replace(',', '.')) || 0;
 const sum = (...texts) => String(texts.reduce((all, text) => all + number(text), 0));
 
+/** A Z move's way, the sum of its two figures (`parts`). */
+export const sumOf = (move, texts) => sum(...move.parts.map((field) => texts[field]));
+
+/*
+ * Where a Z move's figure comes from, said under the drawing after its title
+ * (rule 1, Mateusz 2026-10-02) — `[key, vars]`, or null.
+ */
+const SUM_KEYS = { 'depth,retract': 'probe.sum.retractDepth', 'depth,lift': 'probe.sum.depthLift' };
+export const explainOf = (move, texts, say = (field, text) => text) => (move.parts
+  ? [SUM_KEYS[move.parts.join()], { sum: say(move.parts[0], sumOf(move, texts)), ...Object.fromEntries(move.parts.map((field) => [field, say(field, texts[field])])) }]
+  : null);
+
 // Where the tool stands from above: over the plate, out past each wall, at
 // each wall (a radius off it) and backed off it.
 export const C0 = [142, 116];
@@ -34,7 +46,7 @@ const K0 = [130, 140];
  * A set-up and the lift are a move a line of G-code (rule, Mateusz
  * 2026-10-02), each on its `plane`: `xy` with the figure it goes by (`say`),
  * `z` with the two figures it adds up (`parts`, below and above the plate's
- * top, review notes 2026-09-30) — `down` a G38.3, the rest G0.
+ * top), said as their sum (rule 1) — `down` a G38.3, the rest G0.
  */
 export const MOVES = {
   zFast: {

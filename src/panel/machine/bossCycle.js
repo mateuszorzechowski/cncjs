@@ -20,7 +20,7 @@
  */
 
 import {
-  AXES, BACK, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, build, clamp, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
+  AXES, BACK, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
 import { bossSide } from './bossSide';
 import { frameAt, layOut, totalOf } from './timeline';
@@ -226,7 +226,7 @@ export const bossScene = (name, p, {
 export const bossCode = (name, texts, wcs = 1, p = 0) => {
   const move = MOVES[name];
   const twice = fmt(2 * numberOf(texts.retract));
-  const down = fmt(numberOf(texts.retract) + numberOf(texts.depth));
+  const down = downOf(texts);
   const AXIS = move.axis?.toUpperCase();
   // Moving in towards the part is against the side's sign.
   const inward = `${AXIS}${move.sign > 0 ? '-' : '+'}`;

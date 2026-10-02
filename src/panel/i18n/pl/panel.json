@@ -1682,6 +1682,10 @@
         "fast": "{{axis}}: szukam boku",
         "up": "{{axis}}: w górę nad detal"
       }
+    },
+    "sum": {
+      "retractDepth": "{{sum}} = {{retract}} cofnięcia + {{depth}} zejścia",
+      "depthLift": "{{sum}} = {{depth}} zejścia + {{lift}} odjazdu"
     }
   }
 }

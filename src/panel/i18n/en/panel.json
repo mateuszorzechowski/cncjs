@@ -1682,6 +1682,10 @@
         "fast": "{{axis}}: looking for the side",
         "up": "{{axis}}: up over the part"
       }
+    },
+    "sum": {
+      "retractDepth": "{{sum}} = {{retract}} back-off + {{depth}} depth",
+      "depthLift": "{{sum}} = {{depth}} depth + {{lift}} lift"
     }
   }
 }

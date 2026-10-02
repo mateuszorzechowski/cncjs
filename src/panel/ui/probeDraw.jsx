@@ -144,10 +144,11 @@ export const Head = ({ x, y, dir, size, className }) => {
 /*
  * A dimension along an axis, `from` → `to` at cross position `at`, with ticks
  * across it: a way (both heads in), a search limit (`limit`: dashed, one head
- * where it ends), or a short one (heads outside, pointing in).
+ * where it ends), or a short one (heads outside, pointing in). A way made of
+ * two figures and said as their sum has a short tick where they meet (`mid`).
  */
 export const Dimension = ({
-  axis = 'v', at, from, to, limit = false, lit = false, size,
+  axis = 'v', at, from, to, mid = null, limit = false, lit = false, size,
 }) => {
   const stroke = lit ? 'stroke-acc' : 'stroke-mut';
   const fill = lit ? 'fill-acc' : 'fill-mut';
@@ -175,6 +176,7 @@ export const Dimension = ({
   return (
     <g>
       <path d={`${tick(from)} ${tick(to)}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />
+      {mid === null ? null : <path d={v ? `M${at - DIM_TICK / 2} ${mid} H${at + DIM_TICK / 2}` : `M${mid} ${at - DIM_TICK / 2} V${at + DIM_TICK / 2}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />}
       <path d={line} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} strokeDasharray={limit && !small ? DASH : undefined} />
       {heads}
     </g>

@@ -120,7 +120,7 @@ const CentreSide = ({
       {vdims.map((dim) => (
         <g key={dim.id} opacity={fade(dim.lit ? dim.id : 'retract')}>
           {dim.mid === undefined ? (
-            <Dimension axis={ALONG} at={dim.at} from={-dim.from} to={-dim.to} limit={dim.limit} lit={dim.lit} size={size} />
+            <Dimension axis={ALONG} at={dim.at} from={-dim.from} to={-dim.to} mid={dim.split === undefined ? null : -dim.split} limit={dim.limit} lit={dim.lit} size={size} />
           ) : (
             // A slow touch's reach: one line, its way to the top and the margin past it.
             <ReachDimension axis={ALONG} at={dim.at} from={-dim.from} mid={-dim.mid} to={-dim.to} lit={dim.lit} size={size} />

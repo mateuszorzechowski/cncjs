@@ -11,7 +11,7 @@ import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
-  CORNER_GROUPS, CORNER_ORDER, CORNER_PARAMS, LOOP_HOLD_MS, cornerCode, cornerReadout, cornerTimeline, moveOf, playAt, TURN,
+  CORNER_GROUPS, CORNER_ORDER, CORNER_PARAMS, LOOP_HOLD_MS, cornerCode, explainOf, cornerReadout, cornerTimeline, moveOf, playAt, TURN,
 } from '../machine/cornerCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
 import { inMm } from '../machine/units';
@@ -20,6 +20,7 @@ import { useUnits } from './units';
 import { t } from '../i18n';
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
+const NBSP = ' ';
 
 const AXES = ['x', 'y', 'z'];
 // The descent beside the wall is the X set-up's, on the bar.
@@ -83,6 +84,8 @@ const CornerParams = ({
   const mm = Object.fromEntries(['toolDiameter', 'wallX', 'wallY', 'cornerThickness'].map((field) => [field, inMm(numberOf(texts[field]), units.rule) ?? 0]));
   const read = cornerReadout(name, corner, mm);
   const title = t(move.titleKey);
+  // Where the move's figure comes from, when it is a sum (rule 1, Mateusz 2026-10-02).
+  const why = explainOf(move, texts, say);
   // A view picked by hand holds while its stage plays.
   const view = chosen && chosen.group === move.group ? chosen.view : viewOf(move, p, focus);
 
@@ -140,6 +143,8 @@ const CornerParams = ({
           {/* A way to a place with no numbers to show says where it goes. */}
           {code.parts.length ? null : <span>{t('probe.corner.overCode')}</span>}
         </span>
+        {/* Its line kept when empty, so the caption does not jump (review note #9, 2026-10-02). */}
+        <span className="w-full text-note text-mut">{why ? t(...why) : NBSP}</span>
       </div>
     </div>
   );

@@ -146,7 +146,16 @@ export const fmt = (v) => String(Math.round(v * 1000) / 1000);
 // How far a fast touch of a side searches: out past the side, and in to the middle thought.
 export const reachOf = (texts) => fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear));
 
+// How far down beside a side and up again: the back-off over the top and the depth under it.
+export const downOf = (texts) => fmt(numberOf(texts.retract) + numberOf(texts.depth));
+
 /** Where a step's figure comes from, said under the drawing after its title — `[key, vars]`, or null. */
-export const explainOf = (move, texts, say = (field, text) => text) => (move.kind === 'fast'
-  ? ['probe.boss.reachWhy', { reach: say('clear', reachOf(texts)), clear: say('clear', texts.clear), size: say('bossSize', texts.bossSize) }]
-  : null);
+export const explainOf = (move, texts, say = (field, text) => text) => {
+  if (move.kind === 'fast') {
+    return ['probe.boss.reachWhy', { reach: say('clear', reachOf(texts)), clear: say('clear', texts.clear), size: say('bossSize', texts.bossSize) }];
+  }
+  if (move.kind === 'down' || move.kind === 'up') {
+    return ['probe.sum.retractDepth', { sum: say('depth', downOf(texts)), retract: say('retract', texts.retract), depth: say('depth', texts.depth) }];
+  }
+  return null;
+};
