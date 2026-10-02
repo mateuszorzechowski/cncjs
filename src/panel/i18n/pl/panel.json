@@ -1787,7 +1787,8 @@
         "grid": "Siatka (punkty)",
         "area": "Obszar",
         "centre": "Środek"
-      }
+      },
+      "scale": "Skala wysokości"
     }
   }
 }

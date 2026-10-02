@@ -198,12 +198,12 @@ export const MeasureStep = ({ probe, machine = null }) => {
   );
 };
 
-export const ResultStep = ({ probe, plate }) => {
+export const ResultStep = ({ probe, plate, machine = null }) => {
   const units = useUnits();
   const Outcome = OUTCOMES[probe?.method];
   // A height map is a surface to keep, not a zero: no system, no shift.
   if (probe?.state !== 'failed' && probe?.result?.map) {
-    return <HeightMapResult map={probe.result.map} />;
+    return <HeightMapResult probe={probe} machine={machine} />;
   }
   if (probe?.state === 'failed') {
     const { code, phase } = probe.failure || {};

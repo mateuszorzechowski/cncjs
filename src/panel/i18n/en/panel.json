@@ -1787,7 +1787,8 @@
         "grid": "Grid (points)",
         "area": "Area",
         "centre": "Centre"
-      }
+      },
+      "scale": "Height scale"
     }
   }
 }

@@ -416,6 +416,9 @@ describe('the height map', () => {
     const result = controller.probe.result;
     expect(result.map.dz[1][0]).toBeCloseTo(0.2, 6);
     // Each point once, in the order it was gone to: the second row backwards.
+    // The heights as they came in, from the first point's: the last 0.2 mm up.
+    expect(controller.probeReport().partial).toMatchObject({ low: 0, high: expect.closeTo(0.2, 6) });
+    expect(controller.probeReport().partial.heights).toHaveLength(4);
     expect(controller.probeReport().marks).toEqual([{ n: 0, i: 0, j: 0 }, { n: 1, i: 1, j: 0 }, { n: 2, i: 1, j: 1 }, { n: 3, i: 0, j: 1 }]);
     expect(heightMap.current()).toBeNull();
 

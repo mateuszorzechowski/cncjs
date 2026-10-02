@@ -21,7 +21,9 @@ const NO_OFFSET = { x: 0, y: 0, z: 0 };
 const IDLE_MS = 4000;
 const GLIDE_MS = 700;
 
-const MapPreview3D = ({ machine, grid, mode = null, done = [], className = '' }) => {
+const MapPreview3D = ({
+  machine, grid, mode = null, done = [], heights = null, scale = 1, className = '',
+}) => {
   const colors = useSceneColors();
   const [home, setHome] = useState(0);
   // The view fills the frame with the area (Mateusz, 2026-10-02), first and after every return home.
@@ -83,8 +85,11 @@ const MapPreview3D = ({ machine, grid, mode = null, done = [], className = '' })
             // The points it was given by, but for the program's, whose extent is not a point given.
             given={mode === 'program' ? [] : grid.given || []}
             done={done}
+            heights={heights}
+            scale={scale}
             offset={offset}
             color={colors.work}
+            ground={colors.ground}
           />
         ) : null}
       </Scene>

@@ -22,6 +22,8 @@ import zPlate from './z-plate';
  *   for figures given per measurement (`{ options }` or `{ error }`);
  * - `found(params, options, seen)`, if it has one — what else the touches
  *   tell, for the operator to check (a hole's size).
+ * - `partial(params, options, seen)`, if it has one — what the touches so
+ *   far tell while it runs (a height map's heights), for every device.
  *
  * A new method is a new file here; nothing that runs them changes.
  */

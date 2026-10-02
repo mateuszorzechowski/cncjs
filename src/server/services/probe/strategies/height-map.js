@@ -72,6 +72,21 @@ export default {
     ].map((step) => ({ ...step, mark: { n, i, j } })));
   },
 
+  /**
+   * The heights measured so far, while it runs, for every device to shade
+   * the area by (Mateusz, 2026-10-03): `{ heights: [{ i, j, dz }], low, high }`,
+   * each from the first point's; null until the first is measured.
+   */
+  partial: (params, options, seen) => {
+    if (!seen.p0) {
+      return null;
+    }
+    const { xs, ys } = gridOf(options);
+    const heights = order(xs.length, ys.length).filter(({ key }) => seen[key]).map(({ i, j, key }) => ({ i, j, dz: seen[key].z - seen.p0.z }));
+    const all = heights.map(({ dz }) => dz);
+    return { heights, low: Math.min(...all), high: Math.max(...all) };
+  },
+
   /** The surface, machine X and Y, each height from the first point's; `travel` the start's height over it. */
   map: (params, options, seen, { start, wco }) => {
     const { xs, ys } = gridOf(options);

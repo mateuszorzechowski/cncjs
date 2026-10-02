@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import HeightMapGrid from './HeightMapGrid';
 import MapPreview3D from './MapPreview3D';
+import Slider from './Slider';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
 import { useUnits } from './units';
@@ -10,8 +12,6 @@ import { t } from '../i18n';
  * over the first point, the points as the server goes through them, and the
  * surface it found.
  */
-
-const RAMP = ['bg-map0', 'bg-map1', 'bg-map2', 'bg-map3', 'bg-map4'];
 
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
@@ -28,57 +28,85 @@ export const HeightMapPosition = ({ grid, outline }) => (grid?.xs ? (
   />
 ) : null);
 
+// How much the heights are brought out in 3D: a step on the slider, kept from the measuring to the result.
+const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
+let lastScale = 20;
+
 /**
- * Measuring, on the machine in 3D (Mateusz, 2026-10-03): the area and its
- * points — filled as each is measured — with the tool moving over them, and
- * which point it is at and what it is doing there.
+ * The height map on the machine in 3D, the same while it is measured and once
+ * it is (Mateusz, 2026-10-03: "pomiar i wynik to praktycznie te same
+ * widoki"): the area, its points filled as each is measured, the sheet raised
+ * by the heights times the scale on the slider and shaded by them, the tool
+ * where it is; under it the lowest point, the highest and the spread so far.
+ * `heights` is `{ heights: [{ i, j, dz }], low, high }`, or null; `children`
+ * goes between the drawing and the figures.
  */
-export const HeightMapCycle = ({ probe, machine }) => {
+const HeightMapView = ({
+  probe, machine, done, heights, children = null,
+}) => {
+  const units = useUnits();
+  const [scale, setScale] = useState(lastScale);
   const options = probe?.options;
   if (!options?.x) {
     return null;
   }
-  const marks = probe.marks || [];
-  const at = marks.length ? marks[marks.length - 1] : null;
-  const total = options.nx * options.ny;
-  // What the tool is doing at the point: its phase, said on Z (`p3-fast` is the fast touch).
-  const doing = phaseWords(String(probe.step?.phase || '').replace(/^p\d+/, 'z'));
+  const said = (mm) => (heights ? signed(units.figure(mm)) : '—');
   return (
     <div className="flex flex-col gap-3">
       <MapPreview3D
         machine={machine}
         grid={{ xs: options.x, ys: options.y, nx: options.nx, ny: options.ny }}
-        done={marks.slice(0, -1)}
+        done={done}
+        heights={heights}
+        scale={scale}
         className="h-64 @3xl/shell:h-80"
       />
-      <StatTile
-        label={at ? t('probe.map.point', { n: at.n + 1, total }) : t('probe.step.measure')}
-        value={probe.step ? t(doing.key, { axis: doing.axis }) : '—'}
+      <Slider
+        steps={SCALES}
+        value={scale}
+        onChange={(next) => {
+          lastScale = next;
+          setScale(next);
+        }}
+        label={t('probe.map.scale')}
+        say={(value) => `×${value}`}
       />
+      {children}
+      <div className="grid gap-2 @3xl/shell:grid-cols-3">
+        <StatTile label={t('probe.map.low')} value={said(heights?.low)} unit={units.length} />
+        <StatTile label={t('probe.map.high')} value={said(heights?.high)} unit={units.length} />
+        <StatTile label={t('probe.map.spread')} value={heights ? units.figure(heights.high - heights.low) : '—'} unit={units.length} />
+      </div>
     </div>
   );
 };
 
-/** Measured: the surface, coloured low to high, and its lowest and highest point from the first. */
-export const HeightMapResult = ({ map }) => {
-  const units = useUnits();
-  const { xs, ys, dz, low, high } = map;
-  // Drawn where the program will be: the map is the machine's, the drawing only its shape.
-  const area = { x: [xs[0], xs[xs.length - 1]], y: [ys[0], ys[ys.length - 1]] };
+/** Measuring: the view, with which point the tool is at and what it is doing there. */
+export const HeightMapCycle = ({ probe, machine }) => {
+  const marks = probe?.marks || [];
+  const at = marks.length ? marks[marks.length - 1] : null;
+  const total = (probe?.options?.nx || 0) * (probe?.options?.ny || 0);
+  // What the tool is doing at the point: its phase, said on Z (`p3-fast` is the fast touch).
+  const doing = phaseWords(String(probe?.step?.phase || '').replace(/^p\d+/, 'z'));
+  return (
+    <HeightMapView probe={probe} machine={machine} done={marks.slice(0, -1)} heights={probe?.partial}>
+      <StatTile
+        label={at ? t('probe.map.point', { n: at.n + 1, total }) : t('probe.step.measure')}
+        value={probe?.step ? t(doing.key, { axis: doing.axis }) : '—'}
+      />
+    </HeightMapView>
+  );
+};
+
+/** Measured: the same view, every point filled, the map's own heights. */
+export const HeightMapResult = ({ probe, machine }) => {
+  const {
+    xs, ys, dz, low, high,
+  } = probe.result.map;
+  const heights = { heights: ys.flatMap((y, j) => xs.map((x, i) => ({ i, j, dz: dz[j][i] }))), low, high };
   return (
     <div className="flex flex-col gap-3">
-      <HeightMapGrid area={area} nx={xs.length} ny={ys.length} heights={dz} low={low} high={high} label={t('probe.map.drawing')} className="mx-auto h-auto w-full max-w-md" />
-      <div className="flex items-center justify-center gap-2 text-note text-mut">
-        <span className="font-num">{signed(units.figure(low))}</span>
-        {RAMP.map((face) => <span key={face} aria-hidden="true" className={`h-3 w-6 rounded-ctl ${face}`} />)}
-        <span className="font-num">{signed(units.figure(high))}</span>
-        <span>{units.length}</span>
-      </div>
-      <div className="grid gap-2 @3xl/shell:grid-cols-3">
-        <StatTile label={t('probe.map.low')} value={signed(units.figure(low))} unit={units.length} />
-        <StatTile label={t('probe.map.high')} value={signed(units.figure(high))} unit={units.length} />
-        <StatTile label={t('probe.map.spread')} value={units.figure(high - low)} unit={units.length} />
-      </div>
+      <HeightMapView probe={probe} machine={machine} done={heights.heights} heights={heights} />
       <p className="m-0 text-note text-mut">{t('probe.map.note')}</p>
     </div>
   );

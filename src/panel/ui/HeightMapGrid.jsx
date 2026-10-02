@@ -1,13 +1,13 @@
 /**
  * A height map seen from above (Mateusz, 2026-10-02): the area, its points,
- * and the program's outline when one is loaded — the one drawing every step
- * of the height map's wizard uses.
+ * and the program's outline when one is loaded — the position step's drawing,
+ * the tool's first point ringed; the steps around it draw on the machine in
+ * 3D (`MapPreview3D`).
  *
  * `area` is `{ x: [from, to], y: [from, to] }` in millimetres, `nx` × `ny`
  * points spread evenly across it, edge to edge, as the server measures them.
- * A point is drawn by what is known of it: waiting, `done`, the one the tool
- * is at (`at`), or — `heights`, `low`, `high` — coloured by its height, low to
- * high in five steps. The first point, the front left, is where the tool
+ * A point is drawn by what is known of it: waiting, `done`, or the one the
+ * tool is at (`at`). The first point, the front left, is where the tool
  * starts, and is marked so. `outline`, the program's extent in the same
  * millimetres; `width` and `depth`, the area's sides as words.
  */
@@ -20,14 +20,8 @@ const W = 400;
 const PAD = 30;
 const MAX_H = 300;
 
-// Five steps of height, by their share of the range.
-const RAMP = ['fill-map0', 'fill-map1', 'fill-map2', 'fill-map3', 'fill-map4'];
-
-/** Which of the ramp's steps a height is, `low` the first and `high` the last. */
-export const rampStep = (dz, low, high) => (high - low > 1e-9 ? Math.min(RAMP.length - 1, Math.floor(((dz - low) / (high - low)) * RAMP.length)) : 0);
-
 const HeightMapGrid = ({
-  area, nx, ny, outline = null, done = [], at = null, heights = null, low = 0, high = 0, width = '', depth = '', label, className = '',
+  area, nx, ny, outline = null, done = [], at = null, width = '', depth = '', label, className = '',
 }) => {
   const [ax0, ax1] = area.x;
   const [ay0, ay1] = area.y;
@@ -55,9 +49,7 @@ const HeightMapGrid = ({
       const cx = px(along(ax0, ax1, nx, i));
       const cy = py(along(ay0, ay1, ny, j));
       let face = 'fill-field stroke-acc';
-      if (heights) {
-        face = `${RAMP[rampStep(heights[j][i], low, high)]} stroke-line`;
-      } else if (at && at.i === i && at.j === j) {
+      if (at && at.i === i && at.j === j) {
         face = 'fill-acc stroke-ink';
       } else if (isDone.has(`${i},${j}`)) {
         face = 'fill-acc stroke-acc';

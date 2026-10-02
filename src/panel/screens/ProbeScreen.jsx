@@ -256,7 +256,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else if (probe?.state === 'failed') {
-    body = <ResultStep probe={probe} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
+    body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.close')}</Button>
@@ -264,7 +264,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else {
-    body = <ResultStep probe={probe} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
+    body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.discard')}</Button>

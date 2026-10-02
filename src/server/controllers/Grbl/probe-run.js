@@ -64,7 +64,8 @@ const OUTCOME = {
 /**
  * One run. `start` and `wco` in millimetres, machine; `restore` the line
  * that puts the modes back; `write(line)` puts a line on the cable;
- * `progress({ index, total, phase })` as each step goes out; `done(result)`
+ * `progress({ index, total, phase, seen })` as each step goes out, `seen`
+ * the touches kept so far; `done(result)`
  * once — `{ seen }`, the touches kept by name, or `{ failure, phase }`.
  */
 export const createProbeRun = ({ steps, start, wco, restore, write, done, progress = () => {} }) => {
@@ -118,7 +119,7 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
     prb = null;
     // `mark`, what a method says of the step besides its phase: a height map's point.
     progress({
-      index, total: steps.length, phase: step.phase, ...(step.mark ? { mark: step.mark } : {}),
+      index, total: steps.length, phase: step.phase, seen: { ...seen }, ...(step.mark ? { mark: step.mark } : {}),
     });
     write(LINE[step.kind](step, target, wco));
   };
