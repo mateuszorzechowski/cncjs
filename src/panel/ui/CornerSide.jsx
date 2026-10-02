@@ -166,14 +166,14 @@ const CornerSide = ({
       touch = [C0[0], TOP];
     }
   } else if (move.depthOf) {
-    // Down beside the wall, below the work's top by the depth.
+    // Down beside the wall, under the plate's top by the depth — still over the work.
     const [x, , level] = positionOf(move.frames, p);
     bit = { cx: x, tip: tipOf(level) };
-    geometry.push(<path key="edge" d="M20 170 H106" className="stroke-mut" strokeWidth={1} vectorEffect={NS} strokeDasharray={DASH} />);
+    geometry.push(<path key="edge" d={`M20 ${TOP} H106`} className="stroke-mut" strokeWidth={1} vectorEffect={NS} strokeDasharray={DASH} />);
     geometry.push(<g key="arrow" opacity={0.3}><Motion at={56} from={tipOf(1)} to={tipOf(0)} kind={PROBE} size={size} /></g>);
-    geometry.push(<Dimension key="dim" at={COL} from={170} to={182} lit size={size} />);
+    geometry.push(<Dimension key="dim" at={COL} from={TOP} to={tipOf(0)} lit size={size} />);
     line(56, tipOf(1), tipOf(0), MOTION_TICK);
-    words.push(tags('depth', { at: COL, parts: [[170, 182, said('depth')]], ticks: dimTicks(170, 182) }, FACE.hot));
+    words.push(tags('depth', { at: COL, parts: [[TOP, tipOf(0), said('depth')]], ticks: dimTicks(TOP, tipOf(0)) }, FACE.hot));
   } else {
     // A move on the walls' plane, seen edge-on: the tool moves along X, nears along Y; no arrows.
     const [x, y, level] = positionOf(move.frames, p);

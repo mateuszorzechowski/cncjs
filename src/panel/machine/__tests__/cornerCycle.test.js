@@ -44,7 +44,9 @@ describe('the L plate cycle (probe proposal)', () => {
     expect(up).toBe(1);
     expect(outX).toBeLessThan(x);
     expect(downX).toBe(outX);
-    expect(tipOf(down)).toBeGreaterThan(170);
+    // The depth under the plate's top, still over the work's (170), as far under as a back-off is over.
+    expect(tipOf(down)).toBe(158);
+    expect(tipOf(down)).toBeLessThan(170);
   });
 
   test('says each move in G-code as the server runs it', () => {

@@ -1428,7 +1428,7 @@
         "zero": "Zero written: Z0, X0 and Y0",
         "lift": "Z · lift",
         "corner": "Lift: over X0 Y0",
-        "depth": "X · down beside the wall, below the work's edge"
+        "depth": "X · down beside the plate's wall"
       },
       "zeroY": "Y0",
       "overCode": "G0 over where Z was touched"
