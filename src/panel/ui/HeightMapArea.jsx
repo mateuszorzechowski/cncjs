@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from './Button';
 import Card from './Card';
 import FadeScroller from './FadeScroller';
-import HeightMapGrid from './HeightMapGrid';
+import MapPreview3D from './MapPreview3D';
 import Notice from './Notice';
 import Sheet from './Sheet';
 import TextField from './TextField';
@@ -73,10 +73,10 @@ const HeightMapArea = ({
     <Button key="here" className="h-chiph px-4" disabled={!machine.connected} onClick={() => map.take(xName, yName)}>{t('probe.map.here')}</Button>,
   ], true);
 
-  const area = grid?.xs ? { x: [grid.xs[0], grid.xs[grid.xs.length - 1]], y: [grid.ys[0], grid.ys[grid.ys.length - 1]] } : null;
   const preview = (
-    <div className="flex min-w-0 flex-col gap-2">
-      {area ? <HeightMapGrid area={area} nx={grid.nx} ny={grid.ny} outline={map.outline} label={t('probe.map.drawing')} className="mx-auto h-auto w-full max-w-md" /> : null}
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+      {/* On the machine, in 3D (review note, 2026-10-02): the travel, the program, the tool and the area. */}
+      <MapPreview3D machine={machine} grid={grid} className={phone ? 'h-64' : 'min-h-0 flex-1'} />
       {grid?.nx ? (
         <p className="m-0 text-center text-note text-mut">{t('probe.map.stepIs', { step: `${units.figure(grid.stepX)} × ${units.figure(grid.stepY)} ${length}`, n: grid.nx * grid.ny })}</p>
       ) : null}
@@ -113,7 +113,7 @@ const HeightMapArea = ({
       <FadeScroller>
         <div className="flex min-h-full flex-col">{card}</div>
       </FadeScroller>
-      {phone ? null : <Card label={t('probe.map.preview')} className="min-h-0 min-w-0 flex-1" bodyClassName="justify-center">{preview}</Card>}
+      {phone ? null : <Card label={t('probe.map.preview')} className="min-h-0 min-w-0 flex-1" bodyClassName="min-h-0 flex-1">{preview}</Card>}
       {jogging ? (
         <Sheet title={t('nav.jog')} onClose={() => setJogging(false)} tall>
           <JogWidget machine={machine} className="min-h-0 flex-1" />
