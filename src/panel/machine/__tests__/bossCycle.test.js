@@ -69,6 +69,9 @@ describe('the centre from outside cycle', () => {
     // Where it comes from, said under the drawing (review note #9, 2026-10-02).
     expect(BOSS_CYCLE.explain('x1pFast', TEXTS)).toEqual(['probe.boss.reachWhy', { reach: '25', clear: '10', size: '30' }]);
     expect(BOSS_CYCLE.explain('x1pBack', TEXTS)).toBeNull();
+    // Down beside a side and up again: the back-off and the depth, said as their sum (rule 1, 2026-10-02).
+    expect(BOSS_CYCLE.explain('x1pDown', TEXTS)).toEqual(['probe.sum.retractDepth', expect.objectContaining({ retract: TEXTS.retract, depth: TEXTS.depth })]);
+    expect(BOSS_CYCLE.explain('x1pUp', TEXTS)[0]).toBe('probe.sum.retractDepth');
   });
 
   test('a segment\'s end frame is its own move\'s', () => {

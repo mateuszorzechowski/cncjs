@@ -16,7 +16,9 @@
 import { C0, MOVES } from './cornerMoves';
 import { frameAt, layOut, totalOf } from './timeline';
 
-export { C0, LIFTED, XO } from './cornerMoves';
+export {
+  C0, LIFTED, XO, explainOf, sumOf,
+} from './cornerMoves';
 
 // From the side: the plate's top, and the tip at each level.
 export const TOP = 146;

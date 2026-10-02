@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
+  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
 import {
   lineRect, shownView, tagRect,
@@ -8,7 +8,7 @@ import {
 import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import {
-  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, moveOf, positionOf, tipOf,
+  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, moveOf, positionOf, sumOf, tipOf,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -32,8 +32,6 @@ const USER = 'userSpaceOnUse';
 // Words the drawing's pieces switch on, kept out of the markup.
 const RAPID = 'rapid';
 const PROBE = 'probe';
-const UP = 'up';
-const DOWN = 'down';
 
 const SLANT = 'rotate(45)';
 
@@ -63,8 +61,6 @@ const besideOf = (x) => x - 18;
 // Where the dimensions stand, right of the plate, close enough for their figures to fit beside them; ticks across one.
 const COL = 186;
 const dimTicks = (...along) => along.map((a) => [a, DIM_TICK]);
-// The chained rise's ticks, half their length.
-const PART_TICK = 6;
 
 const CornerSide = ({
   name = 'zFast', p = 0, corner, texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, bare = false, place = null, label, className = '',
@@ -194,26 +190,16 @@ const CornerSide = ({
       line(at, y1, y2, MOTION_TICK);
       sweep = [y1, y2];
       if (!focus) {
-        line(COL, y1, y2, PART_TICK);
+        line(COL, y1, y2, DIM_TICK);
       }
       if (move.down && !focus) {
         words.push(tags('wayf', { at, side: -1, parts: [[y1, y2, said('fast')]], ticks: [[y1, MOTION_TICK]] }));
       }
       if (!focus) {
-        // A rise or descent that adds two figures: each drawn as its own dimension, split at the plate's top (review notes, 2026-09-30).
-        // One chained dimension past the plate's far side, ticked at the plate's top, the figures beside it (review note, 2026-09-30).
-        const { parts } = move;
-        const [low, high] = [Math.max(y1, y2), Math.min(y1, y2)];
-        const ticks = [high, TOP, low].map((y) => `M${COL - PART_TICK} ${y} H${COL + PART_TICK}`).join(' ');
-        geometry.push(
-          <g key="parts">
-            <path d={`M${COL} ${high} V${low} ${ticks}`} fill="none" className="stroke-mut" strokeWidth={1} vectorEffect={NS} />
-            {[[high, UP], [TOP, DOWN], [TOP, UP], [low, DOWN]].map(([y, dir]) => <Head key={`${y}${dir}`} x={COL} y={y} dir={dir} size={size} className="fill-mut" />)}
-          </g>,
-        );
-        words.push(tags('parts', {
-          at: COL, parts: [[high, TOP, said(parts[1])], [TOP, low, said(parts[0])]], ticks: [high, TOP, low].map((y) => [y, PART_TICK]),
-        }));
+        // A rise or descent that adds two figures: one dimension past the plate's far side, their sum beside it,
+        // a short tick at the plate's top where they meet (rule 1, Mateusz 2026-10-02).
+        geometry.push(<Dimension key="sum" at={COL} from={y1} to={y2} mid={TOP} size={size} />);
+        words.push(tags('sum', { at: COL, parts: [[y1, y2, say(move.parts[0], sumOf(move, texts))]], ticks: dimTicks(y1, y2) }));
       }
     } else if (move.kind && move.view === 'top') {
       if (move.touch && move.touch[1] === 116 && p > 0.75) {

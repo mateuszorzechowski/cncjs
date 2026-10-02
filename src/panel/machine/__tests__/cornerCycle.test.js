@@ -1,5 +1,5 @@
 import {
-  signedFor,
+  explainOf, signedFor, sumOf,
   BEFORE_MM, CORNER_GROUPS, cornerTimeline, CORNER_ORDER, CORNER_PARAMS, HOLD_MS, LOOP_HOLD_MS, motionEnd, SPAN_MS, cornerCode, cornerReadout, cornerSides, moveOf, moveOfPhase, playAt, positionAt, positionOf, tipOf,
 } from '../cornerCycle';
 import { methodOf, stepBeside, stepsOf } from '../probe';
@@ -66,6 +66,13 @@ describe('the L plate cycle (probe proposal)', () => {
     // Back over where Z was touched: no numbers to show, so no line made up.
     expect(cornerCode('yOver', TEXTS).parts).toEqual([]);
     expect(signedFor('front-right')('G0 X-20')).toBe('G0 X+20');
+  });
+
+  test('a Z way of two figures is said as their sum, and where it comes from (rule 1)', () => {
+    expect(sumOf(moveOf('xDown'), TEXTS)).toBe('10');
+    expect(explainOf(moveOf('yUp'), TEXTS)).toEqual(['probe.sum.retractDepth', { sum: '10', retract: '5', depth: '5' }]);
+    expect(explainOf(moveOf('lift'), TEXTS)).toEqual(['probe.sum.depthLift', { sum: '25', depth: '5', lift: '20' }]);
+    expect(explainOf(moveOf('xOut'), TEXTS)).toBeNull();
   });
 
   test('a figure being set loops the move it changes, over the part that shows it, held longer', () => {

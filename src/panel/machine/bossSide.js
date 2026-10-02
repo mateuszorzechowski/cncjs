@@ -1,5 +1,5 @@
 import {
-  ABOVE, BOSS_R, ON_TOP, TOOL_R, isGoing, toolAt,
+  ABOVE, BOSS_R, ON_TOP, TOOL_R, downOf, isGoing, toolAt,
 } from './bossMoves';
 
 /**
@@ -61,25 +61,25 @@ const arrowOf = (move, p, x, said, lit) => {
  * Each Z step's distances beside the ball, on the other side from its arrow:
  * the top's search reach, its back-off, the slow touch's way to the top and
  * its margin past it; down beside a side and up again, the back-off over the
- * top and the depth under it — one dimension split at the top, a figure each
- * (rule, Mateusz 2026-10-01).
+ * top and the depth under it — one dimension with their sum (`down`), a short
+ * tick at the top where they meet (rule 1, Mateusz 2026-10-02).
  */
-const distancesOf = (move, p, beside, said, upTo, lit) => {
+const distancesOf = (move, p, beside, said, upTo, lit, down) => {
   const one = (id, from, to, text, on, limit = false) => ({
     id, at: beside, from, to, text, lit: on, limit,
   });
-  const parts = () => [
-    one('retract', heightOf(ABOVE), 0, said('retract'), lit('retract')),
-    one('depth', 0, heightOf(0), said('depth'), lit('depth')),
-  ];
+  // Lit with either of its figures; named for the lit one, so it does not fade with it.
+  const sum = () => [{
+    ...one(lit('depth') ? 'depth' : 'retract', heightOf(ABOVE), heightOf(0), down, lit('retract') || lit('depth')), split: 0,
+  }];
   switch (move.kind) {
     case 'topFast': return [one('reach', heightOf(1), -14, upTo(said('maxZ')), lit('dim'), true)];
     case 'topBack': return [one('retract', 0, heightOf(ABOVE), said('retract'), lit('retract'))];
     case 'topSlow': return [{
       id: 'reach', at: beside, from: heightOf(ABOVE), mid: 0, to: -heightOf(ABOVE), text: said('retract'), far: upTo(said('retract')), lit: lit('retract'),
     }];
-    case 'down': return parts();
-    case 'up': return parts();
+    case 'down': return sum();
+    case 'up': return sum();
     default: return [];
   }
 };
@@ -105,7 +105,7 @@ export const bossSide = (move, p, {
   // stand still through the move (L16).
   const way = move.kind !== 'place' ? arrowOf(move, p, x, said, lit) : null;
   const motion = way && isGoing(move, p) ? way : null;
-  const vdims = move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit);
+  const vdims = move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit, say('depth', downOf(texts)));
   let gap = null;
   let contact = null;
   if (move.kind === 'place') {
