@@ -1763,8 +1763,8 @@
         "point": "Corner and size",
         "corners": "Two corners",
         "program": "From the program",
-        "pointNote": "A corner, a width and a depth.",
-        "cornersNote": "Jog over two corners across from each other.",
+        "pointNote": "A corner (typed or taken by jog), a width and a depth.",
+        "cornersNote": "Two corners across: typed, or taken by jog.",
         "programNote": "The loaded program's extent."
       },
       "x": "X",
@@ -1773,11 +1773,10 @@
       "d": "Depth (Y)",
       "cornerA": "Point 1",
       "cornerB": "Point 2",
-      "at": "X {{x}}  Y {{y}} {{unit}}",
       "here": "Here",
       "span": "X {{px0}} – {{px1}}  Y {{py0}} – {{py1}} {{unit}}",
       "stepIs": "Every {{step}}, {{n}} points.",
-      "takeCorners": "Jog over one corner of the area and press \"Here\", then over the corner across.",
+      "takeCorners": "Type both corners, or jog over one and press \"Here\", then over the corner across.",
       "preview": "The area measured",
       "sec": {
         "point": "Point",

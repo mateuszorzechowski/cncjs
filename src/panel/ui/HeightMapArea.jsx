@@ -20,7 +20,7 @@ const countOnly = (text) => text.replace(/[^0-9]/g, '');
 const BAD = 'bad';
 
 const NAMES = {
-  x: 'probe.map.x', y: 'probe.map.y', w: 'probe.map.w', d: 'probe.map.d', nx: 'probe.map.nx', ny: 'probe.map.ny',
+  x: 'probe.map.x', y: 'probe.map.y', ax: 'probe.map.x', ay: 'probe.map.y', bx: 'probe.map.x', by: 'probe.map.y', w: 'probe.map.w', d: 'probe.map.d', nx: 'probe.map.nx', ny: 'probe.map.ny',
 };
 // What the server says of a grid it would not measure, as the operator reads it.
 const REASONS = { 'bad-area': 'probe.map.badArea', 'bad-grid': 'probe.map.badGrid', 'no-server': 'probe.map.noServer' };
@@ -31,7 +31,8 @@ const REASONS = { 'bad-area': 'probe.map.badArea', 'bad-grid': 'probe.map.badGri
  * diagonal, the tool jogged to each and taken; or the program's extent — and
  * the points along each side. The step between them is the server's answer,
  * shown under the drawing. Beside it the area measured, drawn (review note
- * #2, 2026-10-02); the jog, for the two corners, in a sheet.
+ * #2, 2026-10-02); the jog, for a point to be taken where the tool stands,
+ * in a sheet.
  */
 const HeightMapArea = ({
   machine, map, onBack, onNext,
@@ -58,19 +59,21 @@ const HeightMapArea = ({
     </div>
   );
   // A section: its name, then its two figures side by side, X beside Y (Mateusz, 2026-10-02).
-  const section = (key, children, align = 'items-end') => (
+  const section = (key, children, wide = false) => (
     <div key={key} className="flex min-w-0 flex-col gap-2">
       <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{t(key)}</span>
-      <div className={`grid grid-cols-2 gap-3 ${align}`}>{children}</div>
+      <div className={`grid items-end gap-3 ${wide ? 'grid-cols-[1fr_1fr_auto]' : 'grid-cols-2'}`}>{children}</div>
     </div>
   );
-  // A corner taken where the tool stands.
-  const corner = (which) => section(which === 'a' ? 'probe.map.cornerA' : 'probe.map.cornerB', (
-    <>
-      <span className="font-num text-base text-ink">{t('probe.map.at', { x: texts[`${which}x`] ?? '—', y: texts[`${which}y`] ?? '—', unit: length })}</span>
-      <Button className="h-chiph px-4" disabled={!machine.connected} onClick={() => map.take(which)}>{t('probe.map.here')}</Button>
-    </>
-  ), 'items-center');
+  /*
+   * A point: typed, or taken where the tool stands — jogged there (review
+   * note, 2026-10-02: *"jog może być pomocą w obu metodach"*).
+   */
+  const point = (key, xName, yName) => section(key, [
+    field(xName),
+    field(yName),
+    <Button key="here" className="h-chiph px-4" disabled={!machine.connected} onClick={() => map.take(xName, yName)}>{t('probe.map.here')}</Button>,
+  ], true);
 
   const area = grid?.xs ? { x: [grid.xs[0], grid.xs[grid.xs.length - 1]], y: [grid.ys[0], grid.ys[grid.ys.length - 1]] } : null;
   const preview = (
@@ -86,8 +89,8 @@ const HeightMapArea = ({
       <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={mode} onChange={map.setMode} />
       {/* Only the figures of the way chosen, then the grid. */}
       <div className="flex min-w-0 flex-col gap-4">
-        {mode === 'point' ? [section('probe.map.sec.point', [field('x'), field('y')]), section('probe.map.sec.size', [field('w'), field('d')])] : null}
-        {mode === 'corners' ? ['a', 'b'].map(corner) : null}
+        {mode === 'point' ? [point('probe.map.sec.point', 'x', 'y'), section('probe.map.sec.size', [field('w'), field('d')])] : null}
+        {mode === 'corners' ? [point('probe.map.cornerA', 'ax', 'ay'), point('probe.map.cornerB', 'bx', 'by')] : null}
         {mode === 'program' ? (
           <div className="flex min-w-0 flex-col gap-2">
             <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{t('probe.map.sec.area')}</span>
@@ -101,7 +104,7 @@ const HeightMapArea = ({
       {reason ? <Notice>{t(REASONS[reason] || 'probe.map.noServer')}</Notice> : null}
       <p className="m-0 text-note text-mut">{t('probe.map.start')}</p>
       <Foot back={onBack}>
-        {mode === 'corners' ? <Button tone="outline" onClick={() => setJogging(true)} className="h-ctl">{t('nav.jog')}</Button> : null}
+        {mode === 'program' ? null : <Button tone="outline" onClick={() => setJogging(true)} className="h-ctl">{t('nav.jog')}</Button>}
         <Button tone="primary" disabled={!map.ready} onClick={onNext} className="h-ctl">{t('probe.next')}</Button>
       </Foot>
     </Card>

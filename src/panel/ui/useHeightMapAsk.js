@@ -48,12 +48,12 @@ const useHeightMapAsk = ({ machine, method, rule }) => {
     setTexts((now) => ({ ...now, [name]: text }));
   };
 
-  /** A corner where the tool stands: `a` or `b`. */
-  const take = (corner) => {
+  /** A point where the tool stands, into the two fields named. */
+  const take = (xName, yName) => {
     const { x, y } = machine.position || {};
     if (Number.isFinite(x) && Number.isFinite(y)) {
-      onText(`${corner}x`, said(x));
-      onText(`${corner}y`, said(y));
+      onText(xName, said(x));
+      onText(yName, said(y));
     }
   };
 
