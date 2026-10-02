@@ -43,7 +43,8 @@ const TILES = {
 };
 
 const AreaModeChooser = ({ modes, value, onChange }) => (
-  <div className="grid gap-3 @3xl/shell:grid-cols-3" role="group" aria-label={t('probe.map.area')}>
+  // One row on a phone too: three small tiles, their notes only where there is room.
+  <div className="grid grid-cols-3 gap-2 @3xl/shell:gap-3" role="group" aria-label={t('probe.map.area')}>
     {modes.map((mode) => {
       const { Picture, key, note } = TILES[mode];
       const on = mode === value;
@@ -56,8 +57,8 @@ const AreaModeChooser = ({ modes, value, onChange }) => (
           className={`flex flex-col items-center gap-2 rounded-ctl border p-3 text-center ${on ? 'border-acc bg-accS' : 'border-line bg-field hover:border-acc'}`}
         >
           <Picture />
-          <span className="text-base font-semibold text-ink">{t(key)}</span>
-          <span className="text-note text-mut">{t(note)}</span>
+          <span className="text-note font-semibold text-ink @3xl/shell:text-base">{t(key)}</span>
+          <span className="hidden text-note text-mut @3xl/shell:block">{t(note)}</span>
         </button>
       );
     })}

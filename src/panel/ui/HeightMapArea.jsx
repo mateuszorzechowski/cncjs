@@ -5,7 +5,6 @@ import FadeScroller from './FadeScroller';
 import HeightMapGrid from './HeightMapGrid';
 import Notice from './Notice';
 import AreaModeChooser from './AreaModeChooser';
-import SettingRow from './SettingRow';
 import Sheet from './Sheet';
 import TextField from './TextField';
 import { Foot } from './ProbeSteps';
@@ -44,8 +43,10 @@ const HeightMapArea = ({
   const reason = grid?.reason || null;
   const length = units.length;
 
+  // One figure: its name over it, small, the field under it.
   const field = (name, mask = figureOnly) => (
-    <SettingRow key={name} title={t(NAMES[name])}>
+    <div key={name} className="flex min-w-0 flex-col gap-1">
+      <span className="text-note text-mut">{t(NAMES[name])}</span>
       <TextField
         label={t(NAMES[name])}
         inputMode="decimal"
@@ -54,16 +55,22 @@ const HeightMapArea = ({
         state={reason && (name.startsWith('n') ? reason === 'bad-grid' : reason === 'bad-area') ? BAD : undefined}
         onChange={(event) => map.onText(name, mask(event.target.value))}
       />
-    </SettingRow>
+    </div>
   );
-  const corner = (which) => (
-    <SettingRow key={which} title={t(which === 'a' ? 'probe.map.cornerA' : 'probe.map.cornerB')}>
-      <div className="flex items-center gap-3">
-        <span className="font-num text-base text-ink">{t('probe.map.at', { x: texts[`${which}x`] ?? '—', y: texts[`${which}y`] ?? '—', unit: length })}</span>
-        <Button className="h-chiph px-4" disabled={!machine.connected} onClick={() => map.take(which)}>{t('probe.map.here')}</Button>
-      </div>
-    </SettingRow>
+  // A section: its name, then its two figures side by side, X beside Y (Mateusz, 2026-10-02).
+  const section = (key, children, align = 'items-end') => (
+    <div key={key} className="flex min-w-0 flex-col gap-2">
+      <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{t(key)}</span>
+      <div className={`grid grid-cols-2 gap-3 ${align}`}>{children}</div>
+    </div>
   );
+  // A corner taken where the tool stands.
+  const corner = (which) => section(which === 'a' ? 'probe.map.cornerA' : 'probe.map.cornerB', (
+    <>
+      <span className="font-num text-base text-ink">{t('probe.map.at', { x: texts[`${which}x`] ?? '—', y: texts[`${which}y`] ?? '—', unit: length })}</span>
+      <Button className="h-chiph px-4" disabled={!machine.connected} onClick={() => map.take(which)}>{t('probe.map.here')}</Button>
+    </>
+  ), 'items-center');
 
   const area = grid?.xs ? { x: [grid.xs[0], grid.xs[grid.xs.length - 1]], y: [grid.ys[0], grid.ys[grid.ys.length - 1]] } : null;
   const preview = (
@@ -77,14 +84,17 @@ const HeightMapArea = ({
   const card = (
     <Card className="min-w-0 flex-1" bodyClassName="gap-3">
       <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={mode} onChange={map.setMode} />
-      <div className="flex min-w-0 flex-col">
-        {mode === 'point' ? ['x', 'y', 'w', 'd'].map((name) => field(name)) : null}
+      {/* Only the figures of the way chosen, then the grid. */}
+      <div className="flex min-w-0 flex-col gap-4">
+        {mode === 'point' ? [section('probe.map.sec.point', [field('x'), field('y')]), section('probe.map.sec.size', [field('w'), field('d')])] : null}
         {mode === 'corners' ? ['a', 'b'].map(corner) : null}
         {mode === 'program' ? (
-          <p className="m-0 font-num text-base text-ink">{t('probe.map.span', { ...map.program, unit: length })}</p>
+          <div className="flex min-w-0 flex-col gap-2">
+            <span className="text-cap font-semibold uppercase tracking-[0.08em] text-ink">{t('probe.map.sec.area')}</span>
+            <span className="font-num text-base text-ink">{t('probe.map.span', { ...map.program, unit: length })}</span>
+          </div>
         ) : null}
-        {field('nx', countOnly)}
-        {field('ny', countOnly)}
+        {section('probe.map.sec.grid', [field('nx', countOnly), field('ny', countOnly)])}
       </div>
       {phone ? preview : null}
       {map.waiting ? <p className="m-0 text-base text-ink">{t('probe.map.takeCorners')}</p> : null}

@@ -1726,8 +1726,8 @@
     },
     "map": {
       "area": "Area",
-      "nx": "Points in X",
-      "ny": "Points in Y",
+      "nx": "Along X",
+      "ny": "Along Y",
       "badArea": "The area needs a width in X and in Y: \"to\" above \"from\".",
       "badGrid": "From 2 to 30 points on each axis.",
       "start": "Work coordinates, as the program's: a corner at the zero is X0 Y0 of the current system. The dashed line: the loaded program's extent.",
@@ -1767,18 +1767,24 @@
         "cornersNote": "Jog over two corners across from each other.",
         "programNote": "The loaded program's extent."
       },
-      "x": "Corner X",
-      "y": "Corner Y",
+      "x": "X",
+      "y": "Y",
       "w": "Width (X)",
       "d": "Depth (Y)",
-      "cornerA": "First corner",
-      "cornerB": "The corner across",
+      "cornerA": "Point 1",
+      "cornerB": "Point 2",
       "at": "X {{x}}  Y {{y}} {{unit}}",
       "here": "Here",
       "span": "X {{px0}} – {{px1}}  Y {{py0}} – {{py1}} {{unit}}",
       "stepIs": "Every {{step}}, {{n}} points.",
       "takeCorners": "Jog over one corner of the area and press \"Here\", then over the corner across.",
-      "preview": "The area measured"
+      "preview": "The area measured",
+      "sec": {
+        "point": "Point",
+        "size": "Size",
+        "grid": "Grid (points)",
+        "area": "Area"
+      }
     }
   }
 }

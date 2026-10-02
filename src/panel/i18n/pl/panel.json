@@ -1726,8 +1726,8 @@
     },
     "map": {
       "area": "Obszar",
-      "nx": "Punkty w X",
-      "ny": "Punkty w Y",
+      "nx": "W osi X",
+      "ny": "W osi Y",
       "badArea": "Obszar musi mieć szerokość w X i w Y: „do” większe od „od”.",
       "badGrid": "Od 2 do 30 punktów w każdej osi.",
       "start": "Współrzędne robocze, jak w programie: róg w zerze to X0 Y0 bieżącego układu. Linia przerywana: obrys wczytanego programu.",
@@ -1767,18 +1767,24 @@
         "cornersNote": "Podjedź joggiem nad dwa rogi po przekątnej.",
         "programNote": "Obrys wczytanego programu."
       },
-      "x": "Róg X",
-      "y": "Róg Y",
+      "x": "X",
+      "y": "Y",
       "w": "Szerokość (X)",
       "d": "Głębokość (Y)",
-      "cornerA": "Pierwszy róg",
-      "cornerB": "Róg po przekątnej",
+      "cornerA": "Punkt 1",
+      "cornerB": "Punkt 2",
       "at": "X {{x}}  Y {{y}} {{unit}}",
       "here": "Tu",
       "span": "X {{px0}} – {{px1}}  Y {{py0}} – {{py1}} {{unit}}",
       "stepIs": "Co {{step}}, {{n}} punktów.",
       "takeCorners": "Podjedź joggiem nad jeden róg obszaru i naciśnij „Tu”, potem nad róg po przekątnej.",
-      "preview": "Obszar mierzony"
+      "preview": "Obszar mierzony",
+      "sec": {
+        "point": "Punkt",
+        "size": "Rozmiar",
+        "grid": "Siatka (punkty)",
+        "area": "Obszar"
+      }
     }
   }
 }
