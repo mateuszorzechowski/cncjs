@@ -137,11 +137,12 @@ const above = (move, p, going, said, upTo, lit, reach) => {
   switch (move.kind) {
     case 'out': return { motion: arrow(move.from, move.out, 'rapid') };
     // The search goes in no further than the middle thought: its reach one figure, the sum, and where it
-    // comes from said under the drawing (`explainOf`; review note #9, 2026-10-02).
+    // comes from said under the drawing (`explainOf`; review note #9, 2026-10-02); a short tick at the side
+    // where its two parts meet (Mateusz, 2026-10-02).
     case 'fast': return {
       motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')),
       limit: {
-        axis: move.axis, from: move.out, to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false,
+        axis: move.axis, from: move.out, mid: setOn(move.axis, move.out, move.guess + move.sign * BOSS_R), to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false,
       },
     };
     // As the Z plate's: the arrow bare, the way back a dimension with its figure.

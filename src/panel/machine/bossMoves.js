@@ -82,7 +82,7 @@ export const build = () => {
           ...common, kind: 'down', from: out, frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]], end: 0.85, titleKey: 'probe.boss.move.setDown', uses: ['depth', 'retract'],
         };
         moves[`${side}Fast`] = {
-          ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.boss.move.fast', uses: ['fast'],
+          ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.boss.move.fast', uses: ['fast', 'clear', 'bossSize'],
         };
         moves[`${side}Back`] = {
           ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.boss.move.back', uses: ['retract'],

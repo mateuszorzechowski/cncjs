@@ -89,9 +89,16 @@ const CentreScene = ({
     const at = flat ? sy(limit.from[1]) + ASIDE : limit.from[0] + ASIDE;
     const [from, to] = flat ? [limit.from[0], limit.to[0]] : [sy(limit.from[1]), sy(limit.to[1])];
     const face = limit.lit ? FACE.hot : FACE.plain;
+    // A reach made of two figures and said as their sum: a short tick where they meet (`mid`).
+    let mid = null;
+    if (limit.mid) {
+      mid = flat ? limit.mid[0] : sy(limit.mid[1]);
+    }
+    const half = DIM_TICK / 2;
     fence = (
       <g opacity={fade('dim')}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
+        {mid === null ? null : <path d={flat ? `M${mid} ${at - half} V${at + half}` : `M${at - half} ${mid} H${at + half}`} className={limit.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />}
         {tags({
           axis: flat ? ACROSS : ALONG, at, parts: [[from, to, limit.text]], ticks: [[from, DIM_TICK], [to, DIM_TICK]],
         }, face)}

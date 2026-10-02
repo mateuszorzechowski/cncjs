@@ -126,7 +126,14 @@ const MoveBar = ({
                   // the step's (review note #10, 2026-10-02: "skompresować wykonane i przyszłe etapy").
                   <div key={sub.name} className={`flex min-w-0 flex-col transition-[flex-grow] duration-500 ease-out ${on ? GROW[Math.min(8, sub.moves.length * 2)] : GROW[1]}`}>
                     <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(sub.moves.map((move) => move.id))} className={`truncate text-left text-cap ${on ? 'font-semibold text-ink' : 'text-mut'}`}>{sub.name}</button>
-                    <div className="flex gap-1">
+                    {on ? null : (
+                      // Done or coming: folded to one bar, how far through it the cycle is (review note #8, 2026-10-02).
+                      <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(sub.moves.map((move) => move.id))} aria-label={sub.name || sub.moves[0].label} className={segment(sub.moves.some((move) => chosen(move.id)))}>
+                        {sub.moves.some((move) => marked.includes(move.id)) ? <Dot /> : null}
+                        <Bar on={false} fill={sub.moves.reduce((all, move) => all + fillOf(move.id), 0) / sub.moves.length} />
+                      </button>
+                    )}
+                    <div className={on ? 'flex gap-1' : 'hidden'}>
                       {sub.moves.map((move) => (
                         move.parts > 1 ? (
                           <Parts key={move.id} move={move} on={move.id === active} fillOf={(i) => fillOf(move.id, i)} mark={marked.includes(move.id)} chosen={(i) => chosen(move.id, i)} disabled={!onPick || !playing} onPick={onPick} />
