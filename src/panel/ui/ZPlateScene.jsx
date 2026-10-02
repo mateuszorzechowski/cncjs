@@ -50,8 +50,7 @@ const ZPlateScene = ({
   // Never on Z0's line (L15).
   const avoid = zero > 0 ? [[0, zeroLineY(TOP + 14, surface) - 1, WIDTH, 2]] : [];
   // The figures by the one rule (`placeTags`): the dimension's right of it, the feed left of its arrow.
-  // A way said beside its part alone: from the short tick up (`mid`).
-  const dimParts = [dim && [dim.top, dim.mid ?? dim.bottom, dim.text], dim?.beyond && [dim.beyond.top, dim.beyond.bottom, dim.beyond.text]].filter(Boolean);
+  const dimParts = [dim && [dim.top, dim.bottom, dim.text], dim?.beyond && [dim.beyond.top, dim.beyond.bottom, dim.beyond.text]].filter(Boolean);
   const dimTags = placeTags({
     at: DIM_X, parts: dimParts, ticks: [dim?.top, dim?.bottom, dim?.beyond?.bottom].filter((y) => y !== undefined).map((y) => [y, DIM_TICK]), view, avoid, size,
   });
@@ -90,7 +89,7 @@ const ZPlateScene = ({
           {dim.beyond ? (
             <ReachDimension at={DIM_X} from={dim.top} mid={dim.bottom} to={dim.beyond.bottom} lit={focus === 'dim'} size={size} />
           ) : (
-            <Dimension at={DIM_X} from={dim.top} to={dim.bottom} mid={dim.mid} limit={dim.limit} lit={focus === 'dim'} size={size} />
+            <Dimension at={DIM_X} from={dim.top} to={dim.bottom} limit={dim.limit} lit={focus === 'dim'} size={size} />
           )}
           {dimTags.map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={focus === 'dim' ? FACE.hot : FACE.plain} size={size} />)}
         </g>

@@ -129,11 +129,9 @@ const MOVES = {
     from: BACK, to: LIFT, kind: 'rapid', feed: null,
     // The zero is written by now: its line stays.
     zeroAt: [-1, 0],
-    // The lift is over the touch (`liftOver`); from the back-off it is the rest: one dimension from the
-    // plate's top, a short tick where the back-off ends, the way said beside its part (Mateusz, 2026-10-02).
-    dim: {
-      top: TOP - LIFT, bottom: TOP, mid: TOP - BACK, value: (v) => liftRest(v),
-    },
+    // The lift is over the touch (`liftOver`); from the back-off it is the rest, a move of its own: its
+    // dimension its own way alone, from the back-off up (Mateusz, 2026-10-02).
+    dim: { top: TOP - LIFT, bottom: TOP - BACK, value: (v) => liftRest(v) },
     titleKey: 'probe.plate.lift',
     code: (v) => [`G0 Z+${liftRest(v)}`],
     uses: ['lift', 'retract'],
@@ -285,7 +283,7 @@ export const plateScene = (name, p, {
   return {
     gap,
     dim: dim ? {
-      top: dim.top, bottom: beyond ? beyond.top : dim.bottom, mid: dim.mid ?? null, limit: Boolean(dim.limit), text: dimText, beyond,
+      top: dim.top, bottom: beyond ? beyond.top : dim.bottom, limit: Boolean(dim.limit), text: dimText, beyond,
     } : null,
     motion,
     // An arrow carries its feed, always (rules in `ui/probeDraw`).

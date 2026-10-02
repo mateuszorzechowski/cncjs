@@ -82,9 +82,8 @@ describe('the Z plate cycle (probe proposal)', () => {
     expect(lift.zero).toBe(1);
     expect(lift.motion.kind).toBe('rapid');
     expect(lift.dim.top).toBe(TOP - 56);
-    // Its way from the back-off said, the lift over the plate's top drawn with a short tick where the back-off ends.
-    expect(lift.dim).toMatchObject({ bottom: TOP, text: '15 mm' });
-    expect(lift.dim.mid).toBeGreaterThan(lift.dim.top);
+    // A move of its own: its own way alone, from the back-off up.
+    expect(lift.dim).toMatchObject({ bottom: TOP - 24, text: '15 mm' });
     expect(plateExplain('lift', TEXTS)).toEqual(['probe.sum.liftLessRetract', { way: '15', lift: '20', retract: '5' }]);
     expect(plateExplain('zero', TEXTS)).toBeNull();
   });
