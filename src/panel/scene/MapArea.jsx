@@ -166,7 +166,8 @@ const MapArea = ({
 
   return (
     <>
-      <mesh geometry={sheet}>
+      {/* Something a drag can turn the view about, as the program's path is (Mateusz, 2026-10-03) — see `Controls`. */}
+      <mesh geometry={sheet} userData={{ pivot: true }}>
         <meshBasicMaterial vertexColors transparent opacity={heat ? 0.6 : 0.45} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <Lines segments={edge} color={color} opacity={0.9} />
