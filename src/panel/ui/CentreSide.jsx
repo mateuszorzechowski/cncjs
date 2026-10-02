@@ -128,8 +128,8 @@ const CentreSide = ({
           {/* Right of the line, away from the arrow on the ball's left (review note, 2026-10-01: "10 mm" lay on the arrow). */}
           {words({
             at: dim.at,
-            parts: dim.mid === undefined ? [[-dim.from, -dim.to, dim.text]] : [[-dim.from, -dim.mid, dim.text], [-dim.mid, -dim.to, dim.far]],
-            ticks: [dim.from, dim.mid, dim.to].filter((a) => a !== undefined).map((a) => [-a, DIM_TICK]),
+            parts: [[-dim.from, -dim.to, dim.text]],
+            ticks: [dim.from, dim.to].map((a) => [-a, DIM_TICK]),
           }, dim.lit)}
         </g>
       ))}

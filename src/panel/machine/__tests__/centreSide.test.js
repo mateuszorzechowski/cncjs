@@ -23,7 +23,7 @@ describe('the centres from the front', () => {
     expect(BOSS_CYCLE.side('zFast', 0.5, { texts: { fast: '50', maxZ: '20' } })).toMatchObject({ motion: { text: '50' }, vdims: [{ id: 'reach', text: '20', limit: true }] });
     // The top's back-off and slow reach as the Z plate's: the way back, then back to the top and the margin past it.
     expect(BOSS_CYCLE.side('zBack', 0.4, { texts: { retract: '2' } }).vdims).toEqual([expect.objectContaining({ text: '2' })]);
-    expect(BOSS_CYCLE.side('zSlow', 0.4, { texts: { retract: '2' } }).vdims).toEqual([expect.objectContaining({ id: 'reach', text: '2', far: '2' })]);
+    expect(BOSS_CYCLE.side('zSlow', 0.4, { texts: { retract: '2' } }).vdims).toEqual([expect.objectContaining({ id: 'reach', text: '4', mid: 0 })]);
   });
 
   test('the part: down beside a side one dimension, its sum, a tick at the top, beside the ball away from its arrow; the touch at the ball\'s side', () => {

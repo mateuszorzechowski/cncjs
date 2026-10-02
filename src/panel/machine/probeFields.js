@@ -32,6 +32,14 @@ export const FIELDS = {
   slow: { key: 'probe.field.slow', kind: 'feed' },
 };
 
+/*
+ * A slow touch searches twice the back-off (`services/probe/moves`): back to
+ * the surface and as far again past it. One figure, the sum, said as a limit,
+ * and where it comes from under the title (rule 1, Mateusz 2026-10-02).
+ */
+export const slowReach = (texts) => String(Math.round(2 * Number(String(texts.retract ?? '').replace(',', '.')) * 1000) / 1000);
+export const slowReachWhy = (texts, say = (field, text) => text) => ['probe.sum.slowReach', { reach: say('retract', slowReach(texts)), retract: say('retract', texts.retract) }];
+
 /** A kept figure in millimetres, as the text a field starts with: `12.7`, not `12.700`. */
 export const fieldText = (mm, name, rule) => {
   const { value } = settingFigure(mm, FIELDS[name].kind, rule);

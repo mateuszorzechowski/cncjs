@@ -62,7 +62,7 @@ describe('the centre from outside cycle', () => {
     // The slow touch: its feed, and its reach — twice the back-off — as a limit.
     expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '20' });
     // One reach: back to the side, and the margin past it — the back-off each.
-    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ near: '2', far: '2' });
+    expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ text: '4' });
     expect(bossScene('zSlow', 0.4, { texts: TEXTS })).toMatchObject({ motion: null, limit: null, dims: [] });
     // The fast touch's reach (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*).
     expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).limit).toMatchObject({ text: '25' });

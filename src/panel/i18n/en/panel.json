@@ -1685,7 +1685,8 @@
     },
     "sum": {
       "retractDepth": "{{sum}} = {{retract}} back-off + {{depth}} depth",
-      "depthLift": "{{sum}} = {{depth}} depth + {{lift}} lift"
+      "depthLift": "{{sum}} = {{depth}} depth + {{lift}} lift",
+      "slowReach": "≤ {{reach}} = {{retract}} to the surface + {{retract}} past it"
     }
   }
 }

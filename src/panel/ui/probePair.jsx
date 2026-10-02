@@ -38,7 +38,8 @@ export const usePair = () => {
 /** The two views side by side, and over them the layer their crossing labels stand in. */
 export const PairOfViews = ({ pair, children }) => (
   <PairContext.Provider value={pair}>
-    <div className="relative grid grid-cols-2">
+    {/* A line between the views (Mateusz, 2026-10-02), as the measurement screen has. */}
+    <div className="relative grid grid-cols-2 divide-x divide-line">
       {children}
       <svg ref={pair.setLayer} aria-hidden className="pointer-events-none absolute inset-0 size-full overflow-visible" />
     </div>

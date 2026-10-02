@@ -116,7 +116,7 @@ const CornerParams = ({
             {view === 'side' ? <CornerSide {...drawing} label={title} className="w-full" /> : null}
           </>
         ) : (
-          // One drawing in two views: no line between them, and a label short of room in one may stand in the other's free edge.
+          // One drawing in two views, a line between them; a label short of room in one may stand in the other's free edge.
           <PairOfViews pair={pair}>
             <CornerTop {...drawing} label={title} className="h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
             <CornerSide {...drawing} label={title} className="h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />

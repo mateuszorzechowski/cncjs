@@ -10,6 +10,7 @@
  * the form.
  */
 
+import { slowReach, slowReachWhy } from './probeFields';
 import { SURFACE, surfaceShifts } from './surface';
 import { frameAt, layOut, totalOf } from './timeline';
 
@@ -245,14 +246,11 @@ export const plateScene = (name, p, {
   const gap = gapAt(move.frames, p);
   const dim = move.dim || null;
   let dimText = null;
-  let beyond = null;
+  let mid = null;
   if (dim?.split) {
-    // Twice a figure: the first way plain, the second a limit — "≤" on the margin alone.
-    const mid = (dim.top + dim.bottom) / 2;
-    dimText = said(dim.split);
-    beyond = {
-      top: mid, bottom: dim.bottom, limit: true, text: upTo(said(dim.split)),
-    };
+    // Twice the back-off: one figure, the sum as a limit, a short tick at the plate's top (rule 1).
+    mid = (dim.top + dim.bottom) / 2;
+    dimText = upTo(say('retract', slowReach(texts)));
   } else if (dim) {
     const figure = said(dim.field);
     dimText = dim.upTo ? upTo(figure) : figure;
@@ -269,7 +267,7 @@ export const plateScene = (name, p, {
   return {
     gap,
     dim: dim ? {
-      top: dim.top, bottom: beyond ? beyond.top : dim.bottom, limit: Boolean(dim.limit), text: dimText, beyond,
+      top: dim.top, bottom: dim.bottom, mid, limit: Boolean(dim.limit), text: dimText,
     } : null,
     motion,
     // An arrow carries its feed, always (rules in `ui/probeDraw`).
@@ -284,6 +282,9 @@ export const plateScene = (name, p, {
     stock: move.after || focus === 'stock' ? { text: said('stockThickness'), lit: focus === 'stock' } : null,
   };
 };
+
+/** Where a move's figure comes from, said under its title (rule 1) — `[key, vars]`, or null. */
+export const plateExplain = (name, texts, say) => (name === 'slow' ? slowReachWhy(texts, say) : null);
 
 /** The move's G-code, with the figures typed and the coordinate system's number. */
 export const plateCode = (name, texts, wcs = 1, surface = SURFACE) => MOVES[name].code(texts, wcs, surface).join(' ');

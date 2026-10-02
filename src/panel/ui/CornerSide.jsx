@@ -10,6 +10,7 @@ import useViewScale from './useViewScale';
 import {
   C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, moveOf, positionOf, sumOf, tipOf,
 } from '../machine/cornerCycle';
+import { slowReach } from '../machine/probeFields';
 import { t } from '../i18n';
 
 /**
@@ -147,19 +148,19 @@ const CornerSide = ({
       const e = TOP - g1;
       words.push(<g key="feed" opacity={fade('feed')}>{tags('feedt', { at: 120, side: -1, parts: [[f, e, said(move.feed)]], ticks: [[f, MOTION_TICK]] }, focus === 'feed' ? FACE.hot : FACE.plain)}</g>);
     }
-    const { from, to: end, limit } = move.dim;
-    const { split } = move.dim;
-    // Twice a figure (`split`): the way back plain, the margin past it a limit.
-    const to = split ? (from + end) / 2 : end;
-    geometry.push(<g key="dim" opacity={fade('dim')}>{split ? <ReachDimension at={COL} from={from} mid={to} to={end} lit={focus === 'dim'} size={size} /> : <Dimension at={COL} from={from} to={to} limit={limit} lit={focus === 'dim'} size={size} />}</g>);
-    const figure = said(split || move.dim.field);
+    const {
+      from, to, limit, split,
+    } = move.dim;
+    // Twice the back-off (`split`): one figure, the sum as a limit, a short tick at the plate's top (rule 1).
+    geometry.push(<g key="dim" opacity={fade('dim')}>{split ? <ReachDimension at={COL} from={from} mid={(from + to) / 2} to={to} lit={focus === 'dim'} size={size} /> : <Dimension at={COL} from={from} to={to} limit={limit} lit={focus === 'dim'} size={size} />}</g>);
+    const figure = said(split ? 'retract' : move.dim.field);
+    let text = limit ? upTo(figure) : figure;
+    if (split) {
+      text = upTo(say('retract', slowReach(texts)));
+    }
     words.push(
       <g key="dimt" opacity={fade('dim')}>
-        {tags('dimt', {
-          at: COL,
-          parts: split ? [[from, to, figure], [to, end, upTo(figure)]] : [[from, to, limit ? upTo(figure) : figure]],
-          ticks: split ? dimTicks(from, to, end) : dimTicks(from, to),
-        }, focus === 'dim' ? FACE.hot : FACE.plain)}
+        {tags('dimt', { at: COL, parts: [[from, to, text]], ticks: dimTicks(from, to) }, focus === 'dim' ? FACE.hot : FACE.plain)}
       </g>,
     );
     if (gap < 0.3) {
