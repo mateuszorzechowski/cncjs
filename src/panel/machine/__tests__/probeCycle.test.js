@@ -1,5 +1,5 @@
 import {
-  BEFORE_MM, LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, RUN_MS, SPAN_MS, TOP, gapAt, motionEnd, moveOf, moveOfPhase, plateCode, plateExplain, plateReadout, plateScene, playAt, positionAt,
+  BEFORE_MM, LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, RUN_MS, SPAN_MS, TOP, gapAt, motionEnd, moveOf, moveOfPhase, plateCode, plateReadout, plateScene, playAt, positionAt,
 } from '../probeCycle';
 
 const TEXTS = {
@@ -10,7 +10,7 @@ const upTo = (v) => `maks. ${v}`;
 
 describe('the Z plate cycle (probe proposal)', () => {
   test('plays its six moves in order, each for a span, and loops', () => {
-    expect(PLATE_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['fast', 'retract', 'slow', 'off', 'zero', 'lift']);
+    expect(PLATE_ORDER.map((_, i) => playAt(i * SPAN_MS + 10).name)).toEqual(['fast', 'retract', 'slow', 'zero', 'lift']);
     expect(playAt(PLATE_ORDER.length * SPAN_MS + 10).name).toBe('fast');
   });
 
@@ -82,10 +82,8 @@ describe('the Z plate cycle (probe proposal)', () => {
     expect(lift.zero).toBe(1);
     expect(lift.motion.kind).toBe('rapid');
     expect(lift.dim.top).toBe(TOP - 56);
-    // A move of its own: its own way alone, from the back-off up.
-    expect(lift.dim).toMatchObject({ bottom: TOP - 24, text: '15 mm' });
-    expect(plateExplain('lift', TEXTS)).toEqual(['probe.sum.liftLessRetract', { way: '15', lift: '20', retract: '5' }]);
-    expect(plateExplain('zero', TEXTS)).toBeNull();
+    // Straight off the touch up to the lift: its way is the lift, from the plate's top.
+    expect(lift.dim).toMatchObject({ bottom: TOP, text: '20 mm' });
   });
 
   test('with no plate the tool goes the whole limit and ends in the alarm', () => {
@@ -98,9 +96,8 @@ describe('the Z plate cycle (probe proposal)', () => {
     expect(plateCode('fast', TEXTS)).toBe('G38.2 Z-20 F50');
     expect(plateCode('slow', TEXTS)).toBe('G38.2 Z-10 F15');
     expect(plateCode('zero', TEXTS, 2)).toBe('G10 L20 P2 Z20');
-    expect(plateCode('off', TEXTS)).toBe('G0 Z+5');
-    // The lift is over the touch: from the back-off, the rest of it.
-    expect(plateCode('lift', TEXTS)).toBe('G0 Z+15');
+    // Off the touch and up to the lift, one rapid the same way: the lift whole.
+    expect(plateCode('lift', TEXTS)).toBe('G0 Z+20');
   });
 
   test('reads the tool Z against the old zero, then the new one, held through the moves', () => {

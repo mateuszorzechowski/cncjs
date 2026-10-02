@@ -1552,7 +1552,6 @@
       "fast": "Z · szybki zjazd do płytki",
       "retract": "Z · cofnięcie przed pomiarem",
       "slow": "Z · wolny, dokładny pomiar",
-      "off": "Z · odsunięcie po pomiarze",
       "zero": "Zapis zera Z0 (styk − płytka {{t}})",
       "lift": "Z · odjazd w górę",
       "miss": "Brak płytki: zjazd do limitu"
@@ -1686,8 +1685,7 @@
     },
     "sum": {
       "retractDepth": "{{sum}} = {{retract}} cofnięcia + {{depth}} zejścia",
-      "depthLift": "{{sum}} = {{depth}} zejścia + {{lift}} odjazdu",
-      "liftLessRetract": "{{way}} = {{lift}} odjazdu − {{retract}} odsunięcia"
+      "depthLift": "{{sum}} = {{depth}} zejścia + {{lift}} odjazdu"
     }
   }
 }

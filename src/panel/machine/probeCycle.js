@@ -74,9 +74,6 @@ export const overSurface = (surface = SURFACE, stock = 0) => {
  * figures it uses, lit in the list beside it; `after` once the new zero is
  * written.
  */
-// The lift's way from the back-off: the lift over the touch, less the back-off.
-const liftRest = (v) => fmt(number(v.lift) - number(v.retract));
-
 const MOVES = {
   fast: {
     frames: [[0, HIGH], [0.15, HIGH], [0.7, 0, true], [1, 0]],
@@ -104,20 +101,11 @@ const MOVES = {
     code: (v) => [`G38.2 Z-${number(v.retract) * 2} F${v.slow}`],
     uses: ['slow', 'retract'],
   },
-  // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01).
-  off: {
-    frames: [[0, 0], [0.2, 0], [0.55, BACK, true], [1, BACK]],
-    from: 0, to: BACK, kind: 'rapid', feed: null,
-    dim: { top: TOP - BACK, bottom: TOP, field: 'retract' },
-    titleKey: 'probe.plate.off',
-    code: (v) => [`G0 Z+${v.retract}`],
-    uses: ['retract'],
-  },
   // The zero written at the touch, and the lift off the plate after it: two
   // moves, two segments of the bar (review note, 2026-09-30).
   zero: {
-    frames: [[0, BACK], [1, BACK]],
-    from: BACK, to: BACK, kind: null, feed: null, zeroAt: [0.25, 0.45],
+    frames: [[0, 0], [1, 0]],
+    from: 0, to: 0, kind: null, feed: null, zeroAt: [0.25, 0.45],
     dim: { top: TOP, bottom: TOP + 14, field: 'plateThickness' },
     titleKey: 'probe.plate.zero',
     code: (v, wcs, surface) => [`G10 L20 P${wcs} Z${fmt(number(v.plateThickness) + overSurface(surface, number(v.stockThickness)))}`],
@@ -125,16 +113,16 @@ const MOVES = {
     after: true,
   },
   lift: {
-    frames: [[0, BACK], [0.2, BACK], [0.6, LIFT, true], [1, LIFT]],
-    from: BACK, to: LIFT, kind: 'rapid', feed: null,
+    frames: [[0, 0], [0.2, 0], [0.6, LIFT, true], [1, LIFT]],
+    from: 0, to: LIFT, kind: 'rapid', feed: null,
     // The zero is written by now: its line stays.
     zeroAt: [-1, 0],
-    // The lift is over the touch (`liftOver`); from the back-off it is the rest, a move of its own: its
-    // dimension its own way alone, from the back-off up (Mateusz, 2026-10-02).
-    dim: { top: TOP - LIFT, bottom: TOP - BACK, value: (v) => liftRest(v) },
+    // Straight off the slow touch up to the lift over it: the back-off and the lift, two rapids the same
+    // way, are one move (rule, Mateusz 2026-10-02; the server's runner joins them).
+    dim: { top: TOP - LIFT, bottom: TOP, field: 'lift' },
     titleKey: 'probe.plate.lift',
-    code: (v) => [`G0 Z+${liftRest(v)}`],
-    uses: ['lift', 'retract'],
+    code: (v) => [`G0 Z+${v.lift}`],
+    uses: ['lift'],
     after: true,
   },
   // What the limit means: no plate, the whole way down, and the alarm.
@@ -152,7 +140,7 @@ const MOVES = {
  * The whole cycle's moves in order, grouped as the bar under the drawing
  * shows them: the stage (Z, then the zero) and within it the step.
  */
-export const PLATE_ORDER = ['fast', 'retract', 'slow', 'off', 'zero', 'lift'];
+export const PLATE_ORDER = ['fast', 'retract', 'slow', 'zero', 'lift'];
 
 /*
  * Z being the one axis, its steps are the stages themselves — no Z above
@@ -161,7 +149,7 @@ export const PLATE_ORDER = ['fast', 'retract', 'slow', 'off', 'zero', 'lift'];
  */
 export const PLATE_GROUPS = [
   { id: 'search', key: 'probe.stage.search', folded: true, subs: [{ key: 'probe.stage.search', moves: ['fast'] }] },
-  { id: 'measure', key: 'probe.bar.measure', folded: true, subs: [{ key: 'probe.bar.measure', moves: ['retract', 'slow', 'off'] }] },
+  { id: 'measure', key: 'probe.bar.measure', folded: true, subs: [{ key: 'probe.bar.measure', moves: ['retract', 'slow'] }] },
   { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
 ];
 
@@ -265,8 +253,6 @@ export const plateScene = (name, p, {
     beyond = {
       top: mid, bottom: dim.bottom, limit: true, text: upTo(said(dim.split)),
     };
-  } else if (dim?.value) {
-    dimText = say('lift', dim.value(texts));
   } else if (dim) {
     const figure = said(dim.field);
     dimText = dim.upTo ? upTo(figure) : figure;
@@ -298,11 +284,6 @@ export const plateScene = (name, p, {
     stock: move.after || focus === 'stock' ? { text: said('stockThickness'), lit: focus === 'stock' } : null,
   };
 };
-
-/** Where a move's figure comes from, said under its title (rule 1) — `[key, vars]`, or null. */
-export const plateExplain = (name, texts, say = (field, text) => text) => (name === 'lift'
-  ? ['probe.sum.liftLessRetract', { way: say('lift', liftRest(texts)), lift: say('lift', texts.lift), retract: say('retract', texts.retract) }]
-  : null);
 
 /** The move's G-code, with the figures typed and the coordinate system's number. */
 export const plateCode = (name, texts, wcs = 1, surface = SURFACE) => MOVES[name].code(texts, wcs, surface).join(' ');
@@ -354,7 +335,6 @@ const PHASE_MOVE = {
   'z-back': 'retract',
   'z-settle': 'retract',
   z: 'slow',
-  'z-off': 'off',
   lift: 'lift',
 };
 

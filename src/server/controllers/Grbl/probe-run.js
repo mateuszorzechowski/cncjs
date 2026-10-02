@@ -33,6 +33,12 @@ const words = (target) => AXES
   .map((axis) => `${axis.toUpperCase()}${fmt(target[axis])}`)
   .join(' ');
 
+/** The one axis a target moves along from `from`, and which way, or null when it moves along none or more than one. */
+const wayOf = (from, target) => {
+  const moved = AXES.filter((axis) => Number.isFinite(target[axis]) && Math.abs(target[axis] - from[axis]) > 1e-9);
+  return moved.length === 1 ? { axis: moved[0], sign: Math.sign(target[moved[0]] - from[moved[0]]) } : null;
+};
+
 /** Machine coordinates to the work coordinates a `G38` line is written in. */
 const toWork = (target, wco) => Object.fromEntries(
   Object.entries(target).map(([axis, value]) => [axis, value - (wco[axis] || 0)]),
@@ -91,8 +97,24 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
       putBack();
       return;
     }
+    target = steps[index].to(here, seen);
+    /*
+     * Two rapids in a row along one axis the same way are one: the tool goes
+     * straight to where the second ends — off a touch and on up to the lift,
+     * or on to a hole's middle (Mateusz, 2026-10-02). A rapid and a touch are
+     * never joined: they are different moves.
+     */
+    while (steps[index].kind === 'move' && steps[index + 1]?.kind === 'move') {
+      const way = wayOf(here, target);
+      const further = steps[index + 1].to({ ...here, ...target }, seen);
+      const then = wayOf({ ...here, ...target }, further);
+      if (!way || !then || way.axis !== then.axis || way.sign !== then.sign) {
+        break;
+      }
+      index++;
+      target = { ...target, ...further };
+    }
     const step = steps[index];
-    target = step.to(here, seen);
     prb = null;
     progress({ index, total: steps.length, phase: step.phase });
     write(LINE[step.kind](step, target, wco));

@@ -9,7 +9,7 @@ import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
-  LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, moveOf, plateCode, plateExplain, plateReadout, plateScene, plateTimeline, playAt,
+  LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, moveOf, plateCode, plateReadout, plateScene, plateTimeline, playAt,
 } from '../machine/probeCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
 import { inMm } from '../machine/units';
@@ -19,7 +19,6 @@ import { useUnits } from './units';
 import { t } from '../i18n';
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
-const NBSP = ' ';
 
 // The one axis the plate measures, named in its readout.
 const Z_AXIS = 'z';
@@ -72,8 +71,6 @@ const ZPlateParams = ({
   };
   const read = plateReadout(name, mm, surface);
   const title = t(move.titleKey, { t: say('plateThickness', texts.plateThickness ?? '') });
-  // Where the move's figure comes from, when it is not one field's (rule 1, Mateusz 2026-10-02).
-  const why = plateExplain(name, texts, say);
 
   const groups = namedGroups(PLATE_GROUPS, t, (id) => t(moveOf(id).titleKey, { t: '' }));
   const sections = PLATE_PARAMS
@@ -105,8 +102,6 @@ const ZPlateParams = ({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
         <span className="whitespace-nowrap font-num text-cap text-mut">{code}</span>
-        {/* Its line kept when empty, so the caption does not jump (review note #9, 2026-10-02). */}
-        <span className="w-full text-note text-mut">{why ? t(...why) : NBSP}</span>
       </div>
     </div>
   );

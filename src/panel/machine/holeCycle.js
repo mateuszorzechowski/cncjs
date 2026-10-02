@@ -51,7 +51,8 @@ export const holeGroups = (passes = 2) => [1, 2].slice(0, passes).flatMap((pass)
     name: passes > 1 ? `${AXIS} · ${pass}` : AXIS,
     subs: [
       { name: `${AXIS}+`, moves: ['Fast', 'Back', 'Slow', 'Off'].map((step) => `${sideOf('p')}${step}`) },
-      { name: `${AXIS}−`, moves: ['Fast', 'Back', 'Slow', 'Off'].map((step) => `${sideOf('m')}${step}`) },
+      // Off the second wall it goes straight on to the middle: no back-off of its own.
+      { name: `${AXIS}−`, moves: ['Fast', 'Back', 'Slow'].map((step) => `${sideOf('m')}${step}`) },
       { key: 'probe.hole.middle', moves: [`${axis}${pass}c`] },
     ],
   };
