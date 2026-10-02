@@ -23,6 +23,7 @@ import {
   AXES, BACK, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
 import { bossSide } from './bossSide';
+import { slowReach } from './probeFields';
 import { frameAt, layOut, totalOf } from './timeline';
 
 const { moves: MOVES, order: ORDER } = build();
@@ -128,12 +129,8 @@ const TOUCHED = ['back', 'slow', 'up'];
  * by the ball for what goes up and down. `said` a figure's words, `lit(part)`
  * whether the figure being set is that part.
  */
-const above = (move, p, going, said, upTo, lit, reach) => {
-  const arrow = (from, to, kind, feed = null, on = false) => (going
-? {
-    axis: move.axis, from, to, kind, feed, lit: on,
-  }
-: null);
+const above = (move, p, going, said, upTo, lit, reach, slow) => {
+  const arrow = (from, to, kind, feed = null, on = false) => (going ? { axis: move.axis, from, to, kind, feed, lit: on } : null);
   switch (move.kind) {
     case 'out': return { motion: arrow(move.from, move.out, 'rapid') };
     // The search goes in no further than the middle thought: its reach one figure, the sum, and where it
@@ -152,7 +149,7 @@ const above = (move, p, going, said, upTo, lit, reach) => {
     case 'slow': return {
       motion: arrow(move.off, move.wall, 'probe', said('slow'), lit('feed')),
       reach: {
-        axis: move.axis, from: move.off, mid: move.wall, to: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] - move.sign * BACK), near: said('retract'), far: upTo(said('retract')), lit: lit('retract'),
+        axis: move.axis, from: move.off, mid: move.wall, to: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] - move.sign * BACK), text: slow, lit: lit('retract'),
       },
     };
     case 'centre': return { motion: arrow(move.from, move.to, 'rapid') };
@@ -179,7 +176,7 @@ export const bossScene = (name, p, {
     .map((one) => MOVES[one].side))];
   const {
     motion = null, limit = null, reach = null, dims: stepDims = [],
-  } = above(move, p, isGoing(move, p), said, upTo, lit, say('clear', reachOf(texts)));
+  } = above(move, p, isGoing(move, p), said, upTo, lit, say('clear', reachOf(texts)), upTo(say('retract', slowReach(texts))));
   // The step's arrow over its whole run, drawn or not: labels keep off it all along (L16).
   const { motion: way = null } = above(move, p, true, said, upTo, lit, '');
   // The part's rough width, and how far out past it, on a set-up.

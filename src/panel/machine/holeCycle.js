@@ -20,6 +20,7 @@ import {
   AXES, BACK, FREE, HOLD_MS, HOLE_R, LOOP_HOLD_MS, PAST, RUNS, START, TOOL_R, along, build, clamp, ease, isGoing, toolAt,
 } from './holeMoves';
 import { holeSide } from './holeSide';
+import { slowReach, slowReachWhy } from './probeFields';
 import { frameAt, layOut, totalOf } from './timeline';
 
 export { HOLE_R, LOOP_HOLD_MS, toolAt };
@@ -108,10 +109,6 @@ const onWall = (centre) => [centre[0] * (HOLE_R / FREE), centre[1] * (HOLE_R / F
 
 const TOUCHING = ['fast', 'slow'];
 
-const numberOf = (text) => Number(String(text ?? '').replace(',', '.'));
-// Twice a figure typed, as the slow touch's reach is twice the back-off.
-const twice = (text) => String(Math.round(2 * numberOf(text) * 1000) / 1000);
-
 /**
  * The drawing of move `name` at `p`: the ball's centre, the arrow while it
  * moves, the search's limit on a fast touch, the walls touched so far this
@@ -155,15 +152,15 @@ export const holeScene = (name, p, {
     }];
   } else if (move.kind === 'slow') {
     // The slow touch, from off the wall, with its own feed (review note, 2026-10-01: *"wolny pomiar nie jest pokazywany"*);
-    // it searches twice the back-off, drawn as the two they are — back to the wall, and the margin past it to the
-    // limit — as the Z plate's (*"brakuje odległości przy dokładnym pomiarze"*, *"rozbite na 5 i ≤ 5"*).
+    // it searches twice the back-off — back to the wall and as far again past it — said as one figure, the sum,
+    // as the Z plate's (*"brakuje odległości przy dokładnym pomiarze"*; rule 1, 2026-10-02).
     motion = going
 ? {
       axis: move.axis, from: move.off, to: move.wall, kind: 'probe', feed: said('slow'), lit: focus === 'feed',
     }
 : null;
     reach = {
-      axis: move.axis, from: move.off, mid: move.wall, to: along(move.axis, move.wall, move.sign * BACK), near: said('retract'), far: upTo(said('retract')), lit: focus === 'retract',
+      axis: move.axis, from: move.off, mid: move.wall, to: along(move.axis, move.wall, move.sign * BACK), text: upTo(say('retract', slowReach(texts))), lit: focus === 'retract',
     };
   } else if (move.kind === 'centre' && going) {
     motion = {
@@ -203,7 +200,7 @@ export const holeCode = (name, texts, wcs = 1) => {
   }
   if (move.kind === 'slow') {
     // The slow touch goes twice the way back, as the server's `touch` does.
-    return `G38.2 ${forward}${twice(texts.retract)} F${texts.slow}`;
+    return `G38.2 ${forward}${slowReach(texts)} F${texts.slow}`;
   }
   if (move.kind === 'zero') {
     return `G10 L20 P${wcs} X0 Y0`;
@@ -287,6 +284,7 @@ export const HOLE_CYCLE = {
   titleOf,
   scene: holeScene,
   code: holeCode,
+  explain: (name, texts, say) => (MOVES[name].kind === 'slow' ? slowReachWhy(texts, say) : null),
   usesAt: (name) => MOVES[name].uses,
   readout: holeReadout,
   positionAt,

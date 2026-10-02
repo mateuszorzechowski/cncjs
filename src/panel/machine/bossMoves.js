@@ -4,6 +4,8 @@
  * height, its keyframes. See `bossCycle` for what the steps are.
  */
 
+import { slowReachWhy } from './probeFields';
+
 export const LOOP_HOLD_MS = 2500;
 // How long each kind of step runs, and the hold after it; a set-up a second a leg.
 export const RUNS = {
@@ -153,6 +155,9 @@ export const downOf = (texts) => fmt(numberOf(texts.retract) + numberOf(texts.de
 export const explainOf = (move, texts, say = (field, text) => text) => {
   if (move.kind === 'fast') {
     return ['probe.boss.reachWhy', { reach: say('clear', reachOf(texts)), clear: say('clear', texts.clear), size: say('bossSize', texts.bossSize) }];
+  }
+  if (move.kind === 'slow' || move.kind === 'topSlow') {
+    return slowReachWhy(texts, say);
   }
   if (move.kind === 'down' || move.kind === 'up') {
     return ['probe.sum.retractDepth', { sum: say('depth', downOf(texts)), retract: say('retract', texts.retract), depth: say('depth', texts.depth) }];

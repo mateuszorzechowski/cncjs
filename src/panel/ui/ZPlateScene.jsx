@@ -50,9 +50,8 @@ const ZPlateScene = ({
   // Never on Z0's line (L15).
   const avoid = zero > 0 ? [[0, zeroLineY(TOP + 14, surface) - 1, WIDTH, 2]] : [];
   // The figures by the one rule (`placeTags`): the dimension's right of it, the feed left of its arrow.
-  const dimParts = [dim && [dim.top, dim.bottom, dim.text], dim?.beyond && [dim.beyond.top, dim.beyond.bottom, dim.beyond.text]].filter(Boolean);
   const dimTags = placeTags({
-    at: DIM_X, parts: dimParts, ticks: [dim?.top, dim?.bottom, dim?.beyond?.bottom].filter((y) => y !== undefined).map((y) => [y, DIM_TICK]), view, avoid, size,
+    at: DIM_X, parts: dim ? [[dim.top, dim.bottom, dim.text]] : [], ticks: dim ? [[dim.top, DIM_TICK], [dim.bottom, DIM_TICK]] : [], view, avoid, size,
   });
   const feedTags = placeTags({
     at: ARROW_X + shift, side: -1, parts: motion && feedTag ? [[motion.from, motion.to, motion.feed]] : [], ticks: [[motion?.from, MOTION_TICK]], view, avoid, size,
@@ -85,9 +84,9 @@ const ZPlateScene = ({
       )}
       {dim ? (
         <g opacity={fade('dim')}>
-          {/* A slow touch's reach one line past the plate, heads at its ends; else a dimension. */}
-          {dim.beyond ? (
-            <ReachDimension at={DIM_X} from={dim.top} mid={dim.bottom} to={dim.beyond.bottom} lit={focus === 'dim'} size={size} />
+          {/* A slow touch's reach one line past the plate, heads at its ends, a short tick at its top; else a dimension. */}
+          {dim.mid !== null ? (
+            <ReachDimension at={DIM_X} from={dim.top} mid={dim.mid} to={dim.bottom} lit={focus === 'dim'} size={size} />
           ) : (
             <Dimension at={DIM_X} from={dim.top} to={dim.bottom} limit={dim.limit} lit={focus === 'dim'} size={size} />
           )}

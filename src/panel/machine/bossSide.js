@@ -1,6 +1,7 @@
 import {
   ABOVE, BOSS_R, ON_TOP, TOOL_R, downOf, isGoing, toolAt,
 } from './bossMoves';
+import { slowReach } from './probeFields';
 
 /**
  * The part touched from outside, seen from the front (review notes,
@@ -64,7 +65,7 @@ const arrowOf = (move, p, x, said, lit) => {
  * top and the depth under it — one dimension with their sum (`down`), a short
  * tick at the top where they meet (rule 1, Mateusz 2026-10-02).
  */
-const distancesOf = (move, p, beside, said, upTo, lit, down) => {
+const distancesOf = (move, p, beside, said, upTo, lit, down, slow) => {
   const one = (id, from, to, text, on, limit = false) => ({
     id, at: beside, from, to, text, lit: on, limit,
   });
@@ -76,7 +77,7 @@ const distancesOf = (move, p, beside, said, upTo, lit, down) => {
     case 'topFast': return [one('reach', heightOf(1), -14, upTo(said('maxZ')), lit('dim'), true)];
     case 'topBack': return [one('retract', 0, heightOf(ABOVE), said('retract'), lit('retract'))];
     case 'topSlow': return [{
-      id: 'reach', at: beside, from: heightOf(ABOVE), mid: 0, to: -heightOf(ABOVE), text: said('retract'), far: upTo(said('retract')), lit: lit('retract'),
+      id: 'reach', at: beside, from: heightOf(ABOVE), mid: 0, to: -heightOf(ABOVE), text: slow, lit: lit('retract'),
     }];
     case 'down': return sum();
     case 'up': return sum();
@@ -105,7 +106,7 @@ export const bossSide = (move, p, {
   // stand still through the move (L16).
   const way = move.kind !== 'place' ? arrowOf(move, p, x, said, lit) : null;
   const motion = way && isGoing(move, p) ? way : null;
-  const vdims = move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit, say('depth', downOf(texts)));
+  const vdims = move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit, say('depth', downOf(texts)), upTo(say('retract', slowReach(texts))));
   let gap = null;
   let contact = null;
   if (move.kind === 'place') {

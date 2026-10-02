@@ -1,5 +1,5 @@
 import {
-  BEFORE_MM, LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, RUN_MS, SPAN_MS, TOP, gapAt, motionEnd, moveOf, moveOfPhase, plateCode, plateReadout, plateScene, playAt, positionAt,
+  BEFORE_MM, LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, RUN_MS, SPAN_MS, TOP, gapAt, motionEnd, moveOf, moveOfPhase, plateCode, plateExplain, plateReadout, plateScene, playAt, positionAt,
 } from '../probeCycle';
 
 const TEXTS = {
@@ -62,10 +62,11 @@ describe('the Z plate cycle (probe proposal)', () => {
 
   test('the back-off is a rapid, the slow touch searches twice it', () => {
     expect(plateScene('retract', 0.8, { texts: TEXTS, say }).motion.kind).toBe('rapid');
-    // Back to the plate, then the margin past it to the limit.
+    // Back to the plate and as far again past it: one figure, the sum as a limit, a short tick at the plate's top.
     const { dim } = plateScene('slow', 0.5, { texts: TEXTS, say, upTo });
-    expect(dim.text).toBe('5 mm');
-    expect(dim.beyond).toMatchObject({ top: TOP, limit: true, text: 'maks. 5 mm' });
+    expect(dim).toMatchObject({ text: 'maks. 10 mm', mid: TOP });
+    expect(plateExplain('slow', TEXTS, say)).toEqual(['probe.sum.slowReach', { reach: '10 mm', retract: '5 mm' }]);
+    expect(plateExplain('fast', TEXTS, say)).toBeNull();
   });
 
   test('touches green where the tip reaches the plate', () => {

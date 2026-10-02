@@ -6,6 +6,8 @@
  * The cycle through them is `cornerCycle`.
  */
 
+import { slowReachWhy } from './probeFields';
+
 const number = (text) => Number(String(text ?? '').replace(',', '.')) || 0;
 const sum = (...texts) => String(texts.reduce((all, text) => all + number(text), 0));
 
@@ -17,9 +19,14 @@ export const sumOf = (move, texts) => sum(...move.parts.map((field) => texts[fie
  * (rule 1, Mateusz 2026-10-02) — `[key, vars]`, or null.
  */
 const SUM_KEYS = { 'depth,retract': 'probe.sum.retractDepth', 'depth,lift': 'probe.sum.depthLift' };
-export const explainOf = (move, texts, say = (field, text) => text) => (move.parts
-  ? [SUM_KEYS[move.parts.join()], { sum: say(move.parts[0], sumOf(move, texts)), ...Object.fromEntries(move.parts.map((field) => [field, say(field, texts[field])])) }]
-  : null);
+export const explainOf = (move, texts, say = (field, text) => text) => {
+  if (move.feed === 'slow') {
+    return slowReachWhy(texts, say);
+  }
+  return move.parts
+    ? [SUM_KEYS[move.parts.join()], { sum: say(move.parts[0], sumOf(move, texts)), ...Object.fromEntries(move.parts.map((field) => [field, say(field, texts[field])])) }]
+    : null;
+};
 
 // Where the tool stands from above: over the plate, out past each wall, at
 // each wall (a radius off it) and backed off it.

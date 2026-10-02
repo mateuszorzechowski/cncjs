@@ -132,7 +132,7 @@ const CentreScene = ({
       <g opacity={fade('retract')}>
         <ReachDimension axis={flat ? ACROSS : ALONG} at={at} from={from} mid={mid} to={to} lit={reach.lit} size={size} />
         {tags({
-          axis: flat ? ACROSS : ALONG, at, parts: [[from, mid, reach.near], [mid, to, reach.far]], ticks: [from, mid, to].map((a) => [a, DIM_TICK]),
+          axis: flat ? ACROSS : ALONG, at, parts: [[from, to, reach.text]], ticks: [from, to].map((a) => [a, DIM_TICK]),
         }, face)}
       </g>
     );

@@ -8,6 +8,7 @@ import useViewScale from './useViewScale';
 import {
   C0, XO, cornerSides, gapAt, levelOfGap, moveOf, positionOf, zeroShown,
 } from '../machine/cornerCycle';
+import { slowReach } from '../machine/probeFields';
 import { t } from '../i18n';
 
 /**
@@ -168,7 +169,7 @@ const CornerTop = ({
       );
     }
     if (move.feed === 'slow') {
-      // The slow touch's reach, twice the back-off: back to the wall, and the margin past it.
+      // The slow touch's reach, twice the back-off: back to the wall, and as far again past it.
       const [mid, end] = flat ? [tx, tx + (tx - fx)] : [ty, ty + (ty - fy)];
       const face = lit('dim') ? FACE.hot : FACE.plain;
       geometry.push(
@@ -181,8 +182,9 @@ const CornerTop = ({
           {tags({
             axis: flat ? ACROSS : 'v',
             at: flat ? fy + 18 : fx + 18,
-            parts: flat ? [[fx, mid, said('retract')], [mid, end, upTo(said('retract'))]] : [[fy, mid, said('retract')], [mid, end, upTo(said('retract'))]],
-            ticks: flat ? dimTicks(fx, mid, end) : dimTicks(fy, mid, end),
+            // One figure, the sum as a limit (rule 1).
+            parts: [[flat ? fx : fy, end, upTo(say('retract', slowReach(texts)))]],
+            ticks: flat ? dimTicks(fx, end) : dimTicks(fy, end),
           }, face)}
         </g>,
       );

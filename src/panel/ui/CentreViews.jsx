@@ -30,7 +30,7 @@ const CentreViews = ({
   }
   const sideView = <CentreSide part={cycle.part} {...side} focus={top.focus} bare={bare} label={label} className={`h-auto w-full ${className}`} />;
   if (!phone) {
-    // One drawing in two views: no line between them, and a label short of room in one may stand in the other's free edge.
+    // One drawing in two views, a line between them; a label short of room in one may stand in the other's free edge.
     return (
       <PairOfViews pair={pair}>
         {topView}

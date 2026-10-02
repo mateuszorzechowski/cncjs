@@ -21,9 +21,9 @@
  *   that says the part or the set-up (its width, the way out past its side)
  *   stands just outside the part, by its edge (Mateusz, 2026-10-02);
  * - a search's reach is a dashed dimension, one head, its figure "≤ v";
- * - a slow touch's reach is one dashed line, ticks where it sets off, at the
- *   surface and at its limit, heads only at the outer two, with two figures:
- *   the way to the surface and the margin past it ("5 mm", "≤ 5 mm");
+ * - a slow touch's reach is one dashed line, heads only at its ends, a short
+ *   tick at the surface, and one figure — the sum, "≤ 10 mm" — with where it
+ *   comes from under the title (rule 1; replaces "5 mm" + "≤ 5 mm", 2026-10-02);
  * - a dimension is fixed to the move's geometry, never to where the tool is;
  * - a way made of several of the form's figures (back-off and depth, lift
  *   and back-off, the way out and half the part) is one dimension with one
@@ -185,10 +185,10 @@ export const Dimension = ({
 
 /*
  * A slow touch's reach (review note, 2026-10-01: *"groty tylko na
- * zewnętrznych kreskach, dwie etykiety"*): one dashed line, as a reach is
- * (Mateusz, 2026-10-01), from where it sets off (`from`) past the surface (`mid`) to its limit
- * (`to`), a tick at each, heads only at the outer two. Its two figures — the
- * way to the surface and the margin past it — are the drawing's to place.
+ * zewnętrznych kreskach"*): one dashed line, as a reach is, from where it sets
+ * off (`from`) to its limit (`to`), heads at those two, a short tick where it
+ * passes the surface (`mid`). Its one figure, the sum, is the drawing's to
+ * place (rule 1, Mateusz 2026-10-02).
  */
 export const ReachDimension = ({
   axis = 'v', at, from, mid, to, lit = false, size,
@@ -203,7 +203,8 @@ export const ReachDimension = ({
   const [toLo, toHi] = v ? ['up', 'down'] : ['left', 'right'];
   return (
     <g>
-      <path d={`${tick(from)} ${tick(mid)} ${tick(to)}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />
+      <path d={`${tick(from)} ${tick(to)}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />
+      <path d={v ? `M${at - DIM_TICK / 2} ${mid} H${at + DIM_TICK / 2}` : `M${mid} ${at - DIM_TICK / 2} V${at + DIM_TICK / 2}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} />
       <path d={`M${pt(lo + hh, at)} L${pt(hi - hh, at)}`} className={stroke} fill="none" strokeWidth={1} vectorEffect={NS} strokeDasharray={DASH} />
       <Head x={v ? at : lo} y={v ? lo : at} dir={toLo} size={size} className={fill} />
       <Head x={v ? at : hi} y={v ? hi : at} dir={toHi} size={size} className={fill} />

@@ -1,5 +1,5 @@
 import {
-  HOLE_PARAMS, HOLE_R, holeCode, holeGroups, holeOrder, holeReadout, holeScene, holeTimeline, holeWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, toolAt,
+  HOLE_CYCLE, HOLE_PARAMS, HOLE_R, holeCode, holeGroups, holeOrder, holeReadout, holeScene, holeTimeline, holeWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, toolAt,
 } from '../holeCycle';
 import { methodOf, phaseWords, stepsOf } from '../probe';
 import { segmentsOf } from '../timeline';
@@ -63,8 +63,9 @@ describe('the hole centre cycle', () => {
     expect(holeScene('x1pBack', 0.4, { texts: TEXTS }).dims).toEqual([expect.objectContaining({ id: 'retract', text: '2' })]);
     // The slow touch: its feed, and its reach — twice the back-off — as a limit.
     expect(holeScene('x1pSlow', 0.4, { texts: TEXTS }).motion).toMatchObject({ kind: 'probe', feed: '20' });
-    // One reach: back to the wall, and the margin past it — the back-off each.
-    expect(holeScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ near: '2', far: '2' });
+    // One reach, one figure: back to the wall and as far again past it, said as the sum.
+    expect(holeScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ text: '4' });
+    expect(HOLE_CYCLE.explain('x1pSlow', TEXTS)).toEqual(['probe.sum.slowReach', { reach: '4', retract: '2' }]);
     expect(holeScene('zero', 0.5).motion).toBeNull();
   });
 
