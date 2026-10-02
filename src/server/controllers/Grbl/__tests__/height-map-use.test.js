@@ -171,4 +171,3 @@ describe('a program bent to the height map', () => {
     expect(controller.bentProgram('result').gcode).toContain('G1 X20 Y0 Z-0.1');
   });
 });
-
