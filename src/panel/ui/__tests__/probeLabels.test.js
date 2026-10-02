@@ -1,4 +1,6 @@
-import { TAG_SCALE, placeTags, tagWidth } from '../probeLabels';
+import {
+  SHORT_STUB, TAG_SCALE, placeTags, tagWidth,
+} from '../probeLabels';
 
 // At scale 1 the gap g is 6 drawing units; heads stand 3 out of their line.
 const size = { fs: 12.5, hw: 3, k: 1 };
@@ -104,8 +106,9 @@ describe('where a probing drawing puts its labels (map §4a/4b)', () => {
     const [near, far] = placeTags({
       at: 290, parts: [[60, 66, '5 mm'], [66, 72, '≤ 5 mm']], ticks: ticks(60, 66, 72), view: VIEW, avoid: [[200, 0, 70, 200]], size,
     });
-    expect(near.y + H / 2).toBeCloseTo(60 - G);
-    expect(far.y - H / 2).toBeCloseTo(72 + G);
+    // A line this short is drawn with its heads outside, on stubs: past its ends is past the stubs (2026-10-02).
+    expect(near.y + H / 2).toBeCloseTo(60 - SHORT_STUB - G);
+    expect(far.y - H / 2).toBeCloseTo(72 + SHORT_STUB + G);
   });
 
   test('a part without a figure has no label', () => {

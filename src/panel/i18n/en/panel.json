@@ -1677,6 +1677,7 @@
       },
       "outCode": "G0 past the side, over the top",
       "reachWhy": "≤ {{reach}} = {{clear}} past the side + half of {{size}}",
+      "outWhy": "{{reach}} = {{clear}} past the side + half of {{size}}",
       "phase": {
         "top": "Z: looking for the top",
         "fast": "{{axis}}: looking for the side",

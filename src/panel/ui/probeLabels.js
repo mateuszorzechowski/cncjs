@@ -12,6 +12,14 @@ const glyphs = (text) => text.length + (text.match(/—/g) || []).length;
 export const tagWidth = (text, fs) => (glyphs(text) * 0.66 + 1) * fs * TAG_SCALE;
 
 /** What a line along `axis` at `at` covers from `from` to `to`, `half` out of it: a rect to keep labels off. */
+/*
+ * A dimension too short for its heads inside: drawn with them outside, on
+ * stubs this long past its ends (`Dimension`) — a label past its ends goes
+ * past the stubs too, never on a head (phone, paper zero, 2026-10-02).
+ */
+export const SHORT_SPAN = 24;
+export const SHORT_STUB = 16;
+
 export const lineRect = (axis, at, from, to, half) => {
   const [lo, hi] = from < to ? [from, to] : [to, from];
   return axis === 'v' ? [at - half, lo, 2 * half, hi - lo] : [lo, at - half, hi - lo, 2 * half];
@@ -133,14 +141,15 @@ export const placeTags = ({
   // Centred on the line, pulled in to stay inside the drawing.
   const inX = (x, w) => Math.max(view[0] + e, Math.min(view[0] + view[2] - e - w, x));
   const inY = (y) => Math.max(view[1] + e + h / 2, Math.min(view[1] + view[3] - e - h / 2, y));
+  const stub = hi - lo < SHORT_SPAN ? SHORT_STUB : 0;
   const beyond = (text, after, flush) => {
     const w = width(text);
     if (v) {
       const x = { mid: at - w / 2, out: side > 0 ? at - reach : at + reach - w, in: side > 0 ? at + reach - w : at - reach }[flush];
-      return { x: inX(x, w), y: after ? hi + g + h / 2 : lo - g - h / 2, w, text };
+      return { x: inX(x, w), y: after ? hi + stub + g + h / 2 : lo - stub - g - h / 2, w, text };
     }
     const y = { mid: at, out: at + side * (h / 2 - reach), in: at - side * (h / 2 - reach) }[flush];
-    return { x: after ? hi + g : lo - g - w, y: inY(y), w, text };
+    return { x: after ? hi + stub + g : lo - stub - g - w, y: inY(y), w, text };
   };
   const texts = layout.map((one) => one.text);
   const aligned = ['mid', 'out', 'in'];

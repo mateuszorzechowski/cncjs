@@ -179,20 +179,16 @@ export const bossScene = (name, p, {
   } = above(move, p, isGoing(move, p), said, upTo, lit, say('clear', reachOf(texts)), upTo(say('retract', slowReach(texts))));
   // The step's arrow over its whole run, drawn or not: labels keep off it all along (L16).
   const { motion: way = null } = above(move, p, true, said, upTo, lit, '');
-  // The part's rough width, and how far out past it, on a set-up.
+  // On a set-up, how far out from the middle thought: half the part and the way past it, one figure, the sum,
+  // a short tick at the part's edge (rule 1, Mateusz 2026-10-02); lit, and named, with either figure.
   let dims = stepDims;
   if (move.kind === 'out') {
     const edge = setOn(move.axis, move.out, move.guess + move.sign * BOSS_R);
     // Just outside the part, by its edge (review note #8, 2026-10-02: "bliżej krawędzi materiału").
     const at = BOSS_R + ASIDE_PART;
-    dims = [
-      {
-        id: 'clear', axis: move.axis, at, from: edge, to: move.out, text: said('clear'), lit: lit('clear'),
-      },
-      {
-        id: 'size', axis: move.axis, at, from: setOn(move.axis, move.out, move.guess - move.sign * BOSS_R), to: edge, text: said('bossSize'), lit: lit('size'),
-      },
-    ];
+    dims = [{
+      id: lit('size') ? 'size' : 'clear', axis: move.axis, at, from: setOn(move.axis, move.out, move.guess), mid: edge, to: move.out, text: say('clear', reachOf(texts)), lit: lit('clear') || lit('size'),
+    }];
   }
   const zero = move.zeroAt ? clamp((p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0])) : 0;
   let contact = null;

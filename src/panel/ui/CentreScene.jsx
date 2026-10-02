@@ -110,10 +110,15 @@ const CentreScene = ({
     const flat = dim.axis === 'x';
     const at = dim.at ?? (flat ? sy(dim.from[1]) + ASIDE : dim.from[0] + ASIDE);
     const [from, to] = flat ? [dim.from[0], dim.to[0]] : [sy(dim.from[1]), sy(dim.to[1])];
+    // A way of two figures said as their sum: a short tick where they meet (`mid`).
+    let mid = null;
+    if (dim.mid) {
+      mid = flat ? dim.mid[0] : sy(dim.mid[1]);
+    }
     const face = dim.lit ? FACE.hot : FACE.plain;
     return (
       <g key={dim.id} opacity={fade(dim.id)}>
-        <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} lit={dim.lit} size={size} />
+        <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} mid={mid} lit={dim.lit} size={size} />
         {tags({
           axis: flat ? ACROSS : ALONG, at, parts: [[from, to, dim.text]], ticks: [[from, DIM_TICK], [to, DIM_TICK]],
         }, face)}
