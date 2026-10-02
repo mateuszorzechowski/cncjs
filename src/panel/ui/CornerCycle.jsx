@@ -7,6 +7,7 @@ import {
 } from '../machine/cornerCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
 import { t } from '../i18n';
+import { DRAWING_FIT_MEASURING } from './probeDraw';
 
 // The cycle's segments, as the Setup's bar has them on a wide screen.
 const ITEMS = cornerTimeline();
@@ -27,7 +28,7 @@ const CornerCycle = ({
   const { p } = done ? { p: 1 } : playAt(ms, { pinned: name });
   const groups = namedGroups(CORNER_GROUPS, t, (id) => t(moveOf(id).titleKey));
   const drawing = {
-    name, p, corner, bare: true, label: t(moveOf(name).titleKey), className: 'h-auto w-full',
+    name, p, corner, bare: true, label: t(moveOf(name).titleKey), className: `h-auto w-full ${DRAWING_FIT_MEASURING}`,
   };
   return (
     <div className={`flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel ${className}`}>

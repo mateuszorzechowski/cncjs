@@ -128,6 +128,16 @@ export const Tag = ({
 };
 
 // How far a dimension's ticks stand out of its line, and an arrow's start tick.
+/*
+ * How tall a probing drawing may stand, wherever it is shown — the Setup and
+ * the measuring screen alike — so what is under it (the bar, what the machine
+ * is doing, Przerwij) stays on the screen (1920×911, 2026-10-02: under the
+ * fold on the measuring screen).
+ */
+export const DRAWING_FIT = 'max-h-64 @[1800px]/shell:max-h-96';
+// On the measuring screen, with what the machine is doing and Przerwij under it, never taller than this.
+export const DRAWING_FIT_MEASURING = 'max-h-64';
+
 export const DIM_TICK = 10;
 export const MOTION_TICK = 6;
 

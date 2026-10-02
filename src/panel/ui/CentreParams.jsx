@@ -12,6 +12,7 @@ import { fillsAt, timeAt } from '../machine/timeline';
 import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
+import { DRAWING_FIT } from './probeDraw';
 
 // An empty line's place kept, a no-break space.
 const NBSP = ' ';
@@ -75,7 +76,7 @@ const CentreParams = ({
         name={name}
         auto={cycle.viewOf?.(name, p, focus)}
         label={title}
-        className="max-h-64 @[1800px]/shell:max-h-96"
+        className={DRAWING_FIT}
       />
       <MoveBar
         groups={groups}

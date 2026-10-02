@@ -17,6 +17,7 @@ import { SURFACE, surfaceShifts } from '../machine/surface';
 import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
+import { DRAWING_FIT } from './probeDraw';
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 
@@ -81,7 +82,7 @@ const PaperParams = ({
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
-      <PaperScene {...scene} label={title} className="aspect-[404/188] h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
+      <PaperScene {...scene} label={title} className={`aspect-[404/188] h-auto w-full ${DRAWING_FIT}`} />
       <MoveBar
         groups={groups}
         active={name}
