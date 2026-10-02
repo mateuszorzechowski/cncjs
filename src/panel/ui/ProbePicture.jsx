@@ -71,15 +71,15 @@ const HolePictogram = ({ label, className }) => (
  * The part's pictogram: the hole's negative (review note #8, 2026-10-02:
  * *"piktogram to negatyw hole center, sonda na piktogramie ta sama tylko po
  * lewej stronie"*) — the part standing where the hole was cut, nothing either
- * side; the same 3D probe, at the same height, left of it; the accent heads
- * pointing in at both its sides.
+ * side; the same 3D probe, at the same height, left of it — as far from its
+ * accent head as the hole's is from its own; the heads pointing in at both sides.
  */
 const BossPictogram = ({ label, className }) => (
   <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
     <path d="M15 26 H33 V44 H15 Z" className="fill-mutS stroke-line" strokeWidth={1.6} strokeLinejoin="round" />
-    <path d="M3 3 H13 V15 L10 18 H6 L3 15 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
-    <path d="M8 18 V31" className="stroke-ink" strokeWidth={1.6} />
-    <circle cx={8} cy={33} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
+    <path d="M1 3 H11 V15 L8 18 H4 L1 15 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M6 18 V31" className="stroke-ink" strokeWidth={1.6} />
+    <circle cx={6} cy={33} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
     <path d="M11.4 30 L14.2 33 L11.4 36 Z M36.6 30 L33.8 33 L36.6 36 Z" className="fill-acc" />
   </svg>
 );
