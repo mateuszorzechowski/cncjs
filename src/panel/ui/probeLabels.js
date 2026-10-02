@@ -118,6 +118,8 @@ export const placeTags = ({
   // Still on it: slid along its own line just clear of it, the least way first (L26, to confirm).
   const span = [Math.min(...layout.map((one) => one.a0)), Math.max(...layout.map((one) => one.a0 + len(one.text)))];
   const slides = keepOff.flatMap(([x, y, w, ht]) => (v ? [y - span[1], y + ht - span[0]] : [x - span[1], x + w - span[0]]))
+    // Still beside its line: a slide past the line's end is not one.
+    .filter((shift) => span[0] + shift < hi && span[1] + shift > lo)
     .sort((p, q) => Math.abs(p) - Math.abs(q));
   const tries = [side, -side].flatMap((s) => [...each(s), ...[0, first, last, ...slides].map((shift) => boxes(s, shift))]);
   // Room on neither side: past the line's ends, on its axis — one label before its first end (over an

@@ -39,7 +39,7 @@ const sy = (y) => -y;
 const BOSS = 'boss';
 
 const CentreScene = ({
-  part, tool, level = 0, motion = null, limit = null, dims = [], reach = null, touched = [], contact = null, centre = null, zero = 0, dia = null, focus = null,
+  part, tool, level = 0, motion = null, way = motion, limit = null, dims = [], reach = null, touched = [], contact = null, centre = null, zero = 0, dia = null, focus = null,
   bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
@@ -51,9 +51,9 @@ const CentreScene = ({
   const [cx, cy] = [tool[0], sy(tool[1])];
   // A line's figures, placed by the one rule (`placeTags`).
   // Never on X0's or Y0's line (L15), on the ball's whole way through this move (L16), nor on the axes.
-  const way = motion ? [[motion.from[0], sy(motion.from[1])], [motion.to[0], sy(motion.to[1])]] : [[cx, cy]];
-  const [x0, x1] = [Math.min(...way.map(([x]) => x)), Math.max(...way.map(([x]) => x))];
-  const [y0, y1] = [Math.min(...way.map(([, y]) => y)), Math.max(...way.map(([, y]) => y))];
+  const path = way ? [[way.from[0], sy(way.from[1])], [way.to[0], sy(way.to[1])]] : [[cx, cy]];
+  const [x0, x1] = [Math.min(...path.map(([x]) => x)), Math.max(...path.map(([x]) => x))];
+  const [y0, y1] = [Math.min(...path.map(([, y]) => y)), Math.max(...path.map(([, y]) => y))];
   const sweep = [x0 - r, y0 - r, x1 - x0 + 2 * r, y1 - y0 + 2 * r];
   const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep, ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]], [VIEW[0], -1, VIEW[2], 2]] : [])];
   const place = (line) => (bare ? [] : placeTags({
@@ -83,11 +83,20 @@ const CentreScene = ({
     const at = flat ? sy(limit.from[1]) + ASIDE : limit.from[0] + ASIDE;
     const [from, to] = flat ? [limit.from[0], limit.to[0]] : [sy(limit.from[1]), sy(limit.to[1])];
     const face = limit.lit ? FACE.hot : FACE.plain;
+    // A reach of two figures (`mid`): one limit split by a tick where they meet, each part its figure.
+    let mid = null;
+    if (limit.mid) {
+      mid = flat ? limit.mid[0] : sy(limit.mid[1]);
+    }
     fence = (
       <g opacity={fade('dim')}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
+        {mid === null ? null : <path d={flat ? `M${mid} ${at - DIM_TICK} V${at + DIM_TICK}` : `M${at - DIM_TICK} ${mid} H${at + DIM_TICK}`} className={limit.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />}
         {tags({
-          axis: flat ? ACROSS : ALONG, at, parts: [[from, to, limit.text]], ticks: [[from, DIM_TICK], [to, DIM_TICK]],
+          axis: flat ? ACROSS : ALONG,
+          at,
+          parts: mid === null ? [[from, to, limit.text]] : [[from, mid, limit.near], [mid, to, limit.far]],
+          ticks: [from, mid, to].filter((a) => a !== null).map((a) => [a, DIM_TICK]),
         }, face)}
       </g>
     );

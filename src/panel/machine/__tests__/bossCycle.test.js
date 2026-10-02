@@ -65,7 +65,7 @@ describe('the centre from outside cycle', () => {
     expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ near: '2', far: '2' });
     expect(bossScene('zSlow', 0.4, { texts: TEXTS })).toMatchObject({ motion: null, limit: null, dims: [] });
     // The fast touch's reach (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*).
-    expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).limit).toMatchObject({ text: '25' });
+    expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).limit).toMatchObject({ near: '10', far: '30 / 2' });
   });
 
   test('a segment\'s end frame is its own move\'s', () => {

@@ -36,7 +36,7 @@ const BOSS = 'boss';
 const ASIDE = 16;
 
 const CentreSide = ({
-  part, along, r, hidden = false, h, motion = null, gap = null, vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
+  part, along, r, hidden = false, h, motion = null, way = motion, gap = null, vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
   const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
@@ -48,11 +48,11 @@ const CentreSide = ({
   // takes them, every arrow and dimension
   // but its own column, and the labels placed before it.
   const lines = [
-    motion && { at: motion.at - ASIDE, rect: lineRect(ALONG, motion.at - ASIDE, -motion.from, -motion.to, MOTION_TICK) },
+    way && { at: way.at - ASIDE, rect: lineRect(ALONG, way.at - ASIDE, -way.from, -way.to, MOTION_TICK) },
     ...vdims.map((dim) => ({ at: dim.at, rect: lineRect(ALONG, dim.at, -dim.from, -dim.to, DIM_TICK) })),
     gap && { at: gap.at, rect: lineRect(ALONG, gap.at, -gap.from, -gap.to, DIM_TICK) },
   ].filter(Boolean);
-  const lowest = Math.max(cy + r, ...(motion ? [-motion.from, -motion.to] : []));
+  const lowest = Math.max(cy + r, ...(way ? [-way.from, -way.to] : []));
   const fixed = [[along - r, VIEW[1], 2 * r, lowest - VIEW[1]], ...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]]] : [])];
   const taken = [];
   // A line's figures up and down the drawing, placed by the one rule (`placeTags`); the lines in its own column

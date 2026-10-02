@@ -101,7 +101,10 @@ export const bossSide = (move, p, {
   const lit = (part) => focus === part;
   // Behind the part, under its top: hidden.
   const hidden = y > 0 && h < 0 && Math.abs(x) < BOSS_R + r;
-  const motion = move.kind !== 'place' && isGoing(move, p) ? arrowOf(move, p, x, said, lit) : null;
+  // The step's arrow over its whole run, drawn only while it goes: labels keep off it all along, so they
+  // stand still through the move (L16).
+  const way = move.kind !== 'place' ? arrowOf(move, p, x, said, lit) : null;
+  const motion = way && isGoing(move, p) ? way : null;
   const vdims = move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit);
   let gap = null;
   let contact = null;
@@ -124,6 +127,7 @@ export const bossSide = (move, p, {
     hidden,
     h,
     motion,
+    way,
     gap,
     vdims,
     contact,
