@@ -61,6 +61,7 @@ import { createProbeRun, offsetFor, offsetLine } from './probe-run';
 import probeSettings from '../../services/probe';
 import { STRATEGIES } from '../../services/probe/strategies';
 import heightMap from '../../services/height-map';
+import { compensate } from '../../services/height-map/compensate';
 import library from '../../services/library';
 import units, { toMm } from '../../services/units';
 import { machineTiming } from '../../services/library/estimate';
@@ -1044,7 +1045,8 @@ class GrblController {
           const pauseError = !ignoreErrors;
           const { lines, received } = this.sender.state;
           const line = ensureString(lines[received - 1]).trim();
-          const ln = received + 1;
+          // In the file's lines, a program bent to a height map or not.
+          const ln = this.fileLines(received + 1);
 
           // The line Grbl refused: the oldest one not yet answered. Not
           // `line` above, which is the one before it, and which the old
@@ -2082,7 +2084,8 @@ class GrblController {
         // sender status
         socket.emit('sender:status', this.senderStatus());
 
-        const { name, gcode, context } = this.sender.state;
+        // The file as loaded, bent to a height map or not: what a panel draws and counts lines of.
+        const { name, gcode, context } = this.programSource || {};
         if (gcode) {
           socket.emit('gcode:load', name, gcode, context);
         }
@@ -2290,7 +2293,8 @@ class GrblController {
         source: 'server',
         event: 'program',
         code,
-        program: { name, total, line: received },
+        // The file's lines, a program bent to a height map or not.
+        program: { name, total: this.bentOn ? this.bent.total : total, line: this.fileLines(received) },
         ...(data ? { data } : {}),
       });
     }
@@ -2639,6 +2643,9 @@ class GrblController {
             return;
           }
 
+          this.programSource = { name, gcode: this.sender.state.gcode, context };
+          this.bentOn = false;
+          this.bendProgram();
           this.emit('gcode:load', name, this.sender.state.gcode, context);
           this.event.trigger('gcode:load');
           this.planTimeline(gcode);
@@ -2654,6 +2661,9 @@ class GrblController {
           this.timeline = null;
           this.progress = null;
           this.loadedGcode = null;
+          this.programSource = null;
+          this.bent = null;
+          this.bentOn = false;
           this.workflow.stop();
 
           // Sender
@@ -2701,6 +2711,17 @@ class GrblController {
           if (this.isTravelling()) {
             this.refuse(cmd, 'machine-moving');
             return;
+          }
+          // Bent to the map over a zero since moved in X or Y: bent again over where it is now.
+          if (this.bentOn && !_.isEqual(this.bent?.wco, this.workOffsetXY())) {
+            this.bendProgram();
+            if (this.bent.refused) {
+              this.useHeightMap(false);
+              this.emit('sender:status', this.senderStatus());
+              this.refuse(cmd, this.bent.refused.code, undefined, { line: this.bent.refused.line });
+              return;
+            }
+            this.useHeightMap(true);
           }
           /*
            * And the lease, which the two checks above do not replace.
@@ -3197,6 +3218,12 @@ class GrblController {
           if (result.map) {
             heightMap.set(result.map);
             this.emit('height-map:state', heightMap.current());
+            // The loaded program, bent to the new surface — or back to as written, if it no longer can be.
+            this.bendProgram();
+            if (this.bentOn) {
+              this.useHeightMap(!this.bent?.refused);
+            }
+            this.emit('sender:status', this.senderStatus());
           } else {
             const p = activeWcsNumber({ wcs: this.probe.wcs });
             this.command('gcode', [offsetLine(p, result.offset), this.runner.getModalGroup().units || 'G21']);
@@ -3204,6 +3231,29 @@ class GrblController {
           this.note({ level: 'info', source: 'server', event: 'probe', code: 'applied', data: { method: this.probe.method, wcs: this.probe.wcs } });
           this.probe = null;
           this.emit('probe:state', null);
+        },
+        /**
+         * The loaded program bent to the height map, or as written:
+         * `height-map:use(true|false)`. Worked out when it was loaded; this
+         * only swaps which one the sender holds. Refused, with the file's
+         * line, when the map cannot bend it.
+         */
+        'height-map:use': () => {
+          const [on] = args;
+          if (!this.programSource) {
+            this.refuse(cmd, 'no-program');
+            return;
+          }
+          if (on && !heightMap.current()) {
+            this.refuse(cmd, 'no-map');
+            return;
+          }
+          if (on && this.bent?.refused) {
+            this.refuse(cmd, this.bent.refused.code, undefined, { line: this.bent.refused.line });
+            return;
+          }
+          this.useHeightMap(Boolean(on));
+          this.emit('sender:status', this.senderStatus());
         },
         /** Put a measurement away without writing it — or a failure, once read. */
         'probe:discard': () => {
@@ -4706,9 +4756,84 @@ class GrblController {
       };
     }
 
+    /** The work offset in X and Y, millimetres: where a program's X0 Y0 is on the machine. */
+    workOffsetXY() {
+      const offset = this.reportedMm(this.runner.getParameters()[this.runner.getModalGroup().wcs] || {});
+      return { x: offset.x || 0, y: offset.y || 0 };
+    }
+
+    /**
+     * The loaded program bent to the height map, worked out before the
+     * operator asks — see `services/height-map/compensate` — or null with no
+     * program or no map. At Grbl's own arc tolerance, `$12`.
+     */
+    bendProgram() {
+      const map = heightMap.current();
+      if (!this.programSource || !map) {
+        this.bent = null;
+        return;
+      }
+      const wco = this.workOffsetXY();
+      const arcTolerance = Number(this.runner.settings?.settings?.$12) || undefined;
+      const { gcode } = this.programSource;
+      const bent = compensate(gcode, map, { wco, arcTolerance });
+      if (bent.refused) {
+        this.bent = { refused: bent.refused, wco };
+        return;
+      }
+      /*
+       * The sender counts the lines that are not blank, so its line `n` of
+       * the bent program is mapped to the same count of the file's: the
+       * last of the file's lines it came from.
+       */
+      const counted = [];
+      let count = 0;
+      for (const line of gcode.split('\n')) {
+        count += line.trim() ? 1 : 0;
+        counted.push(count);
+      }
+      const toFile = [];
+      bent.lines.forEach((line, k) => {
+        if (line.trim()) {
+          toFile.push(counted[bent.source[k]]);
+        }
+      });
+      this.bent = { lines: bent.lines, toFile, total: count, wco };
+    }
+
+    /** Hand the sender the bent program, or the one as written — the closing `%wait` is in both. */
+    useHeightMap(on) {
+      this.bentOn = on && Boolean(this.bent?.lines);
+      const { name, gcode, context } = this.programSource;
+      const text = this.bentOn ? this.bent.lines.join('\n') : gcode;
+      this.sender.load(name, text, context);
+      this.planTimeline(text);
+    }
+
+    /** The sender's line `n` of the bent program as the file's: the bent program has more. */
+    fileLines(n) {
+      if (!this.bentOn || !(n > 0)) {
+        return n;
+      }
+      const { toFile } = this.bent;
+      return toFile[Math.min(n, toFile.length) - 1];
+    }
+
     /** The sender's report, and where the machine is in the program — see `progress.js`. */
     senderStatus() {
-      return { ...this.sender.toJSON(), progress: this.progressReport(), error: this.pausedOn || null };
+      const status = { ...this.sender.toJSON(), progress: this.progressReport(), error: this.pausedOn || null };
+      // In the file's lines, bent or not: the panel draws and counts the file.
+      if (this.bentOn) {
+        status.total = this.bent.total;
+        status.sent = this.fileLines(status.sent);
+        status.received = this.fileLines(status.received);
+        if (status.progress) {
+          status.progress = { ...status.progress, line: this.fileLines(status.progress.line) };
+        }
+      }
+      // Whether the map can bend it, and whether it does: `{ on, refused }`; null with no map or program.
+      status.heightMap = this.bent ? { on: this.bentOn, refused: this.bent.refused || null } : null;
+      return status;
     }
 
     /**

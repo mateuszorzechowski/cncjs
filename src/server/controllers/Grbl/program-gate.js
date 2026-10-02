@@ -58,6 +58,8 @@ const PROGRAM = new Set([
   // Not in a pause for now either (Mateusz, 2026-09-29) — to be looked at
   // again with the tool-length probe, which is what a tool change needs.
   'probe:start', 'probe:apply',
+  // Swaps the program the sender holds.
+  'height-map:use',
 ]);
 
 /**
