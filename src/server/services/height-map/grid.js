@@ -44,8 +44,21 @@ const side = (range, count, step, units) => {
 };
 
 /**
- * The grid asked for, in millimetres: `{ xs, ys, stepX, stepY }`, work
- * coordinates; or `{ error }`. `units` is what the figures were given in.
+ * The points the area was given by, in millimetres, for a drawing to mark:
+ * the corner, the centre, or the two corners as they were given.
+ */
+const givenOf = (asked, units) => {
+  const mm = (v) => toMm(Number(v), units);
+  if (asked.at || asked.centre) {
+    const one = asked.at || asked.centre;
+    return [{ x: mm(one.x), y: mm(one.y) }];
+  }
+  return [0, 1].map((k) => ({ x: mm(asked.x[k]), y: mm(asked.y[k]) }));
+};
+
+/**
+ * The grid asked for, in millimetres: `{ xs, ys, stepX, stepY, given }`,
+ * work coordinates; or `{ error }`. `units` is what the figures were given in.
  */
 export const gridOf = (asked = {}, units) => {
   if (units !== undefined && !isUnit(units)) {
@@ -69,7 +82,9 @@ export const gridOf = (asked = {}, units) => {
   if (y.error) {
     return y;
   }
-  return { xs: x.values, ys: y.values, stepX: x.step, stepY: y.step };
+  return {
+    xs: x.values, ys: y.values, stepX: x.step, stepY: y.step, given: givenOf(asked, units),
+  };
 };
 
 export default gridOf;

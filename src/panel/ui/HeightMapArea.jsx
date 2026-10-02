@@ -76,7 +76,7 @@ const HeightMapArea = ({
   const preview = (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
       {/* On the machine, in 3D (review note, 2026-10-02): the travel, the program, the tool and the area. */}
-      <MapPreview3D machine={machine} grid={grid} className={phone ? 'h-64' : 'min-h-0 flex-1'} />
+      <MapPreview3D machine={machine} grid={grid} mode={mode} className={phone ? 'h-64' : 'min-h-0 flex-1'} />
       {grid?.nx ? (
         <p className="m-0 text-center text-note text-mut">{t('probe.map.stepIs', { step: `${units.figure(grid.stepX)} × ${units.figure(grid.stepY)} ${length}`, n: grid.nx * grid.ny })}</p>
       ) : null}

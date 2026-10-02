@@ -35,11 +35,15 @@ export const update = (req, res) => {
  */
 export const grid = (req, res) => {
   const { options, units } = { ...req.body };
-  const { error, xs, ys, stepX, stepY } = gridOf(options, units);
+  const {
+    error, xs, ys, stepX, stepY, given,
+  } = gridOf(options, units);
 
   if (error) {
     res.status(ERR_BAD_REQUEST).send({ msg: error, reason: error });
     return;
   }
-  res.send({ xs, ys, stepX, stepY, nx: xs.length, ny: ys.length });
+  res.send({
+    xs, ys, stepX, stepY, nx: xs.length, ny: ys.length, given,
+  });
 };

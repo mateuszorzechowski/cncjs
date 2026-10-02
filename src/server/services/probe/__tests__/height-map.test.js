@@ -58,7 +58,9 @@ const measure = (options, params = probeParams(), start = { x: -120, y: -80, z: 
 
 describe('the grid', () => {
   test('a count per side, the points reaching both edges', () => {
-    expect(gridOf({ x: [0, 40], y: [0, 20], nx: 5, ny: 3 })).toEqual({ xs: [0, 10, 20, 30, 40], ys: [0, 10, 20], stepX: 10, stepY: 10 });
+    expect(gridOf({ x: [0, 40], y: [0, 20], nx: 5, ny: 3 })).toEqual({
+      xs: [0, 10, 20, 30, 40], ys: [0, 10, 20], stepX: 10, stepY: 10, given: [{ x: 0, y: 0 }, { x: 40, y: 20 }],
+    });
   });
 
   test('a step becomes the nearest count, and the step the one that divides the side', () => {
@@ -71,7 +73,7 @@ describe('the grid', () => {
     const corners = gridOf({ x: [40, 0], y: [20, -10], nx: 3, ny: 2 });
     expect([corners.xs, corners.ys]).toEqual([[0, 20, 40], [-10, 20]]);
     expect(gridOf({ at: { x: 5, y: -5 }, size: { x: 20, y: 10 }, nx: 3, ny: 2 })).toMatchObject({ xs: [5, 15, 25], ys: [-5, 5] });
-    expect(gridOf({ centre: { x: 0, y: 10 }, size: { x: 20, y: 10 }, nx: 3, ny: 2 })).toMatchObject({ xs: [-10, 0, 10], ys: [5, 15] });
+    expect(gridOf({ centre: { x: 0, y: 10 }, size: { x: 20, y: 10 }, nx: 3, ny: 2 })).toMatchObject({ xs: [-10, 0, 10], ys: [5, 15], given: [{ x: 0, y: 10 }] });
   });
 
   test('in inches when given in them', () => {

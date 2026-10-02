@@ -21,14 +21,19 @@ const NO_OFFSET = { x: 0, y: 0, z: 0 };
 const IDLE_MS = 4000;
 const GLIDE_MS = 700;
 
-const MapPreview3D = ({ machine, grid, className = '' }) => {
+const MapPreview3D = ({ machine, grid, mode = null, done = [], className = '' }) => {
   const colors = useSceneColors();
   const [home, setHome] = useState(0);
+  // The view fills the frame with the area (Mateusz, 2026-10-02), first and after every return home.
+  const [fit, setFit] = useState(0);
   const idle = useRef(null);
   const hold = () => clearTimeout(idle.current);
   const release = () => {
     clearTimeout(idle.current);
-    idle.current = setTimeout(() => setHome((n) => n + 1), IDLE_MS);
+    idle.current = setTimeout(() => {
+      setHome((n) => n + 1);
+      setFit((n) => n + 1);
+    }, IDLE_MS);
   };
   useEffect(() => () => clearTimeout(idle.current), []);
 
@@ -44,6 +49,11 @@ const MapPreview3D = ({ machine, grid, className = '' }) => {
     min: { x: area.x[0] + offset.x, y: area.y[0] + offset.y, z: offset.z },
     max: { x: area.x[1] + offset.x, y: area.y[1] + offset.y, z: offset.z },
   }] : []), [areaKey, offset]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (areaKey) {
+      setFit((n) => n + 1);
+    }
+  }, [areaKey]);
   const scene = useMemo(() => composeScene({
     settings: machine.settings, envelope: machine.envelope, wcs: machine.modal?.wcs, offset, toolpath, layers: LAYERS, factor: machine.units?.factor, also,
   }), [machine.settings, machine.envelope, machine.modal?.wcs, offset, toolpath, machine.units?.factor, also]);
@@ -57,12 +67,26 @@ const MapPreview3D = ({ machine, grid, className = '' }) => {
         view={DEFAULT_VIEW}
         revision={home}
         memory="map"
-        fit={0}
+        fit={fit}
+        focus={also[0] || null}
+        // Framed on the area once the scene has drawn: a fit asked before that has no camera to move.
+        onReady={() => setFit((n) => n + 1)}
         onFree={release}
         onGrab={hold}
         glideMs={GLIDE_MS}
       >
-        {area ? <MapArea area={area} nx={grid.nx} ny={grid.ny} offset={offset} color={colors.work} /> : null}
+        {area ? (
+          <MapArea
+            area={area}
+            nx={grid.nx}
+            ny={grid.ny}
+            // The points it was given by, but for the program's, whose extent is not a point given.
+            given={mode === 'program' ? [] : grid.given || []}
+            done={done}
+            offset={offset}
+            color={colors.work}
+          />
+        ) : null}
       </Scene>
     </div>
   );
