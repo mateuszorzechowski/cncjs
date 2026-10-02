@@ -1,8 +1,9 @@
 import { useId } from 'react';
 import {
-  Alarm, Contact, DASH, Dimension, FACE, Motion, NS, ReachDimension, Tag, kit,
+  Alarm, Contact, DASH, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
-import { SurfaceGround } from './SurfaceGround';
+import { placeTags, shownView } from './probeLabels';
+import { SurfaceGround, zeroLineY } from './SurfaceGround';
 import useViewScale from './useViewScale';
 import { TOP } from '../machine/probeCycle';
 import { t } from '../i18n';
@@ -40,12 +41,22 @@ const ZPlateScene = ({
   surface = undefined, stock = null, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
-  const [measure, k] = useViewScale(WIDTH, HEIGHT);
+  const [measure, k, box] = useViewScale(WIDTH, HEIGHT);
   const size = kit(k);
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
   const tip = TOP - gap;
   const x = TOOL_X + shift;
-  const small = dim && dim.bottom - dim.top < 24;
+  const view = shownView([0, 0, WIDTH, HEIGHT], k, box);
+  // Never on Z0's line (L15).
+  const avoid = zero > 0 ? [[0, zeroLineY(TOP + 14, surface) - 1, WIDTH, 2]] : [];
+  // The figures by the one rule (`placeTags`): the dimension's right of it, the feed left of its arrow.
+  const dimParts = [dim && [dim.top, dim.bottom, dim.text], dim?.beyond && [dim.beyond.top, dim.beyond.bottom, dim.beyond.text]].filter(Boolean);
+  const dimTags = placeTags({
+    at: DIM_X, parts: dimParts, ticks: [dim?.top, dim?.bottom, dim?.beyond?.bottom].filter((y) => y !== undefined).map((y) => [y, DIM_TICK]), view, avoid, size,
+  });
+  const feedTags = placeTags({
+    at: ARROW_X + shift, side: -1, parts: motion && feedTag ? [[motion.from, motion.to, motion.feed]] : [], ticks: [[motion?.from, MOTION_TICK]], view, avoid, size,
+  });
   return (
     <svg ref={measure} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={label} className={`block ${className}`}>
       <defs>
@@ -80,25 +91,13 @@ const ZPlateScene = ({
           ) : (
             <Dimension at={DIM_X} from={dim.top} to={dim.bottom} limit={dim.limit} lit={focus === 'dim'} size={size} />
           )}
-          <Tag x={DIM_X + 8} y={small ? dim.top - 12 : (dim.top + dim.bottom) / 2} text={dim.text} face={focus === 'dim' ? FACE.hot : FACE.plain} size={size} />
-          {dim.beyond ? (
-            <Tag x={DIM_X + 8} y={(dim.beyond.top + dim.beyond.bottom) / 2 + 4} text={dim.beyond.text} face={focus === 'dim' ? FACE.hot : FACE.plain} size={size} />
-          ) : null}
+          {dimTags.map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={focus === 'dim' ? FACE.hot : FACE.plain} size={size} />)}
         </g>
       ) : null}
       {motion ? (
         <g opacity={fade('feed')}>
           <Motion at={ARROW_X + shift} from={motion.from} to={motion.to} kind={motion.kind} size={size} />
-          {feedTag ? (
-            <Tag
-              x={ARROW_X + shift - 8}
-              y={Math.abs(motion.to - motion.from) < 30 ? Math.min(motion.from, motion.to) - 12 : (motion.from + motion.to) / 2}
-              text={motion.feed}
-              right
-              face={focus === 'feed' ? FACE.hot : FACE.plain}
-              size={size}
-            />
-          ) : null}
+          {feedTags.map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={focus === 'feed' ? FACE.hot : FACE.plain} size={size} />)}
         </g>
       ) : null}
       {/* A 60° V bit, 16 wide: its point is 12 long. */}

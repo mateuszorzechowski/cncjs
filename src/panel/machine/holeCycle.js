@@ -140,8 +140,7 @@ export const holeScene = (name, p, {
       };
     }
     limit = {
-      // Its words near the wall, off the middle where the touches across X sit.
-      axis: move.axis, from: move.from, to: along(move.axis, move.wall, move.sign * PAST), text: upTo(said('holeSize')), lit: focus === 'dim', tagAt: 0.85,
+      axis: move.axis, from: move.from, to: along(move.axis, move.wall, move.sign * PAST), text: upTo(said('holeSize')), lit: focus === 'dim',
     };
   } else if (move.kind === 'back') {
     // As the Z plate's: the arrow bare, the way back a dimension with its figure.

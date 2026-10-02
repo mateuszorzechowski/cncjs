@@ -1,8 +1,9 @@
 import { useId } from 'react';
 import {
-  Contact, Dimension, FACE, Head, Jog, Motion, NS, TONES, Tag, kit,
+  Contact, DIM_TICK, Dimension, FACE, Head, Jog, MOTION_TICK, Motion, NS, TONES, Tag, kit,
 } from './probeDraw';
-import { SurfaceGround } from './SurfaceGround';
+import { placeTags, shownView } from './probeLabels';
+import { SurfaceGround, zeroLineY } from './SurfaceGround';
 import useViewScale from './useViewScale';
 import { FACE_Y, SHEET_Y } from '../machine/paperCycle';
 import { TOOL_X } from '../machine/paperSheet';
@@ -61,7 +62,7 @@ const PaperScene = ({
 }) => {
   const toolX = TOOL_X + shift;
   const id = useId().replace(/:/g, '');
-  const [measure, k] = useViewScale(WIDTH, HEIGHT);
+  const [measure, k, box] = useViewScale(WIDTH, HEIGHT);
   const size = kit(k);
   const mx = (x) => (mirror ? WIDTH - x : x);
   const mid = SHEET_Y + EDGE;
@@ -72,6 +73,14 @@ const PaperScene = ({
   const slideY = mid - SLIDE_UP;
   const slide = TONES[tone || 'mut'];
   const [outward, inward] = mirror ? [RIGHT, LEFT] : [LEFT, RIGHT];
+  // A line's figures on the unmirrored drawing, placed by the one rule (`placeTags`) and then on the mirror.
+  const avoid = zero > 0 ? [[0, zeroLineY(FACE_Y, surface) - 1, WIDTH, 2]] : [];
+  const tags = (line, face) => placeTags({
+    ...line, view: shownView([0, 0, WIDTH, HEIGHT], k, box), avoid, size,
+  }).map((one) => (
+    <Tag key={one.text} x={mirror ? WIDTH - one.x - one.w : one.x} y={one.y} text={one.text} face={face} size={size} />
+  ));
+  const jogFrom = SHEET_Y - (jog || fine || { from: 0 }).from;
   return (
     <svg ref={measure} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={label} className={`block ${className}`}>
       <defs>
@@ -104,26 +113,23 @@ const PaperScene = ({
       {jog ? <Jog at={mx(ARROW_X)} from={SHEET_Y - jog.from} to={tip} every={jog.every} size={size} /> : null}
       {fine ? <Jog at={mx(ARROW_X)} from={SHEET_Y - fine.from} to={tip} size={size} /> : null}
       {jog || fine ? (
-        <Tag x={mx(ARROW_X - 8)} y={jog ? SHEET_Y - jog.from + 10 : SHEET_Y - 22} text={t(jog ? 'probe.paper.step1' : 'probe.paper.step01')} right={!mirror} face={FACE.ink} size={size} />
+        tags({
+          at: ARROW_X, side: -1, parts: [[jogFrom, tip, t(jog ? 'probe.paper.step1' : 'probe.paper.step01')]], ticks: [[jogFrom, MOTION_TICK]],
+        }, FACE.ink)
       ) : null}
       {dim ? (
         <g opacity={focus && focus !== dim.field ? 0.3 : 1}>
           <Dimension at={mx(DIM_X)} from={dim.top} to={dim.bottom} lit={Boolean(dim.field) && focus === dim.field} size={size} />
-          <Tag
-            x={mx(DIM_X + (mirror ? -8 : 8))}
-            y={dim.bottom - dim.top < 24 ? dim.top - 12 : (dim.top + dim.bottom) / 2}
-            text={dim.text}
-            right={mirror}
-            face={dim.field && focus === dim.field ? FACE.hot : FACE.plain}
-            size={size}
-          />
+          {tags({ at: DIM_X, parts: [[dim.top, dim.bottom, dim.text]], ticks: [[dim.top, DIM_TICK], [dim.bottom, DIM_TICK]] }, dim.field && focus === dim.field ? FACE.hot : FACE.plain)}
         </g>
       ) : null}
       {motion ? <Motion at={mx(ARROW_X + shift)} from={motion.from} to={motion.to} kind={motion.kind} size={size} /> : null}
       {dia ? (
         <g opacity={focus && focus !== 'toolDiameter' ? 0.3 : 1}>
           <Dimension axis={ACROSS} at={tip - 2 * R - 14} from={mx(TOOL_X - R)} to={mx(TOOL_X + R)} lit={focus === 'toolDiameter'} size={size} />
-          <Tag x={mx(TOOL_X + R + 18)} y={tip - 2 * R - 14} text={dia.text} right={mirror} face={focus === 'toolDiameter' ? FACE.hot : FACE.plain} size={size} />
+          {tags({
+            axis: ACROSS, at: tip - 2 * R - 14, side: -1, parts: [[TOOL_X - R, TOOL_X + R, dia.text]], ticks: [[TOOL_X - R, DIM_TICK], [TOOL_X + R, DIM_TICK]],
+          }, focus === 'toolDiameter' ? FACE.hot : FACE.plain)}
         </g>
       ) : null}
       {side ? (
@@ -145,7 +151,7 @@ const PaperScene = ({
       {lift ? (
         <g opacity={focus && !lift.lit ? 0.3 : 1}>
           <Dimension at={mx(DIM_X)} from={lift.top} to={lift.bottom} lit={lift.lit} size={size} />
-          <Tag x={mx(DIM_X + (mirror ? -8 : 8))} y={lift.top - 12} text={lift.text} right={mirror} face={lift.lit ? FACE.hot : FACE.plain} size={size} />
+          {tags({ at: DIM_X, parts: [[lift.top, lift.bottom, lift.text]], ticks: [[lift.top, DIM_TICK], [lift.bottom, DIM_TICK]] }, lift.lit ? FACE.hot : FACE.plain)}
         </g>
       ) : null}
     </svg>

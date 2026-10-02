@@ -35,6 +35,18 @@
  * - a touch a green beating dot; walls touched before stay as faint dots;
  * - a zero written a dashed accent line, named X0, Y0 or Z0.
  *
+ * Where a label stands — `placeTags`, one rule for every drawing (map §4a/4b,
+ * Mateusz 2026-10-01):
+ * - beside its line, a gap g of 6 screen px past its ticks' ends — every
+ *   label of a line, and of lines in a row, aligned; never glued;
+ * - centred on its part of the line, also when it is longer than the part;
+ * - two labels each centred on its part; when they would meet, one under the
+ *   other, in the parts' order, the stack centred on the whole line;
+ * - on the far side from the tool's way: an arrow's feed beyond the arrow, a
+ *   dimension's figure beyond the dimension;
+ * - past the drawing's edge: on the other side of its line; on a line it must
+ *   not cross: aligned to the line's first end, else its last.
+ *
  * Views
  * - a move is drawn in the view it lies in: X and Y from above, Z from the
  *   side — and nowhere else, with no words standing in for it;
@@ -51,6 +63,8 @@
  * `k` is the drawing's screen pixels per unit (`useViewScale`): sizes that
  * must read the same at any scale are divided by it.
  */
+
+import { TAG_SCALE, tagWidth } from './probeLabels';
 
 export const NS = 'non-scaling-stroke';
 export const DASH = '5 4';
@@ -74,14 +88,6 @@ const TAG_FACES = {
   warn: { box: 'fill-surf stroke-line', line: 1, text: 'fill-ambT' },
 };
 
-// A figure's words a little under the drawing's, and lighter (review note, 2026-09-30).
-const TAG_SCALE = 0.88;
-
-// The figures face (Azeret Mono) is 0.65 em a glyph, the em dash two (measured in the panel,
-// 2026-10-01: "stoi — za nisko" ran out of its box); `fs` the drawing's size.
-const glyphs = (text) => text.length + (text.match(/—/g) || []).length;
-export const tagWidth = (text, fs) => (glyphs(text) * 0.66 + 1) * fs * TAG_SCALE;
-
 /** A figure in a small box centred on `y`, from `x` rightwards — or leftwards, `right`. */
 export const Tag = ({ x, y, text, right = false, face = 'plain', size }) => {
   const { rx } = size;
@@ -96,6 +102,10 @@ export const Tag = ({ x, y, text, right = false, face = 'plain', size }) => {
     </g>
   );
 };
+
+// How far a dimension's ticks stand out of its line, and an arrow's start tick.
+export const DIM_TICK = 10;
+export const MOTION_TICK = 6;
 
 /** An arrowhead with its tip at (x, y), pointing `dir`. */
 export const Head = ({ x, y, dir, size, className }) => {
@@ -124,7 +134,7 @@ export const Dimension = ({
   const small = hi - lo < 24;
   const v = axis === 'v';
   const pt = (along, cross) => (v ? `${cross} ${along}` : `${along} ${cross}`);
-  const tick = (along) => (v ? `M${at - 10} ${along} H${at + 10}` : `M${along} ${at - 10} V${at + 10}`);
+  const tick = (along) => (v ? `M${at - DIM_TICK} ${along} H${at + DIM_TICK}` : `M${along} ${at - DIM_TICK} V${at + DIM_TICK}`);
   const head = (along, dir) => <Head key={`${along}${dir}`} x={v ? at : along} y={v ? along : at} dir={dir} size={size} className={fill} />;
   const [toLo, toHi] = v ? ['up', 'down'] : ['left', 'right'];
   let line;
@@ -165,7 +175,7 @@ export const ReachDimension = ({
   const [lo, hi] = from < to ? [from, to] : [to, from];
   const v = axis === 'v';
   const pt = (along, cross) => (v ? `${cross} ${along}` : `${along} ${cross}`);
-  const tick = (along) => (v ? `M${at - 10} ${along} H${at + 10}` : `M${along} ${at - 10} V${at + 10}`);
+  const tick = (along) => (v ? `M${at - DIM_TICK} ${along} H${at + DIM_TICK}` : `M${along} ${at - DIM_TICK} V${at + DIM_TICK}`);
   const [toLo, toHi] = v ? ['up', 'down'] : ['left', 'right'];
   return (
     <g>
@@ -193,7 +203,7 @@ export const Motion = ({
   const v = axis === 'v';
   const end = forward ? to - hh : to + hh;
   const line = v ? `M${at} ${from} V${end}` : `M${from} ${at} H${end}`;
-  const tick = v ? `M${at - 6} ${from} H${at + 6}` : `M${from} ${at - 6} V${at + 6}`;
+  const tick = v ? `M${at - MOTION_TICK} ${from} H${at + MOTION_TICK}` : `M${from} ${at - MOTION_TICK} V${at + MOTION_TICK}`;
   let dir = forward ? 'right' : 'left';
   if (v) {
     dir = forward ? 'down' : 'up';
@@ -320,6 +330,16 @@ export const AxisPair = ({
       <text x={ox - fs * 0.31} y={ty - 4 / k} fontSize={fs} className="fill-mut font-num font-semibold">{up}</text>
     </g>
   );
+};
+
+/** What `AxisPair` at (x, y) covers, its two arms with their words, as rects `[x, y, w, h]` for labels to keep off. */
+export const axisRects = (x, y, size) => {
+  const { k } = size;
+  const fs = size.fs * 0.85;
+  const ox = x + fs * 0.31 + 2 / k;
+  const oy = y - 3 / k - fs * 0.4;
+  const top = oy - 26 - 4 / k - fs;
+  return [[x, oy - fs * 0.6, ox + 26 + 3 / k + fs * 1.4 - x, y - (oy - fs * 0.6)], [x, top, ox - x + fs * 0.62, oy - top]];
 };
 
 const USER = 'userSpaceOnUse';
