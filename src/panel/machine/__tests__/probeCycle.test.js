@@ -1,5 +1,5 @@
 import {
-  BEFORE_MM, LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, RUN_MS, SPAN_MS, TOP, gapAt, motionEnd, moveOf, moveOfPhase, plateCode, plateReadout, plateScene, playAt, positionAt,
+  BEFORE_MM, LOOP_HOLD_MS, PLATE_GROUPS, PLATE_ORDER, PLATE_PARAMS, RUN_MS, SPAN_MS, TOP, gapAt, motionEnd, moveOf, moveOfPhase, plateCode, plateExplain, plateReadout, plateScene, playAt, positionAt,
 } from '../probeCycle';
 
 const TEXTS = {
@@ -82,6 +82,10 @@ describe('the Z plate cycle (probe proposal)', () => {
     expect(lift.zero).toBe(1);
     expect(lift.motion.kind).toBe('rapid');
     expect(lift.dim.top).toBe(TOP - 56);
+    // A move of its own: its own way alone, from the back-off up.
+    expect(lift.dim).toMatchObject({ bottom: TOP - 24, text: '15 mm' });
+    expect(plateExplain('lift', TEXTS)).toEqual(['probe.sum.liftLessRetract', { way: '15', lift: '20', retract: '5' }]);
+    expect(plateExplain('zero', TEXTS)).toBeNull();
   });
 
   test('with no plate the tool goes the whole limit and ends in the alarm', () => {

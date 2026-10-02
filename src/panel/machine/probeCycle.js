@@ -74,6 +74,9 @@ export const overSurface = (surface = SURFACE, stock = 0) => {
  * figures it uses, lit in the list beside it; `after` once the new zero is
  * written.
  */
+// The lift's way from the back-off: the lift over the touch, less the back-off.
+const liftRest = (v) => fmt(number(v.lift) - number(v.retract));
+
 const MOVES = {
   fast: {
     frames: [[0, HIGH], [0.15, HIGH], [0.7, 0, true], [1, 0]],
@@ -126,11 +129,12 @@ const MOVES = {
     from: BACK, to: LIFT, kind: 'rapid', feed: null,
     // The zero is written by now: its line stays.
     zeroAt: [-1, 0],
-    // The lift is over the touch (`liftOver`), so its dimension is; from the back-off it is the rest.
-    dim: { top: TOP - LIFT, bottom: TOP, field: 'lift' },
+    // The lift is over the touch (`liftOver`); from the back-off it is the rest, a move of its own: its
+    // dimension its own way alone, from the back-off up (Mateusz, 2026-10-02).
+    dim: { top: TOP - LIFT, bottom: TOP - BACK, value: (v) => liftRest(v) },
     titleKey: 'probe.plate.lift',
-    code: (v) => [`G0 Z+${fmt(number(v.lift) - number(v.retract))}`],
-    uses: ['lift'],
+    code: (v) => [`G0 Z+${liftRest(v)}`],
+    uses: ['lift', 'retract'],
     after: true,
   },
   // What the limit means: no plate, the whole way down, and the alarm.
@@ -261,6 +265,8 @@ export const plateScene = (name, p, {
     beyond = {
       top: mid, bottom: dim.bottom, limit: true, text: upTo(said(dim.split)),
     };
+  } else if (dim?.value) {
+    dimText = say('lift', dim.value(texts));
   } else if (dim) {
     const figure = said(dim.field);
     dimText = dim.upTo ? upTo(figure) : figure;
@@ -292,6 +298,11 @@ export const plateScene = (name, p, {
     stock: move.after || focus === 'stock' ? { text: said('stockThickness'), lit: focus === 'stock' } : null,
   };
 };
+
+/** Where a move's figure comes from, said under its title (rule 1) — `[key, vars]`, or null. */
+export const plateExplain = (name, texts, say = (field, text) => text) => (name === 'lift'
+  ? ['probe.sum.liftLessRetract', { way: say('lift', liftRest(texts)), lift: say('lift', texts.lift), retract: say('retract', texts.retract) }]
+  : null);
 
 /** The move's G-code, with the figures typed and the coordinate system's number. */
 export const plateCode = (name, texts, wcs = 1, surface = SURFACE) => MOVES[name].code(texts, wcs, surface).join(' ');

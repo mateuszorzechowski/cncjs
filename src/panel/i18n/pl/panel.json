@@ -1685,7 +1685,8 @@
     },
     "sum": {
       "retractDepth": "{{sum}} = {{retract}} cofnięcia + {{depth}} zejścia",
-      "depthLift": "{{sum}} = {{depth}} zejścia + {{lift}} odjazdu"
+      "depthLift": "{{sum}} = {{depth}} zejścia + {{lift}} odjazdu",
+      "liftLessRetract": "{{way}} = {{lift}} odjazdu − {{retract}} odsunięcia"
     }
   }
 }
