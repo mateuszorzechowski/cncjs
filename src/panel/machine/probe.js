@@ -288,6 +288,19 @@ export const askGrid = async (options, rule) => {
   return res.ok ? body : { reason: body.reason || 'no-server' };
 };
 
+/**
+ * The loaded program bent by the kept height map (`of` `kept`) or by the one
+ * just measured (`result`), as text to draw — the server bent it — or null.
+ */
+export const fetchBentProgram = async (port, of) => {
+  const res = await fetch(`/api/height-map/program?port=${encodeURIComponent(port)}&of=${of}`, { headers: headers() });
+  if (!res.ok) {
+    return null;
+  }
+  const body = await res.json().catch(() => null);
+  return body?.gcode ?? null;
+};
+
 /** The loaded program bent to the height map, or as written. */
 export const bendProgram = (on) => {
   controller.command('height-map:use', Boolean(on));

@@ -484,6 +484,7 @@ const appMain = () => {
     app.get(urljoin(settings.route, 'api/probe'), api.probe.read);
     app.put(urljoin(settings.route, 'api/probe'), api.probe.update);
     app.post(urljoin(settings.route, 'api/probe/grid'), api.probe.grid);
+    app.get(urljoin(settings.route, 'api/height-map/program'), api.heightMap.program);
 
     // Who opens the port unasked
     app.get(urljoin(settings.route, 'api/connection/auto'), api.connection.readAuto);

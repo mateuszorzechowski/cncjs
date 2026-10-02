@@ -13,6 +13,7 @@ import * as mdi from './api.mdi';
 import * as users from './api.users';
 import * as tool from './api.tool';
 import * as probe from './api.probe';
+import * as heightMap from './api.heightMap';
 import * as units from './api.units';
 import * as connection from './api.connection';
 import * as editor from './api.editor';
@@ -34,6 +35,7 @@ export {
   users,
   tool,
   probe,
+  heightMap,
   units,
   connection,
   editor,
