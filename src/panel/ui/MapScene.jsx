@@ -33,7 +33,7 @@ const board = () => {
 };
 
 const MapScene = ({
-  x, tip, dim = null, motion = null, contact = false, ghost = false, alarm = false, measured = false, focus = null, label, className = '',
+  x, tip, dim = null, motion = null, contact = false, ghost = false, alarm = false, measured = false, focus = null, tool = 'board', label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
   const [measure, k, box] = useViewScale(WIDTH, HEIGHT);
@@ -83,8 +83,17 @@ const MapScene = ({
           {feedTags.map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={focus === 'feed' ? FACE.hot : FACE.plain} size={size} />)}
         </g>
       ) : null}
-      {/* A 60° V bit, 16 wide: its point is 12 long. */}
-      <path d={`M${x - 8} ${tip - 64} H${x + 8} V${tip - 12} L${x} ${tip} L${x - 8} ${tip - 12} Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
+      {tool === 'probe' ? (
+        // What touches, as chosen (review note #4, 2026-10-02): a 3D probe — its body, the stylus and the ball.
+        <g>
+          <path d={`M${x - 9} ${tip - 66} H${x + 9} V${tip - 40} L${x + 5} ${tip - 34} H${x - 5} L${x - 9} ${tip - 40} Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
+          <path d={`M${x} ${tip - 34} V${tip - 10}`} className="stroke-ink" strokeWidth={2} vectorEffect={NS} />
+          <circle cx={x} cy={tip - 5} r={5} className="fill-field stroke-ink" strokeWidth={2} vectorEffect={NS} />
+        </g>
+      ) : (
+        // A 60° V bit, 16 wide: its point is 12 long.
+        <path d={`M${x - 8} ${tip - 64} H${x + 8} V${tip - 12} L${x} ${tip} L${x - 8} ${tip - 12} Z`} className="fill-field stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
+      )}
       {contact ? <Contact x={x} y={tip} size={size} /> : null}
       {alarm ? <Alarm x={x} y={tip} text={t('probe.cycle.alarm')} size={size} /> : null}
     </svg>

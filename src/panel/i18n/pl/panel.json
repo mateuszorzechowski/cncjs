@@ -1762,7 +1762,10 @@
       "mode": {
         "point": "Punkt i rozmiar",
         "corners": "Dwa rogi",
-        "program": "Z programu"
+        "program": "Z programu",
+        "pointNote": "Róg i szerokość z głębokością.",
+        "cornersNote": "Podjedź joggiem nad dwa rogi po przekątnej.",
+        "programNote": "Obrys wczytanego programu."
       },
       "x": "Róg X",
       "y": "Róg Y",
@@ -1774,7 +1777,8 @@
       "here": "Tu",
       "span": "X {{px0}} – {{px1}}  Y {{py0}} – {{py1}} {{unit}}",
       "stepIs": "Co {{step}}, {{n}} punktów.",
-      "takeCorners": "Podjedź joggiem nad jeden róg obszaru i naciśnij „Tu”, potem nad róg po przekątnej."
+      "takeCorners": "Podjedź joggiem nad jeden róg obszaru i naciśnij „Tu”, potem nad róg po przekątnej.",
+      "preview": "Obszar mierzony"
     }
   }
 }

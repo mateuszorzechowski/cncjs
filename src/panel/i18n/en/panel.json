@@ -1762,7 +1762,10 @@
       "mode": {
         "point": "Corner and size",
         "corners": "Two corners",
-        "program": "From the program"
+        "program": "From the program",
+        "pointNote": "A corner, a width and a depth.",
+        "cornersNote": "Jog over two corners across from each other.",
+        "programNote": "The loaded program's extent."
       },
       "x": "Corner X",
       "y": "Corner Y",
@@ -1774,7 +1777,8 @@
       "here": "Here",
       "span": "X {{px0}} – {{px1}}  Y {{py0}} – {{py1}} {{unit}}",
       "stepIs": "Every {{step}}, {{n}} points.",
-      "takeCorners": "Jog over one corner of the area and press \"Here\", then over the corner across."
+      "takeCorners": "Jog over one corner of the area and press \"Here\", then over the corner across.",
+      "preview": "The area measured"
     }
   }
 }

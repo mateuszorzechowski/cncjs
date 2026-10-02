@@ -24,7 +24,7 @@ const NBSP = ' ';
  * what they are about. The area comes on the next step.
  */
 const HeightMapSetup = ({
-  fields, texts, onText, bad, intro = null, note = null, split = null,
+  fields, texts, onText, bad, chosen = 'board', intro = null, note = null, split = null,
 }) => {
   const units = useUnits();
   const wide = useIsWide();
@@ -54,7 +54,7 @@ const HeightMapSetup = ({
 
   const left = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
-      <MapScene {...scene} label={title} className={`aspect-[340/180] h-auto w-full ${DRAWING_FIT}`} />
+      <MapScene {...scene} tool={chosen} label={title} className={`aspect-[340/180] h-auto w-full ${DRAWING_FIT}`} />
       <MoveBar
         groups={groups}
         active={bar}
