@@ -14,11 +14,13 @@ const STEPS = ['Fast', 'Back', 'Slow', 'Off'];
 const sideSteps = (side) => STEPS.map((step) => `${side}${step}`);
 
 describe('the hole centre cycle', () => {
-  test('each wall in the corner\'s steps — fast, back, slow — the middle after each pair, the zero last', () => {
+  test('each wall in the corner\'s steps — fast, back, slow, off — the middle after each pair, the zero last', () => {
+    // Off the second wall straight on to the middle: one rapid, no back-off of its own (rule, 2026-10-02).
+    const second = (side) => sideSteps(side).filter((step) => !step.endsWith('Off'));
     expect(holeOrder(1)).toEqual([
-      ...sideSteps('x1p'), ...sideSteps('x1m'), 'x1c', ...sideSteps('y1p'), ...sideSteps('y1m'), 'y1c', 'zero',
+      ...sideSteps('x1p'), ...second('x1m'), 'x1c', ...sideSteps('y1p'), ...second('y1m'), 'y1c', 'zero',
     ]);
-    expect(holeOrder()).toHaveLength(2 * 18 + 1);
+    expect(holeOrder()).toHaveLength(2 * 16 + 1);
   });
 
   test('the bar: a stage per axis and pass, a wall\'s steps each, the middle; every move once', () => {

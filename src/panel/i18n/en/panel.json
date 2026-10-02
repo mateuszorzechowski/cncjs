@@ -1552,7 +1552,6 @@
       "fast": "Z · fast move down to the plate",
       "retract": "Z · back-off before measuring",
       "slow": "Z · slow, precise touch",
-      "off": "Z · off after measuring",
       "zero": "Z0 written (touch − plate {{t}})",
       "lift": "Z · lift",
       "miss": "No plate: down to the limit"
@@ -1686,8 +1685,7 @@
     },
     "sum": {
       "retractDepth": "{{sum}} = {{retract}} back-off + {{depth}} depth",
-      "depthLift": "{{sum}} = {{depth}} depth + {{lift}} lift",
-      "liftLessRetract": "{{way}} = {{lift}} lift − {{retract}} back-off"
+      "depthLift": "{{sum}} = {{depth}} depth + {{lift}} lift"
     }
   }
 }

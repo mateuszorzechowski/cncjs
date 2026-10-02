@@ -67,14 +67,13 @@ describe('probe:start', () => {
     controller.runner.parse('[PRB:0.000,0.000,-7.100:1]');
     controller.runner.parse('ok');
     controller.runner.parse('ok');
-    controller.runner.parse('ok');
     expect(sent().slice(1)).toEqual([
       'G90 G21 G53 G0 Z-5',
       // A clip still touching as the tool backs off would fail the slow touch.
       'G4 P0.5',
       'G90 G21 G38.2 Z21 F25',
-      'G90 G21 G53 G0 Z-5.1',
-      // Up clear of the plate, so it can come out from under the tool.
+      // Off the touch and up clear of the plate, so it can come out from under the tool: two rapids the same
+      // way, one move.
       'G90 G21 G53 G0 Z2.9',
       // The modes it found, put back.
       'G91 G21',
@@ -234,6 +233,28 @@ describe('the runner', () => {
     run.ok();
 
     expect(lines).toEqual(['G90 G21 G38.2 Z-10 F50', 'G90 G21 G53 G0 Z-2']);
+  });
+
+  test('joins rapids in a row along one axis the same way, and nothing else', () => {
+    const lines = [];
+    const run = createProbeRun({
+      steps: [
+        { kind: 'move', phase: 'off', to: (here) => ({ x: here.x + 2 }) },
+        { kind: 'move', phase: 'centre', to: () => ({ x: 10 }) },
+        // Back the other way: a move of its own.
+        { kind: 'move', phase: 'back', to: (here) => ({ x: here.x - 1 }) },
+        // Another axis: a move of its own.
+        { kind: 'move', phase: 'up', to: (here) => ({ z: here.z + 5 }) },
+        // A touch after a rapid the same way: never joined.
+        { kind: 'touch', phase: 'z', feed: 50, to: (here) => ({ z: here.z + 1 }) },
+      ],
+      start: { x: 0, y: 0, z: 0 }, wco: { x: 0, y: 0, z: 0 }, restore: 'G90', write: (line) => lines.push(line), done: () => {},
+    });
+    run.start();
+    run.ok();
+    run.ok();
+    run.ok();
+    expect(lines).toEqual(['G90 G21 G53 G0 X10', 'G90 G21 G53 G0 X9', 'G90 G21 G53 G0 Z5', 'G90 G21 G38.2 Z6 F50']);
   });
 });
 

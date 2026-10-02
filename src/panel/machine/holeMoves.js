@@ -38,7 +38,10 @@ export const along = (axis, at, by) => (axis === 'x' ? [at[0] + by, at[1]] : [at
  * The moves, each with the keyframes of the ball's centre and how far into
  * its run it stops changing (`end`): for each wall the fast touch, back off
  * it, the slow touch and back off again — as the server's `touch`; a move to
- * the middle of the two walls; the zero, still.
+ * the middle of the two walls; the zero, still. Off the second wall the tool
+ * goes straight on to the middle: the back-off and the way there, two rapids
+ * the same way, are one move (rule, Mateusz 2026-10-02; the server's runner
+ * joins them).
  */
 export const build = () => {
   const moves = {};
@@ -63,13 +66,18 @@ export const build = () => {
         moves[`${side}Slow`] = {
           ...common, kind: 'slow', from: off, frames: [[0, off], [0.1, off], [0.7, wall], [1, wall]], end: 0.7, titleKey: 'probe.hole.move.slow', uses: ['slow', 'retract'],
         };
-        // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01).
-        moves[`${side}Off`] = {
-          ...common, kind: 'back', from: wall, frames: [[0, wall], [0.15, wall], [0.7, off, true], [1, off]], end: 0.7, titleKey: 'probe.hole.move.off', uses: ['retract'],
-        };
-        order.push(`${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Off`);
+        order.push(`${side}Fast`, `${side}Back`, `${side}Slow`);
         walls.push(wall);
-        at = off;
+        at = wall;
+        // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01) — unless the way to the middle
+        // goes on from it, off the second wall.
+        if (sign > 0) {
+          moves[`${side}Off`] = {
+            ...common, kind: 'back', from: wall, frames: [[0, wall], [0.15, wall], [0.7, off, true], [1, off]], end: 0.7, titleKey: 'probe.hole.move.off', uses: ['retract'],
+          };
+          order.push(`${side}Off`);
+          at = off;
+        }
       });
       const middle = axis === 'x'
         ? [(walls[0][0] + walls[1][0]) / 2, at[1]]
