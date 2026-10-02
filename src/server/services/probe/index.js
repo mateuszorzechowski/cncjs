@@ -23,8 +23,12 @@ export const FIELDS = {
   cornerThickness: { value: 10, min: 0.1, max: 100 },
   wallX: { value: 10, min: 0, max: 100 },
   wallY: { value: 10, min: 0, max: 100 },
-  // How far out past the wall the tool goes before it comes down, and how far down.
+  // A part touched from outside: how far out past its side the probe goes before it comes down.
   clear: { value: 20, min: 1, max: 100 },
+  // The L plate: how far sideways from where it starts the tool goes before it comes down — out past
+  // the wall only if it started near enough (Mateusz, 2026-10-02: a name says what happens).
+  travel: { value: 20, min: 1, max: 100 },
+  // How far down beside the wall or the side.
   depth: { value: 5, min: 0.5, max: 50 },
   toolDiameter: { value: 6, min: 0.1, max: 50 },
   // A 3D probe's ball, apart from the tool: measuring with one never changes the other.

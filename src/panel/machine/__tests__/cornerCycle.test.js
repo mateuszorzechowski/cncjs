@@ -8,7 +8,7 @@ import { segmentsOf } from '../timeline';
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
 
 const TEXTS = {
-  cornerThickness: '10', wallX: '10', wallY: '10', toolDiameter: '6', clear: '10', depth: '5', maxZ: '20', maxXY: '15', retract: '5', fast: '50', slow: '15', lift: '20',
+  cornerThickness: '10', wallX: '10', wallY: '10', toolDiameter: '6', travel: '10', depth: '5', maxZ: '20', maxXY: '15', retract: '5', fast: '50', slow: '15', lift: '20',
 };
 
 describe('the L plate cycle (probe proposal)', () => {
@@ -51,8 +51,8 @@ describe('the L plate cycle (probe proposal)', () => {
 
   test('says each move in G-code as the server runs it', () => {
     expect(cornerCode('zFast', TEXTS).parts).toEqual(['G38.2 Z-20 F50']);
-    // Each set-up move lights the figures its way is: out past the wall, the clear.
-    expect(cornerCode('xOut', TEXTS)).toEqual({ parts: ['G0 X-10'], now: -1, uses: ['clear'] });
+    // Each set-up move lights the figures its way is: sideways from the start, the travel.
+    expect(cornerCode('xOut', TEXTS)).toEqual({ parts: ['G0 X-10'], now: -1, uses: ['travel'] });
     expect(cornerCode('xDown', TEXTS)).toEqual({ parts: ['G38.3 Z-10 F50'], now: -1, uses: ['depth', 'retract'] });
     expect(cornerCode('yUp', TEXTS).parts).toEqual(['G0 Z+10']);
     expect(cornerCode('yOut', TEXTS).parts).toEqual(['G0 Y-10']);
@@ -128,7 +128,7 @@ describe('the L plate cycle (probe proposal)', () => {
     const barred = CORNER_GROUPS.flatMap((group) => group.subs.flatMap((sub) => sub.moves));
     expect(barred).toEqual(CORNER_ORDER);
     const grouped = CORNER_PARAMS.flatMap((group) => group.fields).sort();
-    expect(grouped).toEqual(['clear', 'cornerThickness', 'depth', 'fast', 'lift', 'maxXY', 'maxZ', 'retract', 'slow', 'toolDiameter', 'wallX', 'wallY']);
+    expect(grouped).toEqual(['cornerThickness', 'depth', 'fast', 'lift', 'maxXY', 'maxZ', 'retract', 'slow', 'toolDiameter', 'travel', 'wallX', 'wallY']);
   });
 
   test('plays the move of the server\'s step on the measurement screen', () => {

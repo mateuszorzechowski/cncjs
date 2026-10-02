@@ -82,10 +82,10 @@ export const MOVES = {
   xOut: {
     group: 'x', view: 'top', plane: 'xy',
     frames: [[0, C0, 1], [0.1, C0, 1], [0.9, XO, 1], [1, XO, 1]],
-    say: (v, say) => say('clear', v.clear),
+    say: (v, say) => say('travel', v.travel),
     titleKey: 'probe.corner.move.xOut',
-    code: (v) => [`G0 X-${v.clear}`],
-    uses: ['clear'],
+    code: (v) => [`G0 X-${v.travel}`],
+    uses: ['travel'],
   },
   xDown: {
     group: 'x', view: 'top', plane: 'z', down: true, parts: ['depth', 'retract'],
@@ -146,10 +146,10 @@ export const MOVES = {
   yOut: {
     group: 'y', view: 'top', plane: 'xy',
     frames: [[0, YM, 1], [0.1, YM, 1], [0.9, YO, 1], [1, YO, 1]],
-    say: (v, say) => say('clear', v.clear),
+    say: (v, say) => say('travel', v.travel),
     titleKey: 'probe.corner.move.yOut',
-    code: (v) => [`G0 Y-${v.clear}`],
-    uses: ['clear'],
+    code: (v) => [`G0 Y-${v.travel}`],
+    uses: ['travel'],
   },
   yDown: {
     group: 'y', view: 'top', plane: 'z', down: true, parts: ['depth', 'retract'],

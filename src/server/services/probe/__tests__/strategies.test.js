@@ -173,7 +173,7 @@ describe('the corner plate', () => {
     const start = { x: cx + 8, y: cy + 8, z: top + params.cornerThickness + 5 };
 
     const { outcome } = measure({
-      method: 'corner', options: { corner: 'front-left' }, params: { ...params, clear: 5 }, boxes: plateOn('front-left', cx, cy, top), start,
+      method: 'corner', options: { corner: 'front-left' }, params: { ...params, travel: 5 }, boxes: plateOn('front-left', cx, cy, top), start,
     });
 
     expect(outcome).toEqual({ failure: 'touched', phase: 'x-down' });

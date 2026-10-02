@@ -6,7 +6,7 @@ import { shownView } from './probeLabels';
 import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import {
-  C0, cornerSides, gapAt, levelOfGap, moveOf, positionOf, zeroShown,
+  C0, XO, cornerSides, gapAt, levelOfGap, moveOf, positionOf, zeroShown,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -213,8 +213,10 @@ const CornerTop = ({
       };
       dims.push(['wallY', <Dimension key="wallY" axis={ALONG} at={203} from={140} to={164} lit={lit('wallY')} size={size} />, <g key="wallYt">{tags(line, lit('wallY') ? FACE.hot : FACE.plain)}</g>]);
     }
-    if (focus === 'clear') {
-      dims.push(['clear', <Dimension key="clear" axis={ACROSS} at={139} from={82} to={106} lit size={size} />, <g key="cleart">{tags({ axis: ACROSS, at: 139, parts: [[82, 106, said('clear')]], ticks: dimTicks(82, 106) }, FACE.hot)}</g>]);
+    if (focus === 'travel') {
+      // Sideways from where the tool starts, not from the wall: where it ends depends on the start.
+      const at = C0[1] + 20;
+      dims.push(['travel', <Dimension key="travel" axis={ACROSS} at={at} from={C0[0]} to={XO[0]} lit size={size} />, <g key="travelt">{tags({ axis: ACROSS, at, parts: [[C0[0], XO[0], said('travel')]], ticks: dimTicks(C0[0], XO[0]) }, FACE.hot)}</g>]);
     }
   }
   const dimFade = (part) => {
