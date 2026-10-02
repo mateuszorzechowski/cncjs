@@ -1428,7 +1428,7 @@
         "zero": "Zapis zera: Z0, X0 i Y0",
         "lift": "Z · odjazd w górę",
         "corner": "Odjazd: nad X0 Y0",
-        "depth": "X · zjazd obok ścianki, pod krawędź materiału"
+        "depth": "X · zjazd obok ścianki płytki"
       },
       "zeroY": "Y0",
       "overCode": "G0 nad punkt dotyku Z"

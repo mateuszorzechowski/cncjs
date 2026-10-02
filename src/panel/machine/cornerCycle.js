@@ -7,8 +7,9 @@
  *
  * Positions are the front-left corner's in the drawing's units; the others
  * are mirrors of it (`cornerSides`). A position is `[x, y, level]`: x and y
- * from above, `level` the tool's height between beside the wall, below the
- * work's top (0), and a back-off over the plate's top (1). What a move says —
+ * from above, `level` the tool's height between beside the wall, the depth
+ * under the plate's top and still over the work (0), and a back-off over the
+ * plate's top (1). What a move says —
  * its figures and G-code — is made from the figures typed and matches the
  * steps the server runs (`services/probe/strategies/corner`).
  */
@@ -20,9 +21,15 @@ export {
   C0, LIFTED, XO, explainOf, sumOf,
 } from './cornerMoves';
 
-// From the side: the plate's top, and the tip at each level.
+/*
+ * From the side: the plate's top, and the tip at each level. Beside the wall
+ * the tip is the depth under the plate's top — over the work, the depth
+ * counted from the plate as the server counts it (Mateusz, 2026-10-02) — and
+ * drawn as far under it as a back-off is over it; higher, 48 a level.
+ */
 export const TOP = 146;
-export const tipOf = (level) => 134 + (1 - level) * 48;
+const STEP = 12;
+export const tipOf = (level) => (level >= 1 ? TOP - STEP - (level - 1) * 48 : TOP + STEP * (1 - 2 * level));
 
 // A move is played for its run, then held; a set-up's or the lift's a second.
 export const SPAN_MS = 2600;
@@ -218,7 +225,7 @@ export const gapAt = (move, p) => move.gap[0] + (move.gap[1] - move.gap[0]) * ea
 export const zeroShown = (move, p) => move.zeroAt ?? Math.min(1, Math.max(0, p / 0.15));
 
 /** The level of a tip `gap` over the plate's top — past 1 above a back-off. */
-export const levelOfGap = (gap) => 0.75 + gap / 48;
+export const levelOfGap = (gap) => (gap >= STEP ? 1 + (gap - STEP) / 48 : (1 + gap / STEP) / 2);
 
 /*
  * Which way each axis points for a corner: `flipX` the right-hand corners,
