@@ -2716,12 +2716,12 @@ class GrblController {
           if (this.bentOn && !_.isEqual(this.bent?.wco, this.workOffsetXY())) {
             this.bendProgram();
             if (this.bent.refused) {
-              this.useHeightMap(false);
+              this.holdBent(false);
               this.emit('sender:status', this.senderStatus());
               this.refuse(cmd, this.bent.refused.code, undefined, { line: this.bent.refused.line });
               return;
             }
-            this.useHeightMap(true);
+            this.holdBent(true);
           }
           /*
            * And the lease, which the two checks above do not replace.
@@ -3221,7 +3221,7 @@ class GrblController {
             // The loaded program, bent to the new surface — or back to as written, if it no longer can be.
             this.bendProgram();
             if (this.bentOn) {
-              this.useHeightMap(!this.bent?.refused);
+              this.holdBent(!this.bent?.refused);
             }
             this.emit('sender:status', this.senderStatus());
           } else {
@@ -3252,7 +3252,7 @@ class GrblController {
             this.refuse(cmd, this.bent.refused.code, undefined, { line: this.bent.refused.line });
             return;
           }
-          this.useHeightMap(Boolean(on));
+          this.holdBent(Boolean(on));
           this.emit('sender:status', this.senderStatus());
         },
         /** Put a measurement away without writing it — or a failure, once read. */
@@ -4802,7 +4802,7 @@ class GrblController {
     }
 
     /** Hand the sender the bent program, or the one as written — the closing `%wait` is in both. */
-    useHeightMap(on) {
+    holdBent(on) {
       this.bentOn = on && Boolean(this.bent?.lines);
       const { name, gcode, context } = this.programSource;
       const text = this.bentOn ? this.bent.lines.join('\n') : gcode;
