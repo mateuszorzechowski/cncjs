@@ -14,7 +14,7 @@ const CONTROL = [
   'feeder:start', 'feeder:stop', 'lasertest:off', 'realtime',
 ];
 const MANUAL = ['jogStart', 'jogStep', 'jogHold', 'zero', 'wcs', 'goToWorkZero', 'goToPoint', 'homing', 'unlock', 'gcode', 'write', 'macro:run'];
-const PROGRAM = ['gcode:load', 'gcode:unload', 'gcode:start', 'start', 'watchdir:load', 'macro:load', 'file:check'];
+const PROGRAM = ['gcode:load', 'gcode:unload', 'gcode:start', 'start', 'watchdir:load', 'macro:load', 'file:check', 'height-map:use'];
 
 describe('with no program under way', () => {
   test.each([...CONTROL, ...MANUAL, ...PROGRAM])('%s goes through', (cmd) => {
