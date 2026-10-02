@@ -2,6 +2,7 @@ import GrblController from '../GrblController';
 import { programRefusal } from '../program-gate';
 import { createProbeRun, offsetFor, offsetLine } from '../probe-run';
 import probeSettings from '../../../services/probe';
+import heightMap from '../../../services/height-map';
 import { createController } from '../../__tests__/helpers/createController';
 import { GRBL_ACTIVE_STATE_ALARM, GRBL_ACTIVE_STATE_IDLE } from '../constants';
 
@@ -368,5 +369,55 @@ describe('probe:stage', () => {
 
   test('is said while a program runs: it reaches no machine', () => {
     expect(programRefusal('probe:stage', { workflow: 'running', firmware: 'Run' })).toBeNull();
+  });
+});
+
+describe('the height map', () => {
+  beforeEach(() => {
+    heightMap.open(null);
+  });
+
+  // Every touch of a 2×2 map answered, the board flat but for the last point, 0.2 mm up.
+  const answerAll = (controller) => {
+    const tops = [-7, -7, -7, -6.8];
+    for (const top of tops) {
+      // Over the point, the fast touch, back, settle, the slow touch, off and up.
+      for (const line of ['ok', `[PRB:0,0,${top}:1]`, 'ok', 'ok', 'ok', `[PRB:0,0,${top}:1]`, 'ok', 'ok']) {
+        controller.runner.parse(line);
+      }
+    }
+    controller.runner.parse('ok');
+  };
+
+  test('its area is read in the units it was given in', () => {
+    const { controller, sent } = setup();
+    controller.command('probe:start', { method: 'height-map', options: { x: [0, 1], y: [0, 1], nx: 2, ny: 2 }, units: 'inch' });
+    // Over the first point first, at the height the tool stands.
+    expect(sent()[0]).toBe('G90 G21 G53 G0 X0 Y0');
+    expect(controller.probe.options).toEqual({ x: [0, 25.4], y: [0, 25.4], nx: 2, ny: 2 });
+  });
+
+  test('an area that is no grid is refused, and nothing moves', () => {
+    const { controller, sent, refusals } = setup();
+    controller.command('probe:start', { method: 'height-map', options: { x: [0, 0], y: [0, 10], nx: 2, ny: 2 } });
+    expect(sent()).toEqual([]);
+    expect(refusals.pop()).toMatchObject({ cmd: 'probe:start', reason: 'bad-area' });
+  });
+
+  test('measured, it is a map to keep, not a zero: confirmed, the server keeps it and says so', () => {
+    const { controller, sent } = setup();
+    const events = [];
+    controller.sockets.watching.emit = (event, ...args) => events.push({ event, args });
+    controller.command('probe:start', { method: 'height-map', options: { x: [0, 10], y: [0, 10], nx: 2, ny: 2 } });
+    answerAll(controller);
+
+    const result = controller.probe.result;
+    expect(result.map.dz[1][0]).toBeCloseTo(0.2, 6);
+    expect(heightMap.current()).toBeNull();
+
+    controller.command('probe:apply');
+    expect(sent().some((line) => line.includes('G10'))).toBe(false);
+    expect(heightMap.current()).toMatchObject({ xs: [0, 10], ys: [0, 10] });
+    expect(events.find(({ event }) => event === 'height-map:state').args[0]).toMatchObject({ xs: [0, 10] });
   });
 });

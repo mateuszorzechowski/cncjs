@@ -219,6 +219,14 @@ class Controller {
          * @param {object} stage - `{ method, options, step }`, `step` `position` or `measure`, or null
          */
         'probe:stage': [],
+        /**
+         * The height map the server keeps: machine X and Y, each height from
+         * the first point's — or null, none. See `services/height-map`.
+         *
+         * @event height-map:state
+         * @param {object} map - `{ xs, ys, dz, travel, first, at }`, or null
+         */
+        'height-map:state': [],
 
         /**
          * The units every panel shows and the machine goes back to — the

@@ -26,6 +26,7 @@ import devices from './services/devices';
 import machineSettings from './services/machine-settings';
 import units from './services/units';
 import probe from './services/probe';
+import heightMap from './services/height-map';
 import monitor from './services/monitor';
 import config from './services/configstore';
 import createWebApp from './lib/create-web-app';
@@ -77,6 +78,10 @@ const createServer = (options, callback) => {
 
   // The probe's figures, kept from the last measurement. See `services/probe`.
   probe.open(config.get('probe', {}));
+
+  // The height map last measured, so a restart keeps it. See `services/height-map`.
+  heightMap.open(config.get('heightMap', null));
+  heightMap.on('change', (map) => config.set('heightMap', map));
 
   // The devices that have talked to this server, by name — see
   // `services/devices`. Kept in `.cncrc` when what a reader sees changes.
