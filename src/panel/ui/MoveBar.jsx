@@ -29,9 +29,9 @@
  * A folded stage's name never shows cut off (Mateusz, 2026-10-02: "zgrub…",
  * "z…"): it says its short name (`short`) where there is room, and on a
  * phone, where a folded stage is a sliver, nothing unless the name is an
- * axis's letter or two; the stage playing says its name and where it is in
- * the cycle, "dokładnie · 2/4". A tap on a folded stage goes there, and so
- * names it.
+ * axis's letter or two; the stage playing says its name alone — not its
+ * place, "2/4" (Mateusz, 2026-10-02). A tap on a folded stage goes there,
+ * and so names it.
  */
 
 import { useIsPhone } from './shell';
@@ -100,12 +100,11 @@ const MoveBar = ({
   groups, active, fills, onPick = null, picked = null, marked = [],
 }) => {
   const phone = useIsPhone();
-  // A folded stage's name as it fits; the stage playing, its name and its place in the cycle.
+  // A folded stage's name as it fits.
   const foldedName = (one) => {
     const name = one.short || one.name;
     return phone && name.length > PHONE_FOLDED ? '' : name;
   };
-  const placed = (name, one) => `${name} · ${groups.indexOf(one) + 1}/${groups.length}`;
   // Whether a segment — or, without `part`, any of a move's — is in the part picked.
   const chosen = (id, part) => Boolean(picked && picked.ids.includes(id) && (picked.part === null || part === undefined || picked.part === part));
   const fillOf = (id, part = 0) => fills[`${id}:${part}`] || 0;
@@ -136,7 +135,7 @@ const MoveBar = ({
           <div key={group.id} className={`relative flex min-w-0 flex-col gap-0.5 overflow-hidden transition-[flex-grow] duration-500 ease-out ${playing ? 'flex-[12_12_0]' : 'flex-[1_1_0]'}`}>
             {/* A stage with no name of its own keeps the line, so its bars stand level with the others'. */}
             {/* Its name goes to the stage folded or open, so a press on it never falls on a dead button and takes a field's focus. */}
-            <button type={BUTTON} disabled={!onPick} onClick={stage} className={`truncate text-left text-note ${playing ? 'font-semibold text-acc' : 'text-mut'} ${group.name && !(group.folded && playing) ? '' : 'invisible'}`}>{(playing ? placed(group.name, group) : foldedName(group)) || NO_NAME}</button>
+            <button type={BUTTON} disabled={!onPick} onClick={stage} className={`truncate text-left text-note ${playing ? 'font-semibold text-acc' : 'text-mut'} ${group.name && !(group.folded && playing) ? '' : 'invisible'}`}>{(playing ? group.name : foldedName(group)) || NO_NAME}</button>
             <div aria-hidden={!playing} className={`flex gap-2 transition-opacity duration-300 ${playing ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
               {group.subs.map((sub) => {
                 const on = sub.moves.some((move) => move.id === active);
@@ -144,8 +143,7 @@ const MoveBar = ({
                   // The sub-stage under way wide, a segment a move; the done and the coming ones narrow, the bar's room
                   // the step's (review note #10, 2026-10-02: "skompresować wykonane i przyszłe etapy").
                   <div key={sub.name} className={`flex min-w-0 flex-col transition-[flex-grow] duration-500 ease-out ${on ? GROW[Math.min(8, sub.moves.length * 2)] : GROW[1]}`}>
-                    {/* A folded stage of one step is named by it: there its place in the cycle goes. */}
-                    <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(sub.moves.map((move) => move.id))} className={`truncate text-left text-cap ${on ? 'font-semibold text-ink' : 'text-mut'}`}>{on && group.folded && group.subs.length === 1 ? placed(sub.name, group) : sub.name}</button>
+                    <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(sub.moves.map((move) => move.id))} className={`truncate text-left text-cap ${on ? 'font-semibold text-ink' : 'text-mut'}`}>{sub.name}</button>
                     {on ? null : (
                       // Done or coming: folded to one bar, how far through it the cycle is (review note #8, 2026-10-02).
                       <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(sub.moves.map((move) => move.id))} aria-label={sub.name || sub.moves[0].label} className={segment(sub.moves.some((move) => chosen(move.id)))}>
