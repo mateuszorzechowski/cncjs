@@ -83,7 +83,9 @@
  * must read the same at any scale are divided by it.
  */
 
-import { TAG_SCALE, tagWidth } from './probeLabels';
+import {
+  SHORT_SPAN, SHORT_STUB, TAG_SCALE, tagWidth,
+} from './probeLabels';
 
 export const NS = 'non-scaling-stroke';
 export const DASH = '5 4';
@@ -154,7 +156,7 @@ export const Dimension = ({
   const fill = lit ? 'fill-acc' : 'fill-mut';
   const { hh } = size;
   const [lo, hi] = from < to ? [from, to] : [to, from];
-  const small = hi - lo < 24;
+  const small = hi - lo < SHORT_SPAN;
   const v = axis === 'v';
   const pt = (along, cross) => (v ? `${cross} ${along}` : `${along} ${cross}`);
   const tick = (along) => (v ? `M${at - DIM_TICK} ${along} H${at + DIM_TICK}` : `M${along} ${at - DIM_TICK} V${at + DIM_TICK}`);
@@ -163,7 +165,7 @@ export const Dimension = ({
   let line;
   let heads;
   if (small) {
-    line = `M${pt(lo - 16, at)} L${pt(lo, at)} M${pt(hi, at)} L${pt(hi + 16, at)}`;
+    line = `M${pt(lo - SHORT_STUB, at)} L${pt(lo, at)} M${pt(hi, at)} L${pt(hi + SHORT_STUB, at)}`;
     heads = [head(lo, toHi), head(hi, toLo)];
   } else if (limit) {
     const end = to;

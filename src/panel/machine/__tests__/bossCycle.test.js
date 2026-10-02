@@ -86,7 +86,10 @@ describe('the centre from outside cycle', () => {
     expect(playAt(10, { field: 'clear' })).toMatchObject({ name: 'x1pOut', focus: 'clear' });
     expect(playAt(10, { field: 'maxZ' })).toMatchObject({ name: 'zFast', focus: 'dim' });
     expect(playAt(10, { field: 'retract' })).toMatchObject({ name: 'x1pBack', focus: 'retract' });
-    expect(bossScene('x1pOut', 0.2, { texts: TEXTS, focus: 'clear' }).dims.find((one) => one.id === 'clear')).toMatchObject({ lit: true, text: '10' });
+    // One figure, the sum — half the part and the way past it — lit with either (rule 1, 2026-10-02).
+    expect(bossScene('x1pOut', 0.2, { texts: TEXTS, focus: 'clear' }).dims).toEqual([expect.objectContaining({ id: 'clear', lit: true, text: '25' })]);
+    expect(bossScene('x1pOut', 0.2, { texts: TEXTS, focus: 'size' }).dims[0]).toMatchObject({ id: 'size', lit: true });
+    expect(BOSS_CYCLE.explain('x1pOut', TEXTS)).toEqual(['probe.boss.outWhy', { reach: '25', clear: '10', size: '30' }]);
   });
 
   test('says each step in G-code as the server runs it, and lights its figures', () => {

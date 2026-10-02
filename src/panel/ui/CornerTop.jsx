@@ -115,11 +115,12 @@ const CornerTop = ({
     const [fx, fy] = positionOf(move.frames, 0);
     const [tx, ty] = positionOf(move.frames, 1);
     const flat = Math.abs(fy - ty) < 0.5;
-    // A way across both axes, back over the plate or over X0 Y0, has an arrow for each.
+    // Beside the tool's way, as every move's arrow (Mateusz, 2026-10-02: they stood at the drawing's edge). A way
+    // across both axes, over X0 Y0, has an arrow for each: along X over where it ends, along Y beside where it starts.
     geometry.push(
       <g key="way" opacity={focus ? 0.3 : 1}>
-        {Math.abs(fx - tx) > 0.5 ? <Motion axis={ACROSS} at={80} from={fx} to={tx} kind={RAPID} size={size} /> : null}
-        {flat ? null : <Motion axis={ALONG} at={190} from={fy} to={ty} kind={RAPID} size={size} />}
+        {Math.abs(fx - tx) > 0.5 ? <Motion axis={ACROSS} at={ty - 18} from={fx} to={tx} kind={RAPID} size={size} /> : null}
+        {flat ? null : <Motion axis={ALONG} at={fx + 18} from={fy} to={ty} kind={RAPID} size={size} />}
       </g>,
     );
     // A G0 carries nothing: a way by a figure of the form's has it as a dimension on the

@@ -153,6 +153,9 @@ export const downOf = (texts) => fmt(numberOf(texts.retract) + numberOf(texts.de
 
 /** Where a step's figure comes from, said under the drawing after its title — `[key, vars]`, or null. */
 export const explainOf = (move, texts, say = (field, text) => text) => {
+  if (move.kind === 'out') {
+    return ['probe.boss.outWhy', { reach: say('clear', reachOf(texts)), clear: say('clear', texts.clear), size: say('bossSize', texts.bossSize) }];
+  }
   if (move.kind === 'fast') {
     return ['probe.boss.reachWhy', { reach: say('clear', reachOf(texts)), clear: say('clear', texts.clear), size: say('bossSize', texts.bossSize) }];
   }

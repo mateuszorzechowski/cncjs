@@ -1,4 +1,5 @@
 import { settingFigure } from './units';
+import { currentLanguage } from '../i18n';
 
 /*
  * The probing figures and how they are said, apart from the wizard's talk to
@@ -50,5 +51,9 @@ export const fieldText = (mm, name, rule) => {
 /** The unit a field is typed in. */
 export const fieldUnit = (name, rule) => settingFigure(0, FIELDS[name].kind, rule).unit;
 
+// A decimal point as the language writes it: `0,1 mm` in Polish, as the titles say it (Mateusz, 2026-10-02).
+// G-code and the readout keep the point: that is the controller's.
+const decimal = (text) => (currentLanguage() === 'pl' ? String(text).replace('.', ',') : String(text));
+
 /** A figure as a drawing's badge says it: a rate as `F100`, a length with its unit. */
-export const figureSaid = (name, text, rule) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${text} ${fieldUnit(name, rule)}`);
+export const figureSaid = (name, text, rule) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${decimal(text)} ${fieldUnit(name, rule)}`);

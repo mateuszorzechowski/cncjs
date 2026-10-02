@@ -1677,6 +1677,7 @@
       },
       "outCode": "G0 za bok, nad wierzchem",
       "reachWhy": "≤ {{reach}} = {{clear}} za bok + połowa z {{size}}",
+      "outWhy": "{{reach}} = {{clear}} za bok + połowa z {{size}}",
       "phase": {
         "top": "Z: szukam wierzchu",
         "fast": "{{axis}}: szukam boku",
