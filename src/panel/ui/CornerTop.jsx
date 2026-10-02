@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
+  AxisPair, Contact, axisRects, contactRect, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
 import { shownView } from './probeLabels';
 import { placePaired, usePairLayer, usePairView } from './probePair';
@@ -74,6 +74,8 @@ const CornerTop = ({
   const avoid = [
     ...axisRects(VIEW[0], VIEW[1] + VIEW[3], size).map(([x, y, w, h]) => [flipX ? 278 - x - w : x, flipY ? 260 - y - h : y, w, h]),
     ...(move.zero && !place ? [[129, VIEW[1], 2, VIEW[3]], [VIEW[0], 139, VIEW[2], 2]] : []),
+    // Where this move touches a wall, all through it (L16): the touch's ring.
+    ...(move.touch && !place ? [contactRect(move.touch[0], move.touch[1], size)] : []),
   ];
   // Nor on the tool's whole way through the move (L16) — not only where it is now.
   const toolRect = () => {
