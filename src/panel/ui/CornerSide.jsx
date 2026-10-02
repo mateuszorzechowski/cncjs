@@ -229,7 +229,8 @@ const CornerSide = ({
         </g>,
       );
       words.push(<text key="z0t" x={flipX ? 284 - 64 - size.fs * 1.4 : 64} y={164} opacity={shown} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.z0')}</text>);
-      if (!move.rise) {
+      // The plate's thickness while the zero is written: gone with the lift and the way over X0 Y0.
+      if (move.walls) {
         geometry.push(<g key="thick" opacity={fade('thick') * (focus ? 1 : shown)}><Dimension at={COL} from={TOP} to={170} lit={focus === 'thick'} size={size} /></g>);
         line(COL, TOP, 170, DIM_TICK);
         words.push(
