@@ -146,9 +146,9 @@ const handOf = (move, p) => {
 export const PAPER_ORDER = ['coarse', 'fine', 'drag', 'resist', 'stuck', 'back', 'here', 'zero', 'lift'];
 
 export const PAPER_GROUPS = [
-  { id: 'coarse', key: 'probe.paper.barCoarse', folded: true, subs: [{ key: 'probe.paper.barCoarse', moves: ['coarse'] }] },
-  { id: 'fine', key: 'probe.paper.barFine', folded: true, subs: [{ key: 'probe.paper.barFine', moves: ['fine', 'drag', 'resist', 'stuck'] }] },
-  { id: 'back', key: 'probe.paper.barBack', folded: true, subs: [{ key: 'probe.paper.barBack', moves: ['back', 'here'] }] },
+  { id: 'coarse', key: 'probe.paper.barCoarse', shortKey: 'probe.paper.shortCoarse', folded: true, subs: [{ key: 'probe.paper.barCoarse', moves: ['coarse'] }] },
+  { id: 'fine', key: 'probe.paper.barFine', shortKey: 'probe.paper.shortFine', folded: true, subs: [{ key: 'probe.paper.barFine', moves: ['fine', 'drag', 'resist', 'stuck'] }] },
+  { id: 'back', key: 'probe.paper.barBack', shortKey: 'probe.paper.shortBack', folded: true, subs: [{ key: 'probe.paper.barBack', moves: ['back', 'here'] }] },
   { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
 ];
 
