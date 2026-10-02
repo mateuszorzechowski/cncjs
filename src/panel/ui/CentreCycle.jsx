@@ -3,6 +3,7 @@ import MoveBar, { namedGroups } from './MoveBar';
 import useTicker from './useTicker';
 import { fillsAt, timeAt } from '../machine/timeline';
 import { t } from '../i18n';
+import { DRAWING_FIT_MEASURING } from './probeDraw';
 
 /**
  * A centre measured as it happens, played by the machine rather than a
@@ -32,6 +33,7 @@ const CentreCycle = ({
           auto={cycle.viewOf?.(name, p, null)}
           bare
           label={t(...cycle.titleOf(name))}
+          className={DRAWING_FIT_MEASURING}
         />
       </div>
       {done ? null : <MoveBar groups={groups} active={name} fills={fillsAt(items, timeAt(items, name, p))} />}

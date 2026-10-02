@@ -17,6 +17,7 @@ import { SURFACE, surfaceShifts } from '../machine/surface';
 import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
+import { DRAWING_FIT } from './probeDraw';
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 const NBSP = ' ';
@@ -89,7 +90,7 @@ const ZPlateParams = ({
           * As tall as the corner's Setup drawing at any width (review notes, 2026-09-30): the shape of its two views side
           * by side (202 × 188 each) and the same caps, so one screen scrolls exactly when the other does.
           */}
-        <ZPlateScene {...scene} label={title} className="aspect-[404/188] h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
+        <ZPlateScene {...scene} label={title} className={`aspect-[404/188] h-auto w-full ${DRAWING_FIT}`} />
       </div>
       <MoveBar
         groups={groups}

@@ -18,6 +18,7 @@ import { inMm } from '../machine/units';
 import { useIsPhone, useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
+import { DRAWING_FIT } from './probeDraw';
 
 const numberOf = (text) => Number(String(text).replace(',', '.'));
 const NBSP = ' ';
@@ -118,8 +119,8 @@ const CornerParams = ({
         ) : (
           // One drawing in two views, a line between them; a label short of room in one may stand in the other's free edge.
           <PairOfViews pair={pair}>
-            <CornerTop {...drawing} label={title} className="h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
-            <CornerSide {...drawing} label={title} className="h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
+            <CornerTop {...drawing} label={title} className={`h-auto w-full ${DRAWING_FIT}`} />
+            <CornerSide {...drawing} label={title} className={`h-auto w-full ${DRAWING_FIT}`} />
           </PairOfViews>
         )}
       </div>
