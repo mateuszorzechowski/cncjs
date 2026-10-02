@@ -249,7 +249,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else if (step === 'measure') {
-    body = <MeasureStep probe={probe} />;
+    body = <MeasureStep probe={probe} machine={machine} />;
     foot = (
       <Foot>
         <Button tone="stop" onClick={() => controlledStop(machine.type)} className="h-ctl">{t('probe.measure.abort')}</Button>

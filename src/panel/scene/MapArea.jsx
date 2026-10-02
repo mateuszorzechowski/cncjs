@@ -47,7 +47,8 @@ const MapArea = ({
   const xs = Array.from({ length: nx }, (_, i) => along(x0, x1, nx, i));
   const ys = Array.from({ length: ny }, (_, j) => along(y0, y1, ny, j));
   const step = Math.min((x1 - x0) / Math.max(1, nx - 1), (y1 - y0) / Math.max(1, ny - 1));
-  const r = Math.max(0.25, step / 16);
+  // A ring a sixteenth of the step, no larger than 1.5 mm: a coarse grid's rings do not swell.
+  const r = Math.min(1.5, Math.max(0.25, step / 16));
 
   // From one point to the next along each row and each column, stopping at the rings: the edge's, and the grid's inside.
   const edge = [];

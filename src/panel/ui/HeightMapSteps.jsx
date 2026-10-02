@@ -1,4 +1,5 @@
 import HeightMapGrid from './HeightMapGrid';
+import MapPreview3D from './MapPreview3D';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
 import { useUnits } from './units';
@@ -14,9 +15,6 @@ const RAMP = ['bg-map0', 'bg-map1', 'bg-map2', 'bg-map3', 'bg-map4'];
 
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
-/** The area the server was asked for, as the drawing takes it. */
-const areaOf = (options) => ({ x: options.x, y: options.y });
-
 /** Into place: the area, the tool's first point ringed. */
 export const HeightMapPosition = ({ grid, outline }) => (grid?.xs ? (
   <HeightMapGrid
@@ -30,8 +28,12 @@ export const HeightMapPosition = ({ grid, outline }) => (grid?.xs ? (
   />
 ) : null);
 
-/** Measuring: the points done, the one the tool is at, and what it is doing there. */
-export const HeightMapCycle = ({ probe }) => {
+/**
+ * Measuring, on the machine in 3D (Mateusz, 2026-10-03): the area and its
+ * points — filled as each is measured — with the tool moving over them, and
+ * which point it is at and what it is doing there.
+ */
+export const HeightMapCycle = ({ probe, machine }) => {
   const options = probe?.options;
   if (!options?.x) {
     return null;
@@ -43,7 +45,12 @@ export const HeightMapCycle = ({ probe }) => {
   const doing = phaseWords(String(probe.step?.phase || '').replace(/^p\d+/, 'z'));
   return (
     <div className="flex flex-col gap-3">
-      <HeightMapGrid area={areaOf(options)} nx={options.nx} ny={options.ny} done={marks.slice(0, -1)} at={at} label={t('probe.map.drawing')} className="mx-auto h-auto w-full max-w-md" />
+      <MapPreview3D
+        machine={machine}
+        grid={{ xs: options.x, ys: options.y, nx: options.nx, ny: options.ny }}
+        done={marks.slice(0, -1)}
+        className="h-64 @3xl/shell:h-80"
+      />
       <StatTile
         label={at ? t('probe.map.point', { n: at.n + 1, total }) : t('probe.step.measure')}
         value={probe.step ? t(doing.key, { axis: doing.axis }) : '—'}

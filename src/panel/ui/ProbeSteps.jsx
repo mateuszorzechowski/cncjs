@@ -175,7 +175,7 @@ export const WireStep = ({
   );
 };
 
-export const MeasureStep = ({ probe }) => {
+export const MeasureStep = ({ probe, machine = null }) => {
   const step = probe?.step;
   const phase = phaseWords(step?.phase);
   const words = step ? t(phase.key, { axis: phase.axis }) : NO_READING;
@@ -185,7 +185,7 @@ export const MeasureStep = ({ probe }) => {
       {Cycle ? (
         <>
           <span className="text-note text-mut">{step ? t('probe.measure.stepOf', { n: step.index + 1, total: step.total }) : null}</span>
-          <Cycle phase={step?.phase} words={words} probe={probe} />
+          <Cycle phase={step?.phase} words={words} probe={probe} machine={machine} />
         </>
       ) : (
         <StatTile
