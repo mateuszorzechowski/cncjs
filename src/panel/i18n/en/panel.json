@@ -1681,7 +1681,7 @@
         "up": "Pass {{pass}} · {{axis}}: up over the part"
       },
       "outCode": "G0 past the side, over the top",
-      "half": "{{size}} / 2",
+      "reachWhy": "≤ {{reach}} = {{clear}} past the side + half of {{size}}",
       "phase": {
         "top": "Z: looking for the top",
         "fast": "{{axis}}: looking for the side",

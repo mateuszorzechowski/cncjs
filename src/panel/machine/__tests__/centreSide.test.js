@@ -14,8 +14,8 @@ describe('the centres from the front', () => {
     // From the side, Z moves only (the animation rules): X and Y are the view from above's.
     expect(BOSS_CYCLE.side('y1pFast', 0.5).motion).toBeNull();
     expect(BOSS_CYCLE.side('x1pFast', 0.5).motion).toBeNull();
-    expect(BOSS_CYCLE.side('x1pSet', 0.2).motion).toBeNull();
-    expect(BOSS_CYCLE.side('x1pSet', 0.7, { texts: { fast: '50' } }).motion).toMatchObject({ dir: 'v', kind: 'probe', text: '50' });
+    expect(BOSS_CYCLE.side('x1pOut', 0.5).motion).toBeNull();
+    expect(BOSS_CYCLE.side('x1pDown', 0.5, { texts: { fast: '50' } }).motion).toMatchObject({ dir: 'v', kind: 'probe', text: '50' });
     // A G0 bare, its distance a dimension beside it.
     expect(BOSS_CYCLE.side('zBack', 0.4).motion).toMatchObject({ dir: 'v', kind: 'rapid', text: null });
     expect(BOSS_CYCLE.side('x1pUp', 0.5, { texts: { depth: '5', retract: '2' } })).toMatchObject({ motion: { kind: 'rapid', text: null }, vdims: [{ id: 'retract', text: '2' }, { id: 'depth', text: '5' }] });
@@ -27,7 +27,7 @@ describe('the centres from the front', () => {
   });
 
   test('the part: down beside a side one dimension split at the top, beside the ball away from its arrow; the touch at the ball\'s side', () => {
-    const down = BOSS_CYCLE.side('x1pSet', 0.7, { texts: { depth: '5', retract: '2' } });
+    const down = BOSS_CYCLE.side('x1pDown', 0.5, { texts: { depth: '5', retract: '2' } });
     expect(down.vdims.map((dim) => [dim.id, dim.text])).toEqual([['retract', '2'], ['depth', '5']]);
     expect(down.vdims[0].to).toBe(0);
     expect(down.vdims[1].from).toBe(0);

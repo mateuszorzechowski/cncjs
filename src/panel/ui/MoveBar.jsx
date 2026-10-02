@@ -48,7 +48,7 @@ const NO_NAME = ' ';
 
 // As wide as its moves: written out, so every class is one the stylesheet has.
 const GROW = {
-  1: 'flex-[1_1_0]', 2: 'flex-[2_2_0]', 3: 'flex-[3_3_0]', 4: 'flex-[4_4_0]', 5: 'flex-[5_5_0]', 6: 'flex-[6_6_0]',
+  1: 'flex-[1_1_0]', 2: 'flex-[2_2_0]', 3: 'flex-[3_3_0]', 4: 'flex-[4_4_0]', 5: 'flex-[5_5_0]', 6: 'flex-[6_6_0]', 7: 'flex-[7_7_0]', 8: 'flex-[8_8_0]',
 };
 
 /**
@@ -114,7 +114,7 @@ const MoveBar = ({
         const dotted = moves.find((move) => marked.includes(move.id));
         const stage = () => onPick(dotted ? [dotted.id] : moves.map((move) => move.id));
         return (
-          <div key={group.id} className={`relative flex min-w-0 flex-col gap-0.5 overflow-hidden transition-[flex-grow] duration-500 ease-out ${playing ? 'flex-[6_6_0]' : 'flex-[1_1_0]'}`}>
+          <div key={group.id} className={`relative flex min-w-0 flex-col gap-0.5 overflow-hidden transition-[flex-grow] duration-500 ease-out ${playing ? 'flex-[12_12_0]' : 'flex-[1_1_0]'}`}>
             {/* A stage with no name of its own keeps the line, so its bars stand level with the others'. */}
             {/* Its name goes to the stage folded or open, so a press on it never falls on a dead button and takes a field's focus. */}
             <button type={BUTTON} disabled={!onPick} onClick={stage} className={`truncate text-left text-note ${playing ? 'font-semibold text-acc' : 'text-mut'} ${group.name && !(group.folded && playing) ? '' : 'invisible'}`}>{group.name || NO_NAME}</button>
@@ -122,9 +122,18 @@ const MoveBar = ({
               {group.subs.map((sub) => {
                 const on = sub.moves.some((move) => move.id === active);
                 return (
-                  <div key={sub.name} className={`flex min-w-0 flex-col ${GROW[sub.moves.length] || GROW[1]}`}>
+                  // The sub-stage under way wide, a segment a move; the done and the coming ones narrow, the bar's room
+                  // the step's (review note #10, 2026-10-02: "skompresować wykonane i przyszłe etapy").
+                  <div key={sub.name} className={`flex min-w-0 flex-col transition-[flex-grow] duration-500 ease-out ${on ? GROW[Math.min(8, sub.moves.length * 2)] : GROW[1]}`}>
                     <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(sub.moves.map((move) => move.id))} className={`truncate text-left text-cap ${on ? 'font-semibold text-ink' : 'text-mut'}`}>{sub.name}</button>
-                    <div className="flex gap-1">
+                    {on ? null : (
+                      // Done or coming: folded to one bar, how far through it the cycle is (review note #8, 2026-10-02).
+                      <button type={BUTTON} disabled={!onPick || !playing} onClick={() => onPick(sub.moves.map((move) => move.id))} aria-label={sub.name || sub.moves[0].label} className={segment(sub.moves.some((move) => chosen(move.id)))}>
+                        {sub.moves.some((move) => marked.includes(move.id)) ? <Dot /> : null}
+                        <Bar on={false} fill={sub.moves.reduce((all, move) => all + fillOf(move.id), 0) / sub.moves.length} />
+                      </button>
+                    )}
+                    <div className={on ? 'flex gap-1' : 'hidden'}>
                       {sub.moves.map((move) => (
                         move.parts > 1 ? (
                           <Parts key={move.id} move={move} on={move.id === active} fillOf={(i) => fillOf(move.id, i)} mark={marked.includes(move.id)} chosen={(i) => chosen(move.id, i)} disabled={!onPick || !playing} onPick={onPick} />

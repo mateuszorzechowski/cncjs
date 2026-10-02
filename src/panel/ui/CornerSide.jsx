@@ -3,8 +3,9 @@ import {
   AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
 import {
-  lineRect, placeTags, shownView, tagRect,
+  lineRect, shownView, tagRect,
 } from './probeLabels';
+import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import {
   C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, tipOf,
@@ -69,7 +70,11 @@ const CornerSide = ({
   name = 'zFast', p = 0, corner, texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, bare = false, place = null, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
-  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box, node] = useViewScale(VIEW[2], VIEW[3]);
+  const paired = usePairView('side', node);
+  const layer = usePairLayer(node);
+  // Labels crossing into the other view, drawn over both (`probePair`).
+  const crossing = [];
   const size = kit(k);
   const { flipX, flipY } = cornerSides(corner);
   const outside = `url(#${id}m)`;
@@ -92,6 +97,9 @@ const CornerSide = ({
     const [high, low] = sweep ? [Math.min(...sweep), Math.max(...sweep)] : [bit.tip, bit.tip];
     return [bit.cx - 7.2 * s, high - 64 * s, 14.4 * s, low - high + 64 * s];
   };
+  // The other view's box and what it covers, on the left-hand drawing as these labels are placed.
+  const mirror = ([x, y, w, h]) => [flipX ? 284 - x - w : x, y, w, h];
+  const other = paired ? { box: mirror(paired.box), rects: paired.rects.map(mirror) } : null;
   // A line's figures on the left-hand drawing, placed by the one rule (`placeTags`) and then on the mirror.
   const placed = (one) => {
     const axes = axisRects(VIEW[0], VIEW[1] + VIEW[3], size).map(([x, ...rest]) => (flipX ? [284 - x - rest[1], ...rest] : [x, ...rest]));
@@ -99,15 +107,16 @@ const CornerSide = ({
       ...(move.zero ? [[VIEW[0], 169, VIEW[2], 2]] : []), bitRect(), ...axes,
       ...lines.filter((l) => l.at !== one.at).map((l) => l.rect), ...taken,
     ];
-    const here = bare ? [] : placeTags({
-      ...one, view: shownView(VIEW, k, box), avoid, size,
-    });
+    const here = bare ? [] : placePaired(one, { view: shownView(VIEW, k, box), avoid, size }, other);
     taken.push(...here.map(tagRect));
     return here;
   };
   const tags = (key, one, face = FACE.plain) => (
     <g key={key}>
-      {placed(one).map((tag) => <Tag key={tag.text} x={flipX ? 284 - tag.x - tag.w : tag.x} y={tag.y} text={tag.text} face={face} size={size} />)}
+      {placed(one).map((tag) => {
+        const drawn = <Tag key={`${tag.text}${tag.x}`} x={flipX ? 284 - tag.x - tag.w : tag.x} y={tag.y} text={tag.text} face={face} ext={tag.ext} size={size} />;
+        return tag.ext ? crossing.push(drawn) && null : drawn;
+      })}
     </g>
   );
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
@@ -281,6 +290,7 @@ const CornerSide = ({
       </g>
       {words}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.zPlus')} size={size} />
+      {layer(crossing)}
     </svg>
   );
 };

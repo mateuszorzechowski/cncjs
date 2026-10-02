@@ -123,6 +123,8 @@
     const probe = probeOf(el);
     return {
       ...(probe ? { probe } : {}),
+      // The screen the note was pinned on: a tablet and a 1280 desktop place labels differently.
+      viewport: { w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio },
       // The frame being looked at. A note about spacing means one thing at
       // 1024 and another at 390, and the same sentence arrives for both.
       target: root.dataset.target || 'base',

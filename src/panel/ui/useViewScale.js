@@ -8,7 +8,8 @@ import { useEffect, useState } from 'react';
  * drawn. `width` and `height` are the viewBox's: a drawing held to a height
  * is fitted inside its box, at the smaller of the two scales. Until
  * measured, `guess`. Third, the box itself in pixels, `{ width, height }`,
- * or null until measured: the room round the viewBox a fitted drawing has.
+ * or null until measured: the room round the viewBox a fitted drawing has;
+ * fourth, the drawing's node.
  */
 const useViewScale = (width, height, guess = 1.5) => {
   const [node, setNode] = useState(null);
@@ -28,7 +29,7 @@ const useViewScale = (width, height, guess = 1.5) => {
     observer.observe(node);
     return () => observer.disconnect();
   }, [node, width, height]);
-  return [setNode, scale, box];
+  return [setNode, scale, box, node];
 };
 
 export default useViewScale;

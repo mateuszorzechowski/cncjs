@@ -3,8 +3,8 @@
  * out in `probeDraw`'s header (map §4a/4b, Mateusz 2026-10-01).
  */
 
-// A figure's words a little under the drawing's, and lighter (review note, 2026-09-30).
-export const TAG_SCALE = 0.88;
+// A figure's words well under the drawing's — 8.5 px at its usual 13 (Mateusz, 2026-10-02: the smallest set "wygląda ok").
+export const TAG_SCALE = 0.65;
 
 // The figures face (Azeret Mono) is 0.65 em a glyph, the em dash two (measured in the panel,
 // 2026-10-01: "stoi — za nisko" ran out of its box); `fs` the drawing's size.
@@ -32,8 +32,10 @@ export const shownView = (view, k, box) => {
 /** A placed label as a rect, `[x, y, w, h]`, for the next to keep off. */
 export const tagRect = ({ x, y, w, h }) => [x, y - h / 2, w, h];
 
-// The gap round a label, in screen px (Mateusz, 2026-10-01: "G 6").
+// The gap round a label, in screen px (Mateusz, 2026-10-01: "G 6"); and off the drawing's edge (review
+// note #4, 2026-10-02: "1 albo 2 px marginesu od krawędzi rysunku").
 const LABEL_GAP = 6;
+const EDGE_GAP = 2;
 const overlaps = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 
 /*
@@ -44,7 +46,8 @@ const overlaps = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[
  * `[x, y, w, h]`; `avoid`, rects `[x, y, w, h]` it must not cross nor come
  * nearer than g to — a zero's line; `past`, 'before' or 'after', a single
  * label asked past that end of its line first.
- * Returns `{ x, y, w, h, text }` — the left edge and the middle, as `Tag` takes them.
+ * Returns `{ x, y, w, h, text, ok }` — the left edge and the middle, as `Tag` takes them; `ok` false
+ * when nothing was clear and the least bad try stands.
  */
 export const placeTags = ({
   axis = 'v', at, side = 1, parts, ticks = [], view, avoid = [], past = null, size,
@@ -54,6 +57,7 @@ export const placeTags = ({
     return [];
   }
   const g = LABEL_GAP / size.k;
+  const e = EDGE_GAP / size.k;
   const h = size.fs * TAG_SCALE * 1.8;
   const v = axis === 'v';
   const width = (text) => tagWidth(text, size.fs);
@@ -91,7 +95,7 @@ export const placeTags = ({
   };
   // What it must not cross keeps the gap too.
   const keepOff = avoid.map(([x, y, w, ht]) => [x - g, y - g, w + 2 * g, ht + 2 * g]);
-  const inside = (placed) => placed.every(({ x, y, w }) => x >= view[0] && y - h / 2 >= view[1] && x + w <= view[0] + view[2] && y + h / 2 <= view[1] + view[3]);
+  const inside = (placed) => placed.every(({ x, y, w }) => x >= view[0] + e && y - h / 2 >= view[1] + e && x + w <= view[0] + view[2] - e && y + h / 2 <= view[1] + view[3] - e);
   const fits = (placed) => inside(placed) && placed.every(({ x, y, w }) => !keepOff.some((rect) => overlaps([x, y - h / 2, w, h], rect)));
   // Centred, then aligned to the line's first end, then its last; on its side, then the other.
   const first = lo - Math.min(...layout.map((one) => one.a0));
@@ -127,8 +131,8 @@ export const placeTags = ({
   // na górze druga na dole", "F50 nad strzałką, wyrównanie do kreski górnej"). Centred on the line, or
   // flush with the ends of its ticks, reaching out to its side.
   // Centred on the line, pulled in to stay inside the drawing.
-  const inX = (x, w) => Math.max(view[0], Math.min(view[0] + view[2] - w, x));
-  const inY = (y) => Math.max(view[1] + h / 2, Math.min(view[1] + view[3] - h / 2, y));
+  const inX = (x, w) => Math.max(view[0] + e, Math.min(view[0] + view[2] - e - w, x));
+  const inY = (y) => Math.max(view[1] + e + h / 2, Math.min(view[1] + view[3] - e - h / 2, y));
   const beyond = (text, after, flush) => {
     const w = width(text);
     if (v) {
@@ -157,5 +161,7 @@ export const placeTags = ({
   }, 0), 0);
   const visible = tries.filter(inside);
   const least = visible.reduce((best, one) => (best && over(best) <= over(one) ? best : one), null);
-  return (tries.find(fits) || least || tries[0]).map((one) => ({ ...one, h }));
+  // `ok`: clear of everything, inside the drawing; else the least bad of what was tried.
+  const best = tries.find(fits);
+  return (best || least || tries[0]).map((one) => ({ ...one, h, ok: Boolean(best) }));
 };

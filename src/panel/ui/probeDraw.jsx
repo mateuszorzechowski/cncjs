@@ -16,22 +16,28 @@
  * - an arrow carries only its feed (F50, F15); a G0 carries nothing.
  *
  * Distances
- * - every distance is a grey dimension on the other side of the way from the
- *   arrow, its figure beside it, never on it;
+ * - every distance of a move's way is a grey dimension on the other side of
+ *   the way from the arrow, its figure beside it, never on it; a distance
+ *   that says the part or the set-up (its width, the way out past its side)
+ *   stands just outside the part, by its edge (Mateusz, 2026-10-02);
  * - a search's reach is a dashed dimension, one head, its figure "≤ v";
  * - a slow touch's reach is one dashed line, ticks where it sets off, at the
  *   surface and at its limit, heads only at the outer two, with two figures:
  *   the way to the surface and the margin past it ("5 mm", "≤ 5 mm");
  * - a dimension is fixed to the move's geometry, never to where the tool is;
  * - a way made of several of the form's figures (back-off and depth, lift
- *   and back-off) is one dimension split by ticks where they meet, each part
- *   with its own figure — on the dimension only, never on the arrow
- *   (Mateusz, 2026-10-01).
+ *   and back-off, the way out and half the part) is one dimension with one
+ *   figure, their sum, and a short tick where they meet; where the sum comes
+ *   from is said under the step's title ("≤ 35 mm = 20 mm za bok + połowa z
+ *   30 mm"), and every field it is made of is lit in the form (Mateusz,
+ *   2026-10-02 — replaces a figure on each part, 2026-10-01).
  *
  * Labels
- * - a little smaller than the drawing's words, in rounded boxes;
+ * - 8.5 screen px, in rounded boxes (Mateusz, 2026-10-02);
  * - over the lines and the tool, never under them; never on a line, on
- *   another label, or past the drawing's edge;
+ *   another label, or past the drawing's edge, 2 px short of it;
+ * - still through a move: they keep off the tool's whole way through it and
+ *   its arrow all along, drawn or not;
  * - a touch a green beating dot; walls touched before stay as faint dots;
  * - a zero written a dashed accent line, named X0, Y0 or Z0.
  *
@@ -44,17 +50,30 @@
  *   other, in the parts' order, the stack centred on the whole line;
  * - on the far side from the tool's way: an arrow's feed beyond the arrow, a
  *   dimension's figure beyond the dimension;
- * - past the drawing's edge: on the other side of its line; on a line it must
- *   not cross: aligned to the line's first end, else its last.
+ * - in this order: centred on its part; the one that meets a line it must
+ *   not cross (a zero) aligned to its part's end; slid along its own line
+ *   just clear of it, still beside it; on the other side of its line; past
+ *   the line's ends — one over its start, two one at each end; in the other
+ *   view's free edge (`probePair`).
  *
  * Views
  * - a move is drawn in the view it lies in: X and Y from above, Z from the
  *   side — and nowhere else, with no words standing in for it;
  * - the Z plate and the paper have a side view only; the corner, the hole
- *   and the part both side by side, one at a time on a phone with a switch;
+ *   and the part both side by side as one drawing with no line between them,
+ *   one at a time on a phone with a switch;
  * - the side view is always from the front, along X; a way along Y is depth
  *   — the tool larger nearer, smaller further, dashed behind the work;
  * - from above, height is the tool's size: higher, larger.
+ *
+ * The bar and the caption
+ * - every line of G-code is a move of its own: a segment on the bar, its own
+ *   title (Mateusz, 2026-10-02 — a set-up is no longer one move in parts);
+ * - the stage under way about two thirds of the bar, its sub-stage under way
+ *   a segment a move; done and coming sub-stages and stages folded to one bar;
+ * - the caption keeps its height: the line saying where a sum comes from is
+ *   kept when empty;
+ * - a step lights in the form every field its figures come from.
  *
  * A figure being set
  * - its field focused loops its step; its part of the drawing lit, the rest
@@ -89,14 +108,17 @@ const TAG_FACES = {
 };
 
 /** A figure in a small box centred on `y`, from `x` rightwards — or leftwards, `right`. */
-export const Tag = ({ x, y, text, right = false, face = 'plain', size }) => {
+export const Tag = ({
+  x, y, text, right = false, face = 'plain', ext = false, size,
+}) => {
   const { rx } = size;
   const w = tagWidth(text, size.fs);
   const fs = size.fs * TAG_SCALE;
   const left = right ? x - w : x;
   const look = TAG_FACES[face];
   return (
-    <g>
+    // `ext`: a label standing out in the other view of a pair (`probePair`).
+    <g data-tag={ext ? 'ext' : 'own'}>
       <rect x={left} y={y - fs * 0.9} width={w} height={fs * 1.8} rx={rx} className={look.box} strokeWidth={look.line} vectorEffect={NS} />
       <text x={left + fs / 2} y={y + fs * 0.36} fontSize={fs} className={`${look.text} font-num font-medium`}>{text}</text>
     </g>

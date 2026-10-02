@@ -1,5 +1,5 @@
 import {
-  ABOVE, BOSS_R, ON_TOP, TOOL_R, isGoing, legAt, toolAt,
+  ABOVE, BOSS_R, ON_TOP, TOOL_R, isGoing, toolAt,
 } from './bossMoves';
 
 /**
@@ -51,7 +51,7 @@ const arrowOf = (move, p, x, said, lit) => {
     case 'topFast': return v(1, ON_TOP, 'probe', said('fast'), lit('feed'));
     case 'topBack': return v(ON_TOP, ABOVE, 'rapid');
     case 'topSlow': return v(ABOVE, ON_TOP, 'probe', said('slow'), lit('feed'));
-    case 'set': return legAt(p).name === 'down' ? v(ABOVE, 0, 'probe', said('fast'), lit('feed')) : null;
+    case 'down': return v(ABOVE, 0, 'probe', said('fast'), lit('feed'));
     case 'up': return v(0, ABOVE, 'rapid');
     default: return null;
   }
@@ -78,7 +78,7 @@ const distancesOf = (move, p, beside, said, upTo, lit) => {
     case 'topSlow': return [{
       id: 'reach', at: beside, from: heightOf(ABOVE), mid: 0, to: -heightOf(ABOVE), text: said('retract'), far: upTo(said('retract')), lit: lit('retract'),
     }];
-    case 'set': return legAt(p).name === 'down' || lit('depth') ? parts() : [];
+    case 'down': return parts();
     case 'up': return parts();
     default: return [];
   }

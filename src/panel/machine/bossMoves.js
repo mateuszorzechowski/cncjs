@@ -7,7 +7,7 @@
 export const LOOP_HOLD_MS = 2500;
 // How long each kind of step runs, and the hold after it; a set-up a second a leg.
 export const RUNS = {
-  topFast: 2000, topBack: 1000, topSlow: 2400, set: 2000, fast: 2000, back: 1000, slow: 2400, up: 1000, centre: 1600, zero: 2600,
+  topFast: 2000, topBack: 1000, topSlow: 2400, out: 1200, down: 1200, fast: 2000, back: 1000, slow: 2400, up: 1000, centre: 1600, zero: 2600,
 };
 export const HOLD_MS = 700;
 
@@ -35,16 +35,6 @@ const wallFrom = (at, axis, sign) => {
   const reach = Math.sqrt((BOSS_R + TOOL_R) ** 2 - other * other);
   return setOn(axis, at, sign * reach);
 };
-
-// A set-up's legs, as fractions of its run, each with what it uses and its own title (rule: a move is one
-// segment with its own title): out past the side over the top, and down beside it.
-export const LEGS = [
-  { name: 'out', from: 0, to: 0.5, uses: ['bossSize', 'clear'], titleKey: 'probe.boss.move.setOut' },
-  { name: 'down', from: 0.5, to: 1, uses: ['depth', 'retract'], titleKey: 'probe.boss.move.setDown' },
-];
-
-/** The leg of a set-up under way at `p`. */
-export const legAt = (p) => (p < LEGS[0].to ? LEGS[0] : LEGS[1]);
 
 /*
  * The steps, each with keyframes `[t, place, level, eased]` and how far into
@@ -83,11 +73,16 @@ export const build = () => {
         const common = {
           axis, sign, pass, side, out, wall, off, guess: guess[i], way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
         };
-        moves[`${side}Set`] = {
-          ...common, kind: 'set', from: at, frames: [[0, at, ABOVE], [0.05, at, ABOVE], [0.5, out, ABOVE, true], [0.95, out, 0, true], [1, out, 0]], end: 1, legs: LEGS, uses: ['bossSize', 'clear', 'depth', 'retract'],
+        // The set-up, two moves — two lines of G-code, two segments on the bar (rule; review note, 2026-10-01):
+        // out past the side over the top, and down beside it.
+        moves[`${side}Out`] = {
+          ...common, kind: 'out', from: at, frames: [[0, at, ABOVE], [0.1, at, ABOVE], [0.85, out, ABOVE, true], [1, out, ABOVE]], end: 0.85, titleKey: 'probe.boss.move.setOut', uses: ['bossSize', 'clear'],
+        };
+        moves[`${side}Down`] = {
+          ...common, kind: 'down', from: out, frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]], end: 0.85, titleKey: 'probe.boss.move.setDown', uses: ['depth', 'retract'],
         };
         moves[`${side}Fast`] = {
-          ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.boss.move.fast', uses: ['fast'],
+          ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.boss.move.fast', uses: ['fast', 'clear', 'bossSize'],
         };
         moves[`${side}Back`] = {
           ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.boss.move.back', uses: ['retract'],
@@ -101,7 +96,7 @@ export const build = () => {
         moves[`${side}Up`] = {
           ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.boss.move.up', uses: ['depth', 'retract'],
         };
-        order.push(`${side}Set`, `${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Off`, `${side}Up`);
+        order.push(`${side}Out`, `${side}Down`, `${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Off`, `${side}Up`);
         walls.push(wall);
         at = off;
       });
@@ -142,5 +137,16 @@ export const toolAt = (move, p) => {
   return { at, level };
 };
 
-/** Whether a step is on its way at `p`: from its second keyframe to its third — a set-up to its last; the zero never. */
-export const isGoing = (move, p) => move.frames.length > 2 && p > move.frames[1][0] && p < move.frames[move.kind === 'set' ? 3 : 2][0];
+/** Whether a step is on its way at `p`: from its second keyframe to its third; the zero never. */
+export const isGoing = (move, p) => move.frames.length > 2 && p > move.frames[1][0] && p < move.frames[2][0];
+
+// The form's figures, as the steps' lines and words say them.
+export const numberOf = (text) => Number(String(text ?? '').replace(',', '.'));
+export const fmt = (v) => String(Math.round(v * 1000) / 1000);
+// How far a fast touch of a side searches: out past the side, and in to the middle thought.
+export const reachOf = (texts) => fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear));
+
+/** Where a step's figure comes from, said under the drawing after its title — `[key, vars]`, or null. */
+export const explainOf = (move, texts, say = (field, text) => text) => (move.kind === 'fast'
+  ? ['probe.boss.reachWhy', { reach: say('clear', reachOf(texts)), clear: say('clear', texts.clear), size: say('bossSize', texts.bossSize) }]
+  : null);

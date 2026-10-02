@@ -2,7 +2,8 @@ import { useId } from 'react';
 import {
   AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, WorkHatch, kit,
 } from './probeDraw';
-import { placeTags, shownView } from './probeLabels';
+import { shownView } from './probeLabels';
+import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
 
@@ -44,7 +45,11 @@ const CentreScene = ({
 }) => {
   const id = useId().replace(/:/g, '');
   const VIEW = part.view || WIDE;
-  const [measure, k, box] = useViewScale(VIEW[2], VIEW[3]);
+  const [measure, k, box, node] = useViewScale(VIEW[2], VIEW[3]);
+  const other = usePairView('top', node);
+  const layer = usePairLayer(node);
+  // Labels crossing into the other view, drawn over both (`probePair`).
+  const crossing = [];
   const size = kit(k);
   const fade = (part) => (focus && focus !== part ? 0.3 : 1);
   const r = part.toolR * (1 + part.grow * Math.max(0, level));
@@ -56,10 +61,11 @@ const CentreScene = ({
   const [y0, y1] = [Math.min(...path.map(([, y]) => y)), Math.max(...path.map(([, y]) => y))];
   const sweep = [x0 - r, y0 - r, x1 - x0 + 2 * r, y1 - y0 + 2 * r];
   const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep, ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]], [VIEW[0], -1, VIEW[2], 2]] : [])];
-  const place = (line) => (bare ? [] : placeTags({
-    ...line, view: shownView(VIEW, k, box), avoid, size,
-  }));
-  const tags = (line, face) => place(line).map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={face} size={size} />);
+  const place = (line) => (bare ? [] : placePaired(line, { view: shownView(VIEW, k, box), avoid, size }, other));
+  const tags = (line, face) => place(line).map((tag) => {
+    const drawn = <Tag key={`${tag.text}${tag.x}`} x={tag.x} y={tag.y} text={tag.text} face={face} ext={tag.ext} size={size} />;
+    return tag.ext ? crossing.push(drawn) && null : drawn;
+  });
 
   let arrow = null;
   if (motion) {
@@ -83,29 +89,28 @@ const CentreScene = ({
     const at = flat ? sy(limit.from[1]) + ASIDE : limit.from[0] + ASIDE;
     const [from, to] = flat ? [limit.from[0], limit.to[0]] : [sy(limit.from[1]), sy(limit.to[1])];
     const face = limit.lit ? FACE.hot : FACE.plain;
-    // A reach of two figures (`mid`): one limit split by a tick where they meet, each part its figure.
+    // A reach made of two figures and said as their sum: a short tick where they meet (`mid`).
     let mid = null;
     if (limit.mid) {
       mid = flat ? limit.mid[0] : sy(limit.mid[1]);
     }
+    const half = DIM_TICK / 2;
     fence = (
       <g opacity={fade('dim')}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
-        {mid === null ? null : <path d={flat ? `M${mid} ${at - DIM_TICK} V${at + DIM_TICK}` : `M${at - DIM_TICK} ${mid} H${at + DIM_TICK}`} className={limit.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />}
+        {mid === null ? null : <path d={flat ? `M${mid} ${at - half} V${at + half}` : `M${at - half} ${mid} H${at + half}`} className={limit.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />}
         {tags({
-          axis: flat ? ACROSS : ALONG,
-          at,
-          parts: mid === null ? [[from, to, limit.text]] : [[from, mid, limit.near], [mid, to, limit.far]],
-          ticks: [from, mid, to].filter((a) => a !== null).map((a) => [a, DIM_TICK]),
+          axis: flat ? ACROSS : ALONG, at, parts: [[from, to, limit.text]], ticks: [[from, DIM_TICK], [to, DIM_TICK]],
         }, face)}
       </g>
     );
   }
 
-  // A figure's dimension on the far side of the ball's way, its words beside it.
+  // A figure's dimension on the far side of the ball's way — or where the scene puts it (`at`, across
+  // the drawing: down it for a way across, along it for a way up) — its words beside it.
   const drawn = dims.map((dim) => {
     const flat = dim.axis === 'x';
-    const at = flat ? sy(dim.from[1]) + ASIDE : dim.from[0] + ASIDE;
+    const at = dim.at ?? (flat ? sy(dim.from[1]) + ASIDE : dim.from[0] + ASIDE);
     const [from, to] = flat ? [dim.from[0], dim.to[0]] : [sy(dim.from[1]), sy(dim.to[1])];
     const face = dim.lit ? FACE.hot : FACE.plain;
     return (
@@ -177,6 +182,7 @@ const CentreScene = ({
         </g>
       ) : null}
       <AxisPair x={VIEW[0]} y={VIEW[1] + VIEW[3]} across={t('probe.axis.xPlus')} up={t('probe.axis.yPlus')} size={size} />
+      {layer(crossing)}
     </svg>
   );
 };

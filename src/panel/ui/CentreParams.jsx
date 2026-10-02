@@ -13,6 +13,8 @@ import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
 
+// An empty line's place kept, a no-break space.
+const NBSP = ' ';
 // The coordinate system's number in G10 L20 P…: G54 is 1.
 const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53;
 
@@ -54,7 +56,9 @@ const CentreParams = ({
   };
   const code = codeOf(name, texts, systemNumber(wcs), p);
   const read = readout(name);
-  const title = t(...titleOf(name, p));
+  const title = t(...titleOf(name));
+  // Where the step's figure comes from, when it is a sum (review note #9, 2026-10-02).
+  const why = cycle.explain ? cycle.explain(name, texts, say) : null;
 
   const groups = namedGroups(groupsOf(passes), t, (id) => t(...titleOf(id)));
   const sections = PARAMS.map((one) => (one.passes
@@ -88,6 +92,8 @@ const CentreParams = ({
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
         {/* A way with no numbers to show says where it goes. */}
         <span className="whitespace-nowrap font-num text-cap text-mut">{Array.isArray(code) ? t(...code) : code}</span>
+        {/* Its line kept when empty, so the caption does not jump (review note #9, 2026-10-02). */}
+        {cycle.explain ? <span className="w-full text-note text-mut">{why ? t(...why) : NBSP}</span> : null}
       </div>
     </div>
   );

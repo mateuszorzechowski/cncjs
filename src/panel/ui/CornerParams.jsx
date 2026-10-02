@@ -6,6 +6,7 @@ import PlayControls from './PlayControls';
 import ProbeReadout from './ProbeReadout';
 import { figureColumns } from './ProbeSections';
 import SegmentedChoice from './SegmentedChoice';
+import { PairOfViews, usePair } from './probePair';
 import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
@@ -62,6 +63,7 @@ const CornerParams = ({
   const phone = useIsPhone();
   const [open, setOpen] = useState(null);
   const [chosen, setChosen] = useState(null);
+  const pair = usePair();
   const still = useReducedMotion();
   const group = CORNER_PARAMS.find((one) => one.id === open);
   // The cycle on the player's clock; a figure being set plays its own loop meanwhile, and the player waits.
@@ -114,10 +116,11 @@ const CornerParams = ({
             {view === 'side' ? <CornerSide {...drawing} label={title} className="w-full" /> : null}
           </>
         ) : (
-          <div className="grid grid-cols-2 divide-x divide-line">
+          // One drawing in two views: no line between them, and a label short of room in one may stand in the other's free edge.
+          <PairOfViews pair={pair}>
             <CornerTop {...drawing} label={title} className="h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
             <CornerSide {...drawing} label={title} className="h-auto max-h-64 w-full @[1800px]/shell:max-h-96" />
-          </div>
+          </PairOfViews>
         )}
       </div>
       <MoveBar
