@@ -25,7 +25,7 @@ const CornerCycle = ({
   const name = done ? 'zero' : moveOfPhase(phase);
   const ms = useTicker(done ? null : phase || name);
   const { p } = done ? { p: 1 } : playAt(ms, { pinned: name });
-  const groups = namedGroups(CORNER_GROUPS, t, (id) => t(moveOf(id).titleKey), (id) => moveOf(id).legs?.length || 1);
+  const groups = namedGroups(CORNER_GROUPS, t, (id) => t(moveOf(id).titleKey));
   const drawing = {
     name, p, corner, bare: true, label: t(moveOf(name).titleKey), className: 'h-auto w-full',
   };

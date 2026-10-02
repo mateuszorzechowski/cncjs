@@ -1,9 +1,7 @@
 import {
   fillsAt, frameAt, layOut, rangeOf, segmentAt, segmentsOf, timeAt, totalOf,
 } from '../timeline';
-import {
-  TURN, cornerTimeline, legAt, moveOf,
-} from '../cornerCycle';
+import { TURN, cornerTimeline } from '../cornerCycle';
 import { plateTimeline } from '../probeCycle';
 import {
   START, advance, seek, setMode,
@@ -69,15 +67,11 @@ describe('the probing cycles, played a segment at a time', () => {
     });
   });
 
-  test('the frame a segment stops on is its own: its move, its leg, its view, never the next one start', () => {
+  test('the frame a segment stops on is its own: its move, its view, never the next one start', () => {
     [plateTimeline(), cornerTimeline(), cornerTimeline({ apart: true })].forEach((cycle) => {
       segmentsOf(cycle).forEach((one) => {
         const frame = frameAt(cycle, one.b);
         expect(frame.name).toBe(one.name);
-        const move = moveOf(one.name);
-        if (cycle[0].name === 'zFast' && move.legs) {
-          expect(legAt(move, frame.p)).toBe(one.part);
-        }
         if (cycle[0].name === 'zFast' && one.name === 'zero' && one.part === 0) {
           expect(frame.p).toBeLessThanOrEqual(TURN);
         }

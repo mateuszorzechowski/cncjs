@@ -68,8 +68,8 @@ export const namedGroups = (groups, t, titleOf, partsOf = () => 1) => groups.map
 const PLACED = 'relative';
 const segment = (chosen) => `${PLACED} flex h-9 min-w-0 flex-1 items-center border-b-2 ${chosen ? 'border-acc' : 'border-transparent'}`;
 
-// A move made of legs — a set-up's rise, crossing and descent — as a segment
-// each, each a tap of its own (review note, 2026-09-30).
+// A move in parts — on a phone, the zero seen from the side and then from
+// above — as a segment each, each a tap of its own (review note, 2026-09-30).
 const Parts = ({
   move, on, fillOf, mark, chosen, disabled, onPick,
 }) => (

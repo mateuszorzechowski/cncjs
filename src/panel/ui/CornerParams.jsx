@@ -11,7 +11,6 @@ import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
-  LEG_WORDS,
   CORNER_GROUPS, CORNER_ORDER, CORNER_PARAMS, LOOP_HOLD_MS, cornerCode, cornerReadout, cornerTimeline, moveOf, playAt, TURN,
 } from '../machine/cornerCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
@@ -24,7 +23,7 @@ const numberOf = (text) => Number(String(text).replace(',', '.'));
 
 const AXES = ['x', 'y', 'z'];
 // The descent beside the wall is the X set-up's, on the bar.
-const BAR_OF = { depth: 'xSet' };
+const BAR_OF = { depth: 'xDown' };
 const VIEWS = ['top', 'side'];
 const VIEW_KEYS = { top: 'probe.view.top', side: 'probe.view.side' };
 
@@ -80,16 +79,14 @@ const CornerParams = ({
   const drawing = {
     name, p, corner, texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus,
   };
-  const code = cornerCode(name, p, texts, systemNumber(wcs), corner);
+  const code = cornerCode(name, texts, systemNumber(wcs), corner);
   const mm = Object.fromEntries(['toolDiameter', 'wallX', 'wallY', 'cornerThickness'].map((field) => [field, inMm(numberOf(texts[field]), units.rule) ?? 0]));
   const read = cornerReadout(name, corner, mm);
-  const title = code.leg
-    ? t(move.legsKey || 'probe.corner.move.set', { axis: move.group.toUpperCase(), leg: t(LEG_WORDS[code.leg]) })
-    : t(move.titleKey);
+  const title = t(move.titleKey);
   // A view picked by hand holds while its stage plays.
   const view = chosen && chosen.group === move.group ? chosen.view : viewOf(move, p, focus);
 
-  // A set-up's legs, and on a phone the zero seen from the side and then from above: a segment each (review note, 2026-09-30).
+  // On a phone the zero seen from the side and then from above: a segment each (review note, 2026-09-30).
   const partsOf = (id) => items.find((item) => item.name === id).parts.length;
   const groups = namedGroups(CORNER_GROUPS, t, (id) => t(moveOf(id).titleKey), partsOf);
   const sections = CORNER_PARAMS.map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))

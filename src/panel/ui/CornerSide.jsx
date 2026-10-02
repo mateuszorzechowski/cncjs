@@ -8,7 +8,7 @@ import {
 import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import {
-  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, legAt, moveOf, positionOf, tipOf,
+  C0, LIFTED, TOP, cornerSides, gapAt, zeroShown, moveOf, positionOf, tipOf,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -183,51 +183,38 @@ const CornerSide = ({
     const [x, y, level] = positionOf(move.frames, p);
     bit = { cx: x, tip: tipOf(level), scale: nearness(y, flipY) };
     behind = flipY && y > Y_FACE;
-    if (move.legs) {
-      const now = legAt(move, p);
-      move.legs.forEach(([from, to, plane, , , legName, parts], i) => {
-        // The leg under way's arrow alone: the ones before do not pile up (review note, 2026-09-30).
-        if (i !== now) {
-          return;
-        }
-        const [fx, , fz] = positionOf(move.frames, from);
-        const [, , tz] = positionOf(move.frames, to);
-        const y1 = tipOf(fz);
-        const y2 = tipOf(tz);
-        let drawn = null;
-        if (Math.abs(y1 - y2) > 0.5) {
-          const at = besideOf(fx);
-          // Down beside a wall is a G38.3, a probing move with its feed; up a G0, bare.
-          const down = legName === 'down';
-          drawn = <Motion at={at} from={y1} to={y2} kind={down ? PROBE : RAPID} size={size} />;
-          line(at, y1, y2, MOTION_TICK);
-          sweep = [y1, y2];
-          if (parts && !focus) {
-            line(COL, y1, y2, PART_TICK);
-          }
-          if (down && !focus) {
-            words.push(tags('legf', { at, side: -1, parts: [[y1, y2, said('fast')]], ticks: [[y1, MOTION_TICK]] }));
-          }
-          if (parts && !focus) {
-            // A rise or descent that adds two figures: each drawn as its own dimension, split at the plate's top (review notes, 2026-09-30).
-            // One chained dimension past the plate's far side, ticked at the plate's top, the figures beside it (review note, 2026-09-30).
-            const [low, high] = [Math.max(y1, y2), Math.min(y1, y2)];
-            const ticks = [high, TOP, low].map((y) => `M${COL - PART_TICK} ${y} H${COL + PART_TICK}`).join(' ');
-            geometry.push(
-              <g key="parts">
-                <path d={`M${COL} ${high} V${low} ${ticks}`} fill="none" className="stroke-mut" strokeWidth={1} vectorEffect={NS} />
-                {[[high, UP], [TOP, DOWN], [TOP, UP], [low, DOWN]].map(([y, dir]) => <Head key={`${y}${dir}`} x={COL} y={y} dir={dir} size={size} className="fill-mut" />)}
-              </g>,
-            );
-            words.push(tags('parts', {
-              at: COL, parts: [[high, TOP, said(parts[1])], [TOP, low, said(parts[0])]], ticks: [high, TOP, low].map((y) => [y, PART_TICK]),
-            }));
-          }
-        }
-        if (drawn && plane === 'z') {
-          geometry.push(<g key={`leg${i}`} opacity={focus ? 0.3 : 1}>{drawn}</g>);
-        }
-      });
+    if (move.plane === 'z') {
+      const [fx, , fz] = positionOf(move.frames, 0);
+      const [, , tz] = positionOf(move.frames, 1);
+      const y1 = tipOf(fz);
+      const y2 = tipOf(tz);
+      const at = besideOf(fx);
+      // Down beside a wall is a G38.3, a probing move with its feed; up a G0, bare.
+      geometry.push(<g key="way" opacity={focus ? 0.3 : 1}><Motion at={at} from={y1} to={y2} kind={move.down ? PROBE : RAPID} size={size} /></g>);
+      line(at, y1, y2, MOTION_TICK);
+      sweep = [y1, y2];
+      if (!focus) {
+        line(COL, y1, y2, PART_TICK);
+      }
+      if (move.down && !focus) {
+        words.push(tags('wayf', { at, side: -1, parts: [[y1, y2, said('fast')]], ticks: [[y1, MOTION_TICK]] }));
+      }
+      if (!focus) {
+        // A rise or descent that adds two figures: each drawn as its own dimension, split at the plate's top (review notes, 2026-09-30).
+        // One chained dimension past the plate's far side, ticked at the plate's top, the figures beside it (review note, 2026-09-30).
+        const { parts } = move;
+        const [low, high] = [Math.max(y1, y2), Math.min(y1, y2)];
+        const ticks = [high, TOP, low].map((y) => `M${COL - PART_TICK} ${y} H${COL + PART_TICK}`).join(' ');
+        geometry.push(
+          <g key="parts">
+            <path d={`M${COL} ${high} V${low} ${ticks}`} fill="none" className="stroke-mut" strokeWidth={1} vectorEffect={NS} />
+            {[[high, UP], [TOP, DOWN], [TOP, UP], [low, DOWN]].map(([y, dir]) => <Head key={`${y}${dir}`} x={COL} y={y} dir={dir} size={size} className="fill-mut" />)}
+          </g>,
+        );
+        words.push(tags('parts', {
+          at: COL, parts: [[high, TOP, said(parts[1])], [TOP, low, said(parts[0])]], ticks: [high, TOP, low].map((y) => [y, PART_TICK]),
+        }));
+      }
     } else if (move.kind && move.view === 'top') {
       if (move.touch && move.touch[1] === 116 && p > 0.75) {
         touch = [move.touch[0], tipOf(level) - 6];

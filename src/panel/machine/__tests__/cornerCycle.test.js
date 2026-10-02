@@ -1,6 +1,6 @@
 import {
   signedFor,
-  BEFORE_MM, CORNER_GROUPS, cornerTimeline, CORNER_ORDER, CORNER_PARAMS, HOLD_MS, LOOP_HOLD_MS, motionEnd, SPAN_MS, cornerCode, cornerReadout, cornerSides, legAt, moveOf, moveOfPhase, playAt, positionAt, positionOf, tipOf,
+  BEFORE_MM, CORNER_GROUPS, cornerTimeline, CORNER_ORDER, CORNER_PARAMS, HOLD_MS, LOOP_HOLD_MS, motionEnd, SPAN_MS, cornerCode, cornerReadout, cornerSides, moveOf, moveOfPhase, playAt, positionAt, positionOf, tipOf,
 } from '../cornerCycle';
 import { methodOf, stepBeside, stepsOf } from '../probe';
 import { segmentsOf } from '../timeline';
@@ -17,8 +17,8 @@ describe('the L plate cycle (probe proposal)', () => {
     let ms = 10;
     CORNER_ORDER.forEach((name) => {
       at.push(playAt(ms).name);
-      if (moveOf(name).legs) {
-        ms += 1000 * moveOf(name).legs.length + HOLD_MS;
+      if (moveOf(name).plane) {
+        ms += 1000 + HOLD_MS;
       } else {
         // The zero, seen from two sides, plays three times as long.
         ms += moveOf(name).walls ? SPAN_MS * 3 : SPAN_MS;
@@ -28,47 +28,44 @@ describe('the L plate cycle (probe proposal)', () => {
     expect(playAt(ms).name).toBe('zFast');
   });
 
-  test('gives a set-up a second a leg, and knows the leg under way', () => {
-    const set = moveOf('xSet');
-    expect(playAt(0, { pinned: 'xSet' }).span).toBe(2000 + LOOP_HOLD_MS);
+  test('a set-up and the lift are a move a line of G-code, each a second', () => {
+    expect(playAt(0, { pinned: 'xOut' }).span).toBe(1000 * 0.9 + LOOP_HOLD_MS);
     expect(playAt(0).span).toBe(SPAN_MS);
-    expect(legAt(set, 0.1)).toBe(0);
-    expect(legAt(set, 0.5)).toBe(0);
-    expect(legAt(set, 0.9)).toBe(1);
+    ['xOut', 'xDown', 'yUp', 'yOver', 'yOut', 'yDown', 'lift', 'corner'].forEach((name) => {
+      expect(cornerCode(name, TEXTS).parts.length).toBeLessThanOrEqual(1);
+    });
   });
 
   test('the X set-up starts off the plate, goes out past the wall and comes down beside it', () => {
-    const set = moveOf('xSet');
-    const [x, , start] = positionOf(set.frames, 0);
-    const [, , up] = positionOf(set.frames, 0.5);
-    const [outX, , down] = positionOf(set.frames, 1);
+    const [x, , start] = positionOf(moveOf('xOut').frames, 0);
+    const [outX, , up] = positionOf(moveOf('xOut').frames, 1);
+    const [downX, , down] = positionOf(moveOf('xDown').frames, 1);
     expect(tipOf(start)).toBe(134);
     expect(up).toBe(1);
     expect(outX).toBeLessThan(x);
+    expect(downX).toBe(outX);
     expect(tipOf(down)).toBeGreaterThan(170);
   });
 
   test('says each move in G-code as the server runs it', () => {
-    expect(cornerCode('zFast', 0.5, TEXTS).parts).toEqual(['G38.2 Z-20 F50']);
-    // Each leg lights the one figure its way is: out past the wall, the clear.
-    expect(cornerCode('xSet', 0.5, TEXTS)).toEqual({
-      parts: ['G0 X-10'], now: -1, leg: 'out', uses: ['clear'],
-    });
-    expect(cornerCode('xSet', 0.1, TEXTS).uses).toEqual(['clear']);
-    expect(cornerCode('xSet', 0.9, TEXTS).uses).toEqual(['depth', 'retract']);
-    expect(cornerCode('xSet', 0.9, TEXTS)).toMatchObject({ parts: ['G38.3 Z-10 F50'], leg: 'down' });
-    expect(cornerCode('xSlow', 0.5, TEXTS).parts).toEqual(['G38.2 X+10 F15']);
-    expect(cornerCode('lift', 0.5, TEXTS)).toMatchObject({ parts: ['G0 Z+25'], leg: 'lift' });
-    expect(cornerCode('lift', 0.9, TEXTS)).toMatchObject({ parts: ['G0 X0 Y0'], leg: 'corner' });
-    expect(cornerCode('yOff', 0.5, TEXTS).parts).toEqual(['G0 Y-5']);
+    expect(cornerCode('zFast', TEXTS).parts).toEqual(['G38.2 Z-20 F50']);
+    // Each set-up move lights the figures its way is: out past the wall, the clear.
+    expect(cornerCode('xOut', TEXTS)).toEqual({ parts: ['G0 X-10'], now: -1, uses: ['clear'] });
+    expect(cornerCode('xDown', TEXTS)).toEqual({ parts: ['G38.3 Z-10 F50'], now: -1, uses: ['depth', 'retract'] });
+    expect(cornerCode('yUp', TEXTS).parts).toEqual(['G0 Z+10']);
+    expect(cornerCode('yOut', TEXTS).parts).toEqual(['G0 Y-10']);
+    expect(cornerCode('xSlow', TEXTS).parts).toEqual(['G38.2 X+10 F15']);
+    expect(cornerCode('lift', TEXTS).parts).toEqual(['G0 Z+25']);
+    expect(cornerCode('corner', TEXTS).parts).toEqual(['G0 X0 Y0']);
+    expect(cornerCode('yOff', TEXTS).parts).toEqual(['G0 Y-5']);
     // Turned for the corner, as the drawing is: out past a right corner's wall is X+, its touch X−.
-    expect(cornerCode('xSet', 0.5, TEXTS, 1, 'back-right').parts).toEqual(['G0 X+10']);
-    expect(cornerCode('xSlow', 0.5, TEXTS, 1, 'front-right').parts).toEqual(['G38.2 X-10 F15']);
-    expect(cornerCode('yOff', 0.5, TEXTS, 1, 'back-left').parts).toEqual(['G0 Y+5']);
-    expect(cornerCode('lift', 0.9, TEXTS, 1, 'back-right').parts).toEqual(['G0 X0 Y0']);
+    expect(cornerCode('xOut', TEXTS, 1, 'back-right').parts).toEqual(['G0 X+10']);
+    expect(cornerCode('xSlow', TEXTS, 1, 'front-right').parts).toEqual(['G38.2 X-10 F15']);
+    expect(cornerCode('yOff', TEXTS, 1, 'back-left').parts).toEqual(['G0 Y+5']);
+    expect(cornerCode('corner', TEXTS, 1, 'back-right').parts).toEqual(['G0 X0 Y0']);
     // Back over where Z was touched: no numbers to show, so no line made up.
-    expect(cornerCode('ySet', 0.5, TEXTS)).toMatchObject({ parts: [], leg: 'over' });
-    expect(signedFor('front-right')('X− 20 mm')).toBe('X+ 20 mm');
+    expect(cornerCode('yOver', TEXTS).parts).toEqual([]);
+    expect(signedFor('front-right')('G0 X-20')).toBe('G0 X+20');
   });
 
   test('a figure being set loops the move it changes, over the part that shows it, held longer', () => {
@@ -95,9 +92,9 @@ describe('the L plate cycle (probe proposal)', () => {
     expect(spanIn(cornerTimeline({ apart: true }), 'zBack')).toBe(SPAN_MS);
   });
 
-  test('the bar segments: a set-up legs, the zero two views on a phone, one for any other move', () => {
+  test('the bar segments: the zero two views on a phone, one for any other move', () => {
     const segments = segmentsOf(cornerTimeline({ apart: true }));
-    expect(segments.filter((one) => one.name === 'xSet')).toHaveLength(2);
+    expect(segments.filter((one) => one.name === 'xOut')).toHaveLength(1);
     expect(segments.filter((one) => one.name === 'zero')).toHaveLength(2);
     expect(segmentsOf(cornerTimeline()).filter((one) => one.name === 'zero')).toHaveLength(1);
   });
@@ -127,10 +124,15 @@ describe('the L plate cycle (probe proposal)', () => {
 
   test('plays the move of the server\'s step on the measurement screen', () => {
     expect(moveOfPhase('z-fast')).toBe('zFast');
-    expect(moveOfPhase('x-down')).toBe('xSet');
+    expect(moveOfPhase('x-out')).toBe('xOut');
+    expect(moveOfPhase('x-down')).toBe('xDown');
+    expect(moveOfPhase('x-up')).toBe('yUp');
+    expect(moveOfPhase('x-return')).toBe('yOver');
+    expect(moveOfPhase('y-out')).toBe('yOut');
+    expect(moveOfPhase('y-down')).toBe('yDown');
     expect(moveOfPhase('y-settle')).toBe('yBack');
     expect(moveOfPhase('lift')).toBe('lift');
-    expect(moveOfPhase('corner')).toBe('lift');
+    expect(moveOfPhase('corner')).toBe('corner');
     expect(moveOfPhase('unknown')).toBe('zFast');
   });
 

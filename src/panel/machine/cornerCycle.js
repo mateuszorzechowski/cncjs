@@ -22,10 +22,10 @@ export { C0, LIFTED, XO } from './cornerMoves';
 export const TOP = 146;
 export const tipOf = (level) => 134 + (1 - level) * 48;
 
-// A move is played for its run, then held; a set-up a second a leg.
+// A move is played for its run, then held; a set-up's or the lift's a second.
 export const SPAN_MS = 2600;
 export const HOLD_MS = 600;
-const LEG_MS = 1000;
+const STEP_MS = 1000;
 // A move looped on its own holds its end the same long while for every move (as the Z plate's).
 export const LOOP_HOLD_MS = 2500;
 // A figure's loop plays its part of the move over this long.
@@ -48,14 +48,14 @@ export const positionOf = (frames, p) => {
   return [x, y, z];
 };
 
-export const CORNER_ORDER = ['zFast', 'zBack', 'zSlow', 'zOff', 'xSet', 'xFast', 'xBack', 'xSlow', 'xOff', 'ySet', 'yFast', 'yBack', 'ySlow', 'yOff', 'zero', 'lift'];
+export const CORNER_ORDER = ['zFast', 'zBack', 'zSlow', 'zOff', 'xOut', 'xDown', 'xFast', 'xBack', 'xSlow', 'xOff', 'yUp', 'yOver', 'yOut', 'yDown', 'yFast', 'yBack', 'ySlow', 'yOff', 'zero', 'lift', 'corner'];
 
 export const CORNER_GROUPS = [
   { id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow', 'zOff'] }] },
-  { id: 'x', name: 'X', subs: [{ key: 'probe.stage.search', moves: ['xSet', 'xFast'] }, { key: 'probe.bar.measure', moves: ['xBack', 'xSlow', 'xOff'] }] },
-  { id: 'y', name: 'Y', subs: [{ key: 'probe.stage.search', moves: ['ySet', 'yFast'] }, { key: 'probe.bar.measure', moves: ['yBack', 'ySlow', 'yOff'] }] },
+  { id: 'x', name: 'X', subs: [{ key: 'probe.stage.search', moves: ['xOut', 'xDown', 'xFast'] }, { key: 'probe.bar.measure', moves: ['xBack', 'xSlow', 'xOff'] }] },
+  { id: 'y', name: 'Y', subs: [{ key: 'probe.stage.search', moves: ['yUp', 'yOver', 'yOut', 'yDown', 'yFast'] }, { key: 'probe.bar.measure', moves: ['yBack', 'ySlow', 'yOff'] }] },
   // Named only folded: open, its one step names it (review notes, 2026-09-30).
-  { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift'] }] },
+  { id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero', 'lift', 'corner'] }] },
 ];
 
 /*
@@ -86,7 +86,7 @@ const EDIT = {
   wallX: ['zero', 'wallX', [0.6, 1]],
   wallY: ['zero', 'wallY', [0.6, 1]],
   toolDiameter: ['xSlow', 'tool'],
-  clear: ['xSet', 'clear', [0, 0.5]],
+  clear: ['xOut', 'clear'],
   depth: ['depth', 'dim'],
   maxXY: ['xFast', 'dim'],
   lift: ['lift', 'rise'],
@@ -102,24 +102,20 @@ export const moveOf = (name) => MOVES[name];
 export const TURN = 0.5;
 
 const spanOf = (name) => {
-  if (MOVES[name].legs) {
-    return LEG_MS * MOVES[name].legs.length + HOLD_MS;
+  if (MOVES[name].plane) {
+    return STEP_MS + HOLD_MS;
   }
   return MOVES[name].walls ? SPAN_MS * 3 : SPAN_MS;
 };
 
 /*
  * Where through its run a move stops changing: a Z touch's way ends at 0.75,
- * a set-up's last leg at its end, a move by its last keyframe that moves, the
- * zero once its lines are in.
+ * a move by its last keyframe that moves, the zero once its lines are in.
  */
 export const motionEnd = (name) => {
   const move = MOVES[name];
   if (move.gap) {
     return 0.75;
-  }
-  if (move.legs) {
-    return 1;
   }
   let end = 0;
   move.frames.forEach(([at, [x, y], level], i) => {
@@ -146,8 +142,8 @@ const viewAt = (name, end) => {
 
 /*
  * The cycle on its clock, for the Setup's player: each move its span, and
- * its segments on the bar — a set-up's legs, the zero's two views on a
- * phone, or one up to where the move stops changing. `apart`, one view at a
+ * its segments on the bar — the zero's two views on a phone, or one up to
+ * where the move stops changing. `apart`, one view at a
  * time (a phone): a move whose next is seen from the other side holds as
  * long as a loop does, so the turn is not lost (review note, 2026-09-30).
  */
@@ -159,9 +155,6 @@ export const cornerTimeline = ({ apart = false } = {}) => layOut(CORNER_ORDER, {
   runOf: (name) => spanOf(name) - HOLD_MS,
   partsOf: (name) => {
     const move = MOVES[name];
-    if (move.legs) {
-      return move.legs.map(([from, to]) => [from, to]);
-    }
     return apart && move.walls ? [[0, TURN], [TURN, 1]] : [[0, motionEnd(name)]];
   },
 });
@@ -198,42 +191,10 @@ export const playAt = (ms, { pinned = null, field = null, still = false } = {}) 
   return { ...frame, focus: null, p: still ? 1 : frame.p };
 };
 
-/** Which leg of a set-up is under way at `p`. */
-export const legAt = (move, p) => {
-  // A leg's end is its own, not the next one's start: a leg looped or paused holds on it.
-  let now = 0;
-  move.legs.forEach(([from], i) => {
-    if (p > from) {
-      now = i;
-    }
-  });
-  return now;
-};
-
-/*
- * The move's G-code, and for a set-up the leg under way alone, with its own
- * short word (`leg`) — the whole set-up said at once did not fit (review
- * note, 2026-09-30).
- */
-// The figures a leg's way is made of, where the leg does not say: so the one
-// figure behind "G0 X-20" is the one lit (review note, 2026-10-01).
-const LEG_USES = {
-  out: ['clear'], over: [], corner: [],
-};
-
-export const cornerCode = (name, p, texts, wcs = 1, corner = 'front-left') => {
+/** The move's G-code, turned for the corner, and the figures it uses. */
+export const cornerCode = (name, texts, wcs = 1, corner = 'front-left') => {
   const move = MOVES[name];
-  const turn = signedFor(corner);
-  if (move.legs) {
-    const leg = move.legs[legAt(move, p)];
-    const line = leg[4](texts);
-    return {
-      parts: line ? [turn(line)] : [], now: -1, leg: leg[5], uses: leg[6] || LEG_USES[leg[5]] || move.uses,
-    };
-  }
-  return {
-    parts: move.code(texts, wcs).map(turn), now: -1, leg: null, uses: move.uses,
-  };
+  return { parts: move.code(texts, wcs).map(signedFor(corner)), now: -1, uses: move.uses };
 };
 
 // How far into a Z touch's way the tool is at `p`: still, moving, arrived.
@@ -271,22 +232,16 @@ const SIDES = {
 
 export const cornerSides = (corner) => SIDES[corner] || SIDES['front-left'];
 
-// Each leg's words: the title's, and on the drawing for a leg with no figure of its own.
-export const LEG_WORDS = {
-  up: 'probe.corner.leg.up', over: 'probe.corner.leg.over', out: 'probe.corner.leg.out', down: 'probe.corner.leg.down', lift: 'probe.corner.leg.lift', corner: 'probe.corner.leg.corner',
-};
-
-const OPPOSITE = { '+': '-', '-': '+', '−': '+' };
+const OPPOSITE = { '+': '-', '-': '+' };
 
 /**
- * A line or a leg's words written for the front-left corner, turned for
- * `corner`: the moves' X and Y signs mirrored as the drawing is — `G0 X-20`
- * out past a right corner's wall is `G0 X+20` (review note, 2026-10-01).
- * The legs' words carry only minuses, written `−`.
+ * A line written for the front-left corner, turned for `corner`: the moves'
+ * X and Y signs mirrored as the drawing is — `G0 X-20` out past a right
+ * corner's wall is `G0 X+20` (review note, 2026-10-01).
  */
 export const signedFor = (corner) => {
   const { flipX, flipY } = cornerSides(corner);
-  return (line) => line.replace(/([XY])([+\-−])/g, (all, axis, sign) => {
+  return (line) => line.replace(/([XY])([+-])/g, (all, axis, sign) => {
     if ((axis === 'X' && flipX) || (axis === 'Y' && flipY)) {
       return `${axis}${OPPOSITE[sign]}`;
     }
@@ -347,24 +302,24 @@ const PHASE_MOVE = {
   'z-settle': 'zBack',
   z: 'zSlow',
   'z-off': 'zOff',
-  'x-out': 'xSet',
-  'x-down': 'xSet',
+  'x-out': 'xOut',
+  'x-down': 'xDown',
   'x-fast': 'xFast',
   'x-back': 'xBack',
   'x-settle': 'xBack',
   x: 'xSlow',
   'x-off': 'xOff',
-  'x-up': 'ySet',
-  'x-return': 'ySet',
-  'y-out': 'ySet',
-  'y-down': 'ySet',
+  'x-up': 'yUp',
+  'x-return': 'yOver',
+  'y-out': 'yOut',
+  'y-down': 'yDown',
   'y-fast': 'yFast',
   'y-back': 'yBack',
   'y-settle': 'yBack',
   y: 'ySlow',
   'y-off': 'yOff',
   lift: 'lift',
-  corner: 'lift',
+  corner: 'corner',
 };
 
 export const moveOfPhase = (phase) => PHASE_MOVE[phase] || 'zFast';
