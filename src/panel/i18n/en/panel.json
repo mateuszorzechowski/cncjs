@@ -1494,7 +1494,8 @@
       "measure": "Measure",
       "result": "Result",
       "tool": "Touch",
-      "area": "Area"
+      "area": "Figures",
+      "areaWay": "Area"
     },
     "wire": {
       "how": "Clip the lead to the tool. Touch the plate to the tool and let go. The panel reads the probe from the controller: it shows “Touching” while they touch and “Works” once you let go.",
@@ -1730,7 +1731,7 @@
       "ny": "Along Y",
       "badArea": "The area needs a width in X and in Y: \"to\" above \"from\".",
       "badGrid": "From 2 to 30 points on each axis.",
-      "start": "Work coordinates, as the program's: a corner at the zero is X0 Y0 of the current system. The dashed line: the loaded program's extent.",
+      "start": "Work coordinates, as the program's (0 is the current system's zero). The dashed line: the loaded program's extent.",
       "drawing": "The area and its points from above",
       "point": "Point {{n}} of {{total}}",
       "low": "Lowest",
@@ -1765,7 +1766,9 @@
         "program": "From the program",
         "pointNote": "A corner (typed or taken by jog), a width and a depth.",
         "cornersNote": "Two corners across: typed, or taken by jog.",
-        "programNote": "The loaded program's extent."
+        "programNote": "The loaded program's extent.",
+        "centre": "Centre and size",
+        "centreNote": "A centre (typed or taken by jog), a width and a depth."
       },
       "x": "X",
       "y": "Y",
@@ -1782,7 +1785,8 @@
         "point": "Point",
         "size": "Size",
         "grid": "Grid (points)",
-        "area": "Area"
+        "area": "Area",
+        "centre": "Centre"
       }
     }
   }

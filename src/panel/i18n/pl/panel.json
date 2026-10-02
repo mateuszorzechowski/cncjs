@@ -1494,7 +1494,8 @@
       "measure": "Pomiar",
       "result": "Wynik",
       "tool": "Sposób",
-      "area": "Obszar"
+      "area": "Wymiary",
+      "areaWay": "Obszar"
     },
     "wire": {
       "how": "Przypnij krokodylek do frezu. Dotknij płytką frezu i puść. Panel czyta stan sondy ze sterownika: przy dotyku pokaże „Dotyk”, po puszczeniu „Działa”.",
@@ -1730,7 +1731,7 @@
       "ny": "W osi Y",
       "badArea": "Obszar musi mieć szerokość w X i w Y: „do” większe od „od”.",
       "badGrid": "Od 2 do 30 punktów w każdej osi.",
-      "start": "Współrzędne robocze, jak w programie: róg w zerze to X0 Y0 bieżącego układu. Linia przerywana: obrys wczytanego programu.",
+      "start": "Współrzędne robocze, jak w programie (0 to zero bieżącego układu). Linia przerywana: obrys wczytanego programu.",
       "drawing": "Obszar i punkty pomiaru z góry",
       "point": "Punkt {{n}} z {{total}}",
       "low": "Najniżej",
@@ -1765,7 +1766,9 @@
         "program": "Z programu",
         "pointNote": "Róg (wpisany albo wskazany joggiem), szerokość i głębokość.",
         "cornersNote": "Dwa rogi po przekątnej: wpisane albo wskazane joggiem.",
-        "programNote": "Obrys wczytanego programu."
+        "programNote": "Obrys wczytanego programu.",
+        "centre": "Środek i rozmiar",
+        "centreNote": "Środek (wpisany albo wskazany joggiem), szerokość i głębokość."
       },
       "x": "X",
       "y": "Y",
@@ -1782,7 +1785,8 @@
         "point": "Punkt",
         "size": "Rozmiar",
         "grid": "Siatka (punkty)",
-        "area": "Obszar"
+        "area": "Obszar",
+        "centre": "Środek"
       }
     }
   }

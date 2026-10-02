@@ -5,8 +5,8 @@ import { settingFigure } from '../machine/units';
 
 const MAP = 'height-map';
 
-// How the area is given (Mateusz, 2026-10-02): a corner and a size, two corners jogged to, or the program's extent.
-export const AREA_MODES = ['point', 'corners', 'program'];
+// How the area is given (Mateusz, 2026-10-02): a corner and a size, a centre and a size, two corners, or the program's extent.
+export const AREA_MODES = ['point', 'centre', 'corners', 'program'];
 
 /**
  * The height map's area and grid as the operator gives them, and the grid
@@ -30,7 +30,7 @@ const useHeightMapAsk = ({ machine, method, rule }) => {
     if (method?.id === MAP && !mode) {
       setMode(outline ? 'program' : 'point');
       setTexts({
-        x: '0', y: '0', w: said(50), d: said(50), nx: '4', ny: '4',
+        x: '0', y: '0', cx: '0', cy: '0', w: said(50), d: said(50), nx: '4', ny: '4',
       });
     }
   }, [method?.id]); // eslint-disable-line react-hooks/exhaustive-deps

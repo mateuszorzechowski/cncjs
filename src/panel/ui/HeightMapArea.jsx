@@ -4,12 +4,10 @@ import Card from './Card';
 import FadeScroller from './FadeScroller';
 import HeightMapGrid from './HeightMapGrid';
 import Notice from './Notice';
-import AreaModeChooser from './AreaModeChooser';
 import Sheet from './Sheet';
 import TextField from './TextField';
 import { Foot } from './ProbeSteps';
 import JogWidget from '../widgets/JogWidget';
-import { AREA_MODES } from './useHeightMapAsk';
 import { useIsPhone } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -20,7 +18,7 @@ const countOnly = (text) => text.replace(/[^0-9]/g, '');
 const BAD = 'bad';
 
 const NAMES = {
-  x: 'probe.map.x', y: 'probe.map.y', ax: 'probe.map.x', ay: 'probe.map.y', bx: 'probe.map.x', by: 'probe.map.y', w: 'probe.map.w', d: 'probe.map.d', nx: 'probe.map.nx', ny: 'probe.map.ny',
+  x: 'probe.map.x', y: 'probe.map.y', cx: 'probe.map.x', cy: 'probe.map.y', ax: 'probe.map.x', ay: 'probe.map.y', bx: 'probe.map.x', by: 'probe.map.y', w: 'probe.map.w', d: 'probe.map.d', nx: 'probe.map.nx', ny: 'probe.map.ny',
 };
 // What the server says of a grid it would not measure, as the operator reads it.
 const REASONS = { 'bad-area': 'probe.map.badArea', 'bad-grid': 'probe.map.badGrid', 'no-server': 'probe.map.noServer' };
@@ -86,10 +84,10 @@ const HeightMapArea = ({
   );
   const card = (
     <Card className="min-w-0 flex-1" bodyClassName="gap-3">
-      <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={mode} onChange={map.setMode} />
       {/* Only the figures of the way chosen, then the grid. */}
       <div className="flex min-w-0 flex-col gap-4">
         {mode === 'point' ? [point('probe.map.sec.point', 'x', 'y'), section('probe.map.sec.size', [field('w'), field('d')])] : null}
+        {mode === 'centre' ? [point('probe.map.sec.centre', 'cx', 'cy'), section('probe.map.sec.size', [field('w'), field('d')])] : null}
         {mode === 'corners' ? [point('probe.map.cornerA', 'ax', 'ay'), point('probe.map.cornerB', 'bx', 'by')] : null}
         {mode === 'program' ? (
           <div className="flex min-w-0 flex-col gap-2">

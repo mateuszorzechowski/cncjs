@@ -47,7 +47,7 @@ const THROUGH_PROBE = ['method', 'prepare', 'wire', 'position', 'measure', 'resu
 const CHOOSE_FIRST = ['method', 'choose', 'prepare', 'wire', 'position', 'measure', 'result'];
 const BY_HAND = ['method', 'choose', 'prepare', 'position', 'measure', 'result'];
 // The height map: what touches first, then its moves, then the area (Mateusz, 2026-10-02).
-const MAP_STEPS = ['method', 'choose', 'prepare', 'area', 'wire', 'position', 'measure', 'result'];
+const MAP_STEPS = ['method', 'choose', 'prepare', 'areaWay', 'area', 'wire', 'position', 'measure', 'result'];
 
 /*
  * What touches the height map's points (Mateusz, 2026-10-02): the tool on a
@@ -113,7 +113,8 @@ export const usesSurface = (method, chosen) => method?.id === 'z' || (method?.id
 /**
  * A height map's area and grid as the server takes them, from the texts
  * typed, by how the area is given (`mode`): a corner and a size (`x y w d`),
- * two corners (`ax ay bx by`), or the program's extent (`px0 px1 py0 py1`);
+ * a centre and a size (`cx cy w d`), two corners (`ax ay bx by`), or the
+ * program's extent (`px0 px1 py0 py1`);
  * and the points each way (`nx ny`). The server works out the rest.
  */
 export const mapAsk = (texts, mode) => {
@@ -121,6 +122,9 @@ export const mapAsk = (texts, mode) => {
   const count = { nx: n(texts.nx), ny: n(texts.ny) };
   if (mode === 'point') {
     return { at: { x: n(texts.x), y: n(texts.y) }, size: { x: n(texts.w), y: n(texts.d) }, ...count };
+  }
+  if (mode === 'centre') {
+    return { centre: { x: n(texts.cx), y: n(texts.cy) }, size: { x: n(texts.w), y: n(texts.d) }, ...count };
   }
   if (mode === 'corners') {
     return { x: [n(texts.ax), n(texts.bx)], y: [n(texts.ay), n(texts.by)], ...count };
@@ -147,6 +151,7 @@ export const optionsFor = (method, chosen, surface = SURFACE, area = null) => {
 const STEPS = [
   { id: 'method', key: 'probe.step.method' },
   { id: 'prepare', key: 'probe.step.prepare' },
+  { id: 'areaWay', key: 'probe.step.areaWay' },
   { id: 'area', key: 'probe.step.area' },
   { id: 'wire', key: 'probe.step.wire' },
   { id: 'position', key: 'probe.step.position' },

@@ -71,6 +71,7 @@ describe('the grid', () => {
     const corners = gridOf({ x: [40, 0], y: [20, -10], nx: 3, ny: 2 });
     expect([corners.xs, corners.ys]).toEqual([[0, 20, 40], [-10, 20]]);
     expect(gridOf({ at: { x: 5, y: -5 }, size: { x: 20, y: 10 }, nx: 3, ny: 2 })).toMatchObject({ xs: [5, 15, 25], ys: [-5, 5] });
+    expect(gridOf({ centre: { x: 0, y: 10 }, size: { x: 20, y: 10 }, nx: 3, ny: 2 })).toMatchObject({ xs: [-10, 0, 10], ys: [5, 15] });
   });
 
   test('in inches when given in them', () => {

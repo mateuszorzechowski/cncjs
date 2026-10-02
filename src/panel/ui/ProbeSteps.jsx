@@ -8,6 +8,8 @@ import CornerCycle from './CornerCycle';
 import CornerParams from './CornerParams';
 import CentreCycle from './CentreCycle';
 import CentreParams from './CentreParams';
+import AreaModeChooser from './AreaModeChooser';
+import { AREA_MODES } from './useHeightMapAsk';
 import CornerChooser from './CornerChooser';
 import MapToolChooser from './MapToolChooser';
 import PaperChooser from './PaperChooser';
@@ -104,6 +106,11 @@ export const ChooseStep = ({ method, value, onChange }) => {
   const Chooser = CHOOSERS[method.id];
   return <Chooser value={value} onChange={onChange} />;
 };
+
+// How the height map's area is given, a step of its own before its figures (review note, 2026-10-02).
+export const AreaWayStep = ({ map }) => (
+  <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />
+);
 
 export const MethodStep = ({ onPick }) => (
   <div className="flex flex-col gap-3">

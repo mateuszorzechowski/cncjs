@@ -7,7 +7,8 @@ import { isUnit, toMm } from '../units';
  *
  * Asked as two corners, `{ x: [one, other], y: [one, other] }` in either
  * order — wherever the operator jogged them — or as a corner and a size,
- * `{ at: { x, y }, size: { x, y } }`; and, per axis, a count (`nx`, `ny`) or
+ * `{ at: { x, y }, size: { x, y } }`, or a centre and a size, `{ centre,
+ * size }`; and, per axis, a count (`nx`, `ny`) or
  * a step (`stepX`, `stepY`) — a step becomes the count that comes nearest to
  * it, and the step then the one that divides the side evenly, so the points
  * reach both edges.
@@ -50,8 +51,16 @@ export const gridOf = (asked = {}, units) => {
   if (units !== undefined && !isUnit(units)) {
     return { error: 'bad-units' };
   }
-  // A corner and a size: its two corners. A size below zero is the other way from the corner.
-  const range = (axis) => (asked.at && asked.size ? [Number(asked.at[axis]), Number(asked.at[axis]) + Number(asked.size[axis])] : asked[axis]);
+  // A corner and a size: its two corners, a size below zero the other way from the corner. A centre and a size: half each way.
+  const range = (axis) => {
+    if (asked.at && asked.size) {
+      return [Number(asked.at[axis]), Number(asked.at[axis]) + Number(asked.size[axis])];
+    }
+    if (asked.centre && asked.size) {
+      return [Number(asked.centre[axis]) - Number(asked.size[axis]) / 2, Number(asked.centre[axis]) + Number(asked.size[axis]) / 2];
+    }
+    return asked[axis];
+  };
   const x = side(range('x'), asked.nx, asked.stepX, units);
   if (x.error) {
     return x;
