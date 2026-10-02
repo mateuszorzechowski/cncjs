@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Scene from '../scene/Scene';
-import MapArea from '../scene/MapArea';
+import MapArea, { surfaceOf } from '../scene/MapArea';
 import { useSceneColors } from '../scene/colors';
 import { composeScene, toolPoint } from '../scene/compose';
 import { DEFAULT_VIEW } from '../scene/views';
@@ -28,19 +28,44 @@ const NO_OFFSET = { x: 0, y: 0, z: 0 };
 const framing = { area: null, moved: false };
 
 const MapPreview3D = ({
-  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, className = '',
+  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, bent = null, className = '',
 }) => {
   const colors = useSceneColors();
   const [fit, setFit] = useState(0);
   // A fit asked before the scene has drawn has no camera to move.
   const [ready, setReady] = useState(false);
 
-  const toolpath = useMemo(() => readToolpath(machine.gcode), [machine.gcode]);
+  // The program as it will be cut when the server has bent it (`bent`), else as written.
+  const parsed = useMemo(() => readToolpath(bent || machine.gcode), [bent, machine.gcode]);
   // Settled to a value, so a status report four times a second does not rebuild the scene (see `PathWidget`).
   const live = workOffset(machine.machinePosition, machine.position);
   const offsetKey = live ? `${live.x},${live.y},${live.z}` : '';
   const offset = useMemo(() => live || NO_OFFSET, [offsetKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const area = grid?.xs ? { x: [grid.xs[0], grid.xs[grid.xs.length - 1]], y: [grid.ys[0], grid.ys[grid.ys.length - 1]] } : null;
+  /*
+   * The bent path raised with the sheet: it is bent by the true heights, so
+   * the scale's extra — the height there times one less than the scale — is
+   * added under each of its points, and it lies on the raised sheet.
+   */
+  const toolpath = useMemo(() => {
+    if (!parsed || !bent || !area || !heights || scale === 1) {
+      return parsed;
+    }
+    const byPoint = new Map(heights.heights.map(({ i, j, dz }) => [`${i},${j}`, dz]));
+    const values = Array.from({ length: grid.ny }, (_, j) => Array.from({ length: grid.nx }, (__, i) => byPoint.get(`${i},${j}`) ?? 0));
+    const surface = surfaceOf(values, grid.nx, grid.ny, smooth);
+    const from = parsed.source.positions;
+    const positions = new Float32Array(from.length);
+    const clampTo = (v, n) => Math.min(n - 1, Math.max(0, v));
+    for (let k = 0; k < from.length; k += 3) {
+      const u = clampTo(((from[k] - area.x[0]) / (area.x[1] - area.x[0])) * (grid.nx - 1), grid.nx);
+      const v = clampTo(((from[k + 1] - area.y[0]) / (area.y[1] - area.y[0])) * (grid.ny - 1), grid.ny);
+      positions[k] = from[k];
+      positions[k + 1] = from[k + 1];
+      positions[k + 2] = from[k + 2] + surface(u, v) * (scale - 1);
+    }
+    return { ...parsed, source: { ...parsed.source, positions } };
+  }, [parsed, bent, JSON.stringify(area), heights, scale, smooth]); // eslint-disable-line react-hooks/exhaustive-deps
   const areaKey = area ? `${area.x},${area.y}` : '';
   // The area on the machine, for the view to take in when there is no travel to frame.
   const also = useMemo(() => (area ? [{

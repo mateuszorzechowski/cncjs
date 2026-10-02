@@ -47,7 +47,7 @@ const Lines = ({ segments, color, opacity }) => {
 const smoothly = (a, b, c, d, t) => 0.5 * ((2 * b) + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
 
 /** The height at grid position `(u, v)` — `0 … nx-1`, `0 … ny-1` — flat between points, or smooth through them. */
-const surfaceOf = (values, nx, ny, smooth) => (u, v) => {
+export const surfaceOf = (values, nx, ny, smooth) => (u, v) => {
   const at = (i, j) => values[Math.min(ny - 1, Math.max(0, j))][Math.min(nx - 1, Math.max(0, i))];
   const i = Math.min(nx - 2, Math.max(0, Math.floor(u)));
   const j = Math.min(ny - 2, Math.max(0, Math.floor(v)));

@@ -2524,6 +2524,10 @@ class GrblController {
         // A surface to keep, not a zero: it waits for `probe:apply` the same way.
         const map = strategy.map(params, options, outcome.seen, { start, wco });
         this.probe.result = { map };
+        // The loaded program bent to this map before it is kept, for the result to show (`height-map/program`).
+        this.probe.bent = this.programSource
+          ? compensate(this.programSource.gcode, map, { wco: this.workOffsetXY(), arcTolerance: Number(this.runner.settings?.settings?.$12) || undefined })
+          : null;
         this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, points: map.xs.length * map.ys.length } });
       } else {
         const parameters = this.runner.getParameters();
@@ -4813,6 +4817,16 @@ class GrblController {
       this.bent = { lines: bent.lines, toFile, total: count, wco };
     }
 
+    /**
+     * The loaded program bent for a drawing: by the kept map (`of` `kept`) or
+     * by the one just measured and not yet kept (`result`) — `{ gcode }`, or
+     * null with none to show.
+     */
+    bentProgram(of) {
+      const bent = of === 'result' ? this.probe?.bent : this.bent;
+      return bent?.lines ? { gcode: bent.lines.join('\n') } : null;
+    }
+
     /** Hand the sender the bent program, or the one as written — the closing `%wait` is in both. */
     holdBent(on) {
       this.bentOn = on && Boolean(this.bent?.lines);
@@ -4834,6 +4848,8 @@ class GrblController {
     /** The sender's report, and where the machine is in the program — see `progress.js`. */
     senderStatus() {
       const status = { ...this.sender.toJSON(), progress: this.progressReport(), error: this.pausedOn || null };
+      // The bent program's own counts, for a drawing of the bent program to follow (`height-map/program`).
+      const raw = { received: status.received, line: status.progress?.line ?? null };
       // In the file's lines, bent or not: the panel draws and counts the file.
       if (this.bentOn) {
         status.total = this.bent.total;
@@ -4844,7 +4860,7 @@ class GrblController {
         }
       }
       // Whether the map can bend it, and whether it does: `{ on, refused }`; null with no map or program.
-      status.heightMap = this.bent ? { on: this.bentOn, refused: this.bent.refused || null } : null;
+      status.heightMap = this.bent ? { on: this.bentOn, refused: this.bent.refused || null, ...(this.bentOn ? raw : {}) } : null;
       return status;
     }
 

@@ -3,6 +3,7 @@ import HeightMapGrid from './HeightMapGrid';
 import MapPreview3D from './MapPreview3D';
 import SegmentedChoice from './SegmentedChoice';
 import Slider from './Slider';
+import useBentProgram from './useBentProgram';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
 import { useUnits } from './units';
@@ -46,7 +47,7 @@ const kept = { scale: 20, looks: [] };
  * goes between the drawing and the figures.
  */
 const HeightMapView = ({
-  probe, machine, done, heights, children = null,
+  probe, machine, done, heights, bent = null, children = null,
 }) => {
   const units = useUnits();
   const [scale, setScale] = useState(kept.scale);
@@ -66,6 +67,7 @@ const HeightMapView = ({
         scale={scale}
         smooth={looks.includes('smooth')}
         heat={looks.includes('heat')}
+        bent={bent}
         className="h-64 @3xl/shell:h-80"
       />
       <div className="flex flex-wrap items-center gap-3">
@@ -126,9 +128,13 @@ export const HeightMapResult = ({ probe, machine }) => {
     xs, ys, dz, low, high,
   } = probe.result.map;
   const heights = { heights: ys.flatMap((y, j) => xs.map((x, i) => ({ i, j, dz: dz[j][i] }))), low, high };
+  // The loaded program bent by this map, as the server has it before the map is kept.
+  const bent = useBentProgram({
+    machine, of: 'result', enabled: true, key: JSON.stringify([xs, ys, low, high, machine.gcode?.name]),
+  });
   return (
     <div className="flex flex-col gap-3">
-      <HeightMapView probe={probe} machine={machine} done={heights.heights} heights={heights} />
+      <HeightMapView probe={probe} machine={machine} done={heights.heights} heights={heights} bent={bent} />
       <p className="m-0 text-note text-mut">{t('probe.map.note')}</p>
     </div>
   );

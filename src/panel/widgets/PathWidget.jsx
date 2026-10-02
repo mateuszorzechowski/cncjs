@@ -4,6 +4,7 @@ import PathStage from '../ui/PathStage';
 import { cancelTravel, canGoToPoint, goToPoint } from '../machine/goto';
 import { workOffset } from '../machine/envelope';
 import { readToolpath } from '../machine/toolpath';
+import useBentProgram from '../ui/useBentProgram';
 import { pathProgress } from '../machine/pathProgress';
 import { composeScene, toolPoint } from '../scene/compose';
 import { DEFAULT_VIEW } from '../scene/views';
@@ -121,7 +122,18 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
   // Parsing a program is the one expensive thing on this screen and the
   // program changes about once an hour. The readings underneath it change
   // four times a second.
-  const toolpath = useMemo(() => readToolpath(machine.gcode), [machine.gcode]);
+  /*
+   * With the height map on, the program as the machine will cut it — bent by
+   * the server — drawn in place of the file (Mateusz, 2026-10-03), and
+   * followed by the sender's count in it rather than the file's.
+   */
+  const bending = Boolean(machine.job?.heightMap?.on);
+  const bent = useBentProgram({
+    machine, of: 'kept', enabled: bending, key: `${machine.gcode?.name}|${machine.heightMap?.at}|${bending}`,
+  });
+  const drawn = bending && bent ? bent : machine.gcode;
+  const toolpath = useMemo(() => readToolpath(drawn), [drawn]);
+  const received = bending && bent ? machine.job.heightMap.received ?? 0 : machine.job?.received ?? 0;
 
   /*
    * **The picture is settled; only the tool moves.**
@@ -173,14 +185,14 @@ const PathWidget = ({ machine, label = t('path.title'), preview = false, classNa
    */
   const running = machine.workflow === 'running' || machine.workflow === 'paused';
   const reached = useRef({ toolpath: null, line: 0 });
-  if (!running || reached.current.toolpath !== toolpath || (machine.job?.received ?? 0) < reached.current.line) {
+  if (!running || reached.current.toolpath !== toolpath || received < reached.current.line) {
     reached.current = { toolpath, line: 0 };
   }
   const progress = running && toolpath && machine.job
     ? pathProgress({
       frames: toolpath.source.frames,
       positions: toolpath.source.positions,
-      received: machine.job.received,
+      received,
       tool: tool ? { x: tool.x - offset.x, y: tool.y - offset.y, z: tool.z - offset.z } : null,
       from: reached.current.line,
     })

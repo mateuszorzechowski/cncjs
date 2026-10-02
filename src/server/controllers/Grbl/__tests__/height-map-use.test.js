@@ -145,4 +145,29 @@ describe('a program bent to the height map', () => {
     expect(controller.bentOn).toBe(true);
     expect(controller.sender.state.lines).toContain('G1 X20 Y0 Z0');
   });
+
+  test('the bent program is there to draw, with the sender count beside the file count', () => {
+    heightMap.open(MAP);
+    const { controller } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+    expect(controller.bentProgram('kept').gcode).toContain('G1 X20 Y0 Z-0.1');
+    expect(controller.bentProgram('result')).toBeNull();
+
+    controller.command('height-map:use', true);
+    controller.sender.state.received = 7;
+    const status = controller.senderStatus();
+    // The file's count for the file's drawing, the bent one's for the bent drawing.
+    expect(status.heightMap.received).toBe(7);
+    expect(status.received).toBeLessThan(7);
+  });
+
+  test('a map just measured bends the loaded program for the result, before it is kept', () => {
+    const { controller } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+    controller.probe = { method: 'height-map', wcs: 'G54' };
+    const strategy = { map: () => MAP };
+    controller.probe.run = null;
+    controller.endProbe(strategy, {}, { seen: {} });
+    expect(controller.bentProgram('result').gcode).toContain('G1 X20 Y0 Z-0.1');
+  });
 });
