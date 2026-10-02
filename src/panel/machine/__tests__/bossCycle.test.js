@@ -1,5 +1,5 @@
 import {
-  BOSS_PARAMS, bossCode, bossGroups, bossOrder, bossReadout, bossScene, bossTimeline, bossWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, usesAt,
+  BOSS_CYCLE, BOSS_PARAMS, bossCode, bossGroups, bossOrder, bossReadout, bossScene, bossTimeline, bossWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, usesAt,
 } from '../bossCycle';
 import { BOSS_R, toolAt } from '../bossMoves';
 import { methodOf, stepsOf } from '../probe';
@@ -65,7 +65,10 @@ describe('the centre from outside cycle', () => {
     expect(bossScene('x1pSlow', 0.4, { texts: TEXTS }).reach).toMatchObject({ near: '2', far: '2' });
     expect(bossScene('zSlow', 0.4, { texts: TEXTS })).toMatchObject({ motion: null, limit: null, dims: [] });
     // The fast touch's reach (review note, 2026-10-01: *"w pomiarze czopa brakuje odległości"*).
-    expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).limit).toMatchObject({ near: '10', far: '30 / 2' });
+    expect(bossScene('x1pFast', 0.5, { texts: TEXTS }).limit).toMatchObject({ text: '25' });
+    // Where it comes from, said under the drawing (review note #9, 2026-10-02).
+    expect(BOSS_CYCLE.explain('x1pFast', TEXTS)).toEqual(['probe.boss.reachWhy', { reach: '25', clear: '10', size: '30' }]);
+    expect(BOSS_CYCLE.explain('x1pBack', TEXTS)).toBeNull();
   });
 
   test('a segment\'s end frame is its own move\'s', () => {

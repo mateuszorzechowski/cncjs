@@ -1681,7 +1681,7 @@
         "up": "{{pass}}. przejście · {{axis}}: w górę nad detal"
       },
       "outCode": "G0 za bok, nad wierzchem",
-      "half": "{{size}} / 2",
+      "reachWhy": "≤ {{reach}} = {{clear}} za bok + połowa z {{size}}",
       "phase": {
         "top": "Z: szukam wierzchu",
         "fast": "{{axis}}: szukam boku",

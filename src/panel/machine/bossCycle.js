@@ -20,11 +20,10 @@
  */
 
 import {
-  AXES, BACK, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, build, clamp, ease, isGoing, setOn, toolAt,
+  AXES, BACK, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, build, clamp, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
 import { bossSide } from './bossSide';
 import { frameAt, layOut, totalOf } from './timeline';
-import { t } from '../i18n';
 
 const { moves: MOVES, order: ORDER } = build();
 
@@ -115,6 +114,8 @@ export const playAt = (ms, {
 };
 
 const near = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.5;
+// How far outside the part a set-up's dimensions stand, in the drawing's units.
+const ASIDE_PART = 10;
 
 // Where the ball meets the side, from where its centre stands then.
 const onSide = (centre) => [centre[0] * (BOSS_R / (BOSS_R + TOOL_R)), centre[1] * (BOSS_R / (BOSS_R + TOOL_R))];
@@ -127,7 +128,7 @@ const TOUCHED = ['back', 'slow', 'up'];
  * by the ball for what goes up and down. `said` a figure's words, `lit(part)`
  * whether the figure being set is that part.
  */
-const above = (move, p, going, said, upTo, lit, half) => {
+const above = (move, p, going, said, upTo, lit, reach) => {
   const arrow = (from, to, kind, feed = null, on = false) => (going
 ? {
     axis: move.axis, from, to, kind, feed, lit: on,
@@ -135,13 +136,12 @@ const above = (move, p, going, said, upTo, lit, half) => {
 : null);
   switch (move.kind) {
     case 'out': return { motion: arrow(move.from, move.out, 'rapid') };
-    // The search goes in no further than the middle thought. Its reach is two of the form's figures, so one
-    // dimension split at the part's side, each part its figure (composite rule; L27, to confirm): the way out
-    // past the side, and half the part's width.
+    // The search goes in no further than the middle thought: its reach one figure, the sum, and where it
+    // comes from said under the drawing (`explainOf`; review note #9, 2026-10-02).
     case 'fast': return {
       motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')),
       limit: {
-        axis: move.axis, from: move.out, mid: setOn(move.axis, move.out, move.guess + move.sign * BOSS_R), to: setOn(move.axis, move.out, move.guess), near: said('clear'), far: half, lit: false,
+        axis: move.axis, from: move.out, to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false,
       },
     };
     // As the Z plate's: the arrow bare, the way back a dimension with its figure.
@@ -178,17 +178,21 @@ export const bossScene = (name, p, {
     .map((one) => MOVES[one].side))];
   const {
     motion = null, limit = null, reach = null, dims: stepDims = [],
-  } = above(move, p, isGoing(move, p), said, upTo, lit, t('probe.boss.half', { size: said('bossSize') }));
+  } = above(move, p, isGoing(move, p), said, upTo, lit, say('clear', reachOf(texts)));
   // The step's arrow over its whole run, drawn or not: labels keep off it all along (L16).
   const { motion: way = null } = above(move, p, true, said, upTo, lit, '');
   // The part's rough width, and how far out past it, on a set-up.
   let dims = stepDims;
   if (move.kind === 'out') {
     const edge = setOn(move.axis, move.out, move.guess + move.sign * BOSS_R);
+    // Just outside the part, by its edge (review note #8, 2026-10-02: "bliżej krawędzi materiału").
+    const at = BOSS_R + ASIDE_PART;
     dims = [
-      { id: 'clear', axis: move.axis, from: edge, to: move.out, text: said('clear'), lit: lit('clear') },
       {
-        id: 'size', axis: move.axis, from: setOn(move.axis, move.out, move.guess - move.sign * BOSS_R), to: edge, text: said('bossSize'), lit: lit('size'),
+        id: 'clear', axis: move.axis, at, from: edge, to: move.out, text: said('clear'), lit: lit('clear'),
+      },
+      {
+        id: 'size', axis: move.axis, at, from: setOn(move.axis, move.out, move.guess - move.sign * BOSS_R), to: edge, text: said('bossSize'), lit: lit('size'),
       },
     ];
   }
@@ -217,9 +221,6 @@ export const bossScene = (name, p, {
   };
 };
 
-const numberOf = (text) => Number(String(text ?? '').replace(',', '.'));
-const fmt = (v) => String(Math.round(v * 1000) / 1000);
-
 /** The step's line at `p`, with the figures typed; a way with no figures is said in words, `[key]`. */
 export const bossCode = (name, texts, wcs = 1, p = 0) => {
   const move = MOVES[name];
@@ -236,7 +237,7 @@ export const bossCode = (name, texts, wcs = 1, p = 0) => {
     topSlow: () => `G38.2 Z-${twice} F${texts.slow}`,
     out: () => ['probe.boss.outCode'],
     down: () => `G38.3 Z-${down} F${texts.fast}`,
-    fast: () => `G38.2 ${inward}${fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear))} F${texts.fast}`,
+    fast: () => `G38.2 ${inward}${reachOf(texts)} F${texts.fast}`,
     back: () => `G0 ${outward}${texts.retract}`,
     slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
     up: () => `G0 Z+${down}`,
@@ -346,6 +347,7 @@ export const BOSS_CYCLE = {
   titleOf,
   scene: bossScene,
   code: bossCode,
+  explain: (name, texts, say) => explainOf(MOVES[name], texts, say),
   usesAt,
   readout: bossReadout,
   positionAt,

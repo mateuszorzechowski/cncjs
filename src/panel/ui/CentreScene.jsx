@@ -89,29 +89,21 @@ const CentreScene = ({
     const at = flat ? sy(limit.from[1]) + ASIDE : limit.from[0] + ASIDE;
     const [from, to] = flat ? [limit.from[0], limit.to[0]] : [sy(limit.from[1]), sy(limit.to[1])];
     const face = limit.lit ? FACE.hot : FACE.plain;
-    // A reach of two figures (`mid`): one limit split by a tick where they meet, each part its figure.
-    let mid = null;
-    if (limit.mid) {
-      mid = flat ? limit.mid[0] : sy(limit.mid[1]);
-    }
     fence = (
       <g opacity={fade('dim')}>
         <Dimension axis={flat ? ACROSS : ALONG} at={at} from={from} to={to} limit lit={limit.lit} size={size} />
-        {mid === null ? null : <path d={flat ? `M${mid} ${at - DIM_TICK} V${at + DIM_TICK}` : `M${at - DIM_TICK} ${mid} H${at + DIM_TICK}`} className={limit.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />}
         {tags({
-          axis: flat ? ACROSS : ALONG,
-          at,
-          parts: mid === null ? [[from, to, limit.text]] : [[from, mid, limit.near], [mid, to, limit.far]],
-          ticks: [from, mid, to].filter((a) => a !== null).map((a) => [a, DIM_TICK]),
+          axis: flat ? ACROSS : ALONG, at, parts: [[from, to, limit.text]], ticks: [[from, DIM_TICK], [to, DIM_TICK]],
         }, face)}
       </g>
     );
   }
 
-  // A figure's dimension on the far side of the ball's way, its words beside it.
+  // A figure's dimension on the far side of the ball's way — or where the scene puts it (`at`, across
+  // the drawing: down it for a way across, along it for a way up) — its words beside it.
   const drawn = dims.map((dim) => {
     const flat = dim.axis === 'x';
-    const at = flat ? sy(dim.from[1]) + ASIDE : dim.from[0] + ASIDE;
+    const at = dim.at ?? (flat ? sy(dim.from[1]) + ASIDE : dim.from[0] + ASIDE);
     const [from, to] = flat ? [dim.from[0], dim.to[0]] : [sy(dim.from[1]), sy(dim.to[1])];
     const face = dim.lit ? FACE.hot : FACE.plain;
     return (

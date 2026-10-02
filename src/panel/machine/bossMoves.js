@@ -139,3 +139,14 @@ export const toolAt = (move, p) => {
 
 /** Whether a step is on its way at `p`: from its second keyframe to its third; the zero never. */
 export const isGoing = (move, p) => move.frames.length > 2 && p > move.frames[1][0] && p < move.frames[2][0];
+
+// The form's figures, as the steps' lines and words say them.
+export const numberOf = (text) => Number(String(text ?? '').replace(',', '.'));
+export const fmt = (v) => String(Math.round(v * 1000) / 1000);
+// How far a fast touch of a side searches: out past the side, and in to the middle thought.
+export const reachOf = (texts) => fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear));
+
+/** Where a step's figure comes from, said under the drawing after its title — `[key, vars]`, or null. */
+export const explainOf = (move, texts, say = (field, text) => text) => (move.kind === 'fast'
+  ? ['probe.boss.reachWhy', { reach: say('clear', reachOf(texts)), clear: say('clear', texts.clear), size: say('bossSize', texts.bossSize) }]
+  : null);

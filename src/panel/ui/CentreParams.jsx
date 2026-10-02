@@ -55,6 +55,8 @@ const CentreParams = ({
   const code = codeOf(name, texts, systemNumber(wcs), p);
   const read = readout(name);
   const title = t(...titleOf(name));
+  // Where the step's figure comes from, when it is a sum (review note #9, 2026-10-02).
+  const why = cycle.explain ? cycle.explain(name, texts, say) : null;
 
   const groups = namedGroups(groupsOf(passes), t, (id) => t(...titleOf(id)));
   const sections = PARAMS.map((one) => (one.passes
@@ -88,6 +90,7 @@ const CentreParams = ({
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
         {/* A way with no numbers to show says where it goes. */}
         <span className="whitespace-nowrap font-num text-cap text-mut">{Array.isArray(code) ? t(...code) : code}</span>
+        {why ? <span className="w-full text-note text-mut">{t(...why)}</span> : null}
       </div>
     </div>
   );
