@@ -76,15 +76,15 @@ export const CORNER_PARAMS = [
   { id: 'tool', key: 'probe.group.tool', fields: ['toolDiameter'] },
   { id: 'measure', key: 'probe.group.measureAll', fields: ['fast', 'slow', 'retract'] },
   { id: 'reach', key: 'probe.group.reach', fields: ['maxZ', 'maxXY'] },
-  { id: 'moves', key: 'probe.group.moves', fields: ['clear', 'depth', 'lift'] },
+  { id: 'moves', key: 'probe.group.moves', fields: ['travel', 'depth', 'lift'] },
 ];
 
 /*
  * A figure being set loops the move it changes, over the part of it that
  * shows the figure (`window`), with its part of the drawing lit: `dim` its
  * dimension, `feed` the arrow's figure, `tool` the tool's diameter, `thick`
- * the plate's top, `wallX`/`wallY` a wall, `clear` the gap before the
- * descent, `rise` the lift.
+ * the plate's top, `wallX`/`wallY` a wall, `travel` the way sideways from
+ * the start before the descent, `rise` the lift.
  */
 const EDIT = {
   cornerThickness: ['zero', 'thick', [0, 0.45]],
@@ -95,7 +95,7 @@ const EDIT = {
   wallX: ['zero', 'wallX', [0.6, 1]],
   wallY: ['zero', 'wallY', [0.6, 1]],
   toolDiameter: ['xSlow', 'tool'],
-  clear: ['xOut', 'clear'],
+  travel: ['xOut', 'travel'],
   depth: ['depth', 'dim'],
   maxXY: ['xFast', 'dim'],
   lift: ['lift', 'rise'],

@@ -5,7 +5,8 @@ import { clearDown, liftOver, move, touch } from '../moves';
  * hanging over its edges (Mateusz, 2026-09-29: the simplest plate first).
  *
  * The tool starts over the top, near the corner. Z is touched there; then,
- * for each wall in turn, the tool goes out past it by `clear`, down by
+ * for each wall in turn, the tool goes `travel` sideways from where it is,
+ * out past the wall when it started near enough, down by
  * `depth` below the top, and touches the wall's outer face moving in. The
  * edge of the work is that touch plus the tool's radius plus the wall.
  * After the last wall the tool rises straight to the lift and goes over the
@@ -24,7 +25,7 @@ export const CORNERS = {
 
 /** One wall: out past it over the top, down beside it, touch — and, `back`, up and back over the start. */
 const wall = (axis, sign, params, back = true) => [
-  move(`${axis}-out`, (here) => ({ [axis]: here[axis] - sign * params.clear })),
+  move(`${axis}-out`, (here) => ({ [axis]: here[axis] - sign * params.travel })),
   clearDown(`${axis}-down`, params.retract + params.depth, params.fast),
   ...touch(axis, sign, params.maxXY, axis, params),
   ...(back ? [
@@ -45,7 +46,7 @@ const cornerOf = (params, corner, seen) => {
 };
 
 export default {
-  fields: ['cornerThickness', 'wallX', 'wallY', 'toolDiameter', 'clear', 'depth', 'maxZ', 'maxXY', 'retract', 'fast', 'slow', 'lift'],
+  fields: ['cornerThickness', 'wallX', 'wallY', 'toolDiameter', 'travel', 'depth', 'maxZ', 'maxXY', 'retract', 'fast', 'slow', 'lift'],
   options: { corner: Object.keys(CORNERS) },
   touches: true,
 
