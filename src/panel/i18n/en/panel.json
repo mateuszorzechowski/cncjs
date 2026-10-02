@@ -134,7 +134,20 @@
     "start": "Start job",
     "pause": "Pause",
     "resume": "Resume",
-    "abort": "Abort"
+    "abort": "Abort",
+    "map": {
+      "title": "Height map",
+      "off": "Off",
+      "on": "On",
+      "outsideMap": "The program goes past the map (line {{line}}).",
+      "noZ": "The program has no Z: there is nothing for the map to bend.",
+      "relativeUnknown": "A relative move before the program says where the tool is (line {{line}}).",
+      "unknownPosition": "An arc from an unknown place (line {{line}}).",
+      "g92": "The program moves the zero by G92 (line {{line}}).",
+      "arcPlane": "An arc outside the XY plane (line {{line}}).",
+      "badArc": "An arc that cannot be drawn (line {{line}}).",
+      "cannot": "The map cannot bend this program (line {{line}})."
+    }
   },
   "tool": {
     "number": "T{{number}}",
@@ -437,7 +450,18 @@
     "noResult": "There is no measurement to save.",
     "badMethod": "The server does not know that probing method.",
     "badCorner": "That is not a corner the server knows.",
-    "badEdge": "That is not a surface the server knows."
+    "badEdge": "That is not a surface the server knows.",
+    "badArea": "The map's area has no width in X or Y.",
+    "badGrid": "The map's grid: 2 to 30 points on each axis.",
+    "noMap": "There is no height map saved.",
+    "noProgram": "No program is loaded.",
+    "outsideMap": "The program goes past the map (line {{line}}).",
+    "noZ": "The program has no Z: there is nothing for the map to bend.",
+    "relativeUnknown": "A relative move before the program says where the tool is (line {{line}}).",
+    "unknownPosition": "An arc from an unknown place (line {{line}}).",
+    "g92": "The program moves the zero by G92 (line {{line}}).",
+    "arcPlane": "An arc outside the XY plane (line {{line}}).",
+    "badArc": "An arc that cannot be drawn (line {{line}})."
   },
   "notice": {
     "warning": "Warning",
@@ -1379,7 +1403,9 @@
       "hole": "Hole centre",
       "holeNote": "The centre of a round hole, by probe: X0 and Y0, Z unchanged.",
       "boss": "Centre from outside",
-      "bossNote": "The centre of a boss or a part, by probe from outside: X0 and Y0, Z unchanged."
+      "bossNote": "The centre of a boss or a part, by probe from outside: X0 and Y0, Z unchanged.",
+      "map": "Height map",
+      "mapNote": "A grid of points by probe: the program follows a warped board. The zero stays as it is."
     },
     "how": {
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
@@ -1394,7 +1420,8 @@
       "corner": "Jog the tool over the plate, a few millimetres above it and about 8 mm in from both walls.",
       "paper": "Bring the tool a few millimetres over the surface chosen — in front of it for a side. Keep the sheet at hand.",
       "hole": "Lower the probe's ball into the hole, a few millimetres below its edge, roughly in the middle — clear of the walls.",
-      "boss": "Set the probe's ball over the middle of the part, a few millimetres above its top — less than the Z travel limit."
+      "boss": "Set the probe's ball over the middle of the part, a few millimetres above its top — less than the Z travel limit.",
+      "map": "Put the tool over the first point (ringed, front left), high above the clamps: the machine travels between the points at that height."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1454,7 +1481,8 @@
       "holeSize": "Hole diameter (roughly)",
       "ballDiameter": "Ball diameter",
       "holePasses": "Passes",
-      "bossSize": "Part width (roughly)"
+      "bossSize": "Part width (roughly)",
+      "mapLift": "Lift between points"
     },
     "step": {
       "method": "Method",
@@ -1464,7 +1492,10 @@
       "wire": "Wire",
       "position": "Position",
       "measure": "Measure",
-      "result": "Result"
+      "result": "Result",
+      "tool": "Touch",
+      "area": "Figures",
+      "areaWay": "Area"
     },
     "wire": {
       "how": "Clip the lead to the tool. Touch the plate to the tool and let go. The panel reads the probe from the controller: it shows “Touching” while they touch and “Works” once you let go.",
@@ -1483,7 +1514,8 @@
       "probePicture": "A 3D probe in the holder: at rest, and its tip pushed aside by a finger",
       "atRest": "at rest",
       "deflected": "a finger pushes the tip",
-      "normallyClosed": "If “Touching” shows while you are not pushing the tip, the probe is normally closed (NC). Invert the probe input: $6=1 in the controller settings. Without it the measurement stops at once with ALARM:4."
+      "normallyClosed": "If “Touching” shows while you are not pushing the tip, the probe is normally closed (NC). Invert the probe input: $6=1 in the controller settings. Without it the measurement stops at once with ALARM:4.",
+      "howMap": "Clip the lead to the tool and the other to the board's copper, or plug in a 3D probe. Touch and let go: the panel shows \"Touch\", then \"Working\"."
     },
     "position": {
       "clipOn": "The probe input is lit: the plate is touching the tool, or the lead is shorted. Clear it before measuring.",
@@ -1506,7 +1538,8 @@
       "out": "{{axis}}: out past the wall",
       "down": "{{axis}}: down beside the wall",
       "up": "{{axis}}: up over the plate",
-      "return": "{{axis}}: back over the start"
+      "return": "{{axis}}: back over the start",
+      "over": "{{axis}}: over the point"
     },
     "failure": {
       "notFound": "{{axis}}: nothing was touched within the travel limit. Nothing was written. Check the plate or the probe and the lead, or move the tool closer.",
@@ -1691,6 +1724,74 @@
       "retractDepth": "{{sum}} = {{retract}} back-off + {{depth}} depth",
       "depthLift": "{{sum}} = {{depth}} depth + {{lift}} lift",
       "slowReach": "≤ {{reach}} = {{retract}} to the surface + {{retract}} past it"
+    },
+    "map": {
+      "area": "Area",
+      "nx": "Along X",
+      "ny": "Along Y",
+      "badArea": "The area needs a width in X and in Y: \"to\" above \"from\".",
+      "badGrid": "From 2 to 30 points on each axis.",
+      "start": "Work coordinates, as the program's (0 is the current system's zero). The dashed line: the loaded program's extent.",
+      "drawing": "The area and its points from above",
+      "point": "Point {{n}} of {{total}}",
+      "low": "Lowest",
+      "high": "Highest",
+      "spread": "Spread",
+      "note": "Heights from the first point. Before you turn the map on at a program, set Z0 on the first point. Nothing is kept until you save it.",
+      "save": "Save the map",
+      "noServer": "The server does not know the height map: it needs updating or a restart.",
+      "move": {
+        "fast": "Fast touch",
+        "retract": "Back off",
+        "slow": "Slow touch",
+        "lift": "Up over the point",
+        "over": "On to the next point",
+        "next": "Fast touch at the next point",
+        "miss": "Nothing under the tool: the limit and an ALARM"
+      },
+      "stage": {
+        "point": "Point",
+        "next": "Next"
+      },
+      "tool": {
+        "board": "Board",
+        "boardNote": "The lead on the tool, a wire to the board's copper.",
+        "probe": "3D probe",
+        "probeNote": "On any material."
+      },
+      "toolLabel": "What touches",
+      "mode": {
+        "point": "Corner and size",
+        "corners": "Two corners",
+        "program": "From the program",
+        "pointNote": "A corner (typed or taken by jog), a width and a depth.",
+        "cornersNote": "Two corners across: typed, or taken by jog.",
+        "programNote": "The loaded program's extent.",
+        "centre": "Centre and size",
+        "centreNote": "A centre (typed or taken by jog), a width and a depth."
+      },
+      "x": "X",
+      "y": "Y",
+      "w": "Width (X)",
+      "d": "Depth (Y)",
+      "cornerA": "Point 1",
+      "cornerB": "Point 2",
+      "here": "Here",
+      "span": "X {{px0}} – {{px1}}  Y {{py0}} – {{py1}} {{unit}}",
+      "stepIs": "Every {{step}}, {{n}} points.",
+      "takeCorners": "Type both corners, or jog over one and press \"Here\", then over the corner across.",
+      "preview": "The area measured",
+      "sec": {
+        "point": "Point",
+        "size": "Size",
+        "grid": "Grid (points)",
+        "area": "Area",
+        "centre": "Centre"
+      },
+      "scale": "Height scale",
+      "smooth": "Smooth",
+      "heat": "Heatmap",
+      "look": "How the map is drawn"
     }
   }
 }

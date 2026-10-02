@@ -62,6 +62,12 @@ const TOKENS = {
   rapid: '--rapid',
   cutTop: '--cutTop',
   cutDeep: '--cutDeep',
+  // A height map's heatmap, low to high.
+  heat0: '--heat0',
+  heat1: '--heat1',
+  heat2: '--heat2',
+  heat3: '--heat3',
+  heat4: '--heat4',
 };
 
 const read = () => {

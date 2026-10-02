@@ -238,6 +238,8 @@ const readJob = (job) => {
     finished,
     /** The Grbl error a program is paused on, and its line — or null. */
     error: job.error || null,
+    /** Whether the height map bends it — `{ on, refused }` — or null: no map. */
+    heightMap: job.heightMap || null,
   };
 };
 
@@ -289,7 +291,7 @@ export const movementHeld = (workflow, motion, device, word) => {
 export const readMachine = ({
   connection, error, port, type, baudrate, state, settings, attached, job, gcode, timing, linkMs, refusal,
   envelope, motion, workflow, device, alarm, fileCheck, fits, units, machineSettings, settingsPreview, settingsPending, homedAt,
-  probe, probeStage,
+  probe, probeStage, heightMap,
 }) => {
   // "Connected" means *able to send*, not "a port is open somewhere". The
   // socket has to attach to the port before `Controller.command()` will do
@@ -538,7 +540,11 @@ export const readMachine = ({
     probe: connected ? (probe ?? null) : null,
     // Where a probe wizard, on this device or another, waits on the operator's hands (`probe:stage`).
     probeStage: connected ? (probeStage ?? null) : null,
+    // The height map the server keeps — machine X and Y, heights from its first point — or null.
+    heightMap: connected ? (heightMap ?? null) : null,
     canProbe: connected && (workflow || 'idle') === 'idle' && active?.word === 'Idle' && probe?.state !== 'running' && !held,
+    // The loaded program swapped for the one bent to the height map, or back: not under a program, running or paused.
+    canBendProgram: connected && (workflow || 'idle') === 'idle',
     alarm: connected && active?.word === ALARM ? (alarm ?? null) : null,
     // When the machine was last homed, or null: not since it lost its position.
     homedAt: connected ? (homedAt ?? null) : null,

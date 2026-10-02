@@ -46,6 +46,18 @@ const THROUGH_PROBE = ['method', 'prepare', 'wire', 'position', 'measure', 'resu
 // so is the paper's surface (review note, 2026-09-30).
 const CHOOSE_FIRST = ['method', 'choose', 'prepare', 'wire', 'position', 'measure', 'result'];
 const BY_HAND = ['method', 'choose', 'prepare', 'position', 'measure', 'result'];
+// The height map: what touches first, then its moves, then the area (Mateusz, 2026-10-02).
+const MAP_STEPS = ['method', 'choose', 'prepare', 'areaWay', 'area', 'wire', 'position', 'measure', 'result'];
+
+/*
+ * What touches the height map's points (Mateusz, 2026-10-02): the tool on a
+ * board wired as the plate — a PCB's copper — or a 3D probe. Each its own
+ * wire step.
+ */
+export const MAP_TOOLS = [
+  { id: 'board', key: 'probe.map.tool.board', note: 'probe.map.tool.boardNote', wire: { how: 'probe.wire.howMap' } },
+  { id: 'probe', key: 'probe.map.tool.probe', note: 'probe.map.tool.probeNote', wire: { plate: 'probe', how: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed' } },
+];
 
 /*
  * The methods the wizard offers, in its order. `wire`, how its wire is
@@ -55,7 +67,10 @@ const BY_HAND = ['method', 'choose', 'prepare', 'position', 'measure', 'result']
  * chosen per measurement, sent as that option; `start` names the button that
  * sets it going — a probe measures, the paper says "here". `touches`, as the
  * server's strategy says it: works through the probe input, which must be
- * clear before it starts.
+ * clear before it starts. `apart`: not a zero, so in a row of its own under
+ * the methods that find one (Mateusz, 2026-10-02: the height map); `asks`:
+ * the measurement is asked with an area and grid as well as its choice, so a
+ * device that joins it measures the same.
  */
 export const METHODS = [
   {
@@ -80,18 +95,53 @@ export const METHODS = [
     start: 'probe.position.here', steps: BY_HAND, touches: false,
     choice: { option: 'edge', key: 'probe.edgeLabel', list: EDGES, first: 'z', step: 'probe.step.surface' },
   },
+  {
+    id: 'height-map', key: 'probe.method.map', note: 'probe.method.mapNote', place: 'probe.place.map',
+    start: 'probe.position.start', steps: MAP_STEPS, touches: true, apart: true, asks: true,
+    choice: { option: 'tool', key: 'probe.map.toolLabel', list: MAP_TOOLS, first: 'board', step: 'probe.step.tool' },
+  },
 ];
 
 export const methodOf = (id) => METHODS.find((method) => method.id === id) || null;
 
+/** How a method's wire is tested: the height map's by what touches, the others' as the method says. */
+export const wireOf = (method, chosen) => method?.choice?.list.find((one) => one.id === chosen)?.wire || { plate: method?.plate, how: method?.wire, stuck: method?.stuck };
+
 // The Z plate, and the paper on the top, say where Z0 goes (`surface`).
 export const usesSurface = (method, chosen) => method?.id === 'z' || (method?.id === 'paper' && chosen === 'z');
 
-/** What a measurement is asked for with: the method's one choice, if it has one, and where Z0 goes. */
-export const optionsFor = (method, chosen, surface = SURFACE) => ({
-  ...(method?.choice ? { [method.choice.option]: chosen } : {}),
-  ...(usesSurface(method, chosen) ? { on: surface.on, z0: surface.z0 } : {}),
-});
+/**
+ * A height map's area and grid as the server takes them, from the texts
+ * typed, by how the area is given (`mode`): a corner and a size (`x y w d`),
+ * a centre and a size (`cx cy w d`), two corners (`ax ay bx by`), or the
+ * program's extent (`px0 px1 py0 py1`);
+ * and the points each way (`nx ny`). The server works out the rest.
+ */
+export const mapAsk = (texts, mode) => {
+  const n = (text) => Number(String(text ?? '').replace(',', '.'));
+  const count = { nx: n(texts.nx), ny: n(texts.ny) };
+  if (mode === 'point') {
+    return { at: { x: n(texts.x), y: n(texts.y) }, size: { x: n(texts.w), y: n(texts.d) }, ...count };
+  }
+  if (mode === 'centre') {
+    return { centre: { x: n(texts.cx), y: n(texts.cy) }, size: { x: n(texts.w), y: n(texts.d) }, ...count };
+  }
+  if (mode === 'corners') {
+    return { x: [n(texts.ax), n(texts.bx)], y: [n(texts.ay), n(texts.by)], ...count };
+  }
+  return { x: [n(texts.px0), n(texts.px1)], y: [n(texts.py0), n(texts.py1)], ...count };
+};
+
+/** What a measurement is asked for with: the method's one choice, if it has one, and where Z0 goes — and a height map's area. */
+export const optionsFor = (method, chosen, surface = SURFACE, area = null) => {
+  if (method?.asks) {
+    return { ...area, [method.choice.option]: chosen };
+  }
+  return {
+    ...(method?.choice ? { [method.choice.option]: chosen } : {}),
+    ...(usesSurface(method, chosen) ? { on: surface.on, z0: surface.z0 } : {}),
+  };
+};
 
 /*
  * Where the wizard is. The first four are the operator's own, one after
@@ -101,6 +151,8 @@ export const optionsFor = (method, chosen, surface = SURFACE) => ({
 const STEPS = [
   { id: 'method', key: 'probe.step.method' },
   { id: 'prepare', key: 'probe.step.prepare' },
+  { id: 'areaWay', key: 'probe.step.areaWay' },
+  { id: 'area', key: 'probe.step.area' },
   { id: 'wire', key: 'probe.step.wire' },
   { id: 'position', key: 'probe.step.position' },
   { id: 'measure', key: 'probe.step.measure' },
@@ -144,6 +196,8 @@ const PHASES = {
   down: 'probe.phase.down',
   up: 'probe.phase.up',
   return: 'probe.phase.return',
+  // A height map's way to its next point.
+  over: 'probe.phase.over',
 };
 
 export const phaseWords = (phase) => {
@@ -213,8 +267,30 @@ export const sayProbeStage = (stage, own = false) => {
   controller.command('probe:stage', stage && own ? { ...stage, own: true } : stage);
 };
 
-export const startProbe = (method, options = {}) => {
-  controller.command('probe:start', { method, options });
+/** `units`, what the options' figures are in — a height map's area. */
+export const startProbe = (method, options = {}, units = undefined) => {
+  controller.command('probe:start', { method, options, units });
+};
+
+/**
+ * The height map's grid as the server would measure it — `{ xs, ys, stepX,
+ * stepY, nx, ny }`, millimetres — or `{ reason }`. The step from a count, the
+ * count from a step: the server's rule, not one of the panel's.
+ */
+export const askGrid = async (options, rule) => {
+  const res = await fetch('/api/probe/grid', {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ options, units: rule?.name }),
+  });
+  const body = await res.json().catch(() => ({}));
+  // No reason: a server too old to know the height map — said so, not taken for a bad grid.
+  return res.ok ? body : { reason: body.reason || 'no-server' };
+};
+
+/** The loaded program bent to the height map, or as written. */
+export const bendProgram = (on) => {
+  controller.command('height-map:use', Boolean(on));
 };
 
 /** Write the zero the last measurement found. */

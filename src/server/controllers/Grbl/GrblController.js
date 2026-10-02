@@ -2450,7 +2450,9 @@ class GrblController {
       if (!this.probe) {
         return null;
       }
-      const { method, options, params, wcs, run, step, result, failure } = this.probe;
+      const {
+        method, options, params, wcs, run, step, marks, partial, result, failure,
+      } = this.probe;
       let state = 'measured';
       if (run) {
         state = 'running';
@@ -2458,7 +2460,9 @@ class GrblController {
         state = 'failed';
       }
       // The figures it was measured with, so every device draws the cycle that runs.
-      return { method, options, params, wcs, state, step, result, failure };
+      return {
+        method, options, params, wcs, state, step, marks, partial: partial ?? null, result, failure,
+      };
     }
 
     /**
@@ -2475,7 +2479,9 @@ class GrblController {
 
       const wco = _.mapValues(mpos, (v, axis) => v - wpos[axis]);
 
-      this.probe = { method, options, params, wcs: modal.wcs, start: mpos, wco, run: null, step: null, result: null, failure: null };
+      this.probe = {
+        method, options, params, wcs: modal.wcs, start: mpos, wco, run: null, step: null, marks: [], result: null, failure: null,
+      };
       this.note({ level: 'info', source: 'server', event: 'probe', code: 'start', data: { method, ...options } });
 
       this.probe.run = createProbeRun({
@@ -2484,8 +2490,14 @@ class GrblController {
         wco,
         restore: `${modal.distance || 'G90'} ${modal.units || 'G21'}`,
         write: (line) => this.writeln(line),
-        progress: (step) => {
+        progress: ({ seen, ...step }) => {
           this.probe.step = step;
+          // What the touches so far already tell — a height map's heights as they come in.
+          this.probe.partial = strategy.partial ? strategy.partial(params, options, seen) : null;
+          // A height map's points, each once, in the order they were gone to: every device draws them done.
+          if (step.mark && this.probe.marks.at(-1)?.n !== step.mark.n) {
+            this.probe.marks.push(step.mark);
+          }
           this.emit('probe:state', this.probeReport());
         },
         done: (outcome) => this.endProbe(strategy, params, outcome),

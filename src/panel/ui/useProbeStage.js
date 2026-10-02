@@ -18,12 +18,12 @@ import { optionsFor, sayProbeStage } from '../machine/probe';
  * Returns `mine`: the wizard waiting is this device's.
  */
 const useProbeStage = ({
-  machine, method, choice, surface, step, feeling, mode, onFollow, onTakenOver,
+  machine, method, choice, surface, area = null, step, feeling, mode, onFollow, onTakenOver,
 }) => {
   const shared = machine.probeStage;
   const mine = Boolean(shared?.owner && shared.owner.device === deviceId());
   const waiting = mode && (step === 'position' || feeling) ? step : null;
-  const stage = waiting ? JSON.stringify({ method: method.id, options: optionsFor(method, choice, surface), step: waiting }) : null;
+  const stage = waiting ? JSON.stringify({ method: method.id, options: optionsFor(method, choice, surface, area), step: waiting }) : null;
   const said = ({ owner, ...rest } = {}) => JSON.stringify(rest);
   const owned = useRef(false);
   owned.current = mine;

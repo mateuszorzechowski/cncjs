@@ -33,7 +33,7 @@ const TOOL_GUIDE_OPACITY = 0.2;
 
 const Scene = ({
   scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking, progress,
-  onGrab, glideMs, onReady, children,
+  onGrab, glideMs, onReady, focus = null, children,
 }) => {
   const colors = useSceneColors();
   const { envelope, origin, toolpath, program, offset, frame } = scene;
@@ -125,7 +125,8 @@ const Scene = ({
         machineKnown={Boolean(envelope)}
         revision={revision}
         memory={memory}
-        object={program}
+        // What the fit fills the frame with: the program, or what a screen asks for (`focus`).
+        object={focus || program}
         fit={fit}
         onFree={onFree}
         onGrab={onGrab}

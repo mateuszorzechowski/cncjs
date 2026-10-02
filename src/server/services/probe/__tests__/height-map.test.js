@@ -58,13 +58,22 @@ const measure = (options, params = probeParams(), start = { x: -120, y: -80, z: 
 
 describe('the grid', () => {
   test('a count per side, the points reaching both edges', () => {
-    expect(gridOf({ x: [0, 40], y: [0, 20], nx: 5, ny: 3 })).toEqual({ xs: [0, 10, 20, 30, 40], ys: [0, 10, 20], stepX: 10, stepY: 10 });
+    expect(gridOf({ x: [0, 40], y: [0, 20], nx: 5, ny: 3 })).toEqual({
+      xs: [0, 10, 20, 30, 40], ys: [0, 10, 20], stepX: 10, stepY: 10, given: [{ x: 0, y: 0 }, { x: 40, y: 20 }],
+    });
   });
 
   test('a step becomes the nearest count, and the step the one that divides the side', () => {
     const { xs, stepX } = gridOf({ x: [0, 25], y: [0, 10], stepX: 10, ny: 2 });
     expect(xs).toHaveLength(4);
     expect(stepX).toBeCloseTo(25 / 3);
+  });
+
+  test('two corners in either order, or a corner and a size', () => {
+    const corners = gridOf({ x: [40, 0], y: [20, -10], nx: 3, ny: 2 });
+    expect([corners.xs, corners.ys]).toEqual([[0, 20, 40], [-10, 20]]);
+    expect(gridOf({ at: { x: 5, y: -5 }, size: { x: 20, y: 10 }, nx: 3, ny: 2 })).toMatchObject({ xs: [5, 15, 25], ys: [-5, 5] });
+    expect(gridOf({ centre: { x: 0, y: 10 }, size: { x: 20, y: 10 }, nx: 3, ny: 2 })).toMatchObject({ xs: [-10, 0, 10], ys: [5, 15], given: [{ x: 0, y: 10 }] });
   });
 
   test('in inches when given in them', () => {
@@ -93,9 +102,20 @@ describe('the height map', () => {
       [40, 30], [20, 30], [0, 30],
     ]);
     expect(sent.filter((line) => line.includes('G38.2'))).toHaveLength(24);
-    // Every move sideways is made at the start's height, never near the surface.
-    const ups = sent.filter((line) => /G53 G0 Z/.test(line)).map((line) => wordsOf(line).z);
-    expect(ups.filter((z) => z === -40)).toHaveLength(12);
+    // Every move sideways is made `mapLift` over the touch before it; after the last, back to the start's height.
+    const params = probeParams();
+    const lifts = sent.filter((line, k) => /G53 G0 X/.test(sent[k + 1] || '') && /G53 G0 Z/.test(line)).map((line) => wordsOf(line).z);
+    const touched = overs.slice(0, -1).map(({ x, y }) => surface(x, y));
+    expect(lifts).toHaveLength(11);
+    lifts.forEach((z, k) => expect(z).toBeCloseTo(touched[k] + params.mapLift, 3));
+    expect(wordsOf(sent[sent.length - 2]).z).toBe(-40);
+  });
+
+  test('a back-off higher than the lift: it goes on from there, never back down', () => {
+    const { sent } = measure(options, { ...probeParams(), retract: 5, mapLift: 2 });
+    const lifts = sent.filter((line, k) => /G53 G0 X/.test(sent[k + 1] || '') && /G53 G0 Z/.test(line)).map((line) => wordsOf(line).z);
+    const overs = sent.filter((line) => /G53 G0 X/.test(line)).map((line) => wordsOf(line));
+    lifts.forEach((z, k) => expect(z).toBeCloseTo(surface(overs[k].x, overs[k].y) + 5, 3));
   });
 
   test('keeps the surface in machine X and Y, each height from the first point', () => {
@@ -109,6 +129,8 @@ describe('the height map', () => {
       }
     }
     expect(map.travel).toBeCloseTo(-40 - surface(-120, -80), 6);
+    expect(map.low).toBe(Math.min(...map.dz.flat()));
+    expect(map.high).toBe(Math.max(...map.dz.flat()));
   });
 
   test('a program bent by it keeps its depth under the surface', () => {
@@ -129,6 +151,6 @@ describe('the height map', () => {
   });
 
   test('an area given wrong is refused before anything moves', () => {
-    expect(strategy.read({ x: [10, 0], y: [0, 10], nx: 2, ny: 2 })).toEqual({ error: 'bad-area' });
+    expect(strategy.read({ x: [10, 10], y: [0, 10], nx: 2, ny: 2 })).toEqual({ error: 'bad-area' });
   });
 });

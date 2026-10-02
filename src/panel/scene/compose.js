@@ -117,7 +117,9 @@ export const farCorner = (envelope) => (envelope
   ? { x: farEnd(envelope, 'x'), y: farEnd(envelope, 'y'), z: farEnd(envelope, 'z') }
   : null);
 
-export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers, factor = 1 }) => {
+export const composeScene = ({
+  settings, envelope, wcs, offset, toolpath, layers, factor = 1, also = [],
+}) => {
   const program = toolpath ? shift(toolpath.bounds, offset) : null;
 
   /*
@@ -152,6 +154,8 @@ export const composeScene = ({ settings, envelope, wcs, offset, toolpath, layers
     layers.machineArea && envelope,
     layers.machineAxes && { min: MACHINE_ZERO, max: MACHINE_ZERO },
     layers.wcsAxes && origin && pointBox(origin),
+    // A screen's own marks, which the view has to take in too — the height map's area.
+    ...also,
   ].filter(Boolean)) || unitBox(factor);
 
   /*

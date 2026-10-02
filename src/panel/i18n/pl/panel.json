@@ -134,7 +134,20 @@
     "start": "Start zadania",
     "pause": "Pauza",
     "resume": "Wznów",
-    "abort": "Przerwij"
+    "abort": "Przerwij",
+    "map": {
+      "title": "Mapa wysokości",
+      "off": "Bez",
+      "on": "Z mapą",
+      "outsideMap": "Program wychodzi poza mapę (linia {{line}}).",
+      "noZ": "Program nie ma Z: mapa nie ma czego poprawić.",
+      "relativeUnknown": "Ruch względny, zanim program mówi, gdzie jest narzędzie (linia {{line}}).",
+      "unknownPosition": "Łuk z nieznanego miejsca (linia {{line}}).",
+      "g92": "Program przesuwa zero przez G92 (linia {{line}}).",
+      "arcPlane": "Łuk poza płaszczyzną XY (linia {{line}}).",
+      "badArc": "Łuk, którego nie da się narysować (linia {{line}}).",
+      "cannot": "Mapa nie może poprawić tego programu (linia {{line}})."
+    }
   },
   "tool": {
     "number": "T{{number}}",
@@ -437,7 +450,18 @@
     "noResult": "Nie ma pomiaru do zapisania.",
     "badMethod": "Serwer nie zna tej metody sondowania.",
     "badCorner": "Serwer nie zna takiego narożnika.",
-    "badEdge": "Serwer nie zna takiej powierzchni."
+    "badEdge": "Serwer nie zna takiej powierzchni.",
+    "badArea": "Obszar mapy nie ma szerokości w X albo w Y.",
+    "badGrid": "Siatka mapy: od 2 do 30 punktów w każdej osi.",
+    "noMap": "Nie ma zapisanej mapy wysokości.",
+    "noProgram": "Nie ma wczytanego programu.",
+    "outsideMap": "Program wychodzi poza mapę (linia {{line}}).",
+    "noZ": "Program nie ma Z: mapa nie ma czego poprawić.",
+    "relativeUnknown": "Ruch względny, zanim program mówi, gdzie jest narzędzie (linia {{line}}).",
+    "unknownPosition": "Łuk z nieznanego miejsca (linia {{line}}).",
+    "g92": "Program przesuwa zero przez G92 (linia {{line}}).",
+    "arcPlane": "Łuk poza płaszczyzną XY (linia {{line}}).",
+    "badArc": "Łuk, którego nie da się narysować (linia {{line}})."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -1379,7 +1403,9 @@
       "hole": "Środek otworu",
       "holeNote": "Środek okrągłego otworu sondą: X0 i Y0, Z bez zmian.",
       "boss": "Środek z zewnątrz",
-      "bossNote": "Środek czopu albo detalu, sondą od zewnątrz: X0 i Y0, Z bez zmian."
+      "bossNote": "Środek czopu albo detalu, sondą od zewnątrz: X0 i Y0, Z bez zmian.",
+      "map": "Mapa wysokości",
+      "mapNote": "Siatka punktów sondą: program pójdzie za krzywą płytką. Zero bez zmian."
     },
     "how": {
       "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
@@ -1394,7 +1420,8 @@
       "corner": "Podjedź frezem nad płytkę, kilka milimetrów nad nią i ok. 8 mm od obu ścianek.",
       "paper": "Podjedź frezem kilka milimetrów nad wybraną powierzchnię — przy boku przed nią. Kartkę trzymaj pod ręką.",
       "hole": "Opuść kulkę sondy do otworu, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek.",
-      "boss": "Ustaw kulkę sondy nad środkiem detalu, kilka milimetrów nad jego wierzchem — mniej niż limit dojazdu Z."
+      "boss": "Ustaw kulkę sondy nad środkiem detalu, kilka milimetrów nad jego wierzchem — mniej niż limit dojazdu Z.",
+      "map": "Ustaw narzędzie nad pierwszym punktem (obrysowany, z przodu po lewej), wysoko ponad imadłami: na tej wysokości maszyna jeździ między punktami."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1454,7 +1481,8 @@
       "holeSize": "Średnica otworu (w przybliżeniu)",
       "ballDiameter": "Średnica kulki",
       "holePasses": "Przejścia",
-      "bossSize": "Szerokość detalu (w przybliżeniu)"
+      "bossSize": "Szerokość detalu (w przybliżeniu)",
+      "mapLift": "Uniesienie między punktami"
     },
     "step": {
       "method": "Metoda",
@@ -1464,7 +1492,10 @@
       "wire": "Przewód",
       "position": "Ustawienie",
       "measure": "Pomiar",
-      "result": "Wynik"
+      "result": "Wynik",
+      "tool": "Sposób",
+      "area": "Wymiary",
+      "areaWay": "Obszar"
     },
     "wire": {
       "how": "Przypnij krokodylek do frezu. Dotknij płytką frezu i puść. Panel czyta stan sondy ze sterownika: przy dotyku pokaże „Dotyk”, po puszczeniu „Działa”.",
@@ -1483,7 +1514,8 @@
       "probePicture": "Sonda 3D w uchwycie: w spoczynku i z końcówką wychyloną palcem",
       "atRest": "w spoczynku",
       "deflected": "palec wychyla końcówkę",
-      "normallyClosed": "Jeśli „Dotyk” świeci, choć nie wychylasz końcówki, sonda jest normalnie zwarta (NC). Odwróć wejście sondy: $6=1 w ustawieniach sterownika. Bez tego pomiar zatrzyma się od razu z ALARM:4."
+      "normallyClosed": "Jeśli „Dotyk” świeci, choć nie wychylasz końcówki, sonda jest normalnie zwarta (NC). Odwróć wejście sondy: $6=1 w ustawieniach sterownika. Bez tego pomiar zatrzyma się od razu z ALARM:4.",
+      "howMap": "Przypnij krokodylek do frezu, a drugi przewód do miedzi płytki, albo podłącz sondę 3D. Dotknij i puść: panel pokaże „Dotyk”, a po puszczeniu „Działa”."
     },
     "position": {
       "clipOn": "Wejście sondy świeci: płytka dotyka freza albo przewód jest zwarty. Usuń to przed pomiarem.",
@@ -1506,7 +1538,8 @@
       "out": "{{axis}}: za ściankę",
       "down": "{{axis}}: w dół przy ściance",
       "up": "{{axis}}: w górę nad płytkę",
-      "return": "{{axis}}: nad punkt startu"
+      "return": "{{axis}}: nad punkt startu",
+      "over": "{{axis}}: nad punkt"
     },
     "failure": {
       "notFound": "{{axis}}: brak dotyku w limicie dojazdu. Nic nie zapisano. Sprawdź płytkę lub sondę i przewód albo podjedź bliżej.",
@@ -1691,6 +1724,74 @@
       "retractDepth": "{{sum}} = {{retract}} cofnięcia + {{depth}} zejścia",
       "depthLift": "{{sum}} = {{depth}} zejścia + {{lift}} odjazdu",
       "slowReach": "≤ {{reach}} = {{retract}} do powierzchni + {{retract}} zapasu za nią"
+    },
+    "map": {
+      "area": "Obszar",
+      "nx": "W osi X",
+      "ny": "W osi Y",
+      "badArea": "Obszar musi mieć szerokość w X i w Y: „do” większe od „od”.",
+      "badGrid": "Od 2 do 30 punktów w każdej osi.",
+      "start": "Współrzędne robocze, jak w programie (0 to zero bieżącego układu). Linia przerywana: obrys wczytanego programu.",
+      "drawing": "Obszar i punkty pomiaru z góry",
+      "point": "Punkt {{n}} z {{total}}",
+      "low": "Najniżej",
+      "high": "Najwyżej",
+      "spread": "Rozrzut",
+      "note": "Wysokości od pierwszego punktu. Zanim włączysz mapę przy programie, ustaw Z0 na pierwszym punkcie. Nic nie jest zapisane, dopóki nie zapiszesz.",
+      "save": "Zapisz mapę",
+      "noServer": "Serwer nie zna mapy wysokości: trzeba go zaktualizować albo zrestartować.",
+      "move": {
+        "fast": "Szybki dotyk",
+        "retract": "Odjazd",
+        "slow": "Wolny dotyk",
+        "lift": "W górę nad punkt",
+        "over": "Do następnego punktu",
+        "next": "Szybki dotyk w następnym punkcie",
+        "miss": "Nic pod narzędziem: limit i ALARM"
+      },
+      "stage": {
+        "point": "Punkt",
+        "next": "Następny"
+      },
+      "tool": {
+        "board": "Laminat",
+        "boardNote": "Krokodylek na frezie, przewód do miedzi płytki.",
+        "probe": "Sonda 3D",
+        "probeNote": "Na każdym materiale."
+      },
+      "toolLabel": "Czym mierzysz",
+      "mode": {
+        "point": "Punkt i rozmiar",
+        "corners": "Dwa rogi",
+        "program": "Z programu",
+        "pointNote": "Róg (wpisany albo wskazany joggiem), szerokość i głębokość.",
+        "cornersNote": "Dwa rogi po przekątnej: wpisane albo wskazane joggiem.",
+        "programNote": "Obrys wczytanego programu.",
+        "centre": "Środek i rozmiar",
+        "centreNote": "Środek (wpisany albo wskazany joggiem), szerokość i głębokość."
+      },
+      "x": "X",
+      "y": "Y",
+      "w": "Szerokość (X)",
+      "d": "Głębokość (Y)",
+      "cornerA": "Punkt 1",
+      "cornerB": "Punkt 2",
+      "here": "Tu",
+      "span": "X {{px0}} – {{px1}}  Y {{py0}} – {{py1}} {{unit}}",
+      "stepIs": "Co {{step}}, {{n}} punktów.",
+      "takeCorners": "Wpisz oba rogi albo podjedź joggiem nad róg i naciśnij „Tu”, potem nad róg po przekątnej.",
+      "preview": "Obszar mierzony",
+      "sec": {
+        "point": "Punkt",
+        "size": "Rozmiar",
+        "grid": "Siatka (punkty)",
+        "area": "Obszar",
+        "centre": "Środek"
+      },
+      "scale": "Skala wysokości",
+      "smooth": "Wygładzenie",
+      "heat": "Heatmapa",
+      "look": "Wygląd mapy"
     }
   }
 }

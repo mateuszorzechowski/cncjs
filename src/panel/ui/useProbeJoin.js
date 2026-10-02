@@ -19,14 +19,14 @@ import { t } from '../i18n';
  * The wizard's own state is the screen's; its setters are passed in.
  */
 const useProbeJoin = ({
-  machine, method, choice, surface, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
+  machine, method, choice, surface, area = null, onArea = () => {}, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
 }) => {
   const shared = machine.probeStage;
   const [mode, setMode] = useState(null);
   const [takenBy, setTakenBy] = useState(null);
   const [declined, setDeclined] = useState(false);
   const { mine } = useProbeStage({
-    machine, method, choice, surface, step, feeling, mode, onFollow: setLocal,
+    machine, method, choice, surface, area, step, feeling, mode, onFollow: setLocal,
     onTakenOver: (name) => {
       setTakenBy(name || t('probe.join.elsewhere'));
       setLocal(mode === 'own' ? 'prepare' : 'method');
@@ -44,6 +44,10 @@ const useProbeJoin = ({
     setPicked(shared.method);
     if (joined?.choice) {
       setChosen((now) => ({ ...now, [shared.method]: shared.options?.[joined.choice.option] }));
+    }
+    // The height map's area and grid, as the device it was begun on asked for them.
+    if (joined?.asks) {
+      onArea(shared.options);
     }
     setSurface({ on: shared.options?.on ?? SURFACE.on, z0: shared.options?.z0 ?? SURFACE.z0 });
     setLocal(shared.step);

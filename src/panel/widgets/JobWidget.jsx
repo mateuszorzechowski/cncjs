@@ -1,5 +1,6 @@
 import Card from '../ui/Card';
 import JobButtons from '../ui/JobButtons';
+import JobHeightMap from '../ui/JobHeightMap';
 import { useIsPhone } from '../ui/shell';
 import Meter from '../ui/Meter';
 import { NO_READING } from '../machine/readings';
@@ -79,6 +80,8 @@ const JobWidget = ({ machine, label = t('job.title'), className = '' }) => {
           {job ? jobTime(job) : NO_READING}
         </span>
       </div>
+
+      {job?.heightMap ? <JobHeightMap machine={machine} /> : null}
 
       {/* Only where there is no status bar to carry them. At the panel the
         * job lives along the bottom, and two Starts on one screen is one

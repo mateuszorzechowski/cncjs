@@ -2,28 +2,25 @@ import { useEffect, useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
-import CornerChooser from '../ui/CornerChooser';
-import PaperChooser from '../ui/PaperChooser';
+import HeightMapArea from '../ui/HeightMapArea';
 import useProbeJoin from '../ui/useProbeJoin';
+import useHeightMapAsk from '../ui/useHeightMapAsk';
 import ProbeJoin from '../ui/ProbeJoin';
 import Notice from '../ui/Notice';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
-  Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
+  AreaWayStep, ChooseStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
 import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  SURFACE, applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wizardStep,
+  SURFACE, applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
 import { useUnits } from '../ui/units';
 import { t } from '../i18n';
-
-// The methods whose one choice is a step of its own, and what it is picked on.
-const CHOOSERS = { corner: CornerChooser, paper: PaperChooser };
 
 /**
  * Sonda: a wizard, one step after another, across the whole screen
@@ -71,10 +68,12 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
   const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
 
+  // The height map's area and grid (`useHeightMapAsk`): asked with its choice, shared with a device that joins.
+  const heightMap = useHeightMapAsk({ machine, method, rule: units.rule });
   const {
     shared, mine, mode, setMode, takenBy, setTakenBy, declined, setDeclined, join, leave,
   } = useProbeJoin({
-    machine, method, choice, surface, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
+    machine, method, choice, surface, area: heightMap.area, onArea: heightMap.join, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
   });
 
   useEffect(() => {
@@ -106,7 +105,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       .catch((error) => setBad(error.name || fields[0]));
   };
 
-  const measure = () => startProbe(method.id, optionsFor(method, choice, surface));
+  const measure = () => startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name);
 
   const again = () => {
     if (machine.status?.word === 'Alarm') {
@@ -153,23 +152,27 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     </Card>
   );
 
-  if (step === 'position' || feeling) {
+  // The steps with the jog beside them: the height map's area, and into place (or the paper felt for).
+  if (step === 'area' || step === 'position' || feeling) {
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-gap">
         {track}
-        <ProbeMoveStep
-          machine={machine}
-          method={method}
-          choice={choice}
-          feeling={feeling}
-          lit={lit}
-          jogging={jogging}
-          onJogging={setJogging}
-          onBack={mode === 'joined' ? leave : () => go(-1)}
-          leaving={mode === 'joined' ? shared?.owner?.name || t('probe.join.elsewhere') : null}
-          onNext={() => go(1)}
-          onMeasure={measure}
-        />
+        {step === 'area' ? <HeightMapArea machine={machine} map={heightMap} onBack={() => go(-1)} onNext={() => go(1)} /> : (
+          <ProbeMoveStep
+            machine={machine}
+            method={method}
+            choice={choice}
+            feeling={feeling}
+            lit={lit}
+            jogging={jogging}
+            onJogging={setJogging}
+            onBack={mode === 'joined' ? leave : () => go(-1)}
+            leaving={mode === 'joined' ? shared?.owner?.name || t('probe.join.elsewhere') : null}
+            onNext={() => go(1)}
+            onMeasure={measure}
+            map={heightMap}
+          />
+        )}
       </div>
     );
   }
@@ -192,9 +195,9 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
         <MethodStep onPick={pick} />
       </>
     );
-  } else if (step === 'choose') {
-    const Chooser = CHOOSERS[method.id];
-    body = <Chooser value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;
+  } else if (step === 'choose' || step === 'areaWay') {
+    // What the method chooses — or, the height map's own step, how its area is given.
+    body = step === 'areaWay' ? <AreaWayStep map={heightMap} /> : <ChooseStep method={method} value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;
     foot = (
       <Foot back={() => go(-1)}>
         <Button tone="primary" onClick={() => go(1)} className="h-ctl">{t('probe.next')}</Button>
@@ -236,7 +239,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else if (step === 'wire') {
-    body = <WireStep lit={lit} touched={touched} plate={method.plate} how={method.wire} stuck={method.stuck} />;
+    const wire = wireOf(method, choice);
+    body = <WireStep lit={lit} touched={touched} plate={wire.plate} how={wire.how} stuck={wire.stuck} />;
     foot = (
       <Foot back={() => go(-1)}>
         <Button tone="primary" onClick={() => go(1)} className="h-ctl">
@@ -245,14 +249,14 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else if (step === 'measure') {
-    body = <MeasureStep probe={probe} />;
+    body = <MeasureStep probe={probe} machine={machine} />;
     foot = (
       <Foot>
         <Button tone="stop" onClick={() => controlledStop(machine.type)} className="h-ctl">{t('probe.measure.abort')}</Button>
       </Foot>
     );
   } else if (probe?.state === 'failed') {
-    body = <ResultStep probe={probe} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
+    body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.close')}</Button>
@@ -260,11 +264,11 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else {
-    body = <ResultStep probe={probe} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
+    body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.discard')}</Button>
-        <Button tone="primary" disabled={!machine.connected} onClick={() => finish(true)} className="h-ctl">{t('probe.result.save')}</Button>
+        <Button tone="primary" disabled={!machine.connected} onClick={() => finish(true)} className="h-ctl">{t(probe?.result?.map ? 'probe.map.save' : 'probe.result.save')}</Button>
       </Foot>
     );
   }

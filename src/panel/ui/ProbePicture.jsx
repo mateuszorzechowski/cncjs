@@ -39,14 +39,15 @@ const CornerPictogram = ({ label, className }) => (
 );
 
 /*
- * The paper's pictogram: the work, the sheet on it as one accent line with
- * its folds by the hand, the V bit over it and the arrow down — the Z
- * plate's tool and arrow, lower, as there is no plate.
+ * The paper's pictogram: the work, the sheet on it as one accent line bowed
+ * up once beside the tool, as the sheet stuck under it is drawn (review note
+ * #1, 2026-10-02), the V bit over it and the arrow down — the Z plate's tool
+ * and arrow, lower, as there is no plate.
  */
 const PaperPictogram = ({ label, className }) => (
   <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
     <rect x={4} y={37} width={40} height={7} className="fill-mutS stroke-line" strokeWidth={1.6} />
-    <path d="M7 35.4 q1.4 -2.2 2.8 0 q1.4 -2.2 2.8 0 q1.4 -2.2 2.8 0 H41" className="stroke-acc" fill="none" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M5 35.4 C9 35.4 10 31.2 14 31.2 C18 31.2 18.5 35.4 22.5 35.4 H43" className="stroke-acc" fill="none" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
     <path d="M20.5 9 H27.5 V19.4 L24 25.5 L20.5 19.4 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
     <path d="M20 28.5 H28 L24 33.5 Z" className="fill-acc stroke-acc" strokeWidth={0.96} strokeLinejoin="round" />
   </svg>
@@ -84,8 +85,25 @@ const BossPictogram = ({ label, className }) => (
   </svg>
 );
 
+/*
+ * The height map's pictogram: a board bowed, an accent dot on its top at each
+ * point of a row, the V bit over one of them with the arrow down — the Z
+ * plate's tool and arrow, touching the board itself.
+ */
+const HeightMapPictogram = ({ label, className }) => (
+  <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <path d="M4 38 Q24 33 44 38 V44 H4 Z" className="fill-mutS stroke-line" strokeWidth={1.6} strokeLinejoin="round" />
+    <circle cx={8} cy={37.2} r={1.6} className="fill-acc" />
+    <circle cx={16} cy={35.6} r={1.6} className="fill-acc" />
+    <circle cx={32} cy={35.6} r={1.6} className="fill-acc" />
+    <circle cx={40} cy={37.2} r={1.6} className="fill-acc" />
+    <path d="M20.5 9 H27.5 V19.4 L24 25.5 L20.5 19.4 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M20 27.5 H28 L24 32.5 Z" className="fill-acc stroke-acc" strokeWidth={0.96} strokeLinejoin="round" />
+  </svg>
+);
+
 const PICTOGRAMS = {
-  z: ZPlatePictogram, corner: CornerPictogram, hole: HolePictogram, boss: BossPictogram, paper: PaperPictogram,
+  z: ZPlatePictogram, corner: CornerPictogram, hole: HolePictogram, boss: BossPictogram, paper: PaperPictogram, 'height-map': HeightMapPictogram,
 };
 
 const ProbePicture = ({ method, label, className = '' }) => {
