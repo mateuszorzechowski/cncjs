@@ -310,6 +310,12 @@ const OPACITY = 'opacity';
  * drawing that shows one, always (*"wszędzie, nie trzeba się ograniczać"*).
  * `r` the dot's radius in the drawing's units, or a screen size by `size`.
  */
+/** Where a touch's ring reaches at its widest: a label keeps off it (tablet, corner Z touch, 2026-10-02). */
+export const contactRect = (x, y, size) => {
+  const reach = 0.75 * (5.4 / size.k) * 3.2;
+  return [x - reach, y - reach, 2 * reach, 2 * reach];
+};
+
 export const Contact = ({
   x, y, size = null, r: radius = null, tone = 'grn',
 }) => {

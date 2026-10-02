@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
+  AxisPair, Contact, axisRects, contactRect, DASH, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
 import {
   lineRect, shownView, tagRect,
@@ -102,6 +102,9 @@ const CornerSide = ({
     const axes = axisRects(VIEW[0], VIEW[1] + VIEW[3], size).map(([x, ...rest]) => (flipX ? [284 - x - rest[1], ...rest] : [x, ...rest]));
     const avoid = [
       ...(move.zero ? [[VIEW[0], 169, VIEW[2], 2]] : []), bitRect(), ...axes,
+      // Where this move touches, all through it (L16): the touch's ring.
+      ...(move.gap && move.kind === PROBE ? [contactRect(C0[0], TOP, size)] : []),
+      ...(move.touch && move.kind && move.view === 'top' ? [contactRect(move.touch[0], tipOf(0) - 6, size)] : []),
       ...lines.filter((l) => l.at !== one.at).map((l) => l.rect), ...taken,
     ];
     const here = bare ? [] : placePaired(one, { view: shownView(VIEW, k, box), avoid, size }, other);

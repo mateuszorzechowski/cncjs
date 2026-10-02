@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  Alarm, Contact, DASH, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
+  Alarm, Contact, DASH, contactRect, DIM_TICK, Dimension, FACE, MOTION_TICK, Motion, NS, ReachDimension, Tag, kit,
 } from './probeDraw';
 import { placeTags, shownView } from './probeLabels';
 import { SurfaceGround, zeroLineY } from './SurfaceGround';
@@ -48,7 +48,8 @@ const ZPlateScene = ({
   const x = TOOL_X + shift;
   const view = shownView([0, 0, WIDTH, HEIGHT], k, box);
   // Never on Z0's line (L15).
-  const avoid = zero > 0 ? [[0, zeroLineY(TOP + 14, surface) - 1, WIDTH, 2]] : [];
+  // Nor on where the tool touches the plate: the touch's ring.
+  const avoid = [...(zero > 0 ? [[0, zeroLineY(TOP + 14, surface) - 1, WIDTH, 2]] : []), contactRect(x, TOP, size)];
   // The figures by the one rule (`placeTags`): the dimension's right of it, the feed left of its arrow.
   const dimTags = placeTags({
     at: DIM_X, parts: dim ? [[dim.top, dim.bottom, dim.text]] : [], ticks: dim ? [[dim.top, DIM_TICK], [dim.bottom, DIM_TICK]] : [], view, avoid, size,
