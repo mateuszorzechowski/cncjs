@@ -13,9 +13,10 @@ const Frame = ({ dashed = false }) => (
 const Point = () => (
   <svg viewBox="0 0 48 48" aria-hidden="true" className="h-14 w-16 overflow-visible">
     <Frame />
+    {/* The size off the frame's sides, from the corner, so the frame hides neither (review note, 2026-10-02). */}
+    <path d="M8 42 H36 M2 36 V14" className="stroke-mut" strokeWidth={1.2} />
+    <path d="M36 40 L40 42 L36 44 Z M0 14 L2 10 L4 14 Z" className="fill-mut" />
     <circle cx={8} cy={36} r={3} className="fill-acc" />
-    <path d="M12 42 H36 M8 32 V14" className="stroke-mut" strokeWidth={1.2} />
-    <path d="M36 40 L40 42 L36 44 Z M6 14 L8 10 L10 14 Z" className="fill-mut" />
   </svg>
 );
 
