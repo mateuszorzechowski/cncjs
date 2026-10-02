@@ -6,7 +6,7 @@ import { shownView } from './probeLabels';
 import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import {
-  C0, cornerSides, gapAt, legAt, levelOfGap, moveOf, positionOf, zeroShown,
+  C0, cornerSides, gapAt, levelOfGap, moveOf, positionOf, zeroShown,
 } from '../machine/cornerCycle';
 import { t } from '../i18n';
 
@@ -15,8 +15,8 @@ import { t } from '../i18n';
  * 2026-09-30): the work a faint hatch, the plate over its corner with the
  * work's edge under it dashed, the tool a circle — drawn larger in step with
  * its height, whichever move raises or lowers it.
- * Moves on the wall's plane are drawn here, by the rules in `probeDraw`: a
- * set-up's legs one by one, each move's arrow on one side of its way — a
+ * Moves on the wall's plane are drawn here, by the rules in `probeDraw`:
+ * each move's arrow on one side of its way — a
  * touch's with its feed, a G0's bare — and its distance a grey dimension on
  * the other, X0 and Y0 when written. Z touches leave the tool over the
  * plate; they are the side view's.
@@ -74,14 +74,9 @@ const CornerTop = ({
     ...axisRects(VIEW[0], VIEW[1] + VIEW[3], size).map(([x, y, w, h]) => [flipX ? 278 - x - w : x, flipY ? 260 - y - h : y, w, h]),
     ...(move.zero && !place ? [[129, VIEW[1], 2, VIEW[3]], [VIEW[0], 139, VIEW[2], 2]] : []),
   ];
-  // Nor on the tool's whole way through the move, or the leg under way (L16) — not only where it is now.
+  // Nor on the tool's whole way through the move (L16) — not only where it is now.
   const toolRect = () => {
-    let ends = [0, 1];
-    if (move.legs) {
-      const [from, to] = move.legs[legAt(move, p)];
-      ends = [from, to];
-    }
-    const way = place || !move.frames ? [[cx, cy, level]] : ends.map((at) => positionOf(move.frames, at));
+    const way = place || !move.frames ? [[cx, cy, level]] : [0, 1].map((at) => positionOf(move.frames, at));
     const rr = R * (1 + 0.3 * Math.max(0, level, ...way.map(([, , z]) => z)));
     const [x0, x1] = [Math.min(...way.map(([x]) => x)), Math.max(...way.map(([x]) => x))];
     const [y0, y1] = [Math.min(...way.map(([, y]) => y)), Math.max(...way.map(([, y]) => y))];
@@ -115,36 +110,29 @@ const CornerTop = ({
   // The tool on its way into place: nothing of the cycle is drawn.
   if (place) {
     geometry.length = 0;
-  } else if (move.legs) {
-    const now = legAt(move, p);
-    move.legs.forEach(([from, to, plane, sayLeg], i) => {
-      // The leg under way's arrow alone: the ones before do not pile up (review note, 2026-09-30).
-      if (i !== now || plane !== 'xy') {
-        return;
-      }
-      const [fx, fy] = positionOf(move.frames, from);
-      const [tx, ty] = positionOf(move.frames, to);
-      const flat = Math.abs(fy - ty) < 0.5;
-      // A leg across both axes, back over the plate or over X0 Y0, has an arrow for each.
-      geometry.push(
-        <g key={`leg${i}`} opacity={focus ? 0.3 : 1}>
-          {Math.abs(fx - tx) > 0.5 ? <Motion axis={ACROSS} at={80} from={fx} to={tx} kind={RAPID} size={size} /> : null}
-          {flat ? null : <Motion axis={ALONG} at={190} from={fy} to={ty} kind={RAPID} size={size} />}
-        </g>,
-      );
-      // A G0 carries nothing: a leg by a figure of the form's has it as a dimension on the
-      // other side of its way; one to a place (over the plate, over X0 Y0) none.
-      const figure = sayLeg(texts, say);
-      if (figure && !focus) {
-        geometry.push(flat
-          ? <Dimension key="legd" axis={ACROSS} at={fy + 20} from={fx} to={tx} size={size} />
-          : <Dimension key="legd" axis={ALONG} at={fx - 36} from={fy} to={ty} size={size} />);
-        const line = flat
-          ? { axis: ACROSS, at: fy + 20, parts: [[fx, tx, figure]], ticks: dimTicks(fx, tx) }
-          : { at: fx - 36, side: -1, parts: [[fy, ty, figure]], ticks: dimTicks(fy, ty) };
-        words.push(<g key="legt">{tags(line)}</g>);
-      }
-    });
+  } else if (move.plane === 'xy') {
+    const [fx, fy] = positionOf(move.frames, 0);
+    const [tx, ty] = positionOf(move.frames, 1);
+    const flat = Math.abs(fy - ty) < 0.5;
+    // A way across both axes, back over the plate or over X0 Y0, has an arrow for each.
+    geometry.push(
+      <g key="way" opacity={focus ? 0.3 : 1}>
+        {Math.abs(fx - tx) > 0.5 ? <Motion axis={ACROSS} at={80} from={fx} to={tx} kind={RAPID} size={size} /> : null}
+        {flat ? null : <Motion axis={ALONG} at={190} from={fy} to={ty} kind={RAPID} size={size} />}
+      </g>,
+    );
+    // A G0 carries nothing: a way by a figure of the form's has it as a dimension on the
+    // other side of it; one to a place (over the plate, over X0 Y0) none.
+    const figure = move.say(texts, say);
+    if (figure && !focus) {
+      geometry.push(flat
+        ? <Dimension key="wayd" axis={ACROSS} at={fy + 20} from={fx} to={tx} size={size} />
+        : <Dimension key="wayd" axis={ALONG} at={fx - 36} from={fy} to={ty} size={size} />);
+      const line = flat
+        ? { axis: ACROSS, at: fy + 20, parts: [[fx, tx, figure]], ticks: dimTicks(fx, tx) }
+        : { at: fx - 36, side: -1, parts: [[fy, ty, figure]], ticks: dimTicks(fy, ty) };
+      words.push(<g key="wayt">{tags(line)}</g>);
+    }
   } else if (move.view === 'top' && move.kind) {
     const [fx, fy] = positionOf(move.frames, 0);
     const [tx, ty] = positionOf(move.frames, 1);
