@@ -1787,12 +1787,6 @@
         "grid": "Grid (points)",
         "area": "Area",
         "centre": "Centre"
-      },
-      "look": {
-        "label": "Variant",
-        "a": "A sheet",
-        "b": "B probe",
-        "c": "C surface"
       }
     }
   }

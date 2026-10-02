@@ -1787,12 +1787,6 @@
         "grid": "Siatka (punkty)",
         "area": "Obszar",
         "centre": "Środek"
-      },
-      "look": {
-        "label": "Wariant",
-        "a": "A arkusz",
-        "b": "B sonda",
-        "c": "C powierzchnia"
       }
     }
   }
