@@ -60,6 +60,7 @@ import { checkLines, createCheckRun } from './check-run';
 import { createProbeRun, offsetFor, offsetLine } from './probe-run';
 import probeSettings from '../../services/probe';
 import { STRATEGIES } from '../../services/probe/strategies';
+import heightMap from '../../services/height-map';
 import library from '../../services/library';
 import units, { toMm } from '../../services/units';
 import { machineTiming } from '../../services/library/estimate';
@@ -2060,6 +2061,7 @@ class GrblController {
       if (this.probeStage) {
         socket.emit('probe:stage', this.probeStage);
       }
+      socket.emit('height-map:state', heightMap.current());
 
       if (!_.isEmpty(this.settings)) {
         // controller settings
@@ -2467,13 +2469,15 @@ class GrblController {
       const mpos = this.reportedMm(this.runner.getMachinePosition());
       const wpos = this.reportedMm(this.runner.getWorkPosition());
 
-      this.probe = { method, options, params, wcs: modal.wcs, start: mpos, run: null, step: null, result: null, failure: null };
+      const wco = _.mapValues(mpos, (v, axis) => v - wpos[axis]);
+
+      this.probe = { method, options, params, wcs: modal.wcs, start: mpos, wco, run: null, step: null, result: null, failure: null };
       this.note({ level: 'info', source: 'server', event: 'probe', code: 'start', data: { method, ...options } });
 
       this.probe.run = createProbeRun({
-        steps: strategy.steps(params, options),
+        steps: strategy.steps(params, options, { start: mpos, wco }),
         start: mpos,
-        wco: _.mapValues(mpos, (v, axis) => v - wpos[axis]),
+        wco,
         restore: `${modal.distance || 'G90'} ${modal.units || 'G21'}`,
         write: (line) => this.writeln(line),
         progress: (step) => {
@@ -2494,12 +2498,17 @@ class GrblController {
       if (!this.probe) {
         return;
       }
-      const { method, options, wcs, start } = this.probe;
+      const { method, options, wcs, start, wco } = this.probe;
       this.probe.run = null;
 
       if (outcome.failure) {
         this.probe.failure = { code: outcome.failure, phase: outcome.phase };
         this.note({ level: 'warn', source: 'server', event: 'probe', code: outcome.failure, data: { method, phase: outcome.phase } });
+      } else if (strategy.map) {
+        // A surface to keep, not a zero: it waits for `probe:apply` the same way.
+        const map = strategy.map(params, options, outcome.seen, { start, wco });
+        this.probe.result = { map };
+        this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, points: map.xs.length * map.ys.length } });
       } else {
         const parameters = this.runner.getParameters();
         const zero = strategy.zero(params, options, outcome.seen, start);
@@ -3080,14 +3089,16 @@ class GrblController {
           this.startFileCheck(name, { firstError: Boolean(firstError) });
         },
         /**
-         * Measure with a probe: `probe:start({ method, options })`, a method
-         * being one of `services/probe/strategies`. The machine is held as by
+         * Measure with a probe: `probe:start({ method, options, units })`, a
+         * method being one of `services/probe/strategies`, `units` what its
+         * per-measurement figures are in. The machine is held as by
          * a program until the measurement is done; what it found waits for
          * `probe:apply` or `probe:discard`.
          */
         'probe:start': () => {
-          const [{ method, options = {} } = {}] = args;
+          const [{ method, options: asked = {}, units: given } = {}] = args;
           const strategy = STRATEGIES[method];
+          let options = asked;
 
           if (this.runner.isAlarm()) {
             this.refuse(cmd, 'alarm');
@@ -3096,6 +3107,15 @@ class GrblController {
           if (!strategy) {
             this.refuse(cmd, 'bad-method');
             return;
+          }
+          // Figures given per measurement — a height map's area — in millimetres from here on.
+          if (strategy.read) {
+            const read = strategy.read(options, given);
+            if (read.error) {
+              this.refuse(cmd, read.error);
+              return;
+            }
+            options = read.options;
           }
           const wrong = strategy.check(options);
           if (wrong) {
@@ -3174,8 +3194,13 @@ class GrblController {
             return;
           }
 
-          const p = activeWcsNumber({ wcs: this.probe.wcs });
-          this.command('gcode', [offsetLine(p, result.offset), this.runner.getModalGroup().units || 'G21']);
+          if (result.map) {
+            heightMap.set(result.map);
+            this.emit('height-map:state', heightMap.current());
+          } else {
+            const p = activeWcsNumber({ wcs: this.probe.wcs });
+            this.command('gcode', [offsetLine(p, result.offset), this.runner.getModalGroup().units || 'G21']);
+          }
           this.note({ level: 'info', source: 'server', event: 'probe', code: 'applied', data: { method: this.probe.method, wcs: this.probe.wcs } });
           this.probe = null;
           this.emit('probe:state', null);
