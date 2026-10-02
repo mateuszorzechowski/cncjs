@@ -52,6 +52,9 @@ export const FIELDS = {
   // Up over the plate once measured, so it can be taken out from under the
   // tool (the design's "powrót po pomiarze", 2026-09-29).
   lift: { value: 10, min: 0, max: 100 },
+  // A height map: up over the last touch before going on to the next point (Mateusz, 2026-10-02:
+  // quicker than back to the start's height, and nothing in the area may stand higher).
+  mapLift: { value: 2, min: 0.5, max: 50 },
   fast: { value: 100, min: 10, max: 2000 },
   slow: { value: 25, min: 1, max: 500 },
 };

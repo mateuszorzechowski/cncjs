@@ -116,7 +116,10 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
     }
     const step = steps[index];
     prb = null;
-    progress({ index, total: steps.length, phase: step.phase });
+    // `mark`, what a method says of the step besides its phase: a height map's point.
+    progress({
+      index, total: steps.length, phase: step.phase, ...(step.mark ? { mark: step.mark } : {}),
+    });
     write(LINE[step.kind](step, target, wco));
   };
 

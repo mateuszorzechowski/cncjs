@@ -273,6 +273,10 @@ export const useMachine = () => {
       'probe:stage': (stage) => {
         setSnapshot((previous) => ({ ...previous, probeStage: stage || null }));
       },
+      // The height map the server keeps, or null: none (`services/height-map`).
+      'height-map:state': (heightMap) => {
+        setSnapshot((previous) => ({ ...previous, heightMap: heightMap || null }));
+      },
       'units:change': (units) => {
         setSnapshot((previous) => ({ ...previous, units: units || null }));
       },

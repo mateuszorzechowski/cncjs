@@ -5,10 +5,12 @@ import { isUnit, toMm } from '../units';
  * points along each side (Mateusz, 2026-10-02: the area from the program and
  * by hand; the step and the count both, either one setting the other).
  *
- * Asked as `{ x: [from, to], y: [from, to] }` and, per axis, a count
- * (`nx`, `ny`) or a step (`stepX`, `stepY`) — a step becomes the count that
- * comes nearest to it, and the step then the one that divides the side
- * evenly, so the points reach both edges.
+ * Asked as two corners, `{ x: [one, other], y: [one, other] }` in either
+ * order — wherever the operator jogged them — or as a corner and a size,
+ * `{ at: { x, y }, size: { x, y } }`; and, per axis, a count (`nx`, `ny`) or
+ * a step (`stepX`, `stepY`) — a step becomes the count that comes nearest to
+ * it, and the step then the one that divides the side evenly, so the points
+ * reach both edges.
  */
 
 export const MIN_POINTS = 2;
@@ -28,7 +30,7 @@ const side = (range, count, step, units) => {
   if (!Array.isArray(range) || range.length !== 2) {
     return { error: 'bad-area' };
   }
-  const [from, to] = range.map((v) => toMm(Number(v), units));
+  const [from, to] = range.map((v) => toMm(Number(v), units)).sort((a, b) => a - b);
   if (!Number.isFinite(from) || !Number.isFinite(to) || !(to > from)) {
     return { error: 'bad-area' };
   }
@@ -48,11 +50,13 @@ export const gridOf = (asked = {}, units) => {
   if (units !== undefined && !isUnit(units)) {
     return { error: 'bad-units' };
   }
-  const x = side(asked.x, asked.nx, asked.stepX, units);
+  // A corner and a size: its two corners. A size below zero is the other way from the corner.
+  const range = (axis) => (asked.at && asked.size ? [Number(asked.at[axis]), Number(asked.at[axis]) + Number(asked.size[axis])] : asked[axis]);
+  const x = side(range('x'), asked.nx, asked.stepX, units);
   if (x.error) {
     return x;
   }
-  const y = side(asked.y, asked.ny, asked.stepY, units);
+  const y = side(range('y'), asked.ny, asked.stepY, units);
   if (y.error) {
     return y;
   }

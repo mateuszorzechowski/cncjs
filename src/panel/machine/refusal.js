@@ -81,6 +81,18 @@ const KEYS = {
   'bad-method': 'refusal.badMethod',
   'bad-corner': 'refusal.badCorner',
   'bad-edge': 'refusal.badEdge',
+  // The height map: its grid, and a program it cannot bend — said with the file's line.
+  'bad-area': 'refusal.badArea',
+  'bad-grid': 'refusal.badGrid',
+  'no-map': 'refusal.noMap',
+  'no-program': 'refusal.noProgram',
+  'outside-map': 'refusal.outsideMap',
+  'no-z': 'refusal.noZ',
+  'relative-unknown': 'refusal.relativeUnknown',
+  'unknown-position': 'refusal.unknownPosition',
+  g92: 'refusal.g92',
+  'arc-plane': 'refusal.arcPlane',
+  'bad-arc': 'refusal.badArc',
 };
 
 /**
@@ -100,8 +112,10 @@ export const refusalMessage = (refusal) => {
   }
 
   const key = KEYS[refusal.reason];
+  // A program the height map cannot bend is refused at a line of the file, from one.
+  const line = Number.isInteger(refusal.line) ? refusal.line + 1 : null;
   return key
-    ? { key, values: { cmd: refusal.cmd } }
+    ? { key, values: { cmd: refusal.cmd, ...(line ? { line } : {}) } }
     : { key: 'refusal.other', values: { cmd: refusal.cmd, reason: refusal.reason } };
 };
 

@@ -29,6 +29,7 @@ export const FIELDS = {
   maxXY: { key: 'probe.field.maxXY', kind: 'length' },
   retract: { key: 'probe.field.retract', kind: 'length' },
   lift: { key: 'probe.field.lift', kind: 'length' },
+  mapLift: { key: 'probe.field.mapLift', kind: 'length' },
   fast: { key: 'probe.field.fast', kind: 'feed' },
   slow: { key: 'probe.field.slow', kind: 'feed' },
 };

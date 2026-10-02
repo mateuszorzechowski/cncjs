@@ -91,6 +91,15 @@ module.exports = {
       hatch: 'color-mix(in srgb, var(--mut) 22%, var(--surf))',
       plate: 'color-mix(in srgb, color-mix(in srgb, var(--acc) 45%, var(--mut)) 16%, var(--surf))',
       plateEdge: 'color-mix(in srgb, color-mix(in srgb, var(--acc) 45%, var(--mut)) 75%, var(--ink))',
+      /*
+       * A height map's heights, low to high: the accent from a wash to whole,
+       * five steps a reader can tell apart (Mateusz, 2026-10-02).
+       */
+      map0: 'color-mix(in srgb, var(--acc) 12%, var(--surf))',
+      map1: 'color-mix(in srgb, var(--acc) 32%, var(--surf))',
+      map2: 'color-mix(in srgb, var(--acc) 52%, var(--surf))',
+      map3: 'color-mix(in srgb, var(--acc) 76%, var(--surf))',
+      map4: 'var(--acc)',
       // A rapid move's colour in the drawings, and a word's in G-code (`editor/gcode`).
       rapid: 'var(--rapid)',
       white: '#ffffff',

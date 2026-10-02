@@ -378,15 +378,15 @@ describe('the height map', () => {
   });
 
   // Every touch of a 2×2 map answered, the board flat but for the last point, 0.2 mm up.
-  const answerAll = (controller) => {
+  const answerAll = (controller, sent) => {
     const tops = [-7, -7, -7, -6.8];
-    for (const top of tops) {
-      // Over the point, the fast touch, back, settle, the slow touch, off and up.
-      for (const line of ['ok', `[PRB:0,0,${top}:1]`, 'ok', 'ok', 'ok', `[PRB:0,0,${top}:1]`, 'ok', 'ok']) {
-        controller.runner.parse(line);
+    // Each line answered as Grbl would: a touch with its report, everything with an ok.
+    for (let k = 0; k < 200 && controller.probe?.run; k++) {
+      if (sent().at(-1).includes('G38.2')) {
+        controller.runner.parse(`[PRB:0,0,${tops[controller.probe.marks.length - 1]}:1]`);
       }
+      controller.runner.parse('ok');
     }
-    controller.runner.parse('ok');
   };
 
   test('its area is read in the units it was given in', () => {
@@ -394,7 +394,9 @@ describe('the height map', () => {
     controller.command('probe:start', { method: 'height-map', options: { x: [0, 1], y: [0, 1], nx: 2, ny: 2 }, units: 'inch' });
     // Over the first point first, at the height the tool stands.
     expect(sent()[0]).toBe('G90 G21 G53 G0 X0 Y0');
-    expect(controller.probe.options).toEqual({ x: [0, 25.4], y: [0, 25.4], nx: 2, ny: 2 });
+    expect(controller.probe.options).toEqual({
+      x: [0, 25.4], y: [0, 25.4], nx: 2, ny: 2, tool: 'board',
+    });
   });
 
   test('an area that is no grid is refused, and nothing moves', () => {
@@ -409,10 +411,12 @@ describe('the height map', () => {
     const events = [];
     controller.sockets.watching.emit = (event, ...args) => events.push({ event, args });
     controller.command('probe:start', { method: 'height-map', options: { x: [0, 10], y: [0, 10], nx: 2, ny: 2 } });
-    answerAll(controller);
+    answerAll(controller, sent);
 
     const result = controller.probe.result;
     expect(result.map.dz[1][0]).toBeCloseTo(0.2, 6);
+    // Each point once, in the order it was gone to: the second row backwards.
+    expect(controller.probeReport().marks).toEqual([{ n: 0, i: 0, j: 0 }, { n: 1, i: 1, j: 0 }, { n: 2, i: 1, j: 1 }, { n: 3, i: 0, j: 1 }]);
     expect(heightMap.current()).toBeNull();
 
     controller.command('probe:apply');

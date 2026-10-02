@@ -8,6 +8,11 @@ import CornerCycle from './CornerCycle';
 import CornerParams from './CornerParams';
 import CentreCycle from './CentreCycle';
 import CentreParams from './CentreParams';
+import CornerChooser from './CornerChooser';
+import MapToolChooser from './MapToolChooser';
+import PaperChooser from './PaperChooser';
+import HeightMapSetup from './HeightMapSetup';
+import { HeightMapCycle, HeightMapResult } from './HeightMapSteps';
 import PaperParams from './PaperParams';
 import PaperScene from './PaperScene';
 import ZPlateCycle from './ZPlateCycle';
@@ -39,12 +44,14 @@ const EDITORS = {
   hole: (props) => <CentreParams cycle={HOLE_CYCLE} {...props} />,
   boss: (props) => <CentreParams cycle={BOSS_CYCLE} {...props} />,
   paper: PaperParams,
+  'height-map': HeightMapSetup,
 };
 const CYCLES = {
   z: ZPlateCycle,
   corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
   hole: ({ phase, probe }) => <CentreCycle cycle={HOLE_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
   boss: ({ phase, probe }) => <CentreCycle cycle={BOSS_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
+  'height-map': HeightMapCycle,
 };
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
@@ -77,20 +84,35 @@ export const Foot = ({ back, backLabel = null, children }) => (
   </div>
 );
 
+const MethodTile = ({ method, onPick }) => (
+  <button
+    type="button"
+    onClick={() => onPick(method.id)}
+    className="flex flex-col items-center gap-3 rounded-ctl border border-line bg-field p-4 text-center hover:border-acc"
+  >
+    <ProbePicture method={method.id} label={t(method.key)} className="h-24 w-32" />
+    <span className="text-base font-semibold text-ink">{t(method.key)}</span>
+    <span className="text-note text-mut">{t(method.note)}</span>
+  </button>
+);
+
+// The methods that find a zero; under them, in a row of their own, the height map (Mateusz, 2026-10-02).
+// The methods whose one choice is a step of its own, and what it is picked on.
+const CHOOSERS = { corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser };
+
+export const ChooseStep = ({ method, value, onChange }) => {
+  const Chooser = CHOOSERS[method.id];
+  return <Chooser value={value} onChange={onChange} />;
+};
+
 export const MethodStep = ({ onPick }) => (
-  <div className="grid gap-3 @3xl/shell:grid-cols-3">
-    {METHODS.map((method) => (
-      <button
-        key={method.id}
-        type="button"
-        onClick={() => onPick(method.id)}
-        className="flex flex-col items-center gap-3 rounded-ctl border border-line bg-field p-4 text-center hover:border-acc"
-      >
-        <ProbePicture method={method.id} label={t(method.key)} className="h-24 w-32" />
-        <span className="text-base font-semibold text-ink">{t(method.key)}</span>
-        <span className="text-note text-mut">{t(method.note)}</span>
-      </button>
-    ))}
+  <div className="flex flex-col gap-3">
+    <div className="grid gap-3 @3xl/shell:grid-cols-3">
+      {METHODS.filter((method) => !method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
+    </div>
+    <div className="grid gap-3 @3xl/shell:grid-cols-3">
+      {METHODS.filter((method) => method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
+    </div>
   </div>
 );
 
@@ -172,6 +194,10 @@ export const MeasureStep = ({ probe }) => {
 export const ResultStep = ({ probe, plate }) => {
   const units = useUnits();
   const Outcome = OUTCOMES[probe?.method];
+  // A height map is a surface to keep, not a zero: no system, no shift.
+  if (probe?.state !== 'failed' && probe?.result?.map) {
+    return <HeightMapResult map={probe.result.map} />;
+  }
   if (probe?.state === 'failed') {
     const { code, phase } = probe.failure || {};
     const at = phaseWords(phase);

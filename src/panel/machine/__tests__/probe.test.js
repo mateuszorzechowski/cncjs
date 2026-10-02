@@ -1,5 +1,5 @@
 import {
-  METHODS, failureKey, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, surfaceShifts, wizardStep,
+  METHODS, failureKey, mapAsk, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -93,7 +93,27 @@ describe('a kept figure in a field', () => {
   });
 
   test('every method the server may name has words, and every figure a kind', () => {
-    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'hole', 'boss', 'paper']);
+    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'hole', 'boss', 'paper', 'height-map']);
     expect(Object.values(FIELDS).every((f) => ['length', 'feed', 'count'].includes(f.kind))).toBe(true);
+  });
+});
+
+describe('the height map, asked for', () => {
+  const texts = {
+    x: '5', y: '-5', w: '40,5', d: '20', ax: '40', ay: '0', bx: '0', by: '30', px0: '1', px1: '9', py0: '2', py1: '8', nx: '4', ny: '3',
+  };
+
+  test('by how the area is given: a corner and a size, two corners, or the program', () => {
+    expect(mapAsk(texts, 'point')).toEqual({ at: { x: 5, y: -5 }, size: { x: 40.5, y: 20 }, nx: 4, ny: 3 });
+    expect(mapAsk(texts, 'corners')).toEqual({ x: [40, 0], y: [0, 30], nx: 4, ny: 3 });
+    expect(mapAsk(texts, 'program')).toEqual({ x: [1, 9], y: [2, 8], nx: 4, ny: 3 });
+  });
+
+  test('with what touches, so a device joining it measures the same', () => {
+    const map = methodOf('height-map');
+    expect(map.apart).toBe(true);
+    expect(optionsFor(map, 'probe', undefined, mapAsk(texts, 'program'))).toEqual({ ...mapAsk(texts, 'program'), tool: 'probe' });
+    expect(wireOf(map, 'probe')).toMatchObject({ plate: 'probe', stuck: 'probe.wire.normallyClosed' });
+    expect(wireOf(methodOf('z'), undefined)).toEqual({ plate: undefined, how: undefined, stuck: undefined });
   });
 });
