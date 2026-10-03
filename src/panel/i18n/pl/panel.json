@@ -1429,7 +1429,7 @@
       "paper": "Podjedź frezem kilka milimetrów nad wybraną powierzchnię — przy boku przed nią. Kartkę trzymaj pod ręką.",
       "hole": "Opuść kulkę sondy do otworu, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek.",
       "boss": "Ustaw kulkę sondy nad środkiem detalu, kilka milimetrów nad jego wierzchem — mniej niż limit dojazdu Z.",
-      "map": "Ustaw narzędzie nad pierwszym punktem (obrysowany, z przodu po lewej), wysoko ponad imadłami: na tej wysokości maszyna jeździ między punktami."
+      "map": "Podnieś narzędzie ponad imadła, nie wyżej niż limit dojazdu Z nad płytką. X i Y nie mają znaczenia: na tej wysokości maszyna sama przejedzie nad pierwszy punkt i zacznie szukać płytki."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1499,6 +1499,7 @@
       "prepare": "Przygotowanie",
       "wire": "Przewód",
       "position": "Ustawienie",
+      "startHeight": "Wysokość startu",
       "measure": "Pomiar",
       "result": "Wynik",
       "tool": "Sposób",
@@ -1740,7 +1741,6 @@
       "badArea": "Obszar musi mieć szerokość w X i w Y: „do” większe od „od”.",
       "badGrid": "Od 2 do 30 punktów w każdej osi.",
       "start": "Współrzędne robocze, jak w programie (0 to zero bieżącego układu). Linia przerywana: obrys wczytanego programu.",
-      "drawing": "Obszar i punkty pomiaru z góry",
       "point": "Punkt {{n}} z {{total}}",
       "low": "Najniżej",
       "high": "Najwyżej",
@@ -1801,7 +1801,8 @@
       "heat": "Heatmapa",
       "look": "Wygląd mapy",
       "fit": "Kadr na obszar mapy",
-      "pointHeight": "{{dz}} {{unit}} · punkt {{col}}, {{row}}"
+      "pointHeight": "{{dz}} {{unit}} · punkt {{col}}, {{row}}",
+      "startDrawing": "Z boku: płytka między imadłami, narzędzie w pasie nad imadłami i pod limitem dojazdu Z"
     }
   }
 }

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import HeightMapGrid from './HeightMapGrid';
+import MapStartScene from './MapStartScene';
 import MapPreview3D from './MapPreview3D';
 import SegmentedChoice from './SegmentedChoice';
 import Slider from './Slider';
 import useBentProgram from './useBentProgram';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
+import { figureSaid } from '../machine/probeFields';
 import { useUnits } from './units';
 import { t } from '../i18n';
 
@@ -17,18 +18,18 @@ import { t } from '../i18n';
 
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
-/** Into place: the area, the tool's first point ringed. */
-export const HeightMapPosition = ({ grid, outline }) => (grid?.xs ? (
-  <HeightMapGrid
-    area={{ x: [grid.xs[0], grid.xs[grid.xs.length - 1]], y: [grid.ys[0], grid.ys[grid.ys.length - 1]] }}
-    nx={grid.nx}
-    ny={grid.ny}
-    outline={outline}
-    at={{ i: 0, j: 0 }}
-    label={t('probe.map.drawing')}
-    className="mx-auto h-auto w-full max-w-md"
-  />
-) : null);
+/** Into place: only the height counts — over the clamps, under the limit (`MapStartScene`). */
+export const HeightMapPosition = ({ choice, texts }) => {
+  const units = useUnits();
+  return (
+    <MapStartScene
+      maxZ={figureSaid('maxZ', texts?.maxZ ?? '', units.rule)}
+      tool={choice}
+      label={t('probe.map.startDrawing')}
+      className="w-full max-w-md self-center rounded-ctl border border-line bg-panel"
+    />
+  );
+};
 
 // How much the heights are brought out in 3D: a step on the slider, kept from the measuring to the result.
 const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];

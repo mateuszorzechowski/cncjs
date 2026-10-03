@@ -96,7 +96,7 @@ export const METHODS = [
     choice: { option: 'edge', key: 'probe.edgeLabel', list: EDGES, first: 'z', step: 'probe.step.surface' },
   },
   {
-    id: 'height-map', key: 'probe.method.map', note: 'probe.method.mapNote', place: 'probe.place.map',
+    id: 'height-map', key: 'probe.method.map', note: 'probe.method.mapNote', place: 'probe.place.map', position: 'probe.step.startHeight',
     start: 'probe.position.start', steps: MAP_STEPS, touches: true, apart: true, asks: true,
     choice: { option: 'tool', key: 'probe.map.toolLabel', list: MAP_TOOLS, first: 'board', step: 'probe.step.tool' },
   },
@@ -162,8 +162,16 @@ const STEPS = [
 /** The steps a method goes through, named — every step until one is picked. */
 export const stepsOf = (method) => {
   const ids = method?.steps ?? THROUGH_PROBE;
-  // A choice with a step of its own is named for what it chooses.
-  return ids.map((id) => (id === 'choose' ? { id, key: method.choice.step } : STEPS.find((step) => step.id === id)));
+  // A choice with a step of its own is named for what it chooses; into place, for what it sets where a method says (`position`).
+  return ids.map((id) => {
+    if (id === 'choose') {
+      return { id, key: method.choice.step };
+    }
+    if (id === 'position' && method?.position) {
+      return { id, key: method.position };
+    }
+    return STEPS.find((step) => step.id === id);
+  });
 };
 
 /** The step before or after `id` for this method (`by` -1 or 1). */
