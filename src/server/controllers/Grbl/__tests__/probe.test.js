@@ -294,7 +294,7 @@ describe('a size', () => {
 
     expect(probeStates().pop()).toMatchObject({ state: 'measured', result: { size: { size: { x: 20 }, spread: null } } });
     expect(recorded).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'width', shape: 'groove-x', size: { x: 20 }, ball: 2 }),
+      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'width', shape: 'groove-x', size: { x: 20 }, spread: null, passes: 1, ball: 2 }),
     }));
     controller.command('probe:apply');
     expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
