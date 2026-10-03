@@ -215,8 +215,8 @@ const MapArea = ({
   }, [sheetKey]);
 
   // Along each row and column from one point to the next on the sheet, stopping a ring's width short of each.
-  const gapU = r / Math.max(1e-6, (x1 - x0) / Math.max(1, nx - 1));
-  const gapV = r / Math.max(1e-6, (y1 - y0) / Math.max(1, ny - 1));
+  const gapU = markR / Math.max(1e-6, (x1 - x0) / Math.max(1, nx - 1));
+  const gapV = markR / Math.max(1e-6, (y1 - y0) / Math.max(1, ny - 1));
   const run = (from, to, at) => Array.from({ length: LINE_STEPS }, (_, s) => [
     at(from + ((to - from) * s) / LINE_STEPS), at(from + ((to - from) * (s + 1)) / LINE_STEPS),
   ]);
@@ -236,7 +236,7 @@ const MapArea = ({
   const crosses = given.flatMap(({ x, y }) => {
     const cx = x + offset.x;
     const cy = y + offset.y;
-    const [a, b] = [r * 1.5, r * 3];
+    const [a, b] = [markR * 1.5, markR * 3];
     return [[[cx - b, cy, z], [cx - a, cy, z]], [[cx + a, cy, z], [cx + b, cy, z]], [[cx, cy - b, z], [cx, cy - a, z]], [[cx, cy + a, z], [cx, cy + b, z]]];
   });
 
