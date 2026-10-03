@@ -20,6 +20,7 @@
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const net = require('net');
 const path = require('path');
 
 const PORT = Number(process.env.REVIEW_PORT || 8765);
@@ -296,9 +297,25 @@ const handler = (req, res) => {
 
 };
 
-const server = secure
-  ? https.createServer({ cert: fs.readFileSync(CERT), key: fs.readFileSync(KEY) }, handler)
-  : http.createServer(handler);
+/*
+ * Both schemes on the one port (Mateusz, 2026-10-03: the bookmark did nothing
+ * on :8001). The bookmarklet asks for the page's own scheme on :8765, and the
+ * panels differ: :8000 is served over TLS, the simulator's :8001 is not. So
+ * the first byte decides — a TLS handshake starts with 0x16 — and the
+ * connection goes to the HTTPS or the plain server, the bookmark unchanged.
+ */
+const plain = http.createServer(handler);
+const tls = secure ? https.createServer({ cert: fs.readFileSync(CERT), key: fs.readFileSync(KEY) }, handler) : null;
+const server = net.createServer((socket) => {
+  socket.once('data', (first) => {
+    socket.pause();
+    socket.unshift(first);
+    const to = tls && first[0] === 0x16 ? tls : plain;
+    to.emit('connection', socket);
+    process.nextTick(() => socket.resume());
+  });
+  socket.on('error', () => {});
+});
 
 server.listen(PORT, () => {
   const bookmarklet = `javascript:(function(){var s=document.createElement('script');` +
