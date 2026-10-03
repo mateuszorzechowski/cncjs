@@ -114,6 +114,22 @@ const MapArea = ({
   const span = heights ? heights.high - heights.low : 0;
   const lift = (u, v) => z + surface(u, v) * scale;
   const point = (u, v) => [xAt(u), yAt(v), lift(u, v)];
+  /*
+   * A point's mark lying on the sheet, not level through it (Mateusz,
+   * 2026-10-03): turned to the sheet's slope there, a hair over it.
+   */
+  const UP = new THREE.Vector3(0, 0, 1);
+  const onSheet = (u, v) => {
+    const du = 0.01;
+    const a = new THREE.Vector3(...point(Math.max(0, u - du), v));
+    const b = new THREE.Vector3(...point(Math.min(nx - 1, u + du), v));
+    const c = new THREE.Vector3(...point(u, Math.max(0, v - du)));
+    const d = new THREE.Vector3(...point(u, Math.min(ny - 1, v + du)));
+    const normal = b.sub(a).cross(d.sub(c)).normalize();
+    const turn = new THREE.Quaternion().setFromUnitVectors(UP, normal.z < 0 ? normal.negate() : normal);
+    const at = new THREE.Vector3(...point(u, v)).addScaledVector(normal, r * 0.1);
+    return { position: at.toArray(), quaternion: turn.toArray() };
+  };
 
   // The sheet, finer when smooth, each vertex shaded by its height — or the middle shade near a point not measured.
   const fine = smooth ? FINE : 1;
@@ -205,14 +221,14 @@ const MapArea = ({
       {gridLines ? <Lines segments={edge} color={color} opacity={0.9} /> : null}
       {gridLines ? <Lines segments={inner} color={color} opacity={0.25} /> : null}
       {gridLines ? values.flatMap((row, j) => row.map((_, i) => (
-        <mesh key={`${i},${j}`} geometry={measured.has(`${i},${j}`) ? disc : ring} position={[xAt(i), yAt(j), lift(i, j)]}>
+        <mesh key={`${i},${j}`} geometry={measured.has(`${i},${j}`) ? disc : ring} {...onSheet(i, j)}>
           <meshBasicMaterial color={color} side={THREE.DoubleSide} />
         </mesh>
       ))) : null}
       {crosses.length ? <Lines segments={crosses} color={color} opacity={1} /> : null}
       {contourLines.length ? <Lines segments={contourLines} color={color} opacity={0.7} /> : null}
       {picked ? (
-        <mesh geometry={ring} position={[xAt(picked.i), yAt(picked.j), lift(picked.i, picked.j)]} scale={2}>
+        <mesh geometry={ring} {...onSheet(picked.i, picked.j)} scale={2}>
           <meshBasicMaterial color={pickColor} side={THREE.DoubleSide} />
         </mesh>
       ) : null}
