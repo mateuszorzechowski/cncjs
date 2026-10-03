@@ -241,8 +241,8 @@ const MapArea = ({
   });
 
   // Just over the sheet, so it does not cut them in half.
-  const contourLines = contours && heights ? contourSegments(surface, nx, ny, contours, FINE)
-    .map(([a, b]) => [point(...a), point(...b)].map(([px, py, pz]) => [px, py, pz + 0.05])) : [];
+  const contourLines = contours && heights ? contourSegments(surface, nx, ny, contours, fine)
+    .map((ends) => ends.map(([u, v, h]) => [xAt(u), yAt(v), z + h * scale + 0.05])) : [];
 
   const measured = new Set(done.map(({ i, j }) => `${i},${j}`));
   const all = values.flatMap((row, j) => row.map((_, i) => ({ i, j })));
