@@ -70,29 +70,41 @@ const MapPreview3D = ({
   const offset = useMemo(() => live || NO_OFFSET, [offsetKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const area = grid?.xs ? { x: [grid.xs[0], grid.xs[grid.xs.length - 1]], y: [grid.ys[0], grid.ys[grid.ys.length - 1]] } : null;
   /*
-   * The bent path raised with the sheet: it is bent by the true heights, so
-   * the scale's extra — the height there times one less than the scale — is
-   * added under each of its points, and it lies on the raised sheet.
+   * What the scale adds at a point of the program, work X and Y: the
+   * height there times one less than the scale — so what is bent by the true
+   * heights, or stands at them, lies on the raised sheet. Null at ×1 or with
+   * nothing measured.
    */
-  const toolpath = useMemo(() => {
-    if (!parsed || !bent || !area || !heights || scale === 1) {
-      return parsed;
+  const raise = useMemo(() => {
+    if (!area || !heights || scale === 1) {
+      return null;
     }
     const byPoint = new Map(heights.heights.map(({ i, j, dz }) => [`${i},${j}`, dz]));
     const values = Array.from({ length: grid.ny }, (_, j) => Array.from({ length: grid.nx }, (__, i) => byPoint.get(`${i},${j}`) ?? 0));
     const surface = surfaceOf(values, grid.nx, grid.ny, smooth);
+    const clampTo = (v, n) => Math.min(n - 1, Math.max(0, v));
+    return (x, y) => surface(
+      clampTo(((x - area.x[0]) / (area.x[1] - area.x[0])) * (grid.nx - 1), grid.nx),
+      clampTo(((y - area.y[0]) / (area.y[1] - area.y[0])) * (grid.ny - 1), grid.ny),
+    ) * (scale - 1);
+  }, [JSON.stringify(area), heights, scale, smooth]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The bent path raised with the sheet.
+  const toolpath = useMemo(() => {
+    if (!parsed || !bent || !raise) {
+      return parsed;
+    }
     const from = parsed.source.positions;
     const positions = new Float32Array(from.length);
-    const clampTo = (v, n) => Math.min(n - 1, Math.max(0, v));
     for (let k = 0; k < from.length; k += 3) {
-      const u = clampTo(((from[k] - area.x[0]) / (area.x[1] - area.x[0])) * (grid.nx - 1), grid.nx);
-      const v = clampTo(((from[k + 1] - area.y[0]) / (area.y[1] - area.y[0])) * (grid.ny - 1), grid.ny);
       positions[k] = from[k];
       positions[k + 1] = from[k + 1];
-      positions[k + 2] = from[k + 2] + surface(u, v) * (scale - 1);
+      positions[k + 2] = from[k + 2] + raise(from[k], from[k + 1]);
     }
     return { ...parsed, source: { ...parsed.source, positions } };
-  }, [parsed, bent, JSON.stringify(area), heights, scale, smooth]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [parsed, bent, raise]);
+  // The tool raised the same way, so it stands where the drawing has the surface — the readings say where it truly is (Mateusz, 2026-10-03).
+  const tool = toolPoint(machine.machinePosition);
+  const raisedTool = tool && raise ? { ...tool, z: tool.z + raise(tool.x - offset.x, tool.y - offset.y) } : tool;
   const areaKey = area ? `${area.x},${area.y}` : '';
   // The area on the machine, for the view to take in when there is no travel to frame.
   const also = useMemo(() => (area ? [{
@@ -145,7 +157,7 @@ const MapPreview3D = ({
     <div data-stage="" className={`relative min-h-0 overflow-hidden rounded-ctl border border-line bg-field ${className}`}>
       <Scene
         scene={scene}
-        tool={toolPoint(machine.machinePosition)}
+        tool={raisedTool}
         layers={layers}
         view={view}
         revision={revision}
