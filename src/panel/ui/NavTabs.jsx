@@ -2,6 +2,7 @@ import useBackCloses from './backStack';
 import { useEffect, useRef, useState } from 'react';
 import { dimPanel } from './themeColor';
 import { EDGE } from './navEdge';
+import NavMark from './NavMark';
 import { t } from '../i18n';
 
 /**
@@ -73,7 +74,9 @@ export const MARKS = {
  */
 const SWIPE_PX = 24;
 
-const Tile = ({ id, label, ready, here, onSelect }) => (
+const Tile = ({
+  id, label, ready, mark, here, onSelect,
+}) => (
   <button
     type="button"
     aria-current={here ? 'page' : undefined}
@@ -81,7 +84,7 @@ const Tile = ({ id, label, ready, here, onSelect }) => (
     disabled={!ready}
     onClick={() => onSelect(id)}
     className={[
-      'flex min-w-0 flex-col items-center justify-center gap-1 py-1',
+      'relative flex min-w-0 flex-col items-center justify-center gap-1 py-1',
       here ? 'text-acc' : 'text-mut',
       ready ? '' : 'opacity-45',
     ].join(' ')}
@@ -98,6 +101,7 @@ const Tile = ({ id, label, ready, here, onSelect }) => (
     >
       <path d={MARKS[id] || MARKS.files} />
     </svg>
+    {mark ? <NavMark className="absolute right-[calc(50%-1.25rem)] top-1" /> : null}
     {/* The word stays under the shape. A glyph alone is a guess until it has
       * been learned, and this menu is used by whoever happens to be standing
       * at the machine. */}
@@ -235,6 +239,7 @@ const NavTabs = ({ items, rest, current, onSelect, className = '' }) => {
       id={item.id}
       label={item.label}
       ready={item.ready}
+      mark={item.mark}
       here={item.id === current}
       onSelect={go}
     />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import useKept from './useKept';
 import { askGrid, mapAsk } from '../machine/probe';
 import { readToolpath } from '../machine/toolpath';
 import { settingFigure } from '../machine/units';
@@ -20,9 +21,10 @@ const useHeightMapAsk = ({ machine, method, rule }) => {
   const outline = useMemo(() => readToolpath(machine.gcode)?.bounds ?? null, [machine.gcode]);
   // A length in the server's units, as a field starts with it.
   const said = (mm) => String(Number(settingFigure(mm, 'length', rule).value));
-  const [mode, setMode] = useState(null);
-  const [texts, setTexts] = useState({});
-  const [joined, setJoined] = useState(null);
+  // Kept while the screen is away, as the rest of the wizard is (`useProbeWizard`).
+  const [mode, setMode] = useKept('probe-map-mode', null);
+  const [texts, setTexts] = useKept('probe-map-texts', {});
+  const [joined, setJoined] = useKept('probe-map-joined', null);
   const [grid, setGrid] = useState(null);
 
   // Picked the first time: the program's extent when one is loaded, else a 50 mm square at the zero; four points each way.

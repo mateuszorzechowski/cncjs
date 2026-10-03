@@ -6,6 +6,8 @@ import HeightMapArea from '../ui/HeightMapArea';
 import { HeightMapColumns } from '../ui/HeightMapSteps';
 import useProbeJoin from '../ui/useProbeJoin';
 import useHeightMapAsk from '../ui/useHeightMapAsk';
+import useProbeWizard from '../ui/useProbeWizard';
+import { useBackSteps } from '../ui/backStack';
 import ProbeJoin from '../ui/ProbeJoin';
 import Notice from '../ui/Notice';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
@@ -16,7 +18,7 @@ import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  SURFACE, applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
+  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
@@ -41,16 +43,10 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const units = useUnits();
   const phone = useIsPhone();
   const { probe } = machine;
-  const [local, setLocal] = useState('method');
-  const [picked, setPicked] = useState(null);
-  // The corner, the paper's surface: each method's one choice, kept per method.
-  const [chosen, setChosen] = useState({});
+  const {
+    local, setLocal, picked, setPicked, chosen, setChosen, texts, setTexts, bad, setBad, touched, setTouched, surface, setSurface,
+  } = useProbeWizard();
   const [kept, setKept] = useState(null);
-  const [texts, setTexts] = useState({});
-  const [bad, setBad] = useState(null);
-  const [touched, setTouched] = useState(false);
-  // Where Z0 goes against where it is measured — per measurement, as the corner is.
-  const [surface, setSurface] = useState(SURFACE);
   // The jog's sheet open, on a phone.
   const [jogging, setJogging] = useState(false);
 
@@ -65,6 +61,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const fields = kept?.methods?.[method?.id]?.fields ?? [];
   const choice = chosen[method?.id] ?? method?.choice?.first;
   const go = (by) => setLocal(stepBeside(method, step, by));
+  // Each step on into history, back by the gesture; none while the server's measurement is on the screen.
+  useBackSteps(probe ? 0 : Math.max(0, (method?.steps ?? []).indexOf(step)), () => go(-1));
   const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
   // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
   const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
