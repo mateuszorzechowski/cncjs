@@ -18,9 +18,18 @@ import { across as holeAcross } from './hole';
  * is only as good as that figure, which the panel says under it.
  */
 
-const AXES = { x: ['x'], y: ['y'], both: ['x', 'y'] };
-export const SIDES = ['inside', 'outside'];
-export const WIDTH_AXES = ['x', 'y'];
+/*
+ * One width, by what it is and along which axis (Mateusz, 2026-10-03): a
+ * groove, touched from inside, or a bar, from outside — one choice, as the
+ * corner's and the paper's edge are.
+ */
+export const SHAPES = {
+  'groove-x': { axes: ['x'], side: 'inside' },
+  'groove-y': { axes: ['y'], side: 'inside' },
+  'bar-x': { axes: ['x'], side: 'outside' },
+  'bar-y': { axes: ['y'], side: 'outside' },
+};
+const BOTH = ['x', 'y'];
 
 // Every pass, the ones that count last.
 const passCount = (params) => params.holePasses - 1 + params.repeats;
@@ -58,25 +67,20 @@ const fixed = (side, fields) => ({
   options: {},
   touches: true,
   check: () => null,
-  steps: (params) => passes(AXES.both, side, params),
-  size: (params, options, seen) => sizeOf(AXES.both, side, params, seen),
+  steps: (params) => passes(BOTH, side, params),
+  size: (params, options, seen) => sizeOf(BOTH, side, params, seen),
 });
 
 export const holeSize = fixed('inside', HOLE_FIELDS);
 export const bossSize = fixed('outside', BOSS_FIELDS);
 
-/** One axis, two walls: `axis` X or Y, `side` inside — a groove — or outside — a bar. */
+/** One axis, two walls: `shape` one of `SHAPES`. */
 export const width = {
-  // A groove's figures are a hole's, a bar's a part's; the panel shows the ones for the side chosen.
+  // A groove's figures are a hole's, a bar's a part's; the panel shows the ones for the shape chosen.
   fields: [...new Set([...BOSS_FIELDS, ...HOLE_FIELDS])],
-  options: { axis: WIDTH_AXES, side: SIDES },
+  options: { shape: Object.keys(SHAPES) },
   touches: true,
-  check: (options) => {
-    if (!WIDTH_AXES.includes(options.axis)) {
-      return 'bad-axis';
-    }
-    return SIDES.includes(options.side) ? null : 'bad-side';
-  },
-  steps: (params, options) => passes(AXES[options.axis], options.side, params),
-  size: (params, options, seen) => sizeOf(AXES[options.axis], options.side, params, seen),
+  check: (options) => (SHAPES[options.shape] ? null : 'bad-shape'),
+  steps: (params, options) => passes(SHAPES[options.shape].axes, SHAPES[options.shape].side, params),
+  size: (params, options, seen) => sizeOf(SHAPES[options.shape].axes, SHAPES[options.shape].side, params, seen),
 };

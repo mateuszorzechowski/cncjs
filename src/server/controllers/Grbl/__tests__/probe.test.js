@@ -270,7 +270,7 @@ describe('the offset it writes', () => {
 });
 
 describe('a size', () => {
-  /** Answer every line until the run is done: a probe touches X ±`half` from the machine's X0, anything else is ok. */
+  /** Answer every line until the run is done: a probe touches X Â±`half` from the machine's X0, anything else is ok. */
   const across = (controller, sent, half) => {
     let answered = 0;
     while (answered < sent().length) {
@@ -289,12 +289,12 @@ describe('a size', () => {
     probeSettings.set({ ballDiameter: 2, holePasses: 1 });
     const recorded = jest.spyOn(controller, 'note');
 
-    controller.command('probe:start', { method: 'width', options: { axis: 'x', side: 'inside' } });
+    controller.command('probe:start', { method: 'width', options: { shape: 'groove-x' } });
     across(controller, sent, 9);
 
     expect(probeStates().pop()).toMatchObject({ state: 'measured', result: { size: { size: { x: 20 }, spread: null } } });
     expect(recorded).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'width', axis: 'x', side: 'inside', size: { x: 20 }, ball: 2 }),
+      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'width', shape: 'groove-x', size: { x: 20 }, ball: 2 }),
     }));
     controller.command('probe:apply');
     expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
@@ -303,11 +303,11 @@ describe('a size', () => {
     expect(controller.probe).toBeNull();
   });
 
-  test('a width without its axis is refused before anything moves', () => {
+  test('a width that is no shape is refused before anything moves', () => {
     const { controller, sent, refusals } = setup();
 
-    controller.command('probe:start', { method: 'width', options: { side: 'inside' } });
-    expect(refusals.pop()).toMatchObject({ reason: 'bad-axis' });
+    controller.command('probe:start', { method: 'width', options: {} });
+    expect(refusals.pop()).toMatchObject({ reason: 'bad-shape' });
     expect(sent()).toHaveLength(0);
   });
 });

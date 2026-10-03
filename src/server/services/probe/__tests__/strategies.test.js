@@ -302,14 +302,14 @@ describe('a size, not a zero', () => {
   const [hx, hy] = [-120, -70];
   const z = [-80, -50];
 
-  /** A rectangular hole `w` × `d` around (hx, hy). */
+  /** A rectangular hole `w` Ã— `d` around (hx, hy). */
   const holeOf = (w, d) => [
     { x: [hx - 200, hx - w / 2], y: [hy - 200, hy + 200], z },
     { x: [hx + w / 2, hx + 200], y: [hy - 200, hy + 200], z },
     { x: [hx - 200, hx + 200], y: [hy - 200, hy - d / 2], z },
     { x: [hx - 200, hx + 200], y: [hy + d / 2, hy + 200], z },
   ];
-  /** A rectangular part `w` × `d` around (hx, hy), its top at Z -50. */
+  /** A rectangular part `w` Ã— `d` around (hx, hy), its top at Z -50. */
   const partOf = (w, d) => [{ x: [hx - w / 2, hx + w / 2], y: [hy - d / 2, hy + d / 2], z }];
   const touches = (sent) => sent.filter((line) => line.includes('G38.2')).length;
 
@@ -336,7 +336,7 @@ describe('a size, not a zero', () => {
     expect(wordsOf(sent.find((line) => line.includes('G38.2'))).z).toBeDefined();
   });
 
-  test('repeated: the centre found first, then every pass counted — the mean and the spread', () => {
+  test('repeated: the centre found first, then every pass counted â€” the mean and the spread', () => {
     const three = { ...params, repeats: 3 };
     const { outcome, sent } = measure({
       method: 'hole-size', params: three, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
@@ -360,7 +360,7 @@ describe('a size, not a zero', () => {
   });
 
   test('one width: a groove from inside along one axis touches only that axis', () => {
-    const options = { axis: 'y', side: 'inside' };
+    const options = { shape: 'groove-y' };
     const { outcome, sent, pos } = measure({
       method: 'width', options, params, radius, boxes: holeOf(24, 12), start: { x: hx + 5, y: hy - 3, z: -60 },
     });
@@ -373,7 +373,7 @@ describe('a size, not a zero', () => {
   });
 
   test('one width: a bar from outside along X', () => {
-    const options = { axis: 'x', side: 'outside' };
+    const options = { shape: 'bar-x' };
     const { outcome } = measure({
       method: 'width', options, params, radius, boxes: partOf(16, 100), start: { x: hx + 3, y: hy - 2, z: -45 },
     });
@@ -383,9 +383,8 @@ describe('a size, not a zero', () => {
   });
 
   test.each([
-    [{ axis: 'z', side: 'inside' }, 'bad-axis'],
-    [{ axis: 'x', side: 'across' }, 'bad-side'],
-    [{}, 'bad-axis'],
+    [{ shape: 'groove-z' }, 'bad-shape'],
+    [{}, 'bad-shape'],
   ])('a width that is not one is refused: %j', (options, code) => {
     expect(STRATEGIES.width.check(options)).toBe(code);
   });
