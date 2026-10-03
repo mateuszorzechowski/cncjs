@@ -18,8 +18,8 @@ import { contourSegments } from './contours';
  * through, the path under it shows (Mateusz, 2026-10-03). `contours`, a
  * height in millimetres: lines on the sheet every that much, as on a
  * map of the land — where the board bulges is seen at once. `gridLines` off
- * leaves the sheet without its lines between the points; the edge and the
- * points stay, to say where the map ends and where it was touched.
+ * leaves the sheet alone, a smooth surface: no lines, no edge, no points
+ * (Mateusz, 2026-10-03: "bez linii siatki i bez punktów").
  *
  * `area` and `given` in work millimetres, placed by `offset` as the
  * program's path is; `nx` × `ny` points edge to edge as the server measures.
@@ -201,13 +201,13 @@ const MapArea = ({
       <mesh geometry={sheet} userData={{ pivot: true }} onClick={pick}>
         <meshBasicMaterial vertexColors transparent={!solid} opacity={opacity} depthWrite={solid} side={THREE.DoubleSide} />
       </mesh>
-      <Lines segments={edge} color={color} opacity={0.9} />
+      {gridLines ? <Lines segments={edge} color={color} opacity={0.9} /> : null}
       {gridLines ? <Lines segments={inner} color={color} opacity={0.25} /> : null}
-      {values.flatMap((row, j) => row.map((_, i) => (
+      {gridLines ? values.flatMap((row, j) => row.map((_, i) => (
         <mesh key={`${i},${j}`} geometry={measured.has(`${i},${j}`) ? disc : ring} position={[xAt(i), yAt(j), lift(i, j)]}>
           <meshBasicMaterial color={color} side={THREE.DoubleSide} />
         </mesh>
-      )))}
+      ))) : null}
       {crosses.length ? <Lines segments={crosses} color={color} opacity={1} /> : null}
       {contourLines.length ? <Lines segments={contourLines} color={color} opacity={0.7} /> : null}
       {picked ? (
