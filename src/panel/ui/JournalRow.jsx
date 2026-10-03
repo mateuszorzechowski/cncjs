@@ -1,6 +1,7 @@
 import { EVENT_KEYS, LEVEL_KEYS, SOURCE_KEYS, describeEntry } from '../machine/journalWords';
 import { rowTitle, settingValueText } from '../machine/machineSettings';
 import { issueText } from './fileWords';
+import { probeDetails, probeLine } from './probeJournal';
 import { useUnits } from './units';
 import { t } from '../i18n';
 import { dateFormat } from './dates';
@@ -128,7 +129,7 @@ const JournalRow = ({ entry, device, settings, open, onToggle }) => {
           </span>
           {entry.code ? <span className="ml-1.5 font-num text-cap text-mut">{entry.code}</span> : null}
         </span>
-        <span className="min-w-0 flex-1 basis-60 text-ink">{settingLine(entry, settings, units.rule) ?? said(entry)}</span>
+        <span className="min-w-0 flex-1 basis-60 text-ink">{settingLine(entry, settings, units.rule) ?? probeLine(entry, units) ?? said(entry)}</span>
         {/*
           * Only where the whole line has room for it; on a narrower list it
           * fell to a line of its own, and the details below already name the
@@ -162,6 +163,7 @@ const JournalRow = ({ entry, device, settings, open, onToggle }) => {
           {refusal ? <Detail label={t('journal.detail.code')} value={entry.code} /> : null}
           {refusal ? <Detail label={t('journal.detail.meaning')} value={said(entry)} prose /> : null}
           {data.map(([key, value]) => <Detail key={key} label={t(DETAILS[key])} value={String(value)} />)}
+          {probeDetails(entry, units).map(([label, value]) => <Detail key={label} label={label} value={value} />)}
           {found.map((finding, index) => (
             <Detail
               key={`${finding.code} ${finding.word}`}

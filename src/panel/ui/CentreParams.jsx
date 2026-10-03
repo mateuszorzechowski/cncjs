@@ -8,6 +8,7 @@ import { figureColumns } from './ProbeSections';
 import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
+import { drawnPasses } from '../machine/sizeCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
 import { useIsWide } from './shell';
 import { useUnits } from './units';
@@ -42,8 +43,8 @@ const CentreParams = ({
   const [open, setOpen] = useState(null);
   const still = useReducedMotion();
   const group = PARAMS.find((one) => one.id === open);
-  // Once or twice across: the cycle drawn is the one that will run.
-  const passes = texts.holePasses === '1' ? 1 : 2;
+  // Once or twice across, and a size's repeats: the cycle drawn is the one that will run.
+  const passes = drawnPasses(cycle, texts.holePasses, texts.repeats);
   const items = useMemo(() => timeline(passes), [timeline, passes]);
   const {
     player, picked, loop, frame, p, onField, pick,

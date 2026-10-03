@@ -73,7 +73,7 @@ export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
   const HOLE_PARAMS = [
     { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'] },
     // How many passes, a switch at the group's head.
-    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true },
+    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: size },
     // Only for the hole's size said back: the centre needs no radius.
     { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
   ];
@@ -292,6 +292,7 @@ export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
 
   /** The hole as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */
   return {
+    size,
     part,
     // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
     side: (name, p, how) => holeSide({ ...MOVES[name], at: toolAt(MOVES[name], p) }, p, how, part),

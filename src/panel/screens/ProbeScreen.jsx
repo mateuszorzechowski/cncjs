@@ -254,12 +254,13 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
         <Button tone="stop" onClick={() => controlledStop(machine.type)} className="h-ctl">{t('probe.measure.abort')}</Button>
       </Foot>
     );
-  } else if (probe?.state === 'failed') {
+  } else if (probe?.state === 'failed' || probe?.result?.size) {
+    // Failed, or a size, which has nothing to write (Mateusz, 2026-10-03): closed, or measured again.
     body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.close')}</Button>
-        <Button tone="primary" onClick={again} className="h-ctl">{t('probe.result.again')}</Button>
+        <Button tone="primary" onClick={again} className="h-ctl">{t(probe?.result?.size ? 'probe.size.again' : 'probe.result.again')}</Button>
       </Foot>
     );
   } else {

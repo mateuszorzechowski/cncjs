@@ -656,7 +656,8 @@
       "file": "File",
       "settings": "Settings",
       "setting": "Setting",
-      "offset": "Offset"
+      "offset": "Offset",
+      "probe": "Probe"
     },
     "program": {
       "start": "Started {{name}}",
@@ -721,7 +722,11 @@
       "arcBy": "{{said}}: starts {{radius}} {{unit}} from its centre and ends {{reach}} {{unit}} from it",
       "address": "Address",
       "system": "System",
-      "browser": "Browser"
+      "browser": "Browser",
+      "method": "Method",
+      "spread": "Spread",
+      "passes": "Passes",
+      "ball": "Ball"
     },
     "range": {
       "m15": "15 min",
@@ -757,6 +762,17 @@
     },
     "offset": {
       "changed": "{{code}} {{axes}}: {{from}} → {{to}}"
+    },
+    "probe": {
+      "start": "Start: {{method}}",
+      "measured": "Measured: {{method}} · {{axes}} {{unit}}",
+      "by": "by {{shift}}",
+      "mapped": "Measured: {{method}} · {{points}} points",
+      "applied": "Zero written to {{wcs}}: {{method}}",
+      "mapSaved": "Height map saved",
+      "size": "{{method}}: {{sizes}} {{unit}}{{spread}} · ball {{ball}}",
+      "spread": " · spread {{list}} ({{n}}×)",
+      "failed": "Failed: {{method}} — {{why}}"
     }
   },
   "grbl": {
@@ -1416,7 +1432,13 @@
       "boss": "Centre from outside",
       "bossNote": "The centre of a boss or a part, by probe from outside: X0 and Y0, Z unchanged.",
       "map": "Height map",
-      "mapNote": "A grid of points by probe: the program follows a warped board. The zero stays as it is."
+      "mapNote": "A grid of points by probe: the program follows a warped board. The zero stays as it is.",
+      "holeSize": "Hole size",
+      "holeSizeNote": "A hole's diameter or size in X and Y, with the probe. Zero unchanged.",
+      "bossSize": "Part size",
+      "bossSizeNote": "A part's or boss's size in X and Y, probed from outside. Zero unchanged.",
+      "width": "Width along one axis",
+      "widthNote": "A groove from inside or a bar from outside, in X or Y. Zero unchanged."
     },
     "how": {
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
@@ -1432,7 +1454,9 @@
       "paper": "Bring the tool a few millimetres over the surface chosen — in front of it for a side. Keep the sheet at hand.",
       "hole": "Lower the probe's ball into the hole, a few millimetres below its edge, roughly in the middle — clear of the walls.",
       "boss": "Set the probe's ball over the middle of the part, a few millimetres above its top — less than the Z travel limit.",
-      "map": "Raise the tool above the clamps, no higher than the Z reach limit over the board. X and Y do not matter: at this height the machine travels over the first point by itself and starts looking for the board."
+      "map": "Raise the tool above the clamps, no higher than the Z reach limit over the board. X and Y do not matter: at this height the machine travels over the first point by itself and starts looking for the board.",
+      "groove": "Lower the probe's ball into the groove, a few millimetres below its edge, roughly in the middle — clear of the walls.",
+      "bar": "Set the probe's ball over the middle of the bar, a few millimetres above its top — less than the Z travel limit."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1493,7 +1517,8 @@
       "ballDiameter": "Ball diameter",
       "holePasses": "Passes",
       "bossSize": "Part width (roughly)",
-      "mapLift": "Lift between points"
+      "mapLift": "Lift between points",
+      "repeats": "Repeats"
     },
     "step": {
       "method": "Method",
@@ -1507,7 +1532,8 @@
       "result": "Result",
       "tool": "Touch",
       "area": "Figures",
-      "areaWay": "Area"
+      "areaWay": "Area",
+      "shape": "Shape"
     },
     "wire": {
       "how": "Clip the lead to the tool. Touch the plate to the tool and let go. The panel reads the probe from the controller: it shows “Touching” while they touch and “Works” once you let go.",
@@ -1582,7 +1608,8 @@
     },
     "stage": {
       "search": "finding",
-      "zero": "setting zero"
+      "zero": "setting zero",
+      "size": "size"
     },
     "cycle": {
       "alarm": "ALARM:5 · no touch",
@@ -1634,7 +1661,8 @@
     },
     "bar": {
       "measure": "measure",
-      "zero": "zero"
+      "zero": "zero",
+      "size": "size"
     },
     "group": {
       "plate": "Plate",
@@ -1817,6 +1845,28 @@
       "fit": "Frame the map's area",
       "pointHeight": "{{dz}} {{unit}} · point {{col}}, {{row}}",
       "startDrawing": "Side-on: the board between the clamps, the tool in the band above the clamps and under the Z reach limit"
+    },
+    "shape": {
+      "grooveX": "Groove X",
+      "grooveY": "Groove Y",
+      "barX": "Bar X",
+      "barY": "Bar Y"
+    },
+    "shapeLabel": "What you measure, and along which axis",
+    "size": {
+      "move": {
+        "size": "Size: the touches apart, and the ball"
+      },
+      "codeHole": "size = touches apart + ball Ø",
+      "codeBoss": "size = touches apart − ball Ø",
+      "repeatsWhy1": "One measurement: the size from the last pass.",
+      "repeatsWhyMore": "Several measurements, each from the centre found: the size is their mean, with the spread (largest less smallest).",
+      "axis": "Size {{axis}}",
+      "spread": "Spread {{axis}}",
+      "each": "{{axis}}, each pass: {{list}} {{unit}}",
+      "ball": "The size rests on the ball diameter: {{ball}} {{unit}}.",
+      "note": "Zero unchanged. The size is kept in the journal.",
+      "again": "Measure again"
     }
   }
 }

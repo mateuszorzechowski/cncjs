@@ -71,7 +71,7 @@ export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
     { id: 'part', key: 'probe.group.part', fields: ['bossSize'] },
     { id: 'reach', key: 'probe.group.reach', fields: ['clear', 'depth', 'maxZ'] },
     // How many passes, a switch at the group's head.
-    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true },
+    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: size },
     // Only for the part's size said back: the centre needs no radius.
     { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
   ];
@@ -298,6 +298,7 @@ export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
 
   /** The part as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */
   return {
+    size,
     part: {
       kind: 'boss', r: BOSS_R, toolR: TOOL_R, grow: 0.6, view: [-101, -94, 202, 188],
     },
