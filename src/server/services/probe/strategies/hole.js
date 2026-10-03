@@ -18,7 +18,7 @@ import { move, touch } from '../moves';
  * `holeSize` is the hole's rough diameter: each search goes no further than
  * that from where it starts, the fence for a hole not found.
  */
-const across = (axis, pass, params) => {
+export const across = (axis, pass, params) => {
   const near = `${axis}${pass}a`;
   const far = `${axis}${pass}b`;
   return [

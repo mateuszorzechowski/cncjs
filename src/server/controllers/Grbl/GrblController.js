@@ -2554,6 +2554,13 @@ class GrblController {
         this.probe.result = { map };
         this.bendResult();
         this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, points: map.xs.length * map.ys.length } });
+      } else if (strategy.size) {
+        // A size: for the screen and the journal, nothing to write (Mateusz, 2026-10-03).
+        const size = strategy.size(params, options, outcome.seen);
+        this.probe.result = { size };
+        this.note({
+          level: 'info', source: 'server', event: 'probe', code: 'size', data: { method, ...options, size: size.size, spread: size.spread, ball: params.ballDiameter },
+        });
       } else {
         const parameters = this.runner.getParameters();
         const zero = strategy.zero(params, options, outcome.seen, start);
@@ -3279,7 +3286,8 @@ class GrblController {
         'probe:apply': () => {
           const result = this.probe?.result;
 
-          if (!result) {
+          // A size has nothing to write: it is closed with `probe:discard`.
+          if (!result || result.size) {
             this.refuse(cmd, 'no-result');
             return;
           }

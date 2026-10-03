@@ -269,6 +269,49 @@ describe('the offset it writes', () => {
   });
 });
 
+describe('a size', () => {
+  /** Answer every line until the run is done: a probe touches X ±`half` from the machine's X0, anything else is ok. */
+  const across = (controller, sent, half) => {
+    let answered = 0;
+    while (answered < sent().length) {
+      const line = sent()[answered];
+      answered += 1;
+      const x = Number(line.match(/G38\.2 X(-?[\d.]+)/)?.[1]);
+      if (!Number.isNaN(x)) {
+        controller.runner.parse(`[PRB:${x > 0 ? half : -half},0.000,0.000:1]`);
+      }
+      controller.runner.parse('ok');
+    }
+  };
+
+  test('is shown and journalled, the zero never written, and closed rather than applied', () => {
+    const { controller, sent, refusals, probeStates } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 1 });
+    const recorded = jest.spyOn(controller, 'note');
+
+    controller.command('probe:start', { method: 'width', options: { axis: 'x', side: 'inside' } });
+    across(controller, sent, 9);
+
+    expect(probeStates().pop()).toMatchObject({ state: 'measured', result: { size: { size: { x: 20 }, spread: null } } });
+    expect(recorded).toHaveBeenCalledWith(expect.objectContaining({
+      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'width', axis: 'x', side: 'inside', size: { x: 20 }, ball: 2 }),
+    }));
+    controller.command('probe:apply');
+    expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
+    expect(sent().some((line) => line.includes('G10'))).toBe(false);
+    controller.command('probe:discard');
+    expect(controller.probe).toBeNull();
+  });
+
+  test('a width without its axis is refused before anything moves', () => {
+    const { controller, sent, refusals } = setup();
+
+    controller.command('probe:start', { method: 'width', options: { side: 'inside' } });
+    expect(refusals.pop()).toMatchObject({ reason: 'bad-axis' });
+    expect(sent()).toHaveLength(0);
+  });
+});
+
 describe('probe:stage', () => {
   const stages = (controller) => controller.__events.filter(({ event }) => event === 'probe:stage').map(({ args }) => args[0]);
 

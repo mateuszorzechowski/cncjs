@@ -84,7 +84,7 @@ const measure = ({
     }
     run.ok();
   }
-  const zero = outcome.seen ? strategy.zero(params, options, outcome.seen, start) : null;
+  const zero = outcome.seen && strategy.zero ? strategy.zero(params, options, outcome.seen, start) : null;
   return { outcome, zero, sent, pos };
 };
 
@@ -293,6 +293,101 @@ describe('the centre of a part, from outside', () => {
 
     expect(outcome).toMatchObject({ failure: 'touched', phase: 'x1a-down' });
     expect(zero).toBeNull();
+  });
+});
+
+describe('a size, not a zero', () => {
+  const params = { ...probeParams(), ballDiameter: 4, holeSize: 30, bossSize: 40, clear: 10, depth: 5 };
+  const radius = params.ballDiameter / 2;
+  const [hx, hy] = [-120, -70];
+  const z = [-80, -50];
+
+  /** A rectangular hole `w` × `d` around (hx, hy). */
+  const holeOf = (w, d) => [
+    { x: [hx - 200, hx - w / 2], y: [hy - 200, hy + 200], z },
+    { x: [hx + w / 2, hx + 200], y: [hy - 200, hy + 200], z },
+    { x: [hx - 200, hx + 200], y: [hy - 200, hy - d / 2], z },
+    { x: [hx - 200, hx + 200], y: [hy + d / 2, hy + 200], z },
+  ];
+  /** A rectangular part `w` × `d` around (hx, hy), its top at Z -50. */
+  const partOf = (w, d) => [{ x: [hx - w / 2, hx + w / 2], y: [hy - d / 2, hy + d / 2], z }];
+  const touches = (sent) => sent.filter((line) => line.includes('G38.2')).length;
+
+  test('a hole each way, the ball added back, the tool at its centre; no zero', () => {
+    const { outcome, pos } = measure({
+      method: 'hole-size', params, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const found = STRATEGIES['hole-size'].size(params, {}, outcome.seen);
+
+    expect(STRATEGIES['hole-size'].zero).toBeUndefined();
+    close(found.size, { x: 24, y: 18 });
+    expect(found.spread).toBeNull();
+    expect(found.each).toHaveLength(1);
+    close(pos, { x: hx, y: hy, z: -60 });
+  });
+
+  test('a part from outside each way, the ball taken off, after touching its top', () => {
+    const { outcome, sent } = measure({
+      method: 'boss-size', params, radius, boxes: partOf(30, 20), start: { x: hx + 3, y: hy - 2, z: -45 },
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    close(STRATEGIES['boss-size'].size(params, {}, outcome.seen).size, { x: 30, y: 20 });
+    expect(wordsOf(sent.find((line) => line.includes('G38.2'))).z).toBeDefined();
+  });
+
+  test('repeated: the centre found first, then every pass counted — the mean and the spread', () => {
+    const three = { ...params, repeats: 3 };
+    const { outcome, sent } = measure({
+      method: 'hole-size', params: three, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const found = STRATEGIES['hole-size'].size(three, {}, outcome.seen);
+
+    // One pass to find the centre (holePasses 2), three counted: four touches per axis each, two touches a pass.
+    expect(touches(sent)).toBe(4 * 2 * 2 * 2);
+    expect(found.each).toHaveLength(3);
+    close(found.size, { x: 24, y: 18 });
+    close(found.spread, { x: 0, y: 0 });
+  });
+
+  test('repeated with one pass to the centre: every pass counts, the first from where the tool stood', () => {
+    const { outcome, sent } = measure({
+      method: 'hole-size', params: { ...params, holePasses: 1, repeats: 2 }, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+
+    expect(touches(sent)).toBe(2 * 2 * 2 * 2);
+    expect(STRATEGIES['hole-size'].size({ ...params, holePasses: 1, repeats: 2 }, {}, outcome.seen).each).toHaveLength(2);
+  });
+
+  test('one width: a groove from inside along one axis touches only that axis', () => {
+    const options = { axis: 'y', side: 'inside' };
+    const { outcome, sent, pos } = measure({
+      method: 'width', options, params, radius, boxes: holeOf(24, 12), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const found = STRATEGIES.width.size(params, options, outcome.seen);
+
+    expect(sent.filter((line) => line.includes('G38') && wordsOf(line).x !== undefined)).toHaveLength(0);
+    expect(found.size).toEqual({ y: expect.any(Number) });
+    close(found.size, { y: 12 });
+    close(pos, { x: hx + 5, y: hy, z: -60 });
+  });
+
+  test('one width: a bar from outside along X', () => {
+    const options = { axis: 'x', side: 'outside' };
+    const { outcome } = measure({
+      method: 'width', options, params, radius, boxes: partOf(16, 100), start: { x: hx + 3, y: hy - 2, z: -45 },
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    close(STRATEGIES.width.size(params, options, outcome.seen).size, { x: 16 });
+  });
+
+  test.each([
+    [{ axis: 'z', side: 'inside' }, 'bad-axis'],
+    [{ axis: 'x', side: 'across' }, 'bad-side'],
+    [{}, 'bad-axis'],
+  ])('a width that is not one is refused: %j', (options, code) => {
+    expect(STRATEGIES.width.check(options)).toBe(code);
   });
 });
 
