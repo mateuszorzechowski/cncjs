@@ -33,7 +33,7 @@ const TOOL_GUIDE_OPACITY = 0.2;
 
 const Scene = ({
   scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking, progress,
-  onGrab, glideMs, onReady, focus = null, children,
+  onGrab, glideMs, onReady, focus = null, pathOver = false, children,
 }) => {
   const colors = useSceneColors();
   const { envelope, origin, toolpath, program, offset, frame } = scene;
@@ -173,6 +173,7 @@ const Scene = ({
             colors={colors}
             shadowZ={floor - offset.z}
             progress={progress}
+            over={pathOver}
           />
         </group>
       ) : null}

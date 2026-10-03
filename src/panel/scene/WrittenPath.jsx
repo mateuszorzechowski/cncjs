@@ -7,9 +7,11 @@ import Toolpath from './Toolpath';
  */
 const FADE = 0.75;
 
-const WrittenPath = ({ toolpath, offset, colors }) => (
+const WrittenPath = ({
+  toolpath, offset, colors, over = false,
+}) => (
   <group position={[offset.x, offset.y, offset.z]}>
-    <Toolpath toolpath={toolpath} colors={colors} fade={FADE} />
+    <Toolpath toolpath={toolpath} colors={colors} fade={FADE} over={over} />
   </group>
 );
 

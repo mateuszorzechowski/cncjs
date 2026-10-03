@@ -106,7 +106,7 @@ export const tintOf = (palette, ground, color) => {
 };
 
 const MapArea = ({
-  area, nx, ny, given = [], done = [], heights = null, scale = 1, smooth = false, heat = null, offset, color, ground,
+  area, nx, ny, given = [], done = [], heights = null, scale = 1, smooth = false, heat = null, offset, color, ground, edgeColor,
   picked = null, pickColor, onPick = null, solid = false, contours = null, gridLines = true,
 }) => {
   const z = offset.z;
@@ -266,7 +266,8 @@ const MapArea = ({
         </mesh>
       )) : null}
       {crosses.length ? <Lines segments={crosses} color={color} opacity={1} /> : null}
-      {contourLines.length ? <Lines segments={contourLines} color={color} opacity={0.3} /> : null}
+      {/* Faint in the accent over its pale shades; over the heatmap's colours or a solid sheet, the neutral edge's grey and stronger, to be seen. */}
+      {contourLines.length ? <Lines segments={contourLines} color={heat || solid ? edgeColor : color} opacity={heat || solid ? 0.7 : 0.3} /> : null}
       {onPick && gridLines ? <PointPicker points={all.map(({ i, j }) => ({ i, j, at: point(i, j) }))} onPick={onPick} /> : null}
       {picked ? (
         <mesh geometry={pickedRing}>

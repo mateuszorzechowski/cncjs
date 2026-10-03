@@ -162,6 +162,8 @@ const MapPreview3D = ({
         view={view}
         revision={revision}
         memory="map"
+        // Over a solid sheet, or it is hidden under it: the bent path lies in the material.
+        pathOver={solid && layers.map}
         fit={fit}
         focus={also[0] || null}
         onFree={() => setFree(true)}
@@ -187,13 +189,14 @@ const MapPreview3D = ({
             heat={heat ? [colors.heat0, colors.heat1, colors.heat2, colors.heat3, colors.heat4] : null}
             offset={offset}
             color={colors.work}
+            edgeColor={colors.edge}
             ground={colors.ground}
             picked={pickedDz === undefined ? null : picked}
             pickColor={colors.over}
             onPick={heights ? setPicked : null}
           />
         ) : null}
-        {written && layers.path ? <WrittenPath toolpath={written} offset={offset} colors={colors} /> : null}
+        {written && layers.path ? <WrittenPath toolpath={written} offset={offset} colors={colors} over={solid && layers.map} /> : null}
       </Scene>
 
       <StageOptions
