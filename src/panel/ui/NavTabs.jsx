@@ -372,8 +372,6 @@ const NavTabs = ({ items, rest, current, onSelect, className = '' }) => {
           >
             <path d="M6 15l6-6 6 6" />
           </svg>
-          {/* Something marked behind the closed menu: said on its handle too. */}
-          {!open && rest.some((item) => item.mark) ? <NavMark className="absolute bottom-2 left-[calc(50%+0.9rem)]" /> : null}
           </button>
 
           {/*
