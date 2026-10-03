@@ -27,6 +27,7 @@ import machineSettings from './services/machine-settings';
 import units from './services/units';
 import probe from './services/probe';
 import heightMap from './services/height-map';
+import keptProgram from './services/kept-program';
 import monitor from './services/monitor';
 import config from './services/configstore';
 import createWebApp from './lib/create-web-app';
@@ -82,6 +83,10 @@ const createServer = (options, callback) => {
   // The height map last measured, so a restart keeps it. See `services/height-map`.
   heightMap.open(config.get('heightMap', null));
   heightMap.on('change', (map) => config.set('heightMap', map));
+
+  // The program loaded on a port, loaded back when it opens again. See `services/kept-program`.
+  keptProgram.open({ dir: path.join(path.dirname(rcfile), '.cncjs-program'), saved: config.get('program', null) });
+  keptProgram.on('change', (saved) => config.set('program', saved));
 
   // The devices that have talked to this server, by name — see
   // `services/devices`. Kept in `.cncrc` when what a reader sees changes.
