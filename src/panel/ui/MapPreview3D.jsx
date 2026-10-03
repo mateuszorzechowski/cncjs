@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import Scene from '../scene/Scene';
 import MapArea, { surfaceOf, tintOf } from '../scene/MapArea';
+import { contourStep } from '../scene/contours';
 import StageOptions from './StageOptions';
 import { layerItems, viewItems } from './stageItems';
 import { useUnits } from './units';
@@ -42,7 +43,7 @@ const LEGEND_STOPS = 5;
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
 const MapPreview3D = ({
-  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, bent = null, className = '',
+  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, contours = false, bent = null, className = '',
 }) => {
   const colors = useSceneColors();
   const units = useUnits();
@@ -126,6 +127,7 @@ const MapPreview3D = ({
   const length = units.length;
   // The sheet's colours from low to high, with the range's ends in figures.
   const span = heights ? heights.high - heights.low : 0;
+  const every = contours && span > 1e-6 ? contourStep(heights.low, heights.high) : null;
   const legend = heights && span > 1e-6 ? (() => {
     const tint = tintOf(heat ? [colors.heat0, colors.heat1, colors.heat2, colors.heat3, colors.heat4] : null, colors.ground, colors.work);
     const stops = Array.from({ length: LEGEND_STOPS }, (_, k) => ({ offset: k / (LEGEND_STOPS - 1) }));
@@ -162,6 +164,7 @@ const MapPreview3D = ({
             scale={scale}
             smooth={smooth}
             solid={solid}
+            contours={every}
             heat={heat ? [colors.heat0, colors.heat1, colors.heat2, colors.heat3, colors.heat4] : null}
             offset={offset}
             color={colors.work}
@@ -204,6 +207,7 @@ const MapPreview3D = ({
               <span>{legend.high} {length}</span>
             </div>
           ) : null}
+          {every ? <span className="font-num text-mut">{t('probe.map.contoursEvery', { step: units.figure(every), unit: length })}</span> : null}
         </div>
       ) : null}
     </div>

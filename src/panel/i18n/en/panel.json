@@ -1800,6 +1800,8 @@
       "smooth": "Smooth",
       "heat": "Heatmap",
       "solid": "Solid sheet",
+      "contours": "Contours",
+      "contoursEvery": "contours every {{step}} {{unit}}",
       "look": "How the map is drawn",
       "fit": "Frame the map's area",
       "pointHeight": "{{dz}} {{unit}} · point {{col}}, {{row}}",

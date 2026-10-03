@@ -1800,6 +1800,8 @@
       "smooth": "Wygładzenie",
       "heat": "Heatmapa",
       "solid": "Pełny arkusz",
+      "contours": "Poziomice",
+      "contoursEvery": "poziomice co {{step}} {{unit}}",
       "look": "Wygląd mapy",
       "fit": "Kadr na obszar mapy",
       "pointHeight": "{{dz}} {{unit}} · punkt {{col}}, {{row}}",

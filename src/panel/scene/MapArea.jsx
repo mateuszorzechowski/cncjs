@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { contourSegments } from './contours';
 
 /**
  * A height map's area on the machine (Mateusz, 2026-10-02: "opcja A"): a
@@ -14,7 +15,9 @@ import * as THREE from 'three';
  * `smooth` draws it as a smooth surface through the points rather than flat
  * between them: for the eye only, the program is still bent between the
  * points as measured. `solid` draws the sheet opaque, for its shape; see-
- * through, the path under it shows (Mateusz, 2026-10-03).
+ * through, the path under it shows (Mateusz, 2026-10-03). `contours`, a
+ * height in millimetres: lines on the sheet every that much, as on a
+ * map of the land — where the board bulges is seen at once.
  *
  * `area` and `given` in work millimetres, placed by `offset` as the
  * program's path is; `nx` × `ny` points edge to edge as the server measures.
@@ -88,7 +91,7 @@ export const tintOf = (palette, ground, color) => {
 
 const MapArea = ({
   area, nx, ny, given = [], done = [], heights = null, scale = 1, smooth = false, heat = null, offset, color, ground,
-  picked = null, pickColor, onPick = null, solid = false,
+  picked = null, pickColor, onPick = null, solid = false, contours = null,
 }) => {
   const z = offset.z;
   const x0 = area.x[0] + offset.x;
@@ -173,6 +176,10 @@ const MapArea = ({
     return [[[cx - b, cy, z], [cx - a, cy, z]], [[cx + a, cy, z], [cx + b, cy, z]], [[cx, cy - b, z], [cx, cy - a, z]], [[cx, cy + a, z], [cx, cy + b, z]]];
   });
 
+  // Just over the sheet, so it does not cut them in half.
+  const contourLines = contours && heights ? contourSegments(surface, nx, ny, contours, FINE)
+    .map(([a, b]) => [point(...a), point(...b)].map(([px, py, pz]) => [px, py, pz + 0.05])) : [];
+
   const measured = new Set(done.map(({ i, j }) => `${i},${j}`));
   const ring = useGeometry(() => new THREE.RingGeometry(r * 0.8, r, 32), [r]);
   const disc = useGeometry(() => new THREE.CircleGeometry(r, 32), [r]);
@@ -200,6 +207,7 @@ const MapArea = ({
         </mesh>
       )))}
       {crosses.length ? <Lines segments={crosses} color={color} opacity={1} /> : null}
+      {contourLines.length ? <Lines segments={contourLines} color={color} opacity={0.7} /> : null}
       {picked ? (
         <mesh geometry={ring} position={[xAt(picked.i), yAt(picked.j), lift(picked.i, picked.j)]} scale={2}>
           <meshBasicMaterial color={pickColor} side={THREE.DoubleSide} />
