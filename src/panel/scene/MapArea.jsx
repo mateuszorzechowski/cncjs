@@ -17,7 +17,9 @@ import { contourSegments } from './contours';
  * points as measured. `solid` draws the sheet opaque, for its shape; see-
  * through, the path under it shows (Mateusz, 2026-10-03). `contours`, a
  * height in millimetres: lines on the sheet every that much, as on a
- * map of the land — where the board bulges is seen at once.
+ * map of the land — where the board bulges is seen at once. `gridLines` off
+ * leaves the sheet without its lines between the points; the edge and the
+ * points stay, to say where the map ends and where it was touched.
  *
  * `area` and `given` in work millimetres, placed by `offset` as the
  * program's path is; `nx` × `ny` points edge to edge as the server measures.
@@ -91,7 +93,7 @@ export const tintOf = (palette, ground, color) => {
 
 const MapArea = ({
   area, nx, ny, given = [], done = [], heights = null, scale = 1, smooth = false, heat = null, offset, color, ground,
-  picked = null, pickColor, onPick = null, solid = false, contours = null,
+  picked = null, pickColor, onPick = null, solid = false, contours = null, gridLines = true,
 }) => {
   const z = offset.z;
   const x0 = area.x[0] + offset.x;
@@ -200,7 +202,7 @@ const MapArea = ({
         <meshBasicMaterial vertexColors transparent={!solid} opacity={opacity} depthWrite={solid} side={THREE.DoubleSide} />
       </mesh>
       <Lines segments={edge} color={color} opacity={0.9} />
-      <Lines segments={inner} color={color} opacity={0.25} />
+      {gridLines ? <Lines segments={inner} color={color} opacity={0.25} /> : null}
       {values.flatMap((row, j) => row.map((_, i) => (
         <mesh key={`${i},${j}`} geometry={measured.has(`${i},${j}`) ? disc : ring} position={[xAt(i), yAt(j), lift(i, j)]}>
           <meshBasicMaterial color={color} side={THREE.DoubleSide} />

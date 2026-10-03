@@ -1800,6 +1800,7 @@
       "smooth": "Wygładzenie",
       "heat": "Heatmapa",
       "solid": "Pełny arkusz",
+      "gridLines": "Siatka",
       "contours": "Poziomice",
       "contoursEvery": "poziomice co {{step}} {{unit}}",
       "before": "Przed korektą",

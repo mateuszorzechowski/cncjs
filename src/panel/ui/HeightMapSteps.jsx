@@ -35,14 +35,15 @@ export const HeightMapPosition = ({ choice, texts }) => {
 const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
 /*
  * How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, in
- * the heatmap's colours, opaque, with contours; and the program as written
- * faint under the bent one, where there is a bent one. Any of them.
+ * the heatmap's colours, opaque, its grid's lines, with contours; and the
+ * program as written faint under the bent one, where there is a bent one.
+ * Any of them; the grid on to begin with.
  */
-const LOOKS = ['smooth', 'heat', 'solid', 'contours', 'before'];
+const LOOKS = ['smooth', 'heat', 'solid', 'gridLines', 'contours', 'before'];
 const LOOK_WORDS = {
-  smooth: 'probe.map.smooth', heat: 'probe.map.heat', solid: 'probe.map.solid', contours: 'probe.map.contours', before: 'probe.map.before',
+  smooth: 'probe.map.smooth', heat: 'probe.map.heat', solid: 'probe.map.solid', gridLines: 'probe.map.gridLines', contours: 'probe.map.contours', before: 'probe.map.before',
 };
-const kept = { scale: 20, looks: [] };
+const kept = { scale: 20, looks: ['gridLines'] };
 
 /**
  * The height map on the machine in 3D, the same while it is measured and once
@@ -75,6 +76,7 @@ const HeightMapView = ({
         smooth={looks.includes('smooth')}
         heat={looks.includes('heat')}
         solid={looks.includes('solid')}
+        gridLines={looks.includes('gridLines')}
         contours={looks.includes('contours')}
         before={looks.includes('before')}
         bent={bent}

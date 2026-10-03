@@ -1800,6 +1800,7 @@
       "smooth": "Smooth",
       "heat": "Heatmap",
       "solid": "Solid sheet",
+      "gridLines": "Grid",
       "contours": "Contours",
       "contoursEvery": "contours every {{step}} {{unit}}",
       "before": "Before correction",
