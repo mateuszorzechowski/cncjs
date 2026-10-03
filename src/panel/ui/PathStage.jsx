@@ -2,7 +2,7 @@ import HazardFrame from './HazardFrame';
 import Scene from '../scene/Scene';
 import StageOptions from './StageOptions';
 import StageReadout from './StageReadout';
-import { VIEWS, VIEW_IDS } from '../scene/views';
+import { layerItems, viewItems } from './stageItems';
 import { t } from '../i18n';
 
 /**
@@ -27,39 +27,6 @@ import { t } from '../i18n';
  * rather than two buttons both called "Obszar" and no way to tell which is
  * which.
  */
-
-// Which glyph stands for which layer. The ids come from the widget; this is
-// the one place that knows what they look like.
-const LAYER_ICONS = {
-  path: 'path',
-  programArea: 'area',
-  wcsAxes: 'axes',
-  machineArea: 'machine',
-  machineAxes: 'machineAxes',
-};
-
-// `free` is "the camera has been moved by hand since the last view button".
-// The button is still a destination and still works; it just stops claiming
-// to describe where the camera is.
-const viewItems = (view, onView, free) => VIEW_IDS.map((id) => ({
-  id,
-  icon: id,
-  label: t(VIEWS[id].labelKey),
-  pressed: !free && id === view,
-  onSelect: () => onView(id),
-}));
-
-const layerItems = (sections, layers, onLayers) => sections.flatMap(
-  (section) => section.options.map((option) => ({
-    id: option.id,
-    icon: LAYER_ICONS[option.id],
-    label: t('stage.item', { section: section.label, option: option.label }),
-    note: option.disabled ? option.note : '',
-    pressed: Boolean(layers[option.id]) && !option.disabled,
-    disabled: option.disabled,
-    onSelect: () => onLayers({ ...layers, [option.id]: !layers[option.id] }),
-  }))
-);
 
 const PathStage = ({
   scene, tool, view, onView, revision, layers, sections, onLayers, notes, memory,

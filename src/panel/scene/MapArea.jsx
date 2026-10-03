@@ -17,12 +17,19 @@ import * as THREE from 'three';
  *
  * `area` and `given` in work millimetres, placed by `offset` as the
  * program's path is; `nx` × `ny` points edge to edge as the server measures.
+ *
+ * A tap on the sheet picks the point nearest it (`onPick`, `{ i, j }`) — a
+ * whole cell under a finger rather than a ring a millimetre wide — and the
+ * one picked (`picked`) is ringed as the Ścieżka's picked point is (Mateusz, 2026-10-03:
+ * the height of one point read off the drawing, not guessed from a colour).
  */
 
 // Each cell drawn this many times finer when smooth.
 const FINE = 8;
 // Samples along each line of the grid, so it lies on a smooth sheet too.
 const LINE_STEPS = 8;
+// A press that moved further than this, in pixels, turned the view: not a pick.
+const PICK_SLOP = 6;
 
 /** A geometry made once per change and let go of after. */
 const useGeometry = (make, deps) => {
@@ -61,7 +68,7 @@ export const surfaceOf = (values, nx, ny, smooth) => (u, v) => {
 };
 
 /** A colour for a share of the range, 0 low to 1 high — the accent's shades, or the heatmap's colours; null, not measured. */
-const tintOf = (palette, ground, color) => {
+export const tintOf = (palette, ground, color) => {
   const base = new THREE.Color(ground);
   const deep = new THREE.Color(color);
   const heat = palette ? palette.map((one) => new THREE.Color(one)) : null;
@@ -80,6 +87,7 @@ const tintOf = (palette, ground, color) => {
 
 const MapArea = ({
   area, nx, ny, given = [], done = [], heights = null, scale = 1, smooth = false, heat = null, offset, color, ground,
+  picked = null, pickColor, onPick = null,
 }) => {
   const z = offset.z;
   const x0 = area.x[0] + offset.x;
@@ -164,10 +172,19 @@ const MapArea = ({
   const ring = useGeometry(() => new THREE.RingGeometry(r * 0.8, r, 32), [r]);
   const disc = useGeometry(() => new THREE.CircleGeometry(r, 32), [r]);
 
+  const pick = onPick ? (event) => {
+    if (event.delta > PICK_SLOP) {
+      return;
+    }
+    event.stopPropagation();
+    const nearest = (at, from, to, n) => Math.min(n - 1, Math.max(0, Math.round(((at - from) / Math.max(1e-6, to - from)) * (n - 1))));
+    onPick({ i: nearest(event.point.x, x0, x1, nx), j: nearest(event.point.y, y0, y1, ny) });
+  } : undefined;
+
   return (
     <>
       {/* Something a drag can turn the view about, as the program's path is (Mateusz, 2026-10-03) — see `Controls`. */}
-      <mesh geometry={sheet} userData={{ pivot: true }}>
+      <mesh geometry={sheet} userData={{ pivot: true }} onClick={pick}>
         <meshBasicMaterial vertexColors transparent opacity={heat ? 0.6 : 0.45} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <Lines segments={edge} color={color} opacity={0.9} />
@@ -178,6 +195,11 @@ const MapArea = ({
         </mesh>
       )))}
       {crosses.length ? <Lines segments={crosses} color={color} opacity={1} /> : null}
+      {picked ? (
+        <mesh geometry={ring} position={[xAt(picked.i), yAt(picked.j), lift(picked.i, picked.j)]} scale={2}>
+          <meshBasicMaterial color={pickColor} side={THREE.DoubleSide} />
+        </mesh>
+      ) : null}
     </>
   );
 };
