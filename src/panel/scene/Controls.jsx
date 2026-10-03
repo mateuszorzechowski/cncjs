@@ -42,8 +42,13 @@ const TWO_PI = Math.PI * 2;
  */
 const TURN_PIXELS = 600;
 
-// How close, in pixels, a drag has to start to the drawn path to turn about it.
-const PATH_PICK_PIXELS = 6;
+/*
+ * How close, in pixels, a drag has to start to the drawn path to turn about
+ * it: a mouse's, and a finger's — wider, it covers the line (Mateusz,
+ * 2026-10-03: *"hitbox ścieżki … trochę większy, przynajmniej na telefonie"*).
+ */
+const PATH_PICK_PIXELS = 10;
+const PATH_PICK_FINGER = 24;
 
 const Controls = ({ view, bounds, machineKnown = false, revision, memory, object, fit, onFree, onGrab, glideMs = 0, floor }) => {
   const camera = useThree((state) => state.camera);
@@ -234,6 +239,7 @@ const Controls = ({ view, bounds, machineKnown = false, revision, memory, object
     let turning = null;
 
     const pivotAt = (event) => {
+      raycaster.params.Line2.threshold = event.pointerType === 'touch' ? PATH_PICK_FINGER : PATH_PICK_PIXELS;
       const rect = domElement.getBoundingClientRect();
       raycaster.setFromCamera(new THREE.Vector2(
         (((event.clientX - rect.left) / rect.width) * 2) - 1,
