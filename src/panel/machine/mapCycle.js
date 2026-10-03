@@ -54,6 +54,8 @@ const movesOf = (tool) => {
   const S1 = surfaceAt(P1) - up;
   const S2 = surfaceAt(P2) - up;
   const lies = (x) => (up ? () => x : null);
+  // Up over a touch: with the plate, the plate method's own lift (the server's `liftOf`).
+  const rise = up ? 'lift' : 'mapLift';
   return {
     fast: {
       at: (p) => ({ x: P1, tip: S1 - HIGH + HIGH * ease(between(p, 0.15, 0.7)) }),
@@ -90,10 +92,10 @@ const movesOf = (tool) => {
       at: (p) => ({ x: P1, tip: S1 - LIFT * ease(between(p, 0.2, 0.6)) }),
       plate: lies(P1),
       motion: { axis: 'v', from: S1, to: S1 - LIFT, kind: 'rapid' },
-      dim: { x: P1, top: S1 - LIFT, bottom: S1, field: 'mapLift' },
+      dim: { x: P1, top: S1 - LIFT, bottom: S1, field: rise },
       titleKey: 'probe.map.move.lift',
-      code: (v) => `G0 Z+${v.mapLift}`,
-      uses: ['mapLift'],
+      code: (v) => `G0 Z+${v[rise]}`,
+      uses: [rise],
     },
     over: {
       at: (p) => ({ x: P1 + (P2 - P1) * ease(between(p, 0.1, 0.8)), tip: S1 - LIFT }),
@@ -102,7 +104,7 @@ const movesOf = (tool) => {
       dim: null,
       titleKey: 'probe.map.move.over',
       code: () => 'G0 X… Y…',
-      uses: ['mapLift'],
+      uses: [rise],
     },
     // The plate slid under the tool by hand; the machine stands until told it is there.
     place: {
@@ -164,18 +166,20 @@ const EDIT = {
   retract: [['retract', 'dim']],
   slow: [['slow', 'feed']],
   mapLift: [['lift', 'dim'], ['over', null]],
+  lift: [['lift', 'dim'], ['over', null]],
   plateThickness: [['place', 'dim']],
 };
 
-// The figures beside the drawing, by what they are about; the plate's only with the plate.
+// The figures beside the drawing, by what they are about; the plate's own only with the plate.
 const MAP_PARAMS = [
   { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
   { id: 'reach', key: 'probe.group.reach', fields: ['maxZ'] },
-  { id: 'moves', key: 'probe.group.moves', fields: ['mapLift'] },
+  { id: 'moves', key: 'probe.group.moves', fields: ['mapLift'], tool: '!plate' },
+  { id: 'moves', key: 'probe.group.moves', fields: ['lift'], tool: 'plate' },
   { id: 'plate', key: 'probe.group.plate', fields: ['plateThickness'], tool: 'plate' },
 ];
 
-export const mapParams = (tool) => MAP_PARAMS.filter((group) => !group.tool || group.tool === tool);
+export const mapParams = (tool) => MAP_PARAMS.filter((group) => !group.tool || group.tool === tool || (group.tool === '!plate' && tool !== 'plate'));
 
 export const mapMoveOf = (name, tool) => movesFor(tool)[name];
 

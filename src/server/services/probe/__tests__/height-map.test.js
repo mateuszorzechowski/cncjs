@@ -183,6 +183,9 @@ describe('the height map', () => {
     const overs = sent.filter((line) => /G53 G0 X/.test(line)).map((line) => wordsOf(line));
     waits.forEach(({ at }, n) => expect([at.x, at.y]).toEqual([overs[n].x, overs[n].y]));
     expect(sent.filter((line) => line.includes('G38.2'))).toHaveLength(24);
+    // Up by the plate method's lift, room for a hand, not the map's own.
+    const lifts = sent.filter((line, k) => /G53 G0 X/.test(sent[k + 1] || '') && /G53 G0 Z/.test(line)).map((line) => wordsOf(line).z);
+    lifts.forEach((z, k) => expect(z).toBeCloseTo(surface(overs[k].x, overs[k].y) + 12 + params.lift, 3));
   });
 
   test('on the plate the heights are those of the surface; the first point and the start height come down by its thickness', () => {

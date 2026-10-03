@@ -27,4 +27,12 @@ describe('the height map Setup with the Z plate', () => {
     expect(mapParams('plate').some((group) => group.fields.includes('plateThickness'))).toBe(true);
     expect(mapPlayAt(0, { field: 'plateThickness', tool: 'plate' }).name).toBe('place');
   });
+
+  test('with the plate it rises by the lift of the Z plate method, not by the map lift', () => {
+    const texts = { lift: '10', mapLift: '2' };
+    expect(mapScene('lift', 1, { tool: 'plate', texts }).dim.text).toBe('10');
+    expect(mapScene('lift', 1, { tool: 'board', texts }).dim.text).toBe('2');
+    expect(mapParams('plate').flatMap((group) => group.fields)).not.toContain('mapLift');
+    expect(mapParams('board').flatMap((group) => group.fields)).not.toContain('lift');
+  });
 });

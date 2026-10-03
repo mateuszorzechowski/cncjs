@@ -35,6 +35,13 @@ export const TOOLS = ['board', 'probe', 'plate'];
 /** How far over the surface a touch is: the plate's top, or the surface itself. */
 const under = (params, options) => (options.tool === 'plate' ? params.plateThickness : 0);
 
+/**
+ * How far up over a touch before going on. With the Z plate it is the plate
+ * method's own lift (Mateusz, 2026-10-03): up off the plate so it can be
+ * moved from under the tool — the same thing, the same figure, room for a hand.
+ */
+const liftOf = (params, options) => (options.tool === 'plate' ? params.lift : params.mapLift);
+
 /** The grid's points in the order they are touched: `{ i, j, key }`. */
 const order = (nx, ny) => {
   const points = [];
@@ -48,8 +55,8 @@ const order = (nx, ny) => {
 };
 
 export default {
-  // The plate's thickness counts only with the plate (`under`); the panel shows it only then.
-  fields: ['maxZ', 'fast', 'retract', 'slow', 'mapLift', 'plateThickness'],
+  // The plate's thickness and lift count only with the plate (`under`, `liftOf`); the panel shows them only then.
+  fields: ['maxZ', 'fast', 'retract', 'slow', 'mapLift', 'plateThickness', 'lift'],
   options: { tool: TOOLS },
   touches: true,
 
@@ -80,7 +87,7 @@ export default {
       ...(options.tool === 'plate' ? [wait(`${key}-place`)] : []),
       ...touch('z', -1, params.maxZ, key, params),
       // Up over the touch to go on — never down, a back-off higher than that — and after the last, to the start's height.
-      move(`${key}-up`, (here, seen) => ({ z: n === points.length - 1 ? start.z : Math.max(seen[key].z + params.mapLift, here.z) })),
+      move(`${key}-up`, (here, seen) => ({ z: n === points.length - 1 ? start.z : Math.max(seen[key].z + liftOf(params, options), here.z) })),
     ].map((step) => ({ ...step, mark: { n, i, j } })));
   },
 
