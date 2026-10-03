@@ -61,6 +61,7 @@ import { createProbeRun, offsetFor, offsetLine } from './probe-run';
 import probeSettings from '../../services/probe';
 import { STRATEGIES } from '../../services/probe/strategies';
 import heightMap from '../../services/height-map';
+import keptProgram from '../../services/kept-program';
 import { compensate } from '../../services/height-map/compensate';
 import library from '../../services/library';
 import units, { toMm } from '../../services/units';
@@ -1943,6 +1944,12 @@ class GrblController {
           // Unload G-code
           this.command('unload');
         }
+
+        // The program loaded here when the port closed or the server stopped — see `services/kept-program`.
+        const kept = keptProgram.kept(port);
+        if (kept) {
+          this.command('gcode:load', kept.name, kept.gcode, kept.context);
+        }
       });
     }
 
@@ -2681,6 +2688,7 @@ class GrblController {
           }
 
           this.programSource = { name, gcode: this.sender.state.gcode, context };
+          keptProgram.keep(this.options.port, { name, gcode, context });
           this.bentOn = false;
           this.bendProgram();
           this.emit('gcode:load', name, this.sender.state.gcode, context);
@@ -2701,6 +2709,7 @@ class GrblController {
           this.programSource = null;
           this.bent = null;
           this.bentOn = false;
+          keptProgram.clear(this.options.port);
           this.workflow.stop();
 
           // Sender
@@ -4817,6 +4826,12 @@ class GrblController {
      * program or no map. At Grbl's own arc tolerance, `$12`.
      */
     bendProgram() {
+      this.bend();
+      // As it will be cut, kept on disk beside the file as written — see `services/kept-program`.
+      keptProgram.keepBent(this.options.port, this.bent?.lines ? this.bent.lines.join('\n') : null);
+    }
+
+    bend() {
       const map = heightMap.current(this.options.port);
       if (!this.programSource || !map) {
         this.bent = null;
