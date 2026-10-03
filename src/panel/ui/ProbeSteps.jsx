@@ -134,7 +134,11 @@ export const MethodStep = ({ onPick }) => (
       {METHODS.filter((method) => !method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
     <div className="grid gap-3 @3xl/shell:grid-cols-3">
-      {METHODS.filter((method) => method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
+      {METHODS.filter((method) => method.apart && !method.size).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
+    </div>
+    {/* The sizes, a row of their own under the map (Mateusz, 2026-10-03). */}
+    <div className="grid gap-3 @3xl/shell:grid-cols-3">
+      {METHODS.filter((method) => method.size).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
   </div>
 );

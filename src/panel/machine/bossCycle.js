@@ -301,6 +301,8 @@ export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
     size,
     part: {
       kind: 'boss', r: BOSS_R, toolR: TOOL_R, grow: 0.6, view: [-101, -94, 202, 188],
+      // One axis: a bar, drawn as a strip that wide (`CentreScene`).
+      strip: axes.length === 1 ? axes[0] : null,
     },
     // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
     side: (name, p, how) => bossSide(MOVES[name], p, how),

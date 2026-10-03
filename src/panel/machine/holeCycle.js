@@ -288,6 +288,8 @@ export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
   const part = {
     // How much larger the ball is drawn up high than down in the hole (review note, 2026-10-01: *"większa różnica rozmiaru"*).
     kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2, view: [-101, -94, 202, 188],
+    // One axis: a groove, drawn as a strip that wide (`CentreScene`).
+    strip: axes.length === 1 ? axes[0] : null,
   };
 
   /** The hole as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */
