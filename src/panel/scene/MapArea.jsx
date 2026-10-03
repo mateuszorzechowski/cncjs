@@ -83,7 +83,8 @@ export const tintOf = (palette, ground, color) => {
       return base.clone().lerp(deep, 0.35);
     }
     if (!heat) {
-      return base.clone().lerp(deep, 0.1 + 0.6 * share);
+      // The whole way from the ground to the accent: the shades between were too close to tell apart (Mateusz, 2026-10-03).
+      return base.clone().lerp(deep, 0.05 + 0.95 * share);
     }
     const at = Math.min(heat.length - 1.0001, share * (heat.length - 1));
     const k = Math.floor(at);
@@ -119,7 +120,7 @@ const MapArea = ({
   const cols = (nx - 1) * fine + 1;
   const rows = (ny - 1) * fine + 1;
   const sheetKey = JSON.stringify([x0, x1, y0, y1, z, nx, ny, heights, scale, smooth, heat, color, ground]);
-  let opacity = heat ? 0.6 : 0.45;
+  let opacity = 0.6;
   if (solid) {
     opacity = 1;
   }
