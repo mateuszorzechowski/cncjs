@@ -1,5 +1,7 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import PointPicker from './PointPicker';
 import { contourSegments } from './contours';
 
 /**
@@ -24,22 +26,29 @@ import { contourSegments } from './contours';
  * `area` and `given` in work millimetres, placed by `offset` as the
  * program's path is; `nx` × `ny` points edge to edge as the server measures.
  *
- * A tap on the sheet picks the point nearest it (`onPick`, `{ i, j }`) — a
- * whole cell under a finger rather than a ring a millimetre wide — and the
- * one picked (`picked`) is ringed as the Ścieżka's picked point is (Mateusz, 2026-10-03:
- * the height of one point read off the drawing, not guessed from a colour).
+ * A click on a point as drawn picks it (`onPick`, `{ i, j }`, or null when
+ * one beside it or the right button lets it go — see `PointPicker`), and the
+ * one picked (`picked`) is ringed as the Ścieżka's picked point is (Mateusz,
+ * 2026-10-03: the height of one point read off the drawing, not guessed from
+ * a colour). Points not drawn — the grid off — are not picked.
  */
 
 // Each cell drawn this many times finer when smooth.
 const FINE = 8;
 // Around each point's mark, and its rings from the middle out: a disc measured, a ring not yet.
 const MARK_SEGMENTS = 32;
+/*
+ * The most a mark's radius may take on the screen, in pixels: far out the
+ * marks are the size of the grid, close in they stop growing (Mateusz,
+ * 2026-10-03: "po przybliżeniu są za duże względem reszty"). Rebuilt when the
+ * zoom has moved by more than a sixth.
+ */
+const MARK_PX = 7;
+const ZOOM_STEP = Math.log(1.18);
 const DISC = [0, 0.4, 0.7, 1];
 const RING = [0.8, 1];
 // Samples along each line of the grid, so it lies on a smooth sheet too.
 const LINE_STEPS = 8;
-// A press that moved further than this, in pixels, turned the view: not a pick.
-const PICK_SLOP = 6;
 
 /** A geometry made once per change and let go of after. */
 const useGeometry = (make, deps) => {
@@ -110,6 +119,17 @@ const MapArea = ({
   const step = Math.min((x1 - x0) / Math.max(1, nx - 1), (y1 - y0) / Math.max(1, ny - 1));
   // A ring a sixteenth of the step, no larger than 1.5 mm: a coarse grid's rings do not swell.
   const r = Math.min(1.5, Math.max(0.25, step / 16));
+  // An orthographic camera's zoom is pixels to the millimetre.
+  const camera = useThree((state) => state.camera);
+  const [zoom, setZoom] = useState(camera.zoom);
+  const seen = useRef(camera.zoom);
+  useFrame(() => {
+    if (Math.abs(Math.log(camera.zoom / seen.current)) > ZOOM_STEP) {
+      seen.current = camera.zoom;
+      setZoom(camera.zoom);
+    }
+  });
+  const markR = Math.min(r, MARK_PX / Math.max(zoom, 1e-6));
 
   // Each point's height measured, 0 where none is yet.
   const byPoint = new Map((heights?.heights || []).map(({ i, j, dz }) => [`${i},${j}`, dz]));
@@ -135,8 +155,8 @@ const MapArea = ({
       for (const radius of radii) {
         for (let k = 0; k < MARK_SEGMENTS; k++) {
           const angle = (2 * Math.PI * k) / MARK_SEGMENTS;
-          const dx = radius * size * r * Math.cos(angle);
-          const dy = radius * size * r * Math.sin(angle);
+          const dx = radius * size * markR * Math.cos(angle);
+          const dy = radius * size * markR * Math.sin(angle);
           const u = Math.min(nx - 1, Math.max(0, i + dx / stepX));
           const v = Math.min(ny - 1, Math.max(0, j + dy / stepY));
           positions.push(xAt(i) + dx, yAt(j) + dy, lift(u, v));
@@ -226,24 +246,15 @@ const MapArea = ({
 
   const measured = new Set(done.map(({ i, j }) => `${i},${j}`));
   const all = values.flatMap((row, j) => row.map((_, i) => ({ i, j })));
-  const marksKey = JSON.stringify([sheetKey, r, done]);
+  const marksKey = JSON.stringify([sheetKey, markR, done]);
   const discs = useGeometry(() => marks(all.filter(({ i, j }) => measured.has(`${i},${j}`)), DISC), [marksKey]);
   const rings = useGeometry(() => marks(all.filter(({ i, j }) => !measured.has(`${i},${j}`)), RING), [marksKey]);
   const pickedRing = useGeometry(() => marks(picked ? [picked] : [], RING, 2), [marksKey, picked?.i, picked?.j]);
 
-  const pick = onPick ? (event) => {
-    if (event.delta > PICK_SLOP) {
-      return;
-    }
-    event.stopPropagation();
-    const nearest = (at, from, to, n) => Math.min(n - 1, Math.max(0, Math.round(((at - from) / Math.max(1e-6, to - from)) * (n - 1))));
-    onPick({ i: nearest(event.point.x, x0, x1, nx), j: nearest(event.point.y, y0, y1, ny) });
-  } : undefined;
-
   return (
     <>
       {/* Something a drag can turn the view about, as the program's path is (Mateusz, 2026-10-03) — see `Controls`. */}
-      <mesh geometry={sheet} userData={{ pivot: true }} onClick={pick}>
+      <mesh geometry={sheet} userData={{ pivot: true }}>
         <meshBasicMaterial vertexColors transparent={!solid} opacity={opacity} depthWrite={solid} side={THREE.DoubleSide} />
       </mesh>
       {gridLines ? <Lines segments={edge} color={color} opacity={0.9} /> : null}
@@ -256,6 +267,7 @@ const MapArea = ({
       )) : null}
       {crosses.length ? <Lines segments={crosses} color={color} opacity={1} /> : null}
       {contourLines.length ? <Lines segments={contourLines} color={color} opacity={0.3} /> : null}
+      {onPick && gridLines ? <PointPicker points={all.map(({ i, j }) => ({ i, j, at: point(i, j) }))} onPick={onPick} /> : null}
       {picked ? (
         <mesh geometry={pickedRing}>
           <meshBasicMaterial color={pickColor} side={THREE.DoubleSide} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-4} />
