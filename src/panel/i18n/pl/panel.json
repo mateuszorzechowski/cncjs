@@ -222,6 +222,8 @@
       "wcs": "Układ",
       "axes": "Osie",
       "machine": "Maszyna",
+      "map": "Mapa",
+      "sheet": "Arkusz",
       "noProgram": "Nie wczytano programu",
       "noWcs": "Sterownik nie podał układu współrzędnych (G54–G59)",
       "noEnvelope": "Sterownik nie podał zakresu ruchu ($130–$132)",

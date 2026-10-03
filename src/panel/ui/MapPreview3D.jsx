@@ -36,7 +36,7 @@ import { t } from '../i18n';
 const NO_OFFSET = { x: 0, y: 0, z: 0 };
 
 // Kept across these steps, as the camera is: the area last framed, whether the operator has moved the view since, the layers.
-const framing = { area: null, moved: false, layers: { machineArea: true, path: true, wcsAxes: true } };
+const framing = { area: null, moved: false, layers: { machineArea: true, path: true, wcsAxes: true, map: true } };
 
 // The legend's colours: so many stops along the range — the sheet's own, at full strength, to be read.
 const LEGEND_STOPS = 5;
@@ -123,6 +123,8 @@ const MapPreview3D = ({
     { label: t('path.layers.program'), options: [{ id: 'path', label: t('path.layers.path'), disabled: !toolpath, note: t('path.layers.noProgram') }] },
     { label: t('path.layers.wcs'), options: [{ id: 'wcsAxes', label: t('path.layers.axes'), disabled: !scene.origin, note: t('path.layers.noWcs') }] },
     { label: t('path.layers.machine'), options: [{ id: 'machineArea', label: t('path.layers.area'), disabled: !scene.envelope, note: t('path.layers.noEnvelope') }] },
+    // The map itself, off for the path alone (Mateusz, 2026-10-03).
+    { label: t('path.layers.map'), options: [{ id: 'map', label: t('path.layers.sheet'), disabled: !area, note: '' }] },
   ];
 
   // The point tapped and its height as measured; nothing for one not measured yet.
@@ -155,7 +157,7 @@ const MapPreview3D = ({
           framing.moved = true;
         }}
       >
-        {area ? (
+        {area && layers.map ? (
           <MapArea
             area={area}
             nx={grid.nx}
@@ -195,7 +197,7 @@ const MapPreview3D = ({
         ]}
       />
 
-      {legend || pickedDz !== undefined ? (
+      {layers.map && (legend || pickedDz !== undefined) ? (
         <div data-stage-inset="bottom" className="absolute bottom-2 left-2 flex flex-col gap-1 rounded-ctl bg-wash px-2 py-1 text-note">
           {pickedDz !== undefined ? (
             <span className="font-num text-ink">{t('probe.map.pointHeight', { dz: signed(units.figure(pickedDz)), unit: length, col: picked.i + 1, row: picked.j + 1 })}</span>

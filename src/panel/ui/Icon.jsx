@@ -183,6 +183,8 @@ const GLYPHS = {
   repeatOne: <path d="M16.5 3.5l3 3-3 3M4.5 11.5v-2a3 3 0 0 1 3-3h12M7.5 20.5l-3-3 3-3M19.5 12.5v2a3 3 0 0 1-3 3h-12M11 10.8l1.3-.8v4.5" />,
   // A newer panel is available: an arrow down into a tray, the way an update is fetched.
   update: <path d="M12 4v11M7 10.5l5 5 5-5M5.5 19.5h13" />,
+  // A height map's sheet: a square lying flat, its grid through it.
+  map: <path d="M3.5 12 12 7.5 20.5 12 12 16.5ZM7.75 9.75 16.25 14.25M16.25 9.75 7.75 14.25" />,
   // How a drawing looks: two sliders, each set somewhere along its line.
   look: <path d="M4 7h8M16 7h4M4 17h4M12 17h8M14 4.5v5M10 14.5v5" />,
 

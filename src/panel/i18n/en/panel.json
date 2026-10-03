@@ -222,6 +222,8 @@
       "wcs": "Work offset",
       "axes": "Axes",
       "machine": "Machine",
+      "map": "Map",
+      "sheet": "Sheet",
       "noProgram": "No program loaded",
       "noWcs": "The controller has not reported a coordinate system (G54–G59)",
       "noEnvelope": "The controller has not reported its travel range ($130–$132)",

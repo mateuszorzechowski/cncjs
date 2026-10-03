@@ -14,6 +14,7 @@ const LAYER_ICONS = {
   wcsAxes: 'axes',
   machineArea: 'machine',
   machineAxes: 'machineAxes',
+  map: 'map',
 };
 
 // `free` is "the camera has been moved by hand since the last view button".
