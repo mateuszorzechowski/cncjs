@@ -14,10 +14,16 @@ const wordsOf = (line) => Object.fromEntries(
   [...line.matchAll(/([XYZF])(-?[\d.]+)/g)].map(([, letter, value]) => [letter.toLowerCase(), Number(value)]),
 );
 
-/** The method run over `surface` to the end, the tool starting at `start` (machine). */
+/**
+ * The method run over `surface` to the end, the tool starting at `start`
+ * (machine). With the Z plate, `plate` thick, each wait answered by putting
+ * it under the tool; `waits` the phases it stood at, in order.
+ */
 const measure = (options, params = probeParams(), start = { x: -120, y: -80, z: -40 }) => {
   const queue = [];
   const sent = [];
+  const waits = [];
+  const on = options.tool === 'plate' ? params.plateThickness : 0;
   let pos = { ...start };
   let outcome = null;
   const wco = WCO;
@@ -30,15 +36,24 @@ const measure = (options, params = probeParams(), start = { x: -120, y: -80, z: 
     done: (result) => {
       outcome = result;
     },
+    progress: ({ phase, waits: hands }) => {
+      if (hands) {
+        waits.push({ phase, at: { ...pos } });
+      }
+    },
   });
   run.start();
-  while (queue.length) {
+  while (queue.length || run.waiting) {
+    if (!queue.length) {
+      run.resume();
+      continue;
+    }
     const line = queue.shift();
     sent.push(line);
     const words = wordsOf(line);
     if (line.includes('G38.2')) {
       const target = words.z + wco.z;
-      const top = surface(pos.x, pos.y);
+      const top = surface(pos.x, pos.y) + on;
       if (pos.z >= top && target <= top) {
         pos = { ...pos, z: top };
         run.prb({ ...pos, result: 1 });
@@ -53,7 +68,9 @@ const measure = (options, params = probeParams(), start = { x: -120, y: -80, z: 
     run.ok();
   }
   const map = outcome.seen ? strategy.map(params, options, outcome.seen, { start, wco }) : null;
-  return { outcome, sent, map };
+  return {
+    outcome, sent, map, waits,
+  };
 };
 
 describe('the grid', () => {
@@ -89,6 +106,7 @@ describe('the grid', () => {
 });
 
 describe('the height map', () => {
+  const HIGH = { x: -120, y: -80, z: -20 };
   const options = strategy.read({ x: [0, 40], y: [0, 30], nx: 3, ny: 4 }).options;
 
   test('touches every point twice, row by row with every other row backwards, rising between them', () => {
@@ -148,6 +166,65 @@ describe('the height map', () => {
     const { outcome, map } = measure(options, { ...probeParams(), maxZ: 3 });
     expect(outcome).toEqual({ failure: 'ALARM:5', phase: 'p0-fast' });
     expect(map).toBeNull();
+  });
+
+  test('with nothing to wait for, it never stands still for the operator', () => {
+    expect(measure(options).waits).toEqual([]);
+  });
+
+  test('a Z plate moved by hand: over each point it stands until told the plate is there, then touches it', () => {
+    const plate = strategy.read({ x: [0, 40], y: [0, 30], nx: 3, ny: 4, tool: 'plate' }).options;
+    // The plate's top over where the tool would start for the board: it starts higher.
+    const params = { ...probeParams(), plateThickness: 12 };
+    const { outcome, sent, waits } = measure(plate, params, HIGH);
+    expect(outcome.failure).toBeUndefined();
+    expect(waits.map(({ phase }) => phase)).toEqual(Array.from({ length: 12 }, (_, n) => `p${n}-place`));
+    // Each wait after the move over the point and before its fast touch: nothing sent in between.
+    const overs = sent.filter((line) => /G53 G0 X/.test(line)).map((line) => wordsOf(line));
+    waits.forEach(({ at }, n) => expect([at.x, at.y]).toEqual([overs[n].x, overs[n].y]));
+    expect(sent.filter((line) => line.includes('G38.2'))).toHaveLength(24);
+    // Up by the plate method's lift, room for a hand, not the map's own.
+    const lifts = sent.filter((line, k) => /G53 G0 X/.test(sent[k + 1] || '') && /G53 G0 Z/.test(line)).map((line) => wordsOf(line).z);
+    lifts.forEach((z, k) => expect(z).toBeCloseTo(surface(overs[k].x, overs[k].y) + 12 + params.lift, 3));
+  });
+
+  test('on the plate the heights are those of the surface; the first point and the start height come down by its thickness', () => {
+    const plate = strategy.read({ x: [0, 40], y: [0, 30], nx: 3, ny: 4, tool: 'plate' }).options;
+    const params = { ...probeParams(), plateThickness: 12, maxZ: 30 };
+    const { map } = measure(plate, params, HIGH);
+    const bare = measure(options, params, HIGH).map;
+    for (let j = 0; j < map.ys.length; j++) {
+      for (let i = 0; i < map.xs.length; i++) {
+        expect(map.dz[j][i]).toBeCloseTo(bare.dz[j][i], 6);
+      }
+    }
+    expect(map.first.z).toBeCloseTo(surface(-120, -80), 6);
+    expect(map.travel).toBeCloseTo(bare.travel, 6);
+  });
+
+  test('a reset while it stands for the plate ends it', () => {
+    const plate = strategy.read({ x: [0, 10], y: [0, 10], nx: 2, ny: 2, tool: 'plate' }).options;
+    const lines = [];
+    let outcome = null;
+    const run = createProbeRun({
+      steps: strategy.steps(probeParams(), plate, { start: { x: 0, y: 0, z: 0 }, wco: WCO }),
+      start: { x: 0, y: 0, z: 0 },
+      wco: WCO,
+      restore: 'G90 G21',
+      write: (line) => lines.push(line),
+      done: (result) => {
+        outcome = result;
+      },
+    });
+    run.start();
+    run.ok();
+    expect(run.waiting).toBe(true);
+    // A stray ok while it stands sends nothing.
+    run.ok();
+    expect(lines).toHaveLength(1);
+    run.startup();
+    expect(outcome).toEqual({ failure: 'reset', phase: 'p0-place' });
+    expect(run.resume()).toBe(false);
   });
 
   test('an area given wrong is refused before anything moves', () => {

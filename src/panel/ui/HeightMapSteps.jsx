@@ -1,12 +1,14 @@
 import { useState } from 'react';
+import Button from './Button';
 import Card from './Card';
+import Notice from './Notice';
 import MapStartScene from './MapStartScene';
 import MapPreview3D from './MapPreview3D';
 import SegmentedChoice from './SegmentedChoice';
 import Slider from './Slider';
 import useBentProgram from './useBentProgram';
 import StatTile from './StatTile';
-import { phaseWords } from '../machine/probe';
+import { phaseWords, resumeProbe } from '../machine/probe';
 import { figureSaid } from '../machine/probeFields';
 import { keepMapLook, mapLook } from './mapLook';
 import { useIsWide } from './shell';
@@ -146,7 +148,11 @@ const HeightMapView = ({
   );
 };
 
-/** Measuring: the view, with which point the tool is at and what it is doing there. */
+/**
+ * Measuring: the view, with which point the tool is at and what it is doing
+ * there — and, with the Z plate, where the machine stands for it to be put
+ * under the tool: what to do, and the button that goes on once it is done.
+ */
 export const HeightMapCycle = ({ probe, machine, after = null, split = null }) => {
   const marks = probe?.marks || [];
   const at = marks.length ? marks[marks.length - 1] : null;
@@ -159,6 +165,12 @@ export const HeightMapCycle = ({ probe, machine, after = null, split = null }) =
         label={at ? t('probe.map.point', { n: at.n + 1, total }) : t('probe.step.measure')}
         value={probe?.step ? t(doing.key, { axis: doing.axis }) : '—'}
       />
+      {probe?.step?.waits && at ? (
+        <div className="flex flex-col gap-2">
+          <Notice>{t('probe.map.placeAsk', { n: at.n + 1 })}</Notice>
+          <Button tone="primary" onClick={resumeProbe} className="h-ctl">{t('probe.map.placed')}</Button>
+        </div>
+      ) : null}
     </HeightMapView>
   );
 };
@@ -203,7 +215,9 @@ export const HeightMapColumns = ({
     </>
   );
   if (measuring) {
-    return <HeightMapCycle probe={probe} machine={machine} after={<p className="m-0 text-note text-mut">{t('probe.measure.note')}</p>} split={columns} />;
+    // Not while it stands for the Z plate: then it does not go by itself.
+    const note = probe?.step?.waits ? null : <p className="m-0 text-note text-mut">{t('probe.measure.note')}</p>;
+    return <HeightMapCycle probe={probe} machine={machine} after={note} split={columns} />;
   }
   return <HeightMapResult probe={probe} machine={machine} split={columns} />;
 };

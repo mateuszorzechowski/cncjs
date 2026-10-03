@@ -227,14 +227,19 @@ export const ReachDimension = ({
 /*
  * A move's arrow, `from` → `to` along an axis at cross position `at`: a
  * probing move (G38.2) in the accent, a rapid (G0) dashed in the rapid
- * colour, with a tick where it sets off.
+ * colour, the operator's hand solid in the text's colour as a jog is
+ * (`Jog`), with a tick where it sets off.
  */
+const MOTION_INK = {
+  rapid: ['stroke-rapid', 'fill-rapid'],
+  hand: ['stroke-ink', 'fill-ink'],
+};
+
 export const Motion = ({
   axis = 'v', at, from, to, kind, size,
 }) => {
   const rapid = kind === 'rapid';
-  const stroke = rapid ? 'stroke-rapid' : 'stroke-acc';
-  const fill = rapid ? 'fill-rapid' : 'fill-acc';
+  const [stroke, fill] = MOTION_INK[kind] || ['stroke-acc', 'fill-acc'];
   const { hh } = size;
   const forward = to > from;
   const v = axis === 'v';

@@ -1550,7 +1550,8 @@
       "down": "{{axis}}: down beside the wall",
       "up": "{{axis}}: up over the plate",
       "return": "{{axis}}: back over the start",
-      "over": "{{axis}}: over the point"
+      "over": "{{axis}}: over the point",
+      "place": "{{axis}}: waiting for the plate"
     },
     "failure": {
       "notFound": "{{axis}}: nothing was touched within the travel limit. Nothing was written. Check the plate or the probe and the lead, or move the tool closer.",
@@ -1757,7 +1758,8 @@
         "lift": "Up over the point",
         "over": "On to the next point",
         "next": "Fast touch at the next point",
-        "miss": "Nothing under the tool: the limit and an ALARM"
+        "miss": "Nothing under the tool: the limit and an ALARM",
+        "place": "The plate under the tool, by hand"
       },
       "stage": {
         "point": "Point",
@@ -1767,9 +1769,13 @@
         "board": "Board",
         "boardNote": "The lead on the tool, a wire to the board's copper.",
         "probe": "3D probe",
-        "probeNote": "On any material."
+        "probeNote": "On any material.",
+        "plate": "Z plate",
+        "plateNote": "Moved by hand to every point. The machine waits over the point."
       },
       "toolLabel": "What touches",
+      "placeAsk": "Lay the Z plate under the tool, over point {{n}}, and press \"Plate is there\". The machine stands still.",
+      "placed": "Plate is there",
       "mode": {
         "point": "Corner and size",
         "corners": "Two corners",

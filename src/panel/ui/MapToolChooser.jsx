@@ -38,10 +38,21 @@ const Probe = () => (
   </svg>
 );
 
-const PICTURES = { board: Board, probe: Probe };
+// The tool over a Z plate lying on the board, among the points it is moved to.
+const Plate = () => (
+  <svg viewBox="0 0 48 48" aria-hidden="true" className="h-20 w-24 overflow-visible">
+    <path d={BOARD} className="fill-mutS stroke-line" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M20.5 3 H27.5 V13.4 L24 19.5 L20.5 13.4 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M20 22 H28 L24 27.5 Z" className="fill-acc stroke-acc" strokeWidth={0.96} strokeLinejoin="round" />
+    <rect x={18} y={29.5} width={12} height={6} className="fill-plate stroke-plateEdge" strokeWidth={1.6} />
+    <Points />
+  </svg>
+);
+
+const PICTURES = { board: Board, probe: Probe, plate: Plate };
 
 const MapToolChooser = ({ value, onChange }) => (
-  <div className="grid gap-3 @3xl/shell:grid-cols-2" role="group" aria-label={t('probe.map.toolLabel')}>
+  <div className="grid gap-3 @3xl/shell:grid-cols-3" role="group" aria-label={t('probe.map.toolLabel')}>
     {MAP_TOOLS.map((tool) => {
       const Picture = PICTURES[tool.id];
       const on = tool.id === value;

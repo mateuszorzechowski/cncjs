@@ -7,7 +7,7 @@ import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
 import { figureSaid } from '../machine/probeFields';
 import {
-  LOOP_HOLD_MS, MAP_GROUPS, MAP_ORDER, MAP_PARAMS, mapCode, mapExplain, mapMoveOf, mapPlayAt, mapScene, mapTimeline,
+  LOOP_HOLD_MS, mapCode, mapExplain, mapGroups, mapMoveOf, mapOrder, mapParams, mapPlayAt, mapScene, mapTimeline,
 } from '../machine/mapCycle';
 import { fillsAt, timeAt } from '../machine/timeline';
 import { useIsWide } from './shell';
@@ -30,25 +30,27 @@ const HeightMapSetup = ({
   const wide = useIsWide();
   const [open, setOpen] = useState(null);
   const still = useReducedMotion();
-  const group = MAP_PARAMS.find((one) => one.id === open);
-  const items = useMemo(() => mapTimeline(), []);
+  const params = mapParams(chosen);
+  const group = params.find((one) => one.id === open);
+  const items = useMemo(() => mapTimeline(chosen), [chosen]);
+  const playAt = useMemo(() => (ms, how) => mapPlayAt(ms, { ...how, tool: chosen }), [chosen]);
   const {
     player, picked, loop, frame, p, onField, pick,
   } = useSetupPlayer({
-    items, hold: LOOP_HOLD_MS, playAt: mapPlayAt, still,
+    items, hold: LOOP_HOLD_MS, playAt, still,
   });
   const { name, focus } = frame;
   const say = (field, text) => figureSaid(field, text, units.rule);
   const scene = mapScene(name, p, {
-    texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus,
+    texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus, tool: chosen,
   });
-  const move = mapMoveOf(name);
+  const move = mapMoveOf(name, chosen);
   const title = t(move.titleKey);
   const why = mapExplain(name, texts, say);
   const bar = name === 'miss' ? 'fast' : name;
 
-  const groups = namedGroups(MAP_GROUPS, t, (id) => t(mapMoveOf(id).titleKey));
-  const sections = MAP_PARAMS
+  const groups = namedGroups(mapGroups(chosen), t, (id) => t(mapMoveOf(id, chosen).titleKey));
+  const sections = params
     .map((one) => ({ id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
     .filter((one) => one.fields.length);
 
@@ -61,12 +63,12 @@ const HeightMapSetup = ({
         fills={loop ? fillsAt(items, timeAt(items, bar, p), false) : fillsAt(items, player.t)}
         onPick={pick}
         picked={player.mode === 'cycle' ? null : player.range}
-        marked={picked || group ? MAP_ORDER.filter((id) => mapMoveOf(id).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
+        marked={picked || group ? mapOrder(chosen).filter((id) => mapMoveOf(id, chosen).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
       />
       <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={loop} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
-        <span className="whitespace-nowrap font-num text-cap text-mut">{mapCode(name, texts)}</span>
+        <span className="whitespace-nowrap font-num text-cap text-mut">{mapCode(name, texts, chosen)}</span>
         <span className="w-full text-note text-mut">{why ? t(...why) : NBSP}</span>
       </div>
     </div>

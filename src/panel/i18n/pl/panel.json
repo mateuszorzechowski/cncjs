@@ -1550,7 +1550,8 @@
       "down": "{{axis}}: w dół przy ściance",
       "up": "{{axis}}: w górę nad płytkę",
       "return": "{{axis}}: nad punkt startu",
-      "over": "{{axis}}: nad punkt"
+      "over": "{{axis}}: nad punkt",
+      "place": "{{axis}}: czeka na płytkę"
     },
     "failure": {
       "notFound": "{{axis}}: brak dotyku w limicie dojazdu. Nic nie zapisano. Sprawdź płytkę lub sondę i przewód albo podjedź bliżej.",
@@ -1757,7 +1758,8 @@
         "lift": "W górę nad punkt",
         "over": "Do następnego punktu",
         "next": "Szybki dotyk w następnym punkcie",
-        "miss": "Nic pod narzędziem: limit i ALARM"
+        "miss": "Nic pod narzędziem: limit i ALARM",
+        "place": "Płytka ręcznie pod narzędzie"
       },
       "stage": {
         "point": "Punkt",
@@ -1767,9 +1769,13 @@
         "board": "Laminat",
         "boardNote": "Krokodylek na frezie, przewód do miedzi płytki.",
         "probe": "Sonda 3D",
-        "probeNote": "Na każdym materiale."
+        "probeNote": "Na każdym materiale.",
+        "plate": "Płytka Z",
+        "plateNote": "Przekładana ręcznie na każdy punkt. Maszyna czeka nad punktem."
       },
       "toolLabel": "Czym mierzysz",
+      "placeAsk": "Połóż płytkę Z pod narzędziem, nad punktem {{n}}, i naciśnij „Płytka leży”. Maszyna stoi.",
+      "placed": "Płytka leży",
       "mode": {
         "point": "Punkt i rozmiar",
         "corners": "Dwa rogi",

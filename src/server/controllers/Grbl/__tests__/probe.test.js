@@ -406,6 +406,28 @@ describe('the height map', () => {
     expect(refusals.pop()).toMatchObject({ cmd: 'probe:start', reason: 'bad-area' });
   });
 
+  test('with the Z plate it stands over each point until told the plate is there; any device may say so, even as a program would be held', () => {
+    const { controller, sent, refusals } = setup();
+    controller.command('probe:start', { method: 'height-map', options: { x: [0, 10], y: [0, 10], nx: 2, ny: 2, tool: 'plate' } });
+    expect(sent()).toEqual(['G90 G21 G53 G0 X0 Y0']);
+    controller.runner.parse('ok');
+    expect(sent()).toHaveLength(1);
+    expect(controller.probeReport()).toMatchObject({ state: 'running', step: { phase: 'p0-place', waits: true } });
+    expect(programRefusal('probe:resume', { workflow: 'running', firmware: 'Idle' })).toBeNull();
+
+    // The wire lit: the touch would alarm at once.
+    controller.runner.state.status.pinState = 'P';
+    controller.command('probe:resume');
+    expect(refusals.pop()).toMatchObject({ cmd: 'probe:resume', reason: 'probe-triggered' });
+    controller.runner.state.status.pinState = '';
+
+    controller.command('probe:resume');
+    expect(sent().at(-1)).toMatch(/^G90 G21 G38\.2 Z/);
+    // Only while it stands.
+    controller.command('probe:resume');
+    expect(refusals.pop()).toMatchObject({ cmd: 'probe:resume', reason: 'not-waiting' });
+  });
+
   test('measured, it is a map to keep, not a zero: confirmed, the server keeps it and says so', () => {
     const { controller, sent } = setup();
     const events = [];

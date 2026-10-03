@@ -193,7 +193,7 @@ export const MeasureStep = ({ probe, machine = null }) => {
           value={words}
         />
       )}
-      <p className="m-0 text-note text-mut">{t('probe.measure.note')}</p>
+      {step?.waits ? null : <p className="m-0 text-note text-mut">{t('probe.measure.note')}</p>}
     </div>
   );
 };
