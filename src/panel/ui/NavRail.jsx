@@ -1,3 +1,4 @@
+import NavMark from './NavMark';
 import { t } from '../i18n';
 
 /**
@@ -44,7 +45,9 @@ const NavRail = ({ items, current, onSelect, className = '' }) => (
     className={`flex min-h-0 w-rail shrink-0 flex-col border-r border-line bg-panel ${className}`}
     aria-label={t('nav.label')}
   >
-    {items.map(({ id, label, ready }) => {
+    {items.map(({
+      id, label, ready, mark,
+    }) => {
       const here = id === current;
       return (
         <button
@@ -60,7 +63,8 @@ const NavRail = ({ items, current, onSelect, className = '' }) => (
             !ready ? 'opacity-45' : '',
           ].join(' ')}
         >
-          {label}
+          <span className="min-w-0 flex-1">{label}</span>
+          {mark ? <NavMark /> : null}
         </button>
       );
     })}

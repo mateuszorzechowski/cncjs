@@ -117,6 +117,51 @@ export const backScreen = (current, goHome, { first = false } = {}) => {
   }
 };
 
+/**
+ * A wizard's steps on the way back (Mateusz, 2026-10-03: *"nawigacja w
+ * kreatorze powinna też trafiać do historii, sterowanie gestem wstecz"*):
+ * `depth` steps in, back goes one step back with `onBack`, before the screen
+ * goes home.
+ *
+ * One step of history per time `depth` grows — a tap on Dalej, or on a
+ * wizard joined several steps in — never several at once: an entry pushed
+ * with no tap of its own is one Chrome on Android skips. So a wizard come
+ * back to on its fifth step has no steps to go back by until the next tap;
+ * back takes it home, and it is still on its fifth step there. A step taken
+ * back by hand (Wstecz) takes its entry away; `depth` 0 takes them all.
+ */
+export const useBackSteps = (depth, onBack) => {
+  const back = useRef(onBack);
+  back.current = onBack;
+  const own = useRef([]);
+  const was = useRef(depth);
+  useEffect(() => {
+    if (depth > was.current) {
+      const layer = { popped: false, close: () => back.current() };
+      const entry = { id: next++, layer };
+      push(entry);
+      own.current.push(entry);
+    } else {
+      for (let k = was.current - depth; k > 0 && own.current.length; k--) {
+        const entry = own.current.pop();
+        if (!entry.layer.popped) {
+          retire(entry);
+        }
+      }
+    }
+    was.current = depth;
+  }, [depth]);
+  // Leaving the screen: the wizard's steps go with it; the screen's own stays.
+  useEffect(() => () => {
+    while (own.current.length) {
+      const entry = own.current.pop();
+      if (!entry.layer.popped) {
+        retire(entry);
+      }
+    }
+  }, []);
+};
+
 /** While `open`, this layer is what back closes first, with `onClose`. */
 const useBackCloses = (open, onClose) => {
   const closing = useRef(onClose);

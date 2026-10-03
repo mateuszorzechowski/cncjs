@@ -32,6 +32,8 @@ import ProbeScreen from './screens/ProbeScreen';
 import SettingsScreen, { showSettingsTab } from './screens/SettingsScreen';
 import ZeroScreen from './screens/ZeroScreen';
 import { useMachine } from './machine/useMachine';
+import useKept from './ui/useKept';
+import { WIZARD_STEP } from './ui/useProbeWizard';
 import { adviceFor } from './machine/advice';
 import { emergencyStop } from './machine/commands';
 
@@ -79,7 +81,7 @@ const DESTINATIONS = [
  * saying PULPIT after the settings had switched to English. `short` is the
  * word a narrow tile uses instead.
  */
-const named = (list) => list.map((d) => ({ ...d, label: t(d.short || d.key) }));
+const named = (list, marks = {}) => list.map((d) => ({ ...d, label: t(d.short || d.key), mark: Boolean(marks[d.id]) }));
 
 /*
  * What a phone sees without pulling, and what pulling reveals.
@@ -173,6 +175,13 @@ const Panel = ({ machine, screen, onScreen }) => {
    */
   const [probeAsk, setProbeAsk] = useState(null);
   const probeWaits = Boolean(machine.probeStage);
+  /*
+   * A probe wizard under way — this device's past its first step, one waiting
+   * elsewhere, a measurement running or waiting to be kept — is an amber dot
+   * at Sonda in the menu (Mateusz, 2026-10-03).
+   */
+  const [wizardStep] = useKept(WIZARD_STEP, 'method');
+  const marks = { probe: wizardStep !== 'method' || probeWaits || Boolean(machine.probe) };
   const Screen = SCREENS[screen];
 
   /*
@@ -225,7 +234,7 @@ const Panel = ({ machine, screen, onScreen }) => {
 
       <div className="flex min-h-0 flex-1">
         {phone ? null : (
-          <NavRail items={named(DESTINATIONS)} current={screen} onSelect={onScreen} />
+          <NavRail items={named(DESTINATIONS, marks)} current={screen} onSelect={onScreen} />
         )}
 
         {/* `min-h-0` so this constrains its screen rather than growing to fit
@@ -430,8 +439,8 @@ const Panel = ({ machine, screen, onScreen }) => {
         * the screen and there is no room for a status line as well. */}
       {phone ? (
         <NavTabs
-          items={named(PHONE_DESTINATIONS)}
-          rest={named(PHONE_REST)}
+          items={named(PHONE_DESTINATIONS, marks)}
+          rest={named(PHONE_REST, marks)}
           current={screen}
           onSelect={onScreen}
           /*

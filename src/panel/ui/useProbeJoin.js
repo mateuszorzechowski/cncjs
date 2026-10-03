@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import useKept from './useKept';
 import useProbeStage from './useProbeStage';
 import { SURFACE, methodOf } from '../machine/probe';
 import { t } from '../i18n';
@@ -22,9 +23,10 @@ const useProbeJoin = ({
   machine, method, choice, surface, area = null, onArea = () => {}, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
 }) => {
   const shared = machine.probeStage;
-  const [mode, setMode] = useState(null);
-  const [takenBy, setTakenBy] = useState(null);
-  const [declined, setDeclined] = useState(false);
+  // Kept while the screen is away, as the rest of the wizard is (`useProbeWizard`).
+  const [mode, setMode] = useKept('probe-mode', null);
+  const [takenBy, setTakenBy] = useKept('probe-takenBy', null);
+  const [declined, setDeclined] = useKept('probe-declined', false);
   const { mine } = useProbeStage({
     machine, method, choice, surface, area, step, feeling, mode, onFollow: setLocal,
     onTakenOver: (name) => {
