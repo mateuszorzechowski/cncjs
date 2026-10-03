@@ -32,6 +32,10 @@ import { contourSegments } from './contours';
 
 // Each cell drawn this many times finer when smooth.
 const FINE = 8;
+// Around each point's mark, and its rings from the middle out: a disc measured, a ring not yet.
+const MARK_SEGMENTS = 32;
+const DISC = [0, 0.4, 0.7, 1];
+const RING = [0.8, 1];
 // Samples along each line of the grid, so it lies on a smooth sheet too.
 const LINE_STEPS = 8;
 // A press that moved further than this, in pixels, turned the view: not a pick.
@@ -115,20 +119,41 @@ const MapArea = ({
   const lift = (u, v) => z + surface(u, v) * scale;
   const point = (u, v) => [xAt(u), yAt(v), lift(u, v)];
   /*
-   * A point's mark lying on the sheet, not level through it (Mateusz,
-   * 2026-10-03): turned to the sheet's slope there, a hair over it.
+   * Points' marks laid on the sheet (Mateusz, 2026-10-03: "dostosować się do
+   * krzywych"): each vertex of a ring or a disc at the sheet's own height
+   * where it falls, so a mark bends over a crease of the sheet rather than
+   * cutting through it. `radii` from the middle out; one geometry for all
+   * `at` (`[{ i, j }]`), `size` times the ring's radius.
    */
-  const UP = new THREE.Vector3(0, 0, 1);
-  const onSheet = (u, v) => {
-    const du = 0.01;
-    const a = new THREE.Vector3(...point(Math.max(0, u - du), v));
-    const b = new THREE.Vector3(...point(Math.min(nx - 1, u + du), v));
-    const c = new THREE.Vector3(...point(u, Math.max(0, v - du)));
-    const d = new THREE.Vector3(...point(u, Math.min(ny - 1, v + du)));
-    const normal = b.sub(a).cross(d.sub(c)).normalize();
-    const turn = new THREE.Quaternion().setFromUnitVectors(UP, normal.z < 0 ? normal.negate() : normal);
-    const at = new THREE.Vector3(...point(u, v)).addScaledVector(normal, r * 0.1);
-    return { position: at.toArray(), quaternion: turn.toArray() };
+  const stepX = (x1 - x0) / Math.max(1, nx - 1);
+  const stepY = (y1 - y0) / Math.max(1, ny - 1);
+  const marks = (at, radii, size = 1) => {
+    const positions = [];
+    const index = [];
+    for (const { i, j } of at) {
+      const first = positions.length / 3;
+      for (const radius of radii) {
+        for (let k = 0; k < MARK_SEGMENTS; k++) {
+          const angle = (2 * Math.PI * k) / MARK_SEGMENTS;
+          const dx = radius * size * r * Math.cos(angle);
+          const dy = radius * size * r * Math.sin(angle);
+          const u = Math.min(nx - 1, Math.max(0, i + dx / stepX));
+          const v = Math.min(ny - 1, Math.max(0, j + dy / stepY));
+          positions.push(xAt(i) + dx, yAt(j) + dy, lift(u, v));
+        }
+      }
+      for (let ring = 0; ring < radii.length - 1; ring++) {
+        for (let k = 0; k < MARK_SEGMENTS; k++) {
+          const a = first + ring * MARK_SEGMENTS + k;
+          const b = first + ring * MARK_SEGMENTS + ((k + 1) % MARK_SEGMENTS);
+          index.push(a, b, a + MARK_SEGMENTS, b, b + MARK_SEGMENTS, a + MARK_SEGMENTS);
+        }
+      }
+    }
+    const made = new THREE.BufferGeometry();
+    made.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    made.setIndex(index);
+    return made;
   };
 
   // The sheet, finer when smooth, each vertex shaded by its height — or the middle shade near a point not measured.
@@ -200,8 +225,11 @@ const MapArea = ({
     .map(([a, b]) => [point(...a), point(...b)].map(([px, py, pz]) => [px, py, pz + 0.05])) : [];
 
   const measured = new Set(done.map(({ i, j }) => `${i},${j}`));
-  const ring = useGeometry(() => new THREE.RingGeometry(r * 0.8, r, 32), [r]);
-  const disc = useGeometry(() => new THREE.CircleGeometry(r, 32), [r]);
+  const all = values.flatMap((row, j) => row.map((_, i) => ({ i, j })));
+  const marksKey = JSON.stringify([sheetKey, r, done]);
+  const discs = useGeometry(() => marks(all.filter(({ i, j }) => measured.has(`${i},${j}`)), DISC), [marksKey]);
+  const rings = useGeometry(() => marks(all.filter(({ i, j }) => !measured.has(`${i},${j}`)), RING), [marksKey]);
+  const pickedRing = useGeometry(() => marks(picked ? [picked] : [], RING, 2), [marksKey, picked?.i, picked?.j]);
 
   const pick = onPick ? (event) => {
     if (event.delta > PICK_SLOP) {
@@ -220,16 +248,17 @@ const MapArea = ({
       </mesh>
       {gridLines ? <Lines segments={edge} color={color} opacity={0.9} /> : null}
       {gridLines ? <Lines segments={inner} color={color} opacity={0.25} /> : null}
-      {gridLines ? values.flatMap((row, j) => row.map((_, i) => (
-        <mesh key={`${i},${j}`} geometry={measured.has(`${i},${j}`) ? disc : ring} {...onSheet(i, j)}>
-          <meshBasicMaterial color={color} side={THREE.DoubleSide} />
+      {/* Over the sheet they lie on, by the depth test's nudge rather than by lifting them off it. */}
+      {gridLines ? [discs, rings].map((geometry) => (
+        <mesh key={geometry.uuid} geometry={geometry}>
+          <meshBasicMaterial color={color} side={THREE.DoubleSide} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-4} />
         </mesh>
-      ))) : null}
+      )) : null}
       {crosses.length ? <Lines segments={crosses} color={color} opacity={1} /> : null}
-      {contourLines.length ? <Lines segments={contourLines} color={color} opacity={0.7} /> : null}
+      {contourLines.length ? <Lines segments={contourLines} color={color} opacity={0.3} /> : null}
       {picked ? (
-        <mesh geometry={ring} {...onSheet(picked.i, picked.j)} scale={2}>
-          <meshBasicMaterial color={pickColor} side={THREE.DoubleSide} />
+        <mesh geometry={pickedRing}>
+          <meshBasicMaterial color={pickColor} side={THREE.DoubleSide} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-4} />
         </mesh>
       ) : null}
     </>

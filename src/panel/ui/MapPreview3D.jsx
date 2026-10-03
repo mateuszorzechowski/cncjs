@@ -5,6 +5,7 @@ import MapArea, { surfaceOf, tintOf } from '../scene/MapArea';
 import { contourStep } from '../scene/contours';
 import StageOptions from './StageOptions';
 import { layerItems, viewItems } from './stageItems';
+import { keepMapLook, mapLook } from './mapLook';
 import { useUnits } from './units';
 import { useSceneColors } from '../scene/colors';
 import { composeScene, toolPoint } from '../scene/compose';
@@ -35,8 +36,8 @@ import { t } from '../i18n';
 
 const NO_OFFSET = { x: 0, y: 0, z: 0 };
 
-// Kept across these steps, as the camera is: the area last framed, whether the operator has moved the view since, the layers.
-const framing = { area: null, moved: false, layers: { machineArea: true, path: true, wcsAxes: true, map: true } };
+// Kept across these steps, as the camera is: the area last framed, and whether the operator has moved the view since.
+const framing = { area: null, moved: false };
 
 // The legend's colours: so many stops along the range — the sheet's own, at full strength, to be read.
 const LEGEND_STOPS = 5;
@@ -51,7 +52,7 @@ const MapPreview3D = ({
   const [fit, setFit] = useState(0);
   // A fit asked before the scene has drawn has no camera to move.
   const [ready, setReady] = useState(false);
-  const [layers, setLayers] = useState(framing.layers);
+  const [layers, setLayers] = useState(() => mapLook().layers);
   const [view, setView] = useState(DEFAULT_VIEW);
   // As on the Ścieżka: a count, so pressing the same view twice moves twice; `free` once moved by hand.
   const [revision, setRevision] = useState(0);
@@ -116,7 +117,7 @@ const MapPreview3D = ({
     setRevision((count) => count + 1);
   };
   const chooseLayers = (next) => {
-    framing.layers = next;
+    keepMapLook({ layers: next });
     setLayers(next);
   };
   const sections = [

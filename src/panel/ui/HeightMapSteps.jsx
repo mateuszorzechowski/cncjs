@@ -8,6 +8,7 @@ import useBentProgram from './useBentProgram';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
 import { figureSaid } from '../machine/probeFields';
+import { keepMapLook, mapLook } from './mapLook';
 import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -33,7 +34,7 @@ export const HeightMapPosition = ({ choice, texts }) => {
   );
 };
 
-// How much the heights are brought out in 3D: a step on the slider, kept from the measuring to the result.
+// How much the heights are brought out in 3D: a step on the slider, kept on this device (`mapLook`).
 const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
 /*
  * How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, in
@@ -45,7 +46,6 @@ const LOOKS = ['smooth', 'heat', 'solid', 'gridLines', 'contours', 'before'];
 const LOOK_WORDS = {
   smooth: 'probe.map.smooth', heat: 'probe.map.heat', solid: 'probe.map.solid', gridLines: 'probe.map.gridLines', contours: 'probe.map.contours', before: 'probe.map.before',
 };
-const kept = { scale: 20, looks: ['gridLines'] };
 
 /**
  * The height map on the machine in 3D, the same while it is measured and once
@@ -65,8 +65,8 @@ const HeightMapView = ({
 }) => {
   const units = useUnits();
   const wide = useIsWide();
-  const [scale, setScale] = useState(kept.scale);
-  const [looks, setLooks] = useState(kept.looks);
+  const [scale, setScale] = useState(() => mapLook().scale);
+  const [looks, setLooks] = useState(() => mapLook().looks);
   const options = probe?.options;
   if (!options?.x) {
     return null;
@@ -79,7 +79,7 @@ const HeightMapView = ({
         steps={SCALES}
         value={scale}
         onChange={(next) => {
-          kept.scale = next;
+          keepMapLook({ scale: next });
           setScale(next);
         }}
         label={t('probe.map.scale')}
@@ -91,7 +91,7 @@ const HeightMapView = ({
         isOn={(one) => looks.includes(one)}
         onChange={(one) => {
           const next = looks.includes(one) ? looks.filter((other) => other !== one) : [...looks, one];
-          kept.looks = next;
+          keepMapLook({ looks: next });
           setLooks(next);
         }}
         format={(one) => t(LOOK_WORDS[one])}
