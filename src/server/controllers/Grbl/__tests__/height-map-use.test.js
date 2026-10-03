@@ -57,7 +57,7 @@ describe('a program bent to the height map', () => {
   });
 
   test('worked out at the load; turned on, the sender holds it, and every count is still the file\'s', () => {
-    heightMap.open(MAP);
+    heightMap.set(MAP);
     const { controller, status } = setup();
     controller.command('gcode:load', 'part.nc', PROGRAM);
     const asWritten = status();
@@ -78,7 +78,7 @@ describe('a program bent to the height map', () => {
   });
 
   test('a new device is handed the file as written, not the bent lines', () => {
-    heightMap.open(MAP);
+    heightMap.set(MAP);
     const { controller } = setup();
     controller.command('gcode:load', 'part.nc', PROGRAM);
     controller.command('height-map:use', true);
@@ -91,7 +91,7 @@ describe('a program bent to the height map', () => {
   });
 
   test('turned off, the sender holds the file again', () => {
-    heightMap.open(MAP);
+    heightMap.set(MAP);
     const { controller } = setup();
     controller.command('gcode:load', 'part.nc', PROGRAM);
     controller.command('height-map:use', true);
@@ -102,7 +102,7 @@ describe('a program bent to the height map', () => {
   });
 
   test('a program the map does not cover cannot be bent, and says which line', () => {
-    heightMap.open(MAP);
+    heightMap.set(MAP);
     const { controller, refusals, status } = setup();
     controller.command('gcode:load', 'wide.nc', 'G0 X0 Y0 Z2\nG1 Z-0.2 F100\nG1 X80');
 
@@ -113,7 +113,7 @@ describe('a program bent to the height map', () => {
   });
 
   test('X0 moved since it was bent: bent again over the new place before it starts', () => {
-    heightMap.open(MAP);
+    heightMap.set(MAP);
     const { controller, refusals } = setup();
     controller.command('gcode:load', 'part.nc', PROGRAM);
     controller.command('height-map:use', true);
@@ -135,7 +135,7 @@ describe('a program bent to the height map', () => {
   });
 
   test('a new map bends the loaded program again', () => {
-    heightMap.open(MAP);
+    heightMap.set(MAP);
     const { controller } = setup();
     controller.command('gcode:load', 'part.nc', PROGRAM);
     controller.command('height-map:use', true);
@@ -147,7 +147,7 @@ describe('a program bent to the height map', () => {
   });
 
   test('the bent program is there to draw, with the sender count beside the file count', () => {
-    heightMap.open(MAP);
+    heightMap.set(MAP);
     const { controller } = setup();
     controller.command('gcode:load', 'part.nc', PROGRAM);
     expect(controller.bentProgram('kept').gcode).toContain('G1 X20 Y0 Z-0.1');
@@ -169,5 +169,86 @@ describe('a program bent to the height map', () => {
     controller.probe.run = null;
     controller.endProbe(strategy, {}, { seen: {} });
     expect(controller.bentProgram('result').gcode).toContain('G1 X20 Y0 Z-0.1');
+  });
+});
+
+describe('a height map that may no longer be where the machine thinks', () => {
+  test('read from `.cncrc` when the server starts, it is in doubt: the switch is refused', () => {
+    heightMap.open(MAP);
+    const { controller, refusals, status } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+
+    expect(heightMap.current()).toMatchObject({ doubt: { code: 'restart' } });
+    expect(status().heightMap).toEqual({ on: false, refused: null });
+    controller.command('height-map:use', true);
+    expect(refusals.pop()).toMatchObject({ cmd: 'height-map:use', reason: 'map-doubt' });
+    expect(controller.bentOn).toBe(false);
+  });
+
+  test('measured again, it is trusted', () => {
+    heightMap.open(MAP);
+    const { controller } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+    controller.probe = { method: 'height-map', wcs: 'G54', result: { map: MAP } };
+    controller.command('probe:apply');
+
+    expect(heightMap.current()).toMatchObject({ port: '/dev/null', doubt: null });
+    controller.command('height-map:use', true);
+    expect(controller.bentOn).toBe(true);
+  });
+
+  test('an alarm that loses the position puts it in doubt and the program back to as written', () => {
+    heightMap.set(MAP, '/dev/null');
+    const { controller, events } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+    controller.command('height-map:use', true);
+    controller.runner.parse('ALARM:3');
+
+    expect(heightMap.current()).toMatchObject({ doubt: { code: 'position-lost' } });
+    expect(controller.bentOn).toBe(false);
+    expect(controller.sender.state.gcode).toBe(controller.programSource.gcode);
+    expect(events.some(({ event, args }) => event === 'height-map:state' && args[0]?.doubt)).toBe(true);
+  });
+
+  test('an alarm that keeps it — a soft limit — does not', () => {
+    heightMap.set(MAP, '/dev/null');
+    const { controller } = setup();
+    controller.runner.parse('ALARM:2');
+
+    expect(heightMap.current().doubt).toBeNull();
+  });
+
+  test('the port closed: in doubt', () => {
+    heightMap.set(MAP, '/dev/null');
+    const { controller } = setup();
+    jest.spyOn(controller, 'isClose').mockReturnValue(true);
+    controller.close(() => {});
+
+    expect(heightMap.current()).toMatchObject({ doubt: { code: 'port-closed' } });
+  });
+
+  test('put in doubt while the program ran: the next start is refused and the program is as written', () => {
+    heightMap.set(MAP, '/dev/null');
+    const { controller, refusals } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+    controller.command('height-map:use', true);
+    controller.workflow.start();
+    controller.doubtMap('position-lost');
+    expect(controller.bentOn).toBe(true);
+    controller.workflow.stop();
+
+    controller.command('gcode:start');
+    expect(refusals.pop()).toMatchObject({ cmd: 'gcode:start', reason: 'map-doubt' });
+    expect(controller.bentOn).toBe(false);
+  });
+
+  test('a map measured on another port is not for this machine', () => {
+    heightMap.set(MAP, 'COM7');
+    const { controller, status } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+
+    expect(status().heightMap).toBeNull();
+    controller.doubtMap('port-closed');
+    expect(heightMap.current().doubt).toBeNull();
   });
 });

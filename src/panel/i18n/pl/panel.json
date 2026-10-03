@@ -146,7 +146,14 @@
       "g92": "Program przesuwa zero przez G92 (linia {{line}}).",
       "arcPlane": "Łuk poza płaszczyzną XY (linia {{line}}).",
       "badArc": "Łuk, którego nie da się narysować (linia {{line}}).",
-      "cannot": "Mapa nie może poprawić tego programu (linia {{line}})."
+      "cannot": "Mapa nie może poprawić tego programu (linia {{line}}).",
+      "measured": "Zmierzona {{when}}.",
+      "doubt": {
+        "restart": "Niepewna: serwer był uruchomiony ponownie, maszyna mogła zgubić pozycję. Zmierz mapę ponownie.",
+        "portClosed": "Niepewna: port był zamknięty, Grbl zaczął od nowa bez swojej pozycji. Zmierz mapę ponownie.",
+        "positionLost": "Niepewna: alarm, po którym maszyna nie zna swojej pozycji. Zmierz mapę ponownie.",
+        "other": "Niepewna: maszyna mogła zgubić pozycję. Zmierz mapę ponownie."
+      }
     }
   },
   "tool": {
@@ -454,6 +461,7 @@
     "badArea": "Obszar mapy nie ma szerokości w X albo w Y.",
     "badGrid": "Siatka mapy: od 2 do 30 punktów w każdej osi.",
     "noMap": "Nie ma zapisanej mapy wysokości.",
+    "mapDoubt": "Mapa wysokości jest niepewna: maszyna mogła zgubić pozycję od pomiaru. Zmierz ją ponownie.",
     "noProgram": "Nie ma wczytanego programu.",
     "outsideMap": "Program wychodzi poza mapę (linia {{line}}).",
     "noZ": "Program nie ma Z: mapa nie ma czego poprawić.",

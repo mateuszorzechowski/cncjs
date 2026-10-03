@@ -811,6 +811,7 @@ class GrblController {
         // position is gone with it.
         if (res.activeState === GRBL_ACTIVE_STATE_ALARM && this.alarmCode === null) {
           this.setHomed(null);
+          this.doubtMap('position-lost');
         }
         /**
          * Handle the scenario where a startup message is not received during UART communication.
@@ -1170,6 +1171,7 @@ class GrblController {
         this.homing.pending = false;
         if (losesPosition(code)) {
           this.setHomed(null);
+          this.doubtMap('position-lost');
         }
 
         if (alarm) {
@@ -1961,6 +1963,9 @@ class GrblController {
       // Clear initialized flag
       this.initialized = false;
 
+      // Opened again, Grbl resets: where the machine is starts from nothing.
+      this.doubtMap('port-closed');
+
       this.emit('serialport:close', {
         port: port,
         inuse: false
@@ -2063,7 +2068,7 @@ class GrblController {
       if (this.probeStage) {
         socket.emit('probe:stage', this.probeStage);
       }
-      socket.emit('height-map:state', heightMap.current());
+      socket.emit('height-map:state', heightMap.current(this.options.port));
 
       if (!_.isEmpty(this.settings)) {
         // controller settings
@@ -2118,6 +2123,22 @@ class GrblController {
       if (this.homing.at !== at) {
         this.homing.at = at;
         this.emit('controller:homing', at);
+      }
+    }
+
+    /**
+     * The machine may have lost its position (`code`): its height map is in
+     * doubt — see `services/height-map` — and a program bent to it goes back
+     * to as written, unless it is running.
+     */
+    doubtMap(code) {
+      if (!heightMap.doubt(code, this.options.port)) {
+        return;
+      }
+      this.emit('height-map:state', heightMap.current(this.options.port));
+      if (this.bentOn && this.workflow.state === WORKFLOW_STATE_IDLE) {
+        this.holdBent(false);
+        this.emit('sender:status', this.senderStatus());
       }
     }
 
@@ -2728,6 +2749,13 @@ class GrblController {
             this.refuse(cmd, 'machine-moving');
             return;
           }
+          // Bent to a map put in doubt while the program ran: as written again, and said so.
+          if (this.bentOn && heightMap.current(this.options.port)?.doubt) {
+            this.holdBent(false);
+            this.emit('sender:status', this.senderStatus());
+            this.refuse(cmd, 'map-doubt');
+            return;
+          }
           // Bent to the map over a zero since moved in X or Y: bent again over where it is now.
           if (this.bentOn && !_.isEqual(this.bent?.wco, this.workOffsetXY())) {
             this.bendProgram();
@@ -3232,8 +3260,8 @@ class GrblController {
           }
 
           if (result.map) {
-            heightMap.set(result.map);
-            this.emit('height-map:state', heightMap.current());
+            heightMap.set(result.map, this.options.port);
+            this.emit('height-map:state', heightMap.current(this.options.port));
             // The loaded program, bent to the new surface — or back to as written, if it no longer can be.
             this.bendProgram();
             if (this.bentOn) {
@@ -3260,8 +3288,13 @@ class GrblController {
             this.refuse(cmd, 'no-program');
             return;
           }
-          if (on && !heightMap.current()) {
+          const map = heightMap.current(this.options.port);
+          if (on && !map) {
             this.refuse(cmd, 'no-map');
+            return;
+          }
+          if (on && map.doubt) {
+            this.refuse(cmd, 'map-doubt');
             return;
           }
           if (on && this.bent?.refused) {
@@ -4784,7 +4817,7 @@ class GrblController {
      * program or no map. At Grbl's own arc tolerance, `$12`.
      */
     bendProgram() {
-      const map = heightMap.current();
+      const map = heightMap.current(this.options.port);
       if (!this.programSource || !map) {
         this.bent = null;
         return;
