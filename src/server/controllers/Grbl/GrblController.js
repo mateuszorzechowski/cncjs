@@ -2552,10 +2552,7 @@ class GrblController {
         // A surface to keep, not a zero: it waits for `probe:apply` the same way.
         const map = strategy.map(params, options, outcome.seen, { start, wco });
         this.probe.result = { map };
-        // The loaded program bent to this map before it is kept, for the result to show (`height-map/program`).
-        this.probe.bent = this.programSource
-          ? compensate(this.programSource.gcode, map, { wco: this.workOffsetXY(), arcTolerance: Number(this.runner.settings?.settings?.$12) || undefined })
-          : null;
+        this.bendResult();
         this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, points: map.xs.length * map.ys.length } });
       } else {
         const parameters = this.runner.getParameters();
@@ -2691,6 +2688,7 @@ class GrblController {
           keptProgram.keep(this.options.port, { name, gcode, context });
           this.bentOn = false;
           this.bendProgram();
+          this.bendResult();
           this.emit('gcode:load', name, this.sender.state.gcode, context);
           this.event.trigger('gcode:load');
           this.planTimeline(gcode);
@@ -2709,6 +2707,7 @@ class GrblController {
           this.programSource = null;
           this.bent = null;
           this.bentOn = false;
+          this.bendResult();
           keptProgram.clear(this.options.port);
           this.workflow.stop();
 
@@ -4863,6 +4862,22 @@ class GrblController {
         }
       });
       this.bent = { lines: bent.lines, toFile, total: count, wco };
+    }
+
+    /**
+     * The loaded program bent to a map just measured and not yet kept, for
+     * the result to show (`height-map/program`): worked out when it is
+     * measured and again whenever another program is loaded or the program
+     * unloaded — or the result would draw the program that was loaded then.
+     */
+    bendResult() {
+      const map = this.probe?.result?.map;
+      if (!map) {
+        return;
+      }
+      this.probe.bent = this.programSource
+        ? compensate(this.programSource.gcode, map, { wco: this.workOffsetXY(), arcTolerance: Number(this.runner.settings?.settings?.$12) || undefined })
+        : null;
     }
 
     /**

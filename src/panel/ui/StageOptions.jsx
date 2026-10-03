@@ -25,14 +25,41 @@ import { t } from '../i18n';
  * `onDrawing`, a group a phone keeps on the drawing beside the button rather
  * than in the sheet: the frame (*"ten przycisk może być na ekranie
  * widoczny"*).
+ *
+ * A group with a `panel` of its own (Mateusz, 2026-10-03: the height map's
+ * looks and its scale) is one glyph (`icon`) on a PC and a tablet, opening
+ * the panel on the drawing beside the column; on a phone it is a section of
+ * the sheet, under its name.
  */
 const StageOptions = ({ groups }) => {
   const phone = useIsPhone();
   const wide = useIsWide();
   const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(null);
 
   if (!phone) {
-    return <IconBar className="absolute right-2 top-2" groups={groups} large={!wide} />;
+    const panel = groups.find((group) => group.panel && group.label === shown);
+    const bar = groups.map((group) => (group.panel ? {
+      label: group.label,
+      items: [{
+        id: group.label, icon: group.icon, label: group.label, pressed: group.label === shown, onSelect: () => setShown((now) => (now === group.label ? null : group.label)),
+      }],
+    } : group));
+    return (
+      <>
+        <IconBar className="absolute right-2 top-2" groups={bar} large={!wide} />
+        {panel ? (
+          <div
+            data-stage-inset="right"
+            role="group"
+            aria-label={panel.label}
+            className={`absolute top-2 flex w-72 flex-col gap-3 rounded-ctl border border-line bg-panel p-3 ${wide ? 'right-11' : 'right-16'}`}
+          >
+            {panel.panel}
+          </div>
+        ) : null}
+      </>
+    );
   }
 
   const onDrawing = groups.filter((group) => group.onDrawing).flatMap((group) => group.items);
@@ -66,6 +93,7 @@ const StageOptions = ({ groups }) => {
           {inSheet.map((group) => (
             <section key={group.label} className="flex flex-col gap-2" aria-label={group.label}>
               <h3 className="m-0 text-cap font-semibold uppercase tracking-[0.1em] text-mut">{group.label}</h3>
+              {group.panel || (
               <div className="flex flex-wrap gap-2">
                 {group.items.map((item) => (
                   <Button
@@ -86,6 +114,7 @@ const StageOptions = ({ groups }) => {
                   </Button>
                 ))}
               </div>
+              )}
             </section>
           ))}
           {notes.map((note) => <p key={note} className="m-0 text-note text-mut">{note}</p>)}

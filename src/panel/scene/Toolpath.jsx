@@ -232,7 +232,16 @@ const buildCurrent = (source, { start, end }, color) => {
   return line;
 };
 
-const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
+/*
+ * `fade`, the whole path pulled that far towards the ground, as the done part
+ * is: drawn beside another to compare with — the height map's program as
+ * written, under the one bent (Mateusz, 2026-10-03). `over`, drawn over
+ * whatever stands in front of it: the bent path lies in the material, under
+ * the height map's sheet. `width`, the lines that many times thicker.
+ */
+const Toolpath = ({
+  toolpath, colors, shadowZ, progress, fade = 0, over = false, width = 1,
+}) => {
   const size = useThree((state) => state.size);
   const invalidate = useThree((state) => state.invalidate);
 
@@ -260,9 +269,10 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
   useEffect(() => () => fill?.dispose(), [fill]);
 
   const lines = useMemo(() => [
-    ['cut', buildLine(sets.cut, { linewidth: CUT_WIDTH })],
+    ['cut', buildLine(sets.cut, { linewidth: CUT_WIDTH * width, depthTest: !over })],
     ['rapid', buildLine(sets.rapid, {
-      linewidth: RAPID_WIDTH,
+      depthTest: !over,
+      linewidth: RAPID_WIDTH * width,
       dashed: true,
       dashSize: RAPID_DASH,
       gapSize: RAPID_GAP,
@@ -271,7 +281,7 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
     // Rapids under the cuts, done or not.
     line.renderOrder = name === 'rapid' ? RAPID_ORDER : CUT_ORDER;
     return [name, line];
-  }), [sets]);
+  }), [sets, over, width]);
 
   /*
    * The material works in screen space, so it has to be told how large the
@@ -292,16 +302,19 @@ const Toolpath = ({ toolpath, colors, shadowZ, progress }) => {
   const faded = useMemo(() => {
     const ground = new THREE.Color(colors.ground);
     return {
-      cut: fadeTowards(sets.cut.colors, ground, DONE_FADE),
-      rapid: fadeTowards(sets.rapid.colors, ground, DONE_FADE),
+      cut: fadeTowards(sets.cut.colors, ground, fade || DONE_FADE),
+      rapid: fadeTowards(sets.rapid.colors, ground, fade || DONE_FADE),
     };
-  }, [sets, colors.ground]);
+  }, [sets, colors.ground, fade]);
 
   const doneBefore = progress ? progress.start : 0;
   useEffect(() => {
     lines.forEach(([name, line]) => {
       const set = sets[name];
-      const done = doneBefore > 0 ? completedCount(set.vertexIndex, doneBefore - 1) : 0;
+      let done = doneBefore > 0 ? completedCount(set.vertexIndex, doneBefore - 1) : 0;
+      if (fade) {
+        done = set.colors.length / 6;
+      }
       const buffer = line.geometry.attributes.instanceColorStart.data;
       buffer.array.set(faded[name].subarray(0, done * 6), 0);
       buffer.array.set(set.colors.subarray(done * 6), done * 6);

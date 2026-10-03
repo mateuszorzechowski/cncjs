@@ -3,6 +3,7 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import FadeScroller from '../ui/FadeScroller';
 import HeightMapArea from '../ui/HeightMapArea';
+import { HeightMapColumns } from '../ui/HeightMapSteps';
 import useProbeJoin from '../ui/useProbeJoin';
 import useHeightMapAsk from '../ui/useHeightMapAsk';
 import ProbeJoin from '../ui/ProbeJoin';
@@ -273,6 +274,14 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     );
   }
 
+  /*
+   * The height map measuring and measured, where there is the width (Mateusz,
+   * 2026-10-03): the drawing a column of its own, the figures and the
+   * buttons in the other.
+   */
+  const mapColumns = !phone && method?.id === 'height-map' && (step === 'measure' || (step === 'result' && probe?.state !== 'failed' && probe?.result?.map));
+  body = mapColumns ? <HeightMapColumns measuring={step === 'measure'} probe={probe} machine={machine} foot={foot} /> : body;
+
   // The track only once there is a method to follow (review note, 2026-09-29):
   // before that the choice is the whole screen, under the screen's name.
   const choosing = step === 'method';
@@ -285,7 +294,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
         * rather than its contents sliding under its own standing edge
         * (review note, 2026-09-29: *"na górze cień otwarty"*).
         */}
-      {split ? (
+      {split || mapColumns ? (
         <div className="flex min-h-0 flex-1 gap-gap">{body}</div>
       ) : (
         // A new step starts at its top, not where the last one was scrolled to — a method low in the list on a phone.

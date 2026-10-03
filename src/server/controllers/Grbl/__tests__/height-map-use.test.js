@@ -170,6 +170,19 @@ describe('a program bent to the height map', () => {
     controller.endProbe(strategy, {}, { seen: {} });
     expect(controller.bentProgram('result').gcode).toContain('G1 X20 Y0 Z-0.1');
   });
+
+  test('another program loaded while the result waits: the result bends that one, unloaded none', () => {
+    const { controller } = setup();
+    controller.command('gcode:load', 'part.nc', PROGRAM);
+    controller.probe = { method: 'height-map', wcs: 'G54' };
+    controller.endProbe({ map: () => MAP }, {}, { seen: {} });
+
+    controller.command('gcode:load', 'other.nc', ['G21 G90', 'G0 X0 Y20 Z2', 'G1 Z-0.3 F100', 'G1 X40'].join('\n'));
+    expect(controller.bentProgram('result').gcode).toContain('X20 Y20 Z-0.2');
+    expect(controller.bentProgram('result').gcode).not.toContain('X20 Y0');
+    controller.command('gcode:unload');
+    expect(controller.bentProgram('result')).toBeNull();
+  });
 });
 
 describe('a height map that may no longer be where the machine thinks', () => {

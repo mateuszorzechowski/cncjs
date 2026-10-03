@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Card from './Card';
 import MapStartScene from './MapStartScene';
 import MapPreview3D from './MapPreview3D';
 import SegmentedChoice from './SegmentedChoice';
@@ -7,6 +8,8 @@ import useBentProgram from './useBentProgram';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
 import { figureSaid } from '../machine/probeFields';
+import { keepMapLook, mapLook } from './mapLook';
+import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
 
@@ -31,12 +34,18 @@ export const HeightMapPosition = ({ choice, texts }) => {
   );
 };
 
-// How much the heights are brought out in 3D: a step on the slider, kept from the measuring to the result.
+// How much the heights are brought out in 3D: a step on the slider, kept on this device (`mapLook`).
 const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
-// How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, and in the heatmap's colours; either, both or neither.
-const LOOKS = ['smooth', 'heat'];
-const LOOK_WORDS = { smooth: 'probe.map.smooth', heat: 'probe.map.heat' };
-const kept = { scale: 20, looks: [] };
+/*
+ * How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, in
+ * the heatmap's colours, opaque, its grid's lines, with contours; and the
+ * program as written faint under the bent one, where there is a bent one.
+ * Any of them; the grid on to begin with.
+ */
+const LOOKS = ['smooth', 'heat', 'solid', 'gridLines', 'contours', 'before'];
+const LOOK_WORDS = {
+  smooth: 'probe.map.smooth', heat: 'probe.map.heat', solid: 'probe.map.solid', gridLines: 'probe.map.gridLines', contours: 'probe.map.contours', before: 'probe.map.before',
+};
 
 /**
  * The height map on the machine in 3D, the same while it is measured and once
@@ -45,21 +54,69 @@ const kept = { scale: 20, looks: [] };
  * by the heights times the scale on the slider and shaded by them, the tool
  * where it is; under it the lowest point, the highest and the spread so far.
  * `heights` is `{ heights: [{ i, j, dz }], low, high }`, or null; `children`
- * goes between the drawing and the figures.
+ * goes between the drawing and the figures, `after` under them.
+ *
+ * `split(drawing, figures)`, where the screen has the width (Mateusz,
+ * 2026-10-03): the drawing a column of its own, the full height, and the
+ * figures in the other — the screen lays the two out.
  */
 const HeightMapView = ({
-  probe, machine, done, heights, bent = null, children = null,
+  probe, machine, done, heights, bent = null, children = null, after = null, split = null,
 }) => {
   const units = useUnits();
-  const [scale, setScale] = useState(kept.scale);
-  const [looks, setLooks] = useState(kept.looks);
+  const wide = useIsWide();
+  const [scale, setScale] = useState(() => mapLook().scale);
+  const [looks, setLooks] = useState(() => mapLook().looks);
   const options = probe?.options;
   if (!options?.x) {
     return null;
   }
   const said = (mm) => (heights ? signed(units.figure(mm)) : '—');
-  return (
-    <div className="flex flex-col gap-3">
+  // On the drawing, behind its own glyph (Mateusz, 2026-10-03): the scale and the looks.
+  const look = (
+    <>
+      <Slider
+        steps={SCALES}
+        value={scale}
+        onChange={(next) => {
+          keepMapLook({ scale: next });
+          setScale(next);
+        }}
+        label={t('probe.map.scale')}
+        say={(value) => `×${value}`}
+        className="w-full"
+      />
+      <SegmentedChoice
+        options={bent ? LOOKS : LOOKS.filter((one) => one !== 'before')}
+        isOn={(one) => looks.includes(one)}
+        onChange={(one) => {
+          const next = looks.includes(one) ? looks.filter((other) => other !== one) : [...looks, one];
+          keepMapLook({ looks: next });
+          setLooks(next);
+        }}
+        format={(one) => t(LOOK_WORDS[one])}
+        label={t('probe.map.look')}
+        columns={2}
+        compact
+      />
+    </>
+  );
+  const figures = (
+    <>
+      {children}
+      <div className={`grid gap-2 ${split ? '' : '@3xl/shell:grid-cols-3'}`}>
+        <StatTile label={t('probe.map.low')} value={said(heights?.low)} unit={units.length} />
+        <StatTile label={t('probe.map.high')} value={said(heights?.high)} unit={units.length} />
+        <StatTile label={t('probe.map.spread')} value={heights ? units.figure(heights.high - heights.low) : '—'} unit={units.length} />
+      </div>
+      {after}
+    </>
+  );
+  let height = wide ? 'h-80 @3xl/shell:h-96' : 'h-80 @3xl/shell:h-[28rem]';
+  if (split) {
+    height = 'min-h-80 flex-1';
+  }
+  const drawing = (
       <MapPreview3D
         machine={machine}
         grid={{ xs: options.x, ys: options.y, nx: options.nx, ny: options.ny }}
@@ -68,53 +125,36 @@ const HeightMapView = ({
         scale={scale}
         smooth={looks.includes('smooth')}
         heat={looks.includes('heat')}
+        solid={looks.includes('solid')}
+        gridLines={looks.includes('gridLines')}
+        contours={looks.includes('contours')}
+        before={looks.includes('before')}
         bent={bent}
-        className="h-64 @3xl/shell:h-80"
+        look={look}
+        // A tablet's keys are a finger's (`IconBar`): its column of them, the views open, needs the taller drawing.
+        className={height}
       />
-      <div className="flex flex-wrap items-center gap-3">
-        <Slider
-          steps={SCALES}
-          value={scale}
-          onChange={(next) => {
-            kept.scale = next;
-            setScale(next);
-          }}
-          label={t('probe.map.scale')}
-          say={(value) => `×${value}`}
-          className="min-w-64 flex-1"
-        />
-        <SegmentedChoice
-          options={LOOKS}
-          isOn={(one) => looks.includes(one)}
-          onChange={(one) => {
-            const next = looks.includes(one) ? looks.filter((other) => other !== one) : [...looks, one];
-            kept.looks = next;
-            setLooks(next);
-          }}
-          format={(one) => t(LOOK_WORDS[one])}
-          label={t('probe.map.look')}
-          compact
-        />
-      </div>
-      {children}
-      <div className="grid gap-2 @3xl/shell:grid-cols-3">
-        <StatTile label={t('probe.map.low')} value={said(heights?.low)} unit={units.length} />
-        <StatTile label={t('probe.map.high')} value={said(heights?.high)} unit={units.length} />
-        <StatTile label={t('probe.map.spread')} value={heights ? units.figure(heights.high - heights.low) : '—'} unit={units.length} />
-      </div>
+  );
+  if (split) {
+    return split(drawing, figures);
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      {drawing}
+      {figures}
     </div>
   );
 };
 
 /** Measuring: the view, with which point the tool is at and what it is doing there. */
-export const HeightMapCycle = ({ probe, machine }) => {
+export const HeightMapCycle = ({ probe, machine, after = null, split = null }) => {
   const marks = probe?.marks || [];
   const at = marks.length ? marks[marks.length - 1] : null;
   const total = (probe?.options?.nx || 0) * (probe?.options?.ny || 0);
   // What the tool is doing at the point: its phase, said on Z (`p3-fast` is the fast touch).
   const doing = phaseWords(String(probe?.step?.phase || '').replace(/^p\d+/, 'z'));
   return (
-    <HeightMapView probe={probe} machine={machine} done={marks.slice(0, -1)} heights={probe?.partial}>
+    <HeightMapView probe={probe} machine={machine} done={marks.slice(0, -1)} heights={probe?.partial} after={after} split={split}>
       <StatTile
         label={at ? t('probe.map.point', { n: at.n + 1, total }) : t('probe.step.measure')}
         value={probe?.step ? t(doing.key, { axis: doing.axis }) : '—'}
@@ -124,7 +164,7 @@ export const HeightMapCycle = ({ probe, machine }) => {
 };
 
 /** Measured: the same view, every point filled, the map's own heights. */
-export const HeightMapResult = ({ probe, machine }) => {
+export const HeightMapResult = ({ probe, machine, split = null }) => {
   const {
     xs, ys, dz, low, high,
   } = probe.result.map;
@@ -133,10 +173,37 @@ export const HeightMapResult = ({ probe, machine }) => {
   const bent = useBentProgram({
     machine, of: 'result', enabled: true, key: JSON.stringify([xs, ys, low, high, machine.gcode?.name]),
   });
+  const note = <p className="m-0 text-note text-mut">{t('probe.map.note')}</p>;
+  if (split) {
+    return <HeightMapView probe={probe} machine={machine} done={heights.heights} heights={heights} bent={bent} after={note} split={split} />;
+  }
   return (
     <div className="flex flex-col gap-3">
       <HeightMapView probe={probe} machine={machine} done={heights.heights} heights={heights} bent={bent} />
-      <p className="m-0 text-note text-mut">{t('probe.map.note')}</p>
+      {note}
     </div>
   );
+};
+
+/**
+ * Measuring or measured, where there is the width (Mateusz, 2026-10-03): the
+ * drawing a card of its own, the full height, and the figures with the step's
+ * buttons (`foot`) in a narrower one beside it.
+ */
+export const HeightMapColumns = ({
+  measuring, probe, machine, foot,
+}) => {
+  const columns = (drawing, figures) => (
+    <>
+      <Card className="min-h-0 min-w-0 flex-[7_7_0]" bodyClassName="min-h-0 flex-1">{drawing}</Card>
+      <Card scrolls className="min-h-0 min-w-0 flex-[3_3_0]" bodyClassName="gap-3">
+        {figures}
+        <div className="mt-auto">{foot}</div>
+      </Card>
+    </>
+  );
+  if (measuring) {
+    return <HeightMapCycle probe={probe} machine={machine} after={<p className="m-0 text-note text-mut">{t('probe.measure.note')}</p>} split={columns} />;
+  }
+  return <HeightMapResult probe={probe} machine={machine} split={columns} />;
 };

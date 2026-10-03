@@ -1,8 +1,11 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import Scene from '../scene/Scene';
+import WrittenPath from '../scene/WrittenPath';
 import MapArea, { surfaceOf, tintOf } from '../scene/MapArea';
+import { contourStep } from '../scene/contours';
 import StageOptions from './StageOptions';
 import { layerItems, viewItems } from './stageItems';
+import { keepMapLook, mapLook } from './mapLook';
 import { useUnits } from './units';
 import { useSceneColors } from '../scene/colors';
 import { composeScene, toolPoint } from '../scene/compose';
@@ -32,9 +35,11 @@ import { t } from '../i18n';
  */
 
 const NO_OFFSET = { x: 0, y: 0, z: 0 };
+// How much thicker the program's path is drawn over the map than on the Ścieżka.
+const PATH_WIDTH = 2.5;
 
-// Kept across these steps, as the camera is: the area last framed, whether the operator has moved the view since, the layers.
-const framing = { area: null, moved: false, layers: { machineArea: true, path: true, wcsAxes: true } };
+// Kept across these steps, as the camera is: the area last framed, and whether the operator has moved the view since.
+const framing = { area: null, moved: false };
 
 // The legend's colours: so many stops along the range — the sheet's own, at full strength, to be read.
 const LEGEND_STOPS = 5;
@@ -42,14 +47,14 @@ const LEGEND_STOPS = 5;
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
 const MapPreview3D = ({
-  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, bent = null, className = '',
+  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, contours = false, before = false, gridLines = true, bent = null, look = null, className = '',
 }) => {
   const colors = useSceneColors();
   const units = useUnits();
   const [fit, setFit] = useState(0);
   // A fit asked before the scene has drawn has no camera to move.
   const [ready, setReady] = useState(false);
-  const [layers, setLayers] = useState(framing.layers);
+  const [layers, setLayers] = useState(() => mapLook().layers);
   const [view, setView] = useState(DEFAULT_VIEW);
   // As on the Ścieżka: a count, so pressing the same view twice moves twice; `free` once moved by hand.
   const [revision, setRevision] = useState(0);
@@ -59,35 +64,57 @@ const MapPreview3D = ({
 
   // The program as it will be cut when the server has bent it (`bent`), else as written.
   const parsed = useMemo(() => readToolpath(bent || machine.gcode), [bent, machine.gcode]);
+  // And as written, faint under the bent one, to see what the map changes (`before`).
+  const written = useMemo(() => (before && bent ? readToolpath(machine.gcode) : null), [before, bent, machine.gcode]);
   // Settled to a value, so a status report four times a second does not rebuild the scene (see `PathWidget`).
   const live = workOffset(machine.machinePosition, machine.position);
   const offsetKey = live ? `${live.x},${live.y},${live.z}` : '';
   const offset = useMemo(() => live || NO_OFFSET, [offsetKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const area = grid?.xs ? { x: [grid.xs[0], grid.xs[grid.xs.length - 1]], y: [grid.ys[0], grid.ys[grid.ys.length - 1]] } : null;
   /*
-   * The bent path raised with the sheet: it is bent by the true heights, so
-   * the scale's extra — the height there times one less than the scale — is
-   * added under each of its points, and it lies on the raised sheet.
+   * What the scale adds at a point of the program, work X and Y: the
+   * height there times one less than the scale — so what is bent by the true
+   * heights, or stands at them, lies on the raised sheet. Null at ×1 or with
+   * nothing measured.
    */
-  const toolpath = useMemo(() => {
-    if (!parsed || !bent || !area || !heights || scale === 1) {
-      return parsed;
+  const raise = useMemo(() => {
+    if (!area || !heights || scale === 1) {
+      return null;
     }
     const byPoint = new Map(heights.heights.map(({ i, j, dz }) => [`${i},${j}`, dz]));
     const values = Array.from({ length: grid.ny }, (_, j) => Array.from({ length: grid.nx }, (__, i) => byPoint.get(`${i},${j}`) ?? 0));
     const surface = surfaceOf(values, grid.nx, grid.ny, smooth);
+    const clampTo = (v, n) => Math.min(n - 1, Math.max(0, v));
+    return (x, y) => surface(
+      clampTo(((x - area.x[0]) / (area.x[1] - area.x[0])) * (grid.nx - 1), grid.nx),
+      clampTo(((y - area.y[0]) / (area.y[1] - area.y[0])) * (grid.ny - 1), grid.ny),
+    ) * (scale - 1);
+  }, [JSON.stringify(area), heights, scale, smooth]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The bent path raised with the sheet.
+  const toolpath = useMemo(() => {
+    if (!parsed || !bent || !raise) {
+      return parsed;
+    }
     const from = parsed.source.positions;
     const positions = new Float32Array(from.length);
-    const clampTo = (v, n) => Math.min(n - 1, Math.max(0, v));
     for (let k = 0; k < from.length; k += 3) {
-      const u = clampTo(((from[k] - area.x[0]) / (area.x[1] - area.x[0])) * (grid.nx - 1), grid.nx);
-      const v = clampTo(((from[k + 1] - area.y[0]) / (area.y[1] - area.y[0])) * (grid.ny - 1), grid.ny);
       positions[k] = from[k];
       positions[k + 1] = from[k + 1];
-      positions[k + 2] = from[k + 2] + surface(u, v) * (scale - 1);
+      positions[k + 2] = from[k + 2] + raise(from[k], from[k + 1]);
     }
     return { ...parsed, source: { ...parsed.source, positions } };
-  }, [parsed, bent, JSON.stringify(area), heights, scale, smooth]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [parsed, bent, raise]);
+  // The tool raised the same way, so it stands where the drawing has the surface — the readings say where it truly is (Mateusz, 2026-10-03).
+  const tool = toolPoint(machine.machinePosition);
+  const raisedTool = tool && raise ? { ...tool, z: tool.z + raise(tool.x - offset.x, tool.y - offset.y) } : tool;
+  /*
+   * The path over the sheet, to be seen against it (Mateusz, 2026-10-03): on
+   * top of it — the bent path lies in the material — thicker, and its cuts
+   * in the text's colour rather than a blue the sheet's blue swallows.
+   */
+  const pathLook = useMemo(() => (layers.map && area ? {
+    over: true, width: PATH_WIDTH, colors: { ...colors, cutTop: colors.ink, cutDeep: colors.ink },
+  } : null), [layers.map, Boolean(area), colors]); // eslint-disable-line react-hooks/exhaustive-deps
   const areaKey = area ? `${area.x},${area.y}` : '';
   // The area on the machine, for the view to take in when there is no travel to frame.
   const also = useMemo(() => (area ? [{
@@ -112,13 +139,15 @@ const MapPreview3D = ({
     setRevision((count) => count + 1);
   };
   const chooseLayers = (next) => {
-    framing.layers = next;
+    keepMapLook({ layers: next });
     setLayers(next);
   };
   const sections = [
     { label: t('path.layers.program'), options: [{ id: 'path', label: t('path.layers.path'), disabled: !toolpath, note: t('path.layers.noProgram') }] },
     { label: t('path.layers.wcs'), options: [{ id: 'wcsAxes', label: t('path.layers.axes'), disabled: !scene.origin, note: t('path.layers.noWcs') }] },
     { label: t('path.layers.machine'), options: [{ id: 'machineArea', label: t('path.layers.area'), disabled: !scene.envelope, note: t('path.layers.noEnvelope') }] },
+    // The map itself, off for the path alone (Mateusz, 2026-10-03).
+    { label: t('path.layers.map'), options: [{ id: 'map', label: t('path.layers.sheet'), disabled: !area, note: '' }] },
   ];
 
   // The point tapped and its height as measured; nothing for one not measured yet.
@@ -126,6 +155,7 @@ const MapPreview3D = ({
   const length = units.length;
   // The sheet's colours from low to high, with the range's ends in figures.
   const span = heights ? heights.high - heights.low : 0;
+  const every = contours && span > 1e-6 ? contourStep(heights.low, heights.high) : null;
   const legend = heights && span > 1e-6 ? (() => {
     const tint = tintOf(heat ? [colors.heat0, colors.heat1, colors.heat2, colors.heat3, colors.heat4] : null, colors.ground, colors.work);
     const stops = Array.from({ length: LEGEND_STOPS }, (_, k) => ({ offset: k / (LEGEND_STOPS - 1) }));
@@ -137,11 +167,12 @@ const MapPreview3D = ({
     <div data-stage="" className={`relative min-h-0 overflow-hidden rounded-ctl border border-line bg-field ${className}`}>
       <Scene
         scene={scene}
-        tool={toolPoint(machine.machinePosition)}
+        tool={raisedTool}
         layers={layers}
         view={view}
         revision={revision}
         memory="map"
+        pathLook={pathLook}
         fit={fit}
         focus={also[0] || null}
         onFree={() => setFree(true)}
@@ -150,7 +181,7 @@ const MapPreview3D = ({
           framing.moved = true;
         }}
       >
-        {area ? (
+        {area && layers.map ? (
           <MapArea
             area={area}
             nx={grid.nx}
@@ -161,15 +192,20 @@ const MapPreview3D = ({
             heights={heights}
             scale={scale}
             smooth={smooth}
+            solid={solid}
+            contours={every}
+            gridLines={gridLines}
             heat={heat ? [colors.heat0, colors.heat1, colors.heat2, colors.heat3, colors.heat4] : null}
             offset={offset}
             color={colors.work}
+            edgeColor={colors.edge}
             ground={colors.ground}
             picked={pickedDz === undefined ? null : picked}
             pickColor={colors.over}
             onPick={heights ? setPicked : null}
           />
         ) : null}
+        {written && layers.path ? <WrittenPath toolpath={written} offset={offset} colors={colors} over={Boolean(pathLook)} /> : null}
       </Scene>
 
       <StageOptions
@@ -181,10 +217,12 @@ const MapPreview3D = ({
             items: [{ id: 'fit', icon: 'fit', label: t('probe.map.fit'), disabled: !area, onSelect: () => setFit((n) => n + 1) }],
           },
           { label: t('stage.layers'), icon: 'layers', items: layerItems(sections, layers, chooseLayers) },
+          // How the map is drawn, where a step offers it (`look`): one glyph opening its panel.
+          ...(look ? [{ label: t('probe.map.look'), icon: 'look', items: [], panel: look }] : []),
         ]}
       />
 
-      {legend || pickedDz !== undefined ? (
+      {layers.map && (legend || pickedDz !== undefined) ? (
         <div data-stage-inset="bottom" className="absolute bottom-2 left-2 flex flex-col gap-1 rounded-ctl bg-wash px-2 py-1 text-note">
           {pickedDz !== undefined ? (
             <span className="font-num text-ink">{t('probe.map.pointHeight', { dz: signed(units.figure(pickedDz)), unit: length, col: picked.i + 1, row: picked.j + 1 })}</span>
@@ -203,6 +241,7 @@ const MapPreview3D = ({
               <span>{legend.high} {length}</span>
             </div>
           ) : null}
+          {every ? <span className="font-num text-mut">{t('probe.map.contoursEvery', { step: units.figure(every), unit: length })}</span> : null}
         </div>
       ) : null}
     </div>
