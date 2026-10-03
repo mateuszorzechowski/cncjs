@@ -34,7 +34,7 @@ const side = (axis, n, sign, params) => {
   ];
 };
 
-const across = (axis, n, params) => [
+export const across = (axis, n, params) => [
   ...side(axis, n, 1, params),
   ...side(axis, n, -1, params),
   move(`${axis}${n}-centre`, (here, seen) => ({ [axis]: mid(seen, axis, n) })),

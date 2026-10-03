@@ -13,6 +13,7 @@ import { AREA_MODES } from './useHeightMapAsk';
 import CornerChooser from './CornerChooser';
 import MapToolChooser from './MapToolChooser';
 import PaperChooser from './PaperChooser';
+import { ShapeChooser, SizeResult } from './SizeSteps';
 import HeightMapSetup from './HeightMapSetup';
 import { HeightMapCycle, HeightMapResult } from './HeightMapSteps';
 import PaperParams from './PaperParams';
@@ -24,6 +25,7 @@ import { METHODS, SURFACE, failureKey, phaseWords } from '../machine/probe';
 import { BOSS_CYCLE } from '../machine/bossCycle';
 import { HOLE_CYCLE } from '../machine/holeCycle';
 import { paperScene } from '../machine/paperCycle';
+import { drawnPasses, sizeCycle } from '../machine/sizeCycle';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -47,6 +49,15 @@ const EDITORS = {
   boss: (props) => <CentreParams cycle={BOSS_CYCLE} {...props} />,
   paper: PaperParams,
   'height-map': HeightMapSetup,
+  // A size's, the centre's moves ending in the size; a width's by the shape chosen.
+  'hole-size': (props) => <CentreParams cycle={sizeCycle('hole-size')} {...props} />,
+  'boss-size': (props) => <CentreParams cycle={sizeCycle('boss-size')} {...props} />,
+  width: (props) => <CentreParams cycle={sizeCycle('width', props.chosen)} {...props} />,
+};
+// A size measured, as the centre's: its passes those it was asked for.
+const SizeCycle = ({ phase, probe }) => {
+  const cycle = sizeCycle(probe?.method, probe?.options?.shape);
+  return <CentreCycle cycle={cycle} phase={phase} passes={drawnPasses(cycle, probe?.params?.holePasses, probe?.params?.repeats)} />;
 };
 const CYCLES = {
   z: ZPlateCycle,
@@ -54,6 +65,9 @@ const CYCLES = {
   hole: ({ phase, probe }) => <CentreCycle cycle={HOLE_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
   boss: ({ phase, probe }) => <CentreCycle cycle={BOSS_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
   'height-map': HeightMapCycle,
+  'hole-size': SizeCycle,
+  'boss-size': SizeCycle,
+  width: SizeCycle,
 };
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
@@ -100,7 +114,9 @@ const MethodTile = ({ method, onPick }) => (
 
 // The methods that find a zero; under them, in a row of their own, the height map (Mateusz, 2026-10-02).
 // The methods whose one choice is a step of its own, and what it is picked on.
-const CHOOSERS = { corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser };
+const CHOOSERS = {
+  corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser, width: ShapeChooser,
+};
 
 export const ChooseStep = ({ method, value, onChange }) => {
   const Chooser = CHOOSERS[method.id];
@@ -118,7 +134,11 @@ export const MethodStep = ({ onPick }) => (
       {METHODS.filter((method) => !method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
     <div className="grid gap-3 @3xl/shell:grid-cols-3">
-      {METHODS.filter((method) => method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
+      {METHODS.filter((method) => method.apart && !method.size).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
+    </div>
+    {/* The sizes, a row of their own under the map (Mateusz, 2026-10-03). */}
+    <div className="grid gap-3 @3xl/shell:grid-cols-3">
+      {METHODS.filter((method) => method.size).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
   </div>
 );
@@ -204,6 +224,10 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
   // A height map is a surface to keep, not a zero: no system, no shift.
   if (probe?.state !== 'failed' && probe?.result?.map) {
     return <HeightMapResult probe={probe} machine={machine} />;
+  }
+  // A size: what it came out at, nothing to write.
+  if (probe?.state !== 'failed' && probe?.result?.size) {
+    return <SizeResult probe={probe} />;
   }
   if (probe?.state === 'failed') {
     const { code, phase } = probe.failure || {};

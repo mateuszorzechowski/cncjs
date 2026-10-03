@@ -18,6 +18,7 @@ export const FIELDS = {
   bossSize: { key: 'probe.field.bossSize', kind: 'length' },
   // A count: said as it is, in no unit.
   holePasses: { key: 'probe.field.holePasses', kind: 'count' },
+  repeats: { key: 'probe.field.repeats', kind: 'count' },
   ballDiameter: { key: 'probe.field.ballDiameter', kind: 'length' },
   paperThickness: { key: 'probe.field.paperThickness', kind: 'length' },
   stockThickness: { key: 'probe.field.stockThickness', kind: 'length' },

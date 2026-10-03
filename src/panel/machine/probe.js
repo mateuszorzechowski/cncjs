@@ -74,6 +74,18 @@ export const MAP_TOOLS = [
  * the measurement is asked with an area and grid as well as its choice, so a
  * device that joins it measures the same.
  */
+/*
+ * One width, by what it is and which way (Mateusz, 2026-10-03): a groove
+ * touched from inside, or a bar from outside, along X or Y — the server's
+ * `size` strategy's shapes.
+ */
+export const SHAPES = [
+  { id: 'groove-x', key: 'probe.shape.grooveX', side: 'inside', axis: 'x', place: 'probe.place.groove' },
+  { id: 'groove-y', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
+  { id: 'bar-x', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
+  { id: 'bar-y', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
+];
+
 export const METHODS = [
   {
     id: 'z', key: 'probe.method.z', note: 'probe.method.zNote', lay: 'probe.lay.z', place: 'probe.place.z',
@@ -101,6 +113,20 @@ export const METHODS = [
     id: 'height-map', key: 'probe.method.map', note: 'probe.method.mapNote', place: 'probe.place.map', position: 'probe.step.startHeight',
     start: 'probe.position.start', steps: MAP_STEPS, touches: true, apart: true, asks: true,
     choice: { option: 'tool', key: 'probe.map.toolLabel', list: MAP_TOOLS, first: 'board', step: 'probe.step.tool' },
+  },
+  // Sizes, not zeros (Mateusz, 2026-10-03): in the height map's row, the zero left as it is. `size` says so.
+  {
+    id: 'hole-size', key: 'probe.method.holeSize', note: 'probe.method.holeSizeNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe', apart: true, size: true,
+  },
+  {
+    id: 'boss-size', key: 'probe.method.bossSize', note: 'probe.method.bossSizeNote', lay: 'probe.lay.hole', place: 'probe.place.boss',
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe', apart: true, size: true,
+  },
+  {
+    id: 'width', key: 'probe.method.width', note: 'probe.method.widthNote', lay: 'probe.lay.hole', place: 'probe.place.groove',
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true, plate: 'probe', apart: true, size: true,
+    choice: { option: 'shape', key: 'probe.shapeLabel', list: SHAPES, first: 'groove-x', step: 'probe.step.shape' },
   },
 ];
 

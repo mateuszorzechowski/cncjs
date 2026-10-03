@@ -39,6 +39,8 @@ export const FIELDS = {
   bossSize: { value: 30, min: 1, max: 300 },
   // Across a hole or a part once or twice: a count, never converted (`count`).
   holePasses: { value: 2, min: 1, max: 2, count: true },
+  // A size measured: how many passes count, after the ones that find the centre (Mateusz, 2026-10-03).
+  repeats: { value: 1, min: 1, max: 5, count: true },
   // The work's thickness, between its top and the table, for a zero on the other one (`surface`).
   stockThickness: { value: 18, min: 0.1, max: 500 },
   // Paper by hand: an office sheet is a tenth of a millimetre; off it by a little once measured.

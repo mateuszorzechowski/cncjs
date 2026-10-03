@@ -144,17 +144,25 @@ const CentreScene = ({
   }
 
   const boss = part.kind === BOSS;
+  // The part's outline from above: round, or a groove's or a bar's strip across the drawing, `strip` its width's axis.
+  let outline = { r: part.r };
+  if (part.strip === 'x') {
+    outline = { x: -part.r, y: VIEW[1] - 2, width: 2 * part.r, height: VIEW[3] + 4 };
+  } else if (part.strip === 'y') {
+    outline = { x: VIEW[0] - 2, y: -part.r, width: VIEW[2] + 4, height: 2 * part.r };
+  }
+  const Outline = part.strip ? 'rect' : 'circle';
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />
       {/* The work round the hole, or the part alone — no table under it, as no other drawing has (review note, 2026-10-01). */}
       {boss ? (
-        <circle r={part.r} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+        <Outline {...outline} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} fill={`url(#${id})`} />
           {/* Its bottom further back, as its far wall from the front (review note, 2026-10-01). */}
-          <circle r={part.r} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+          <Outline {...outline} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
         </>
       )}
       {zero > 0 ? (

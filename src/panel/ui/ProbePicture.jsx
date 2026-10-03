@@ -7,6 +7,8 @@
  * stronie"*).
  */
 
+import { ShapeMarks } from './SizeSteps';
+
 /*
  * The Z plate's pictogram, as the design draws it (1d, 2026-09-29): the work,
  * the plate with its blue edge, the tool as an outline — a 60° V bit, the
@@ -86,6 +88,47 @@ const BossPictogram = ({ label, className }) => (
 );
 
 /*
+ * A size's pictograms (Mateusz, 2026-10-03): the hole's and the part's, with
+ * the size they measure as a dimension in place of a zero — across the hole
+ * under the ball, over the part; a width from above, a groove with its walls.
+ */
+const SizeLine = ({ y, from, to }) => (
+  <path d={`M${from} ${y} H${to} M${from} ${y - 2.5} V${y + 2.5} M${to} ${y - 2.5} V${y + 2.5}`} className="stroke-ink" strokeWidth={1.2} />
+);
+
+const HoleSizePictogram = ({ label, className }) => (
+  <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <path d="M4 26 H15 V44 H4 Z M33 26 H44 V44 H33 Z" className="fill-mutS stroke-line" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M19 3 H29 V15 L26 18 H22 L19 15 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M24 18 V31" className="stroke-ink" strokeWidth={1.6} />
+    <circle cx={24} cy={33} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
+    <path d="M18.6 30 L15.8 33 L18.6 36 Z M29.4 30 L32.2 33 L29.4 36 Z" className="fill-acc" />
+    <SizeLine y={40.5} from={15} to={33} />
+  </svg>
+);
+
+const BossSizePictogram = ({ label, className }) => (
+  <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <path d="M15 26 H33 V44 H15 Z" className="fill-mutS stroke-line" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M1 3 H11 V15 L8 18 H4 L1 15 Z" className="fill-field stroke-ink" strokeWidth={1.6} strokeLinejoin="round" />
+    <path d="M6 18 V31" className="stroke-ink" strokeWidth={1.6} />
+    <circle cx={6} cy={33} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
+    <path d="M11.4 30 L14.2 33 L11.4 36 Z M36.6 30 L33.8 33 L36.6 36 Z" className="fill-acc" />
+    <SizeLine y={21} from={15} to={33} />
+  </svg>
+);
+
+// The width's tile shows a groove; the bar is the part's own pictogram already.
+const WIDTH_SHAPE = 'groove-x';
+
+const WidthPictogram = ({ label, className }) => (
+  <svg viewBox="0 0 48 48" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <ShapeMarks shape={WIDTH_SHAPE} />
+    <SizeLine y={4} from={17} to={31} />
+  </svg>
+);
+
+/*
  * The height map's pictogram: a board bowed, an accent dot on its top at each
  * point of a row, the V bit over one of them with the arrow down — the Z
  * plate's tool and arrow, touching the board itself.
@@ -103,7 +146,15 @@ const HeightMapPictogram = ({ label, className }) => (
 );
 
 const PICTOGRAMS = {
-  z: ZPlatePictogram, corner: CornerPictogram, hole: HolePictogram, boss: BossPictogram, paper: PaperPictogram, 'height-map': HeightMapPictogram,
+  z: ZPlatePictogram,
+  corner: CornerPictogram,
+  hole: HolePictogram,
+  boss: BossPictogram,
+  paper: PaperPictogram,
+  'height-map': HeightMapPictogram,
+  'hole-size': HoleSizePictogram,
+  'boss-size': BossSizePictogram,
+  width: WidthPictogram,
 };
 
 const ProbePicture = ({ method, label, className = '' }) => {

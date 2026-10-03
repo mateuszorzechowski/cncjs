@@ -16,6 +16,7 @@ import { Foot } from './ProbeSteps';
 import JogWidget from '../widgets/JogWidget';
 import { BOSS_CYCLE } from '../machine/bossCycle';
 import { HOLE_CYCLE } from '../machine/holeCycle';
+import { sizeCycle } from '../machine/sizeCycle';
 import { useIsPhone } from './shell';
 import { t } from '../i18n';
 
@@ -27,6 +28,9 @@ const MOVES = {
   boss: () => <CentrePosition cycle={BOSS_CYCLE} />,
   paper: ({ choice }) => <PaperPosition edge={choice} />,
   'height-map': HeightMapPosition,
+  'hole-size': () => <CentrePosition cycle={HOLE_CYCLE} />,
+  'boss-size': () => <CentrePosition cycle={BOSS_CYCLE} />,
+  width: ({ choice }) => <CentrePosition cycle={sizeCycle('width', choice)} />,
 };
 
 /**
@@ -45,6 +49,8 @@ const ProbeMoveStep = ({
   const [asking, setAsking] = useState(false);
   const back = leaving && phone ? () => setAsking(true) : onBack;
   const Moving = MOVES[method.id];
+  // Where the tool goes, as the choice says where it has its own — a groove's or a bar's.
+  const place = method.choice?.list.find((one) => one.id === choice)?.place ?? method.place;
   let onward = null;
   if (method.touches) {
     onward = <Button tone="go" disabled={!machine.canProbe || lit !== false} onClick={onMeasure} className="h-ctl">{t(method.start)}</Button>;
@@ -62,7 +68,7 @@ const ProbeMoveStep = ({
       {feeling ? <PaperFeel edge={choice} /> : <Moving choice={choice} texts={texts} />}
       {/* Where the plate goes, then where the tool goes: the plate laid here, not on the Setup (review note, 2026-09-30). */}
       {feeling ? <p className="m-0 text-base text-ink">{t('probe.paper.feelHow')}</p> : (
-        <p className="m-0 text-base text-ink">{method.lay ? `${t(method.lay)} ${t(method.place)}` : t(method.place)}</p>
+        <p className="m-0 text-base text-ink">{method.lay ? `${t(method.lay)} ${t(place)}` : t(place)}</p>
       )}
       {phone ? paper : null}
       {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}

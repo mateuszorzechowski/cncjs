@@ -2547,13 +2547,26 @@ class GrblController {
 
       if (outcome.failure) {
         this.probe.failure = { code: outcome.failure, phase: outcome.phase };
-        this.note({ level: 'warn', source: 'server', event: 'probe', code: outcome.failure, data: { method, phase: outcome.phase } });
+        this.note({ level: 'warn', source: 'server', event: 'probe', code: outcome.failure, data: { method, ...options, phase: outcome.phase } });
       } else if (strategy.map) {
         // A surface to keep, not a zero: it waits for `probe:apply` the same way.
         const map = strategy.map(params, options, outcome.seen, { start, wco });
         this.probe.result = { map };
         this.bendResult();
         this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, points: map.xs.length * map.ys.length } });
+      } else if (strategy.size) {
+        // A size: for the screen and the journal, nothing to write (Mateusz, 2026-10-03).
+        const size = strategy.size(params, options, outcome.seen);
+        this.probe.result = { size };
+        this.note({
+          level: 'info',
+          source: 'server',
+          event: 'probe',
+          code: 'size',
+          data: {
+            method, ...options, size: size.size, spread: size.spread, passes: size.each.length, ball: params.ballDiameter,
+          },
+        });
       } else {
         const parameters = this.runner.getParameters();
         const zero = strategy.zero(params, options, outcome.seen, start);
@@ -2567,7 +2580,11 @@ class GrblController {
         this.probe.result = {
           zero, offset, shift, found,
         };
-        this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, ...offset } });
+        this.note({
+          level: 'info', source: 'server', event: 'probe', code: 'measured', data: {
+            method, wcs, offset, shift,
+          },
+        });
       }
       this.emit('probe:state', this.probeReport());
     }
@@ -3279,7 +3296,8 @@ class GrblController {
         'probe:apply': () => {
           const result = this.probe?.result;
 
-          if (!result) {
+          // A size has nothing to write: it is closed with `probe:discard`.
+          if (!result || result.size) {
             this.refuse(cmd, 'no-result');
             return;
           }

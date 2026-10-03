@@ -656,7 +656,8 @@
       "file": "Plik",
       "settings": "Ustawienia",
       "setting": "Ustawienie",
-      "offset": "Przesunięcie"
+      "offset": "Przesunięcie",
+      "probe": "Sonda"
     },
     "program": {
       "start": "Start {{name}}",
@@ -721,7 +722,11 @@
       "arcBy": "{{said}}: zaczyna się {{radius}} {{unit}} od środka, a kończy {{reach}} {{unit}} od niego",
       "address": "Adres",
       "system": "System",
-      "browser": "Przeglądarka"
+      "browser": "Przeglądarka",
+      "method": "Metoda",
+      "spread": "Rozrzut",
+      "passes": "Przejścia",
+      "ball": "Kulka"
     },
     "range": {
       "m15": "15 min",
@@ -757,6 +762,17 @@
     },
     "offset": {
       "changed": "{{code}} {{axes}}: {{from}} → {{to}}"
+    },
+    "probe": {
+      "start": "Start: {{method}}",
+      "measured": "Zmierzono: {{method}} · {{axes}} {{unit}}",
+      "by": "o {{shift}}",
+      "mapped": "Zmierzono: {{method}} · {{points}} pkt",
+      "applied": "Zapisano zero w {{wcs}}: {{method}}",
+      "mapSaved": "Zapisano mapę wysokości",
+      "size": "{{method}}: {{sizes}} {{unit}}{{spread}} · kulka {{ball}}",
+      "spread": " · rozrzut {{list}} ({{n}}×)",
+      "failed": "Nieudane: {{method}} — {{why}}"
     }
   },
   "grbl": {
@@ -1416,7 +1432,13 @@
       "boss": "Środek z zewnątrz",
       "bossNote": "Środek czopu albo detalu, sondą od zewnątrz: X0 i Y0, Z bez zmian.",
       "map": "Mapa wysokości",
-      "mapNote": "Siatka punktów sondą: program pójdzie za krzywą płytką. Zero bez zmian."
+      "mapNote": "Siatka punktów sondą: program pójdzie za krzywą płytką. Zero bez zmian.",
+      "holeSize": "Rozmiar otworu",
+      "holeSizeNote": "Średnica albo wymiar otworu w X i Y, sondą. Zero bez zmian.",
+      "bossSize": "Rozmiar detalu",
+      "bossSizeNote": "Wymiar detalu albo czopu w X i Y, sondą od zewnątrz. Zero bez zmian.",
+      "width": "Szerokość w jednej osi",
+      "widthNote": "Rowek od środka albo listwa z zewnątrz, w X albo Y. Zero bez zmian."
     },
     "how": {
       "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
@@ -1432,7 +1454,9 @@
       "paper": "Podjedź frezem kilka milimetrów nad wybraną powierzchnię — przy boku przed nią. Kartkę trzymaj pod ręką.",
       "hole": "Opuść kulkę sondy do otworu, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek.",
       "boss": "Ustaw kulkę sondy nad środkiem detalu, kilka milimetrów nad jego wierzchem — mniej niż limit dojazdu Z.",
-      "map": "Podnieś narzędzie ponad imadła, nie wyżej niż limit dojazdu Z nad płytką. X i Y nie mają znaczenia: na tej wysokości maszyna sama przejedzie nad pierwszy punkt i zacznie szukać płytki."
+      "map": "Podnieś narzędzie ponad imadła, nie wyżej niż limit dojazdu Z nad płytką. X i Y nie mają znaczenia: na tej wysokości maszyna sama przejedzie nad pierwszy punkt i zacznie szukać płytki.",
+      "groove": "Opuść kulkę sondy do rowka, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek.",
+      "bar": "Ustaw kulkę sondy nad środkiem listwy, kilka milimetrów nad jej wierzchem — mniej niż limit dojazdu Z."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1493,7 +1517,8 @@
       "ballDiameter": "Średnica kulki",
       "holePasses": "Przejścia",
       "bossSize": "Szerokość detalu (w przybliżeniu)",
-      "mapLift": "Uniesienie między punktami"
+      "mapLift": "Uniesienie między punktami",
+      "repeats": "Powtórzenia"
     },
     "step": {
       "method": "Metoda",
@@ -1507,7 +1532,8 @@
       "result": "Wynik",
       "tool": "Sposób",
       "area": "Wymiary",
-      "areaWay": "Obszar"
+      "areaWay": "Obszar",
+      "shape": "Kształt"
     },
     "wire": {
       "how": "Przypnij krokodylek do frezu. Dotknij płytką frezu i puść. Panel czyta stan sondy ze sterownika: przy dotyku pokaże „Dotyk”, po puszczeniu „Działa”.",
@@ -1582,7 +1608,8 @@
     },
     "stage": {
       "search": "szukanie",
-      "zero": "zapis zera"
+      "zero": "zapis zera",
+      "size": "rozmiar"
     },
     "cycle": {
       "alarm": "ALARM:5 · brak dotyku",
@@ -1634,7 +1661,8 @@
     },
     "bar": {
       "measure": "pomiar",
-      "zero": "zero"
+      "zero": "zero",
+      "size": "rozmiar"
     },
     "group": {
       "plate": "Płytka",
@@ -1817,6 +1845,28 @@
       "fit": "Kadr na obszar mapy",
       "pointHeight": "{{dz}} {{unit}} · punkt {{col}}, {{row}}",
       "startDrawing": "Z boku: płytka między imadłami, narzędzie w pasie nad imadłami i pod limitem dojazdu Z"
+    },
+    "shape": {
+      "grooveX": "Rowek X",
+      "grooveY": "Rowek Y",
+      "barX": "Listwa X",
+      "barY": "Listwa Y"
+    },
+    "shapeLabel": "Co mierzysz i w której osi",
+    "size": {
+      "move": {
+        "size": "Rozmiar: odstęp dotyków i kulka"
+      },
+      "codeHole": "rozmiar = odstęp dotyków + Ø kulki",
+      "codeBoss": "rozmiar = odstęp dotyków − Ø kulki",
+      "repeatsWhy1": "Jeden pomiar: wynik z ostatniego przejścia.",
+      "repeatsWhyMore": "Kilka pomiarów, każdy od znalezionego środka: wynik to ich średnia, obok rozrzut (największy minus najmniejszy).",
+      "axis": "Rozmiar {{axis}}",
+      "spread": "Rozrzut {{axis}}",
+      "each": "{{axis}}, każde przejście: {{list}} {{unit}}",
+      "ball": "Wynik zależy od średnicy kulki: {{ball}} {{unit}}.",
+      "note": "Zero bez zmian. Wynik jest zapisany w Dzienniku.",
+      "again": "Zmierz ponownie"
     }
   }
 }
