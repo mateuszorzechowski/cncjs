@@ -33,10 +33,14 @@ export const HeightMapPosition = ({ choice, texts }) => {
 
 // How much the heights are brought out in 3D: a step on the slider, kept from the measuring to the result.
 const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
-// How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, in the heatmap's colours, opaque, with contours; any of them.
-const LOOKS = ['smooth', 'heat', 'solid', 'contours'];
+/*
+ * How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, in
+ * the heatmap's colours, opaque, with contours; and the program as written
+ * faint under the bent one, where there is a bent one. Any of them.
+ */
+const LOOKS = ['smooth', 'heat', 'solid', 'contours', 'before'];
 const LOOK_WORDS = {
-  smooth: 'probe.map.smooth', heat: 'probe.map.heat', solid: 'probe.map.solid', contours: 'probe.map.contours',
+  smooth: 'probe.map.smooth', heat: 'probe.map.heat', solid: 'probe.map.solid', contours: 'probe.map.contours', before: 'probe.map.before',
 };
 const kept = { scale: 20, looks: [] };
 
@@ -72,6 +76,7 @@ const HeightMapView = ({
         heat={looks.includes('heat')}
         solid={looks.includes('solid')}
         contours={looks.includes('contours')}
+        before={looks.includes('before')}
         bent={bent}
         className="h-64 @3xl/shell:h-80"
       />
@@ -88,7 +93,7 @@ const HeightMapView = ({
           className="min-w-64 flex-1"
         />
         <SegmentedChoice
-          options={LOOKS}
+          options={bent ? LOOKS : LOOKS.filter((one) => one !== 'before')}
           isOn={(one) => looks.includes(one)}
           onChange={(one) => {
             const next = looks.includes(one) ? looks.filter((other) => other !== one) : [...looks, one];

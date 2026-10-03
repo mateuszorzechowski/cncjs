@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import Scene from '../scene/Scene';
+import WrittenPath from '../scene/WrittenPath';
 import MapArea, { surfaceOf, tintOf } from '../scene/MapArea';
 import { contourStep } from '../scene/contours';
 import StageOptions from './StageOptions';
@@ -43,7 +44,7 @@ const LEGEND_STOPS = 5;
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
 const MapPreview3D = ({
-  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, contours = false, bent = null, className = '',
+  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, contours = false, before = false, bent = null, className = '',
 }) => {
   const colors = useSceneColors();
   const units = useUnits();
@@ -60,6 +61,8 @@ const MapPreview3D = ({
 
   // The program as it will be cut when the server has bent it (`bent`), else as written.
   const parsed = useMemo(() => readToolpath(bent || machine.gcode), [bent, machine.gcode]);
+  // And as written, faint under the bent one, to see what the map changes (`before`).
+  const written = useMemo(() => (before && bent ? readToolpath(machine.gcode) : null), [before, bent, machine.gcode]);
   // Settled to a value, so a status report four times a second does not rebuild the scene (see `PathWidget`).
   const live = workOffset(machine.machinePosition, machine.position);
   const offsetKey = live ? `${live.x},${live.y},${live.z}` : '';
@@ -174,6 +177,7 @@ const MapPreview3D = ({
             onPick={heights ? setPicked : null}
           />
         ) : null}
+        {written && layers.path ? <WrittenPath toolpath={written} offset={offset} colors={colors} /> : null}
       </Scene>
 
       <StageOptions
