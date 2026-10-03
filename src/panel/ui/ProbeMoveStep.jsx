@@ -38,7 +38,7 @@ const MOVES = {
  * another screen — with the button that goes on.
  */
 const ProbeMoveStep = ({
-  machine, method, choice, feeling, lit, jogging, onJogging, onBack, leaving = null, onNext, onMeasure, map = null,
+  machine, method, choice, feeling, lit, jogging, onJogging, onBack, leaving = null, onNext, onMeasure, texts = {},
 }) => {
   const phone = useIsPhone();
   // Joined, the way back is out of the wizard (`leaving`, whose it is) — on a phone asked first, in a sheet.
@@ -59,7 +59,7 @@ const ProbeMoveStep = ({
   }
   const card = (
     <Card className={`min-w-0 @4xl/shell:flex-1 ${phone ? 'flex-1' : 'shrink-0'}`} bodyClassName="gap-3">
-      {feeling ? <PaperFeel edge={choice} /> : <Moving choice={choice} grid={map?.grid} outline={map?.outline} />}
+      {feeling ? <PaperFeel edge={choice} /> : <Moving choice={choice} texts={texts} />}
       {/* Where the plate goes, then where the tool goes: the plate laid here, not on the Setup (review note, 2026-09-30). */}
       {feeling ? <p className="m-0 text-base text-ink">{t('probe.paper.feelHow')}</p> : (
         <p className="m-0 text-base text-ink">{method.lay ? `${t(method.lay)} ${t(method.place)}` : t(method.place)}</p>

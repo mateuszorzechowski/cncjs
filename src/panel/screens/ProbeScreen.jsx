@@ -170,7 +170,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
             leaving={mode === 'joined' ? shared?.owner?.name || t('probe.join.elsewhere') : null}
             onNext={() => go(1)}
             onMeasure={measure}
-            map={heightMap}
+            texts={texts}
           />
         )}
       </div>
