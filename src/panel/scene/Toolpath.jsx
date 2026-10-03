@@ -237,10 +237,10 @@ const buildCurrent = (source, { start, end }, color) => {
  * is: drawn beside another to compare with — the height map's program as
  * written, under the one bent (Mateusz, 2026-10-03). `over`, drawn over
  * whatever stands in front of it: the bent path lies in the material, under
- * the height map's sheet drawn solid.
+ * the height map's sheet. `width`, the lines that many times thicker.
  */
 const Toolpath = ({
-  toolpath, colors, shadowZ, progress, fade = 0, over = false,
+  toolpath, colors, shadowZ, progress, fade = 0, over = false, width = 1,
 }) => {
   const size = useThree((state) => state.size);
   const invalidate = useThree((state) => state.invalidate);
@@ -269,10 +269,10 @@ const Toolpath = ({
   useEffect(() => () => fill?.dispose(), [fill]);
 
   const lines = useMemo(() => [
-    ['cut', buildLine(sets.cut, { linewidth: CUT_WIDTH, depthTest: !over })],
+    ['cut', buildLine(sets.cut, { linewidth: CUT_WIDTH * width, depthTest: !over })],
     ['rapid', buildLine(sets.rapid, {
       depthTest: !over,
-      linewidth: RAPID_WIDTH,
+      linewidth: RAPID_WIDTH * width,
       dashed: true,
       dashSize: RAPID_DASH,
       gapSize: RAPID_GAP,
@@ -281,7 +281,7 @@ const Toolpath = ({
     // Rapids under the cuts, done or not.
     line.renderOrder = name === 'rapid' ? RAPID_ORDER : CUT_ORDER;
     return [name, line];
-  }), [sets, over]);
+  }), [sets, over, width]);
 
   /*
    * The material works in screen space, so it has to be told how large the

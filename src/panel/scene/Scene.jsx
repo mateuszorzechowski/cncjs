@@ -33,7 +33,7 @@ const TOOL_GUIDE_OPACITY = 0.2;
 
 const Scene = ({
   scene, tool, layers, view, revision, memory, fit, onFree, target, onPick, onCancel, onHover, picking, progress,
-  onGrab, glideMs, onReady, focus = null, pathOver = false, children,
+  onGrab, glideMs, onReady, focus = null, pathLook = null, children,
 }) => {
   const colors = useSceneColors();
   const { envelope, origin, toolpath, program, offset, frame } = scene;
@@ -168,12 +168,14 @@ const Scene = ({
           {/* The floor in this group's own coordinates: the group is already
             * shifted by the work offset, and the shadow has to land on the
             * grid in the world. */}
+          {/* A screen's own look for it (`pathLook`: `over`, `width`, `colors`) — the height map's over its sheet. */}
           <Toolpath
             toolpath={toolpath}
-            colors={colors}
+            colors={pathLook?.colors || colors}
             shadowZ={floor - offset.z}
             progress={progress}
-            over={pathOver}
+            over={Boolean(pathLook?.over)}
+            width={pathLook?.width || 1}
           />
         </group>
       ) : null}

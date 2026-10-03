@@ -62,6 +62,8 @@ const TOKENS = {
   rapid: '--rapid',
   cutTop: '--cutTop',
   cutDeep: '--cutDeep',
+  // Text: the program's cuts over a height map's sheet, where the path's blue goes into the sheet's.
+  ink: '--ink',
   // A height map's heatmap, low to high.
   heat0: '--heat0',
   heat1: '--heat1',

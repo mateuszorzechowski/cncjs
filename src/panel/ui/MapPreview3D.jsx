@@ -35,6 +35,8 @@ import { t } from '../i18n';
  */
 
 const NO_OFFSET = { x: 0, y: 0, z: 0 };
+// How much thicker the program's path is drawn over the map than on the Ścieżka.
+const PATH_WIDTH = 2.5;
 
 // Kept across these steps, as the camera is: the area last framed, and whether the operator has moved the view since.
 const framing = { area: null, moved: false };
@@ -105,6 +107,14 @@ const MapPreview3D = ({
   // The tool raised the same way, so it stands where the drawing has the surface — the readings say where it truly is (Mateusz, 2026-10-03).
   const tool = toolPoint(machine.machinePosition);
   const raisedTool = tool && raise ? { ...tool, z: tool.z + raise(tool.x - offset.x, tool.y - offset.y) } : tool;
+  /*
+   * The path over the sheet, to be seen against it (Mateusz, 2026-10-03): on
+   * top of it — the bent path lies in the material — thicker, and its cuts
+   * in the text's colour rather than a blue the sheet's blue swallows.
+   */
+  const pathLook = useMemo(() => (layers.map && area ? {
+    over: true, width: PATH_WIDTH, colors: { ...colors, cutTop: colors.ink, cutDeep: colors.ink },
+  } : null), [layers.map, Boolean(area), colors]); // eslint-disable-line react-hooks/exhaustive-deps
   const areaKey = area ? `${area.x},${area.y}` : '';
   // The area on the machine, for the view to take in when there is no travel to frame.
   const also = useMemo(() => (area ? [{
@@ -162,8 +172,7 @@ const MapPreview3D = ({
         view={view}
         revision={revision}
         memory="map"
-        // Over a solid sheet, or it is hidden under it: the bent path lies in the material.
-        pathOver={solid && layers.map}
+        pathLook={pathLook}
         fit={fit}
         focus={also[0] || null}
         onFree={() => setFree(true)}
@@ -196,7 +205,7 @@ const MapPreview3D = ({
             onPick={heights ? setPicked : null}
           />
         ) : null}
-        {written && layers.path ? <WrittenPath toolpath={written} offset={offset} colors={colors} over={solid && layers.map} /> : null}
+        {written && layers.path ? <WrittenPath toolpath={written} offset={offset} colors={colors} over={Boolean(pathLook)} /> : null}
       </Scene>
 
       <StageOptions
