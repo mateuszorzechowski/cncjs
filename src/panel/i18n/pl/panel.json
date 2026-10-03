@@ -1799,7 +1799,9 @@
       "scale": "Skala wysokości",
       "smooth": "Wygładzenie",
       "heat": "Heatmapa",
-      "look": "Wygląd mapy"
+      "look": "Wygląd mapy",
+      "fit": "Kadr na obszar mapy",
+      "pointHeight": "{{dz}} {{unit}} · punkt {{col}}, {{row}}"
     }
   }
 }

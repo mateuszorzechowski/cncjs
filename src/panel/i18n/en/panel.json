@@ -1799,7 +1799,9 @@
       "scale": "Height scale",
       "smooth": "Smooth",
       "heat": "Heatmap",
-      "look": "How the map is drawn"
+      "look": "How the map is drawn",
+      "fit": "Frame the map's area",
+      "pointHeight": "{{dz}} {{unit}} · point {{col}}, {{row}}"
     }
   }
 }
