@@ -33,9 +33,9 @@ export const HeightMapPosition = ({ choice, texts }) => {
 
 // How much the heights are brought out in 3D: a step on the slider, kept from the measuring to the result.
 const SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
-// How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, and in the heatmap's colours; either, both or neither.
-const LOOKS = ['smooth', 'heat'];
-const LOOK_WORDS = { smooth: 'probe.map.smooth', heat: 'probe.map.heat' };
+// How the sheet is drawn (Mateusz, 2026-10-03): smooth through the points, in the heatmap's colours, opaque; any of them.
+const LOOKS = ['smooth', 'heat', 'solid'];
+const LOOK_WORDS = { smooth: 'probe.map.smooth', heat: 'probe.map.heat', solid: 'probe.map.solid' };
 const kept = { scale: 20, looks: [] };
 
 /**
@@ -68,6 +68,7 @@ const HeightMapView = ({
         scale={scale}
         smooth={looks.includes('smooth')}
         heat={looks.includes('heat')}
+        solid={looks.includes('solid')}
         bent={bent}
         className="h-64 @3xl/shell:h-80"
       />

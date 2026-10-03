@@ -42,7 +42,7 @@ const LEGEND_STOPS = 5;
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
 const MapPreview3D = ({
-  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, bent = null, className = '',
+  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, bent = null, className = '',
 }) => {
   const colors = useSceneColors();
   const units = useUnits();
@@ -161,6 +161,7 @@ const MapPreview3D = ({
             heights={heights}
             scale={scale}
             smooth={smooth}
+            solid={solid}
             heat={heat ? [colors.heat0, colors.heat1, colors.heat2, colors.heat3, colors.heat4] : null}
             offset={offset}
             color={colors.work}

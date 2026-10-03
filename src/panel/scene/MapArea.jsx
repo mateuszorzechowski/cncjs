@@ -13,7 +13,8 @@ import * as THREE from 'three';
  * to deep in the accent, or — `heat` — through the heatmap's colours.
  * `smooth` draws it as a smooth surface through the points rather than flat
  * between them: for the eye only, the program is still bent between the
- * points as measured.
+ * points as measured. `solid` draws the sheet opaque, for its shape; see-
+ * through, the path under it shows (Mateusz, 2026-10-03).
  *
  * `area` and `given` in work millimetres, placed by `offset` as the
  * program's path is; `nx` × `ny` points edge to edge as the server measures.
@@ -87,7 +88,7 @@ export const tintOf = (palette, ground, color) => {
 
 const MapArea = ({
   area, nx, ny, given = [], done = [], heights = null, scale = 1, smooth = false, heat = null, offset, color, ground,
-  picked = null, pickColor, onPick = null,
+  picked = null, pickColor, onPick = null, solid = false,
 }) => {
   const z = offset.z;
   const x0 = area.x[0] + offset.x;
@@ -113,6 +114,10 @@ const MapArea = ({
   const cols = (nx - 1) * fine + 1;
   const rows = (ny - 1) * fine + 1;
   const sheetKey = JSON.stringify([x0, x1, y0, y1, z, nx, ny, heights, scale, smooth, heat, color, ground]);
+  let opacity = heat ? 0.6 : 0.45;
+  if (solid) {
+    opacity = 1;
+  }
   const sheet = useGeometry(() => {
     const tint = tintOf(heat, ground, color);
     const positions = [];
@@ -185,7 +190,7 @@ const MapArea = ({
     <>
       {/* Something a drag can turn the view about, as the program's path is (Mateusz, 2026-10-03) — see `Controls`. */}
       <mesh geometry={sheet} userData={{ pivot: true }} onClick={pick}>
-        <meshBasicMaterial vertexColors transparent opacity={heat ? 0.6 : 0.45} depthWrite={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial vertexColors transparent={!solid} opacity={opacity} depthWrite={solid} side={THREE.DoubleSide} />
       </mesh>
       <Lines segments={edge} color={color} opacity={0.9} />
       <Lines segments={inner} color={color} opacity={0.25} />
