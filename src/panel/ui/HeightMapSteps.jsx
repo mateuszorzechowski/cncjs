@@ -7,6 +7,7 @@ import useBentProgram from './useBentProgram';
 import StatTile from './StatTile';
 import { phaseWords } from '../machine/probe';
 import { figureSaid } from '../machine/probeFields';
+import { useIsWide } from './shell';
 import { useUnits } from './units';
 import { t } from '../i18n';
 
@@ -58,6 +59,7 @@ const HeightMapView = ({
   probe, machine, done, heights, bent = null, children = null,
 }) => {
   const units = useUnits();
+  const wide = useIsWide();
   const [scale, setScale] = useState(kept.scale);
   const [looks, setLooks] = useState(kept.looks);
   const options = probe?.options;
@@ -65,6 +67,35 @@ const HeightMapView = ({
     return null;
   }
   const said = (mm) => (heights ? signed(units.figure(mm)) : '—');
+  // On the drawing, behind its own glyph (Mateusz, 2026-10-03): the scale and the looks.
+  const look = (
+    <>
+      <Slider
+        steps={SCALES}
+        value={scale}
+        onChange={(next) => {
+          kept.scale = next;
+          setScale(next);
+        }}
+        label={t('probe.map.scale')}
+        say={(value) => `×${value}`}
+        className="w-full"
+      />
+      <SegmentedChoice
+        options={bent ? LOOKS : LOOKS.filter((one) => one !== 'before')}
+        isOn={(one) => looks.includes(one)}
+        onChange={(one) => {
+          const next = looks.includes(one) ? looks.filter((other) => other !== one) : [...looks, one];
+          kept.looks = next;
+          setLooks(next);
+        }}
+        format={(one) => t(LOOK_WORDS[one])}
+        label={t('probe.map.look')}
+        columns={2}
+        compact
+      />
+    </>
+  );
   return (
     <div className="flex flex-col gap-3">
       <MapPreview3D
@@ -80,33 +111,10 @@ const HeightMapView = ({
         contours={looks.includes('contours')}
         before={looks.includes('before')}
         bent={bent}
-        className="h-64 @3xl/shell:h-80"
+        look={look}
+        // A tablet's keys are a finger's (`IconBar`): its column of them, the views open, needs the taller drawing.
+        className={wide ? 'h-80 @3xl/shell:h-96' : 'h-80 @3xl/shell:h-[28rem]'}
       />
-      <div className="flex flex-wrap items-center gap-3">
-        <Slider
-          steps={SCALES}
-          value={scale}
-          onChange={(next) => {
-            kept.scale = next;
-            setScale(next);
-          }}
-          label={t('probe.map.scale')}
-          say={(value) => `×${value}`}
-          className="min-w-64 flex-1"
-        />
-        <SegmentedChoice
-          options={bent ? LOOKS : LOOKS.filter((one) => one !== 'before')}
-          isOn={(one) => looks.includes(one)}
-          onChange={(one) => {
-            const next = looks.includes(one) ? looks.filter((other) => other !== one) : [...looks, one];
-            kept.looks = next;
-            setLooks(next);
-          }}
-          format={(one) => t(LOOK_WORDS[one])}
-          label={t('probe.map.look')}
-          compact
-        />
-      </div>
       {children}
       <div className="grid gap-2 @3xl/shell:grid-cols-3">
         <StatTile label={t('probe.map.low')} value={said(heights?.low)} unit={units.length} />

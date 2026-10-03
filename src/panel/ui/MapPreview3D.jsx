@@ -44,7 +44,7 @@ const LEGEND_STOPS = 5;
 const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
 
 const MapPreview3D = ({
-  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, contours = false, before = false, gridLines = true, bent = null, className = '',
+  machine, grid, mode = null, done = [], heights = null, scale = 1, smooth = false, heat = false, solid = false, contours = false, before = false, gridLines = true, bent = null, look = null, className = '',
 }) => {
   const colors = useSceneColors();
   const units = useUnits();
@@ -190,6 +190,8 @@ const MapPreview3D = ({
             items: [{ id: 'fit', icon: 'fit', label: t('probe.map.fit'), disabled: !area, onSelect: () => setFit((n) => n + 1) }],
           },
           { label: t('stage.layers'), icon: 'layers', items: layerItems(sections, layers, chooseLayers) },
+          // How the map is drawn, where a step offers it (`look`): one glyph opening its panel.
+          ...(look ? [{ label: t('probe.map.look'), icon: 'look', items: [], panel: look }] : []),
         ]}
       />
 
