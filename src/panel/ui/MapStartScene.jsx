@@ -4,6 +4,7 @@ import {
 } from './probeDraw';
 import { placeTags, shownView } from './probeLabels';
 import { MapTool } from './MapScene';
+import { PLATE_H, PLATE_W } from '../machine/mapCycle';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
 
@@ -13,7 +14,9 @@ import { t } from '../i18n';
  * the height the tool is left at, and its fast touch reaches down no further
  * than the limit (`maxZ`) — so the tool has to stand above the clamps and no
  * higher than that over the board. That band is drawn in the accent, the
- * tool in it over the first point, the limit as a dimension.
+ * tool in it over the first point, the limit as a dimension. With the Z
+ * plate (2026-10-03) the plate lies under the tool, and the limit is over
+ * its top: that is what the first touch finds.
  */
 
 const WIDTH = 340;
@@ -52,8 +55,10 @@ const MapStartScene = ({ maxZ, tool = 'board', label, className = '' }) => {
   const [measure, k, box] = useViewScale(WIDTH, HEIGHT);
   const size = kit(k);
   const view = shownView([0, 0, WIDTH, HEIGHT], k, box);
+  // What the first touch finds: the board, or the plate's top on it.
+  const top = tool === 'plate' ? BOARD - PLATE_H : BOARD;
   const tags = placeTags({
-    at: DIM_X, parts: [[LIMIT, BOARD, t('probe.cycle.upTo', { v: maxZ })]], ticks: [[LIMIT, DIM_TICK], [BOARD, DIM_TICK]], view, avoid: [], size,
+    at: DIM_X, parts: [[LIMIT, top, t('probe.cycle.upTo', { v: maxZ })]], ticks: [[LIMIT, DIM_TICK], [top, DIM_TICK]], view, avoid: [], size,
   });
   return (
     <svg ref={measure} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={label} className={`block ${className}`}>
@@ -69,10 +74,14 @@ const MapStartScene = ({ maxZ, tool = 'board', label, className = '' }) => {
       <g transform={`translate(${WIDTH} 0) scale(-1 1)`}>
         <StepClamp />
       </g>
-      {/* The first point, under the tool. */}
-      <circle cx={TOOL_X} cy={BOARD} r={3.2 / k} className="fill-panel stroke-acc" strokeWidth={1.2} vectorEffect={NS} />
+      {/* The first point, under the tool — or the plate laid on it. */}
+      {tool === 'plate' ? (
+        <rect x={TOOL_X - PLATE_W / 2} y={top} width={PLATE_W} height={PLATE_H} className="fill-plate stroke-plateEdge" strokeWidth={2} vectorEffect={NS} />
+      ) : (
+        <circle cx={TOOL_X} cy={BOARD} r={3.2 / k} className="fill-panel stroke-acc" strokeWidth={1.2} vectorEffect={NS} />
+      )}
       <MapTool x={TOOL_X} tip={(LIMIT + CLAMP) / 2 + 8} tool={tool} />
-      <Dimension at={DIM_X} from={BOARD} to={LIMIT} limit size={size} />
+      <Dimension at={DIM_X} from={top} to={LIMIT} limit size={size} />
       {tags.map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={FACE.plain} size={size} />)}
     </svg>
   );

@@ -3,7 +3,8 @@
  *
  * A step says where the tool goes, in **machine** coordinates, and how: a
  * plain move (`move`), a probe that must touch (`touch`, `G38.2`), a
- * descent that must not (`clear`, `G38.3`), or a wait (`dwell`). Where it goes is worked out when
+ * descent that must not (`clear`, `G38.3`), a wait (`dwell`), or the
+ * operator's hands (`wait`). Where it goes is worked out when
  * the step comes up, from `here` — where the tool stands now — and `seen`,
  * the touches kept so far by name. Turning a step into a line is the runner's
  * job; the methods know geometry and nothing about the wire.
@@ -27,6 +28,12 @@ export const SETTLE_SECONDS = 0.5;
 
 /** Up to `lift` over the top a touch kept as `key` found — the last move of a plate method. */
 export const liftOver = (key, lift) => move('lift', (here, seen) => ({ z: seen[key].z + lift }));
+
+/**
+ * Stand still until the operator says so (`probe:resume`): hands under the
+ * tool — a Z plate moved to the next point. Nothing is sent while it waits.
+ */
+export const wait = (phase) => ({ kind: 'wait', phase, to: () => ({}) });
 
 /** Stand still. */
 export const dwell = (phase, seconds) => ({ kind: 'dwell', phase, seconds, to: () => ({}) });

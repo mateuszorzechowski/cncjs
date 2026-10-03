@@ -4,7 +4,9 @@ import {
 } from './probeDraw';
 import { placeTags, shownView } from './probeLabels';
 import useViewScale from './useViewScale';
-import { P1, P2, surfaceAt } from '../machine/mapCycle';
+import {
+  P1, P2, slopeAt, surfaceAt,
+} from '../machine/mapCycle';
 import { t } from '../i18n';
 
 /**
@@ -46,7 +48,7 @@ export const MapTool = ({ x, tip, tool = 'board' }) => (tool === 'probe' ? (
 ));
 
 const MapScene = ({
-  x, tip, dim = null, motion = null, contact = false, ghost = false, alarm = false, measured = false, focus = null, tool = 'board', label, className = '',
+  x, tip, dim = null, motion = null, plate = null, contact = false, ghost = false, alarm = false, measured = false, focus = null, tool = 'board', label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
   const [measure, k, box] = useViewScale(WIDTH, HEIGHT);
@@ -75,6 +77,19 @@ const MapScene = ({
       {[P1, P2].map((at, n) => (
         <circle key={at} cx={at} cy={surfaceAt(at)} r={3.2 / k} className={n === 0 && measured ? 'fill-acc stroke-acc' : 'fill-panel stroke-acc'} strokeWidth={1.2} vectorEffect={NS} />
       ))}
+      {/* The Z plate where it lies: on the board under its middle, tipped as the board is there. */}
+      {plate ? (
+        <rect
+          x={plate.x - plate.w / 2}
+          y={surfaceAt(plate.x) - plate.h}
+          width={plate.w}
+          height={plate.h}
+          transform={`rotate(${slopeAt(plate.x)} ${plate.x} ${surfaceAt(plate.x)})`}
+          className="fill-plate stroke-plateEdge"
+          strokeWidth={2}
+          vectorEffect={NS}
+        />
+      ) : null}
       {dim ? (
         <g opacity={fade('dim')}>
           {dim.mid !== null ? (
@@ -90,8 +105,8 @@ const MapScene = ({
           {vertical ? (
             <Motion at={x + ARROW} from={motion.from} to={motion.to} kind={motion.kind} size={size} />
           ) : (
-            // Across, over the tool's way.
-            <Motion axis={ACROSS} at={tip - 76} from={motion.from} to={motion.to} kind={motion.kind} size={size} />
+            // Across, over the tool's way — or the plate's, by hand, over it.
+            <Motion axis={ACROSS} at={motion.y ?? tip - 76} from={motion.from} to={motion.to} kind={motion.kind} size={size} />
           )}
           {feedTags.map((tag) => <Tag key={tag.text} x={tag.x} y={tag.y} text={tag.text} face={focus === 'feed' ? FACE.hot : FACE.plain} size={size} />)}
         </g>

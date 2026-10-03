@@ -51,12 +51,14 @@ const MAP_STEPS = ['method', 'choose', 'prepare', 'areaWay', 'area', 'wire', 'po
 
 /*
  * What touches the height map's points (Mateusz, 2026-10-02): the tool on a
- * board wired as the plate — a PCB's copper — or a 3D probe. Each its own
- * wire step.
+ * board wired as the plate — a PCB's copper — or a 3D probe; or the Z plate,
+ * moved by hand to each point (2026-10-03), its wire tested as the Z plate's.
+ * Each its own wire step.
  */
 export const MAP_TOOLS = [
   { id: 'board', key: 'probe.map.tool.board', note: 'probe.map.tool.boardNote', wire: { how: 'probe.wire.howMap' } },
   { id: 'probe', key: 'probe.map.tool.probe', note: 'probe.map.tool.probeNote', wire: { plate: 'probe', how: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed' } },
+  { id: 'plate', key: 'probe.map.tool.plate', note: 'probe.map.tool.plateNote', wire: {} },
 ];
 
 /*
@@ -204,8 +206,9 @@ const PHASES = {
   down: 'probe.phase.down',
   up: 'probe.phase.up',
   return: 'probe.phase.return',
-  // A height map's way to its next point.
+  // A height map's way to its next point, and its wait there for the Z plate.
   over: 'probe.phase.over',
+  place: 'probe.phase.place',
 };
 
 export const phaseWords = (phase) => {
@@ -312,6 +315,11 @@ export const fetchBentProgram = async (port, of) => {
 /** The loaded program bent to the height map, or as written. */
 export const bendProgram = (on) => {
   controller.command('height-map:use', Boolean(on));
+};
+
+/** The Z plate is under the tool: the measurement standing for it goes on. */
+export const resumeProbe = () => {
+  controller.command('probe:resume');
 };
 
 /** Write the zero the last measurement found. */

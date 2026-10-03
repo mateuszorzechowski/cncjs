@@ -3224,6 +3224,27 @@ class GrblController {
           this.startProbe(method, options);
         },
         /**
+         * The operator's hands done — a height map's Z plate moved under the
+         * tool (`probe:resume`): the measurement goes on from where it stood.
+         * Refused with the wire lit, as a start is: the next touch would
+         * alarm at once.
+         */
+        'probe:resume': () => {
+          if (!this.probe?.run?.waiting) {
+            this.refuse(cmd, 'not-waiting');
+            return;
+          }
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+          if (String(this.runner.state?.status?.pinState || '').includes('P')) {
+            this.refuse(cmd, 'probe-triggered');
+            return;
+          }
+          this.probe.run.resume();
+        },
+        /**
          * Where the wizard waits on the operator's hands, for every device:
          * `{ method, options, step, own }` — `own` from the device whose
          * wizard it is, taking it over from any other; `{ release: true }`

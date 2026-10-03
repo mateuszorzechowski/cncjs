@@ -117,10 +117,16 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
     }
     const step = steps[index];
     prb = null;
+    const waits = step.kind === 'wait';
     // `mark`, what a method says of the step besides its phase: a height map's point.
     progress({
-      index, total: steps.length, phase: step.phase, seen: { ...seen }, ...(step.mark ? { mark: step.mark } : {}),
+      index, total: steps.length, phase: step.phase, seen: { ...seen }, ...(step.mark ? { mark: step.mark } : {}), ...(waits ? { waits } : {}),
     });
+    // Nothing goes out for the operator's hands: the run stands until `resume`.
+    if (waits) {
+      phase = 'waiting';
+      return;
+    }
     write(LINE[step.kind](step, target, wco));
   };
 
@@ -153,6 +159,16 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
       }
     },
 
+    /** The operator's hands done — a plate moved under the tool: on to the next step. */
+    resume() {
+      if (phase !== 'waiting') {
+        return false;
+      }
+      phase = 'stepping';
+      next();
+      return true;
+    },
+
     /** `code` as said, `error:9`. */
     error(code) {
       if (phase === 'stepping') {
@@ -165,7 +181,7 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
 
     /** Nothing more can be sent in alarm, the modes included. */
     alarm(code) {
-      if (phase === 'stepping' || phase === 'restoring') {
+      if (phase === 'stepping' || phase === 'restoring' || phase === 'waiting') {
         failure = failure || code;
         finish(failed());
       }
@@ -188,6 +204,10 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
 
     get running() {
       return phase !== 'done';
+    },
+
+    get waiting() {
+      return phase === 'waiting';
     },
   };
 };

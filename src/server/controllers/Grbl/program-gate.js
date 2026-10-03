@@ -45,6 +45,8 @@ const CONTROL = new Set([
   'settings:drafts', 'settings:preview',
   // Where a probe wizard waits: said to the other devices, nothing sent to the machine.
   'probe:stage',
+  // A measurement standing for the operator's hands, going on: it steers the run as a resume does.
+  'probe:resume',
 ]);
 
 /** Grbl's states in which a paused program has nothing left in the firmware. */

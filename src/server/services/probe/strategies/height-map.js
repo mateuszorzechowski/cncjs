@@ -1,5 +1,5 @@
 import { gridOf } from '../../height-map/grid';
-import { move, touch } from '../moves';
+import { move, touch, wait } from '../moves';
 
 /**
  * A height map (Mateusz, 2026-10-02): the surface touched from above at every
@@ -23,8 +23,17 @@ import { move, touch } from '../moves';
  * plate — a PCB's copper — or a 3D probe. The moves are the same either way;
  * the wire is tested differently, and the heights, from the first point, do
  * not depend on what touched.
+ *
+ * Or the Z plate, moved by hand from point to point (Mateusz, 2026-10-03):
+ * over each point the tool stands until the operator says the plate is under
+ * it. Every touch is on the plate's top, so the heights from the first point
+ * are the surface's; only where the surface itself is — the first point, the
+ * start's height over it — comes down by the plate's thickness.
  */
-export const TOOLS = ['board', 'probe'];
+export const TOOLS = ['board', 'probe', 'plate'];
+
+/** How far over the surface a touch is: the plate's top, or the surface itself. */
+const under = (params, options) => (options.tool === 'plate' ? params.plateThickness : 0);
 
 /** The grid's points in the order they are touched: `{ i, j, key }`. */
 const order = (nx, ny) => {
@@ -39,7 +48,8 @@ const order = (nx, ny) => {
 };
 
 export default {
-  fields: ['maxZ', 'fast', 'retract', 'slow', 'mapLift'],
+  // The plate's thickness counts only with the plate (`under`); the panel shows it only then.
+  fields: ['maxZ', 'fast', 'retract', 'slow', 'mapLift', 'plateThickness'],
   options: { tool: TOOLS },
   touches: true,
 
@@ -66,6 +76,8 @@ export default {
     const points = order(xs.length, ys.length);
     return points.flatMap(({ i, j, key }, n) => [
       move(`${key}-over`, () => ({ x: xs[i] + wco.x, y: ys[j] + wco.y })),
+      // The plate under the tool by hand, the tool standing over the point.
+      ...(options.tool === 'plate' ? [wait(`${key}-place`)] : []),
       ...touch('z', -1, params.maxZ, key, params),
       // Up over the touch to go on — never down, a back-off higher than that — and after the last, to the start's height.
       move(`${key}-up`, (here, seen) => ({ z: n === points.length - 1 ? start.z : Math.max(seen[key].z + params.mapLift, here.z) })),
@@ -91,9 +103,10 @@ export default {
   map: (params, options, seen, { start, wco }) => {
     const { xs, ys } = gridOf(options);
     const dz = ys.map(() => xs.map(() => 0));
-    const first = seen.p0.z;
+    // The first point's surface: under the plate's top, where the plate measured it.
+    const first = seen.p0.z - under(params, options);
     for (const { i, j, key } of order(xs.length, ys.length)) {
-      dz[j][i] = seen[key].z - first;
+      dz[j][i] = seen[key].z - seen.p0.z;
     }
     const heights = dz.flat();
     return {
@@ -101,7 +114,7 @@ export default {
       ys: ys.map((y) => y + wco.y),
       dz,
       travel: start.z - first,
-      first: { ...seen.p0 },
+      first: { ...seen.p0, z: first },
       // The lowest and the highest point, from the first: what the operator reads the board by.
       low: Math.min(...heights),
       high: Math.max(...heights),
