@@ -7,18 +7,10 @@ import { HOMING_FACTS, home, homingState } from '../machine/homing';
 import { settingText } from '../machine/machineSettings';
 import { NO_READING } from '../machine/readings';
 import { settingFigure } from '../machine/units';
-import { dateFormat } from '../ui/dates';
+import { when } from '../ui/dates';
 import { useUnits } from '../ui/units';
 import { showSettingsTab } from './SettingsScreen';
 import { t } from '../i18n';
-
-// When it was homed: the time alone today, the day with it before.
-const today = dateFormat({ timeStyle: 'short' });
-const earlier = dateFormat({ dateStyle: 'short', timeStyle: 'short' });
-const when = (at) => {
-  const day = new Date(at);
-  return day.toDateString() === new Date().toDateString() ? today.format(day) : earlier.format(day);
-};
 
 // A per-axis key: drawn, and dead until a controller can home one axis.
 const Axis = ({ face, name }) => (

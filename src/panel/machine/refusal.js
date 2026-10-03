@@ -85,6 +85,7 @@ const KEYS = {
   'bad-area': 'refusal.badArea',
   'bad-grid': 'refusal.badGrid',
   'no-map': 'refusal.noMap',
+  'map-doubt': 'refusal.mapDoubt',
   'no-program': 'refusal.noProgram',
   'outside-map': 'refusal.outsideMap',
   'no-z': 'refusal.noZ',

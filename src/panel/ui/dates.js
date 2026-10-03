@@ -24,4 +24,12 @@ export const dateFormat = (options) => {
   };
 };
 
+// A moment as the operator reads it: the time alone today, the day with it before.
+const today = dateFormat({ timeStyle: 'short' });
+const earlier = dateFormat({ dateStyle: 'short', timeStyle: 'short' });
+export const when = (at) => {
+  const day = new Date(at);
+  return day.toDateString() === new Date().toDateString() ? today.format(day) : earlier.format(day);
+};
+
 export default dateFormat;

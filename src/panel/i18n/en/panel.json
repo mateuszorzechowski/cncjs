@@ -146,7 +146,14 @@
       "g92": "The program moves the zero by G92 (line {{line}}).",
       "arcPlane": "An arc outside the XY plane (line {{line}}).",
       "badArc": "An arc that cannot be drawn (line {{line}}).",
-      "cannot": "The map cannot bend this program (line {{line}})."
+      "cannot": "The map cannot bend this program (line {{line}}).",
+      "measured": "Measured {{when}}.",
+      "doubt": {
+        "restart": "In doubt: the server was restarted, and the machine may have lost its position. Measure the map again.",
+        "portClosed": "In doubt: the port was closed, and Grbl came back without its position. Measure the map again.",
+        "positionLost": "In doubt: an alarm after which the machine does not know where it is. Measure the map again.",
+        "other": "In doubt: the machine may have lost its position. Measure the map again."
+      }
     }
   },
   "tool": {
@@ -454,6 +461,7 @@
     "badArea": "The map's area has no width in X or Y.",
     "badGrid": "The map's grid: 2 to 30 points on each axis.",
     "noMap": "There is no height map saved.",
+    "mapDoubt": "The height map is in doubt: the machine may have lost its position since it was measured. Measure it again.",
     "noProgram": "No program is loaded.",
     "outsideMap": "The program goes past the map (line {{line}}).",
     "noZ": "The program has no Z: there is nothing for the map to bend.",
