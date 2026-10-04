@@ -896,7 +896,7 @@ class GrblController {
 
       this.runner.on('ok', (res) => {
         if (this.homing.pending) {
-          this.homing.pending = false;
+          this.setHoming(false);
           this.setHomed(Date.now());
         }
 
@@ -1014,7 +1014,7 @@ class GrblController {
         const code = Number(res.message) || undefined;
         const error = _.find(GRBL_ERRORS, { code: code });
         // `$H` refused — `error:5`, homing not enabled — homed nothing.
-        this.homing.pending = false;
+        this.setHoming(false);
 
         if (this.fileCheck?.run) {
           this.fileCheck.run.error(error ? `error:${code}` : res.raw);
@@ -1169,7 +1169,7 @@ class GrblController {
         if (alarm) {
           this.setAlarm(code);
         }
-        this.homing.pending = false;
+        this.setHoming(false);
         if (losesPosition(code)) {
           this.setHomed(null);
           this.doubtMap('position-lost');
@@ -1384,6 +1384,8 @@ class GrblController {
         this.fileCheck?.run?.startup();
         this.probe?.run?.startup();
         this.settingWrite = null;
+        // A reset ends a homing cycle too, with no `ok` and no alarm to say so.
+        this.setHoming(false);
         this.emit('serialport:read', res.raw);
         this.note({ level: 'info', source: 'controller', event: 'startup', data: { text: res.raw } });
 
@@ -2125,6 +2127,12 @@ class GrblController {
       socket.emit('controller:homing', this.homing.at);
     }
 
+    /** A `$H` sent (true) or over; the state reads `Home` meanwhile — see `GrblRunner.homing`. */
+    setHoming(pending) {
+      this.homing.pending = pending;
+      this.runner.setHoming(pending);
+    }
+
     /** Remember when the machine was homed (null: not since it lost its position), and say so. */
     setHomed(at) {
       if (this.homing.at !== at) {
@@ -2659,7 +2667,7 @@ class GrblController {
       }
       // The same three paths carry a `$H` — the panel's, a console's, a macro's.
       if (isHomingLine(line)) {
-        this.homing.pending = true;
+        this.setHoming(true);
       }
     }
 
