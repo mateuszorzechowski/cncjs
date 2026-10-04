@@ -13,7 +13,8 @@ import GrblLineParserResultSettings from './GrblLineParserResultSettings';
 import GrblLineParserResultStartup from './GrblLineParserResultStartup';
 import {
   GRBL_ACTIVE_STATE_IDLE,
-  GRBL_ACTIVE_STATE_ALARM
+  GRBL_ACTIVE_STATE_ALARM,
+  GRBL_ACTIVE_STATE_HOME
 } from './constants';
 
 class GrblRunner extends events.EventEmitter {
@@ -49,6 +50,16 @@ class GrblRunner extends events.EventEmitter {
         spindle: ''
       }
     };
+
+    /**
+     * Whether a `$H` is running, as the controller knows it.
+     *
+     * Grbl answers no `?` during a homing cycle (interface.md, "Real-time
+     * Status Reports"): the report before `$H` stands for the whole cycle, `Alarm`
+     * or `Idle`, while the machine drives to its switches. So the state reads
+     * `Home` from the `$H` until the controller hears the cycle end.
+     */
+    homing = false;
 
     settings = {
       version: '',
@@ -111,7 +122,8 @@ class GrblRunner extends events.EventEmitter {
           ...this.state,
           status: {
             ...this.state.status,
-            ...payload
+            ...payload,
+            ...(this.homing ? { activeState: GRBL_ACTIVE_STATE_HOME } : {})
           }
         };
 
@@ -219,6 +231,16 @@ class GrblRunner extends events.EventEmitter {
       if (data.length > 0) {
         this.emit('others', payload);
         return;
+      }
+    }
+
+    setHoming(homing) {
+      this.homing = homing;
+      if (homing && this.state.status.activeState !== GRBL_ACTIVE_STATE_HOME) {
+        this.state = {
+          ...this.state,
+          status: { ...this.state.status, activeState: GRBL_ACTIVE_STATE_HOME }
+        };
       }
     }
 
