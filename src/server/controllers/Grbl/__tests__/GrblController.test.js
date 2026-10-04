@@ -1706,6 +1706,46 @@ describe('intent commands', () => {
     });
   });
 
+  describe('while the machine homes', () => {
+    // Grbl answers no `?` during the cycle; a report already on its way when
+    // `$H` left is the last word until the cycle ends.
+    const active = (controller) => controller.runner.state.status.activeState;
+
+    test.each([['<Idle|MPos:0.000,0.000,0.000>'], ['<Alarm|MPos:0.000,0.000,0.000>']])('reads Home from the $H on, not the %s before it', (before) => {
+      const { controller } = setup();
+      controller.runner.parse(before);
+
+      controller.command('homing');
+      expect(active(controller)).toBe('Home');
+      controller.runner.parse(before);
+      expect(active(controller)).toBe('Home');
+
+      controller.runner.parse('ok');
+      controller.runner.parse('<Idle|MPos:-3.000,-3.000,-3.000>');
+      expect(active(controller)).toBe('Idle');
+    });
+
+    test('a failed cycle ends it, with its alarm', () => {
+      const { controller } = setup();
+      controller.command('homing');
+
+      controller.runner.parse('ALARM:9');
+      controller.runner.parse('<Alarm|MPos:0.000,0.000,0.000>');
+
+      expect(active(controller)).toBe('Alarm');
+    });
+
+    test('a reset ends it', () => {
+      const { controller } = setup();
+      controller.command('homing');
+
+      controller.runner.parse('Grbl 1.1h [\'$\' for help]');
+      controller.runner.parse('<Alarm|MPos:0.000,0.000,0.000>');
+
+      expect(active(controller)).toBe('Alarm');
+    });
+  });
+
   describe('a line in alarm', () => {
     const inAlarm = () => {
       const { controller, writes } = setup();
