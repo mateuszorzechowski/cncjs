@@ -16,6 +16,13 @@
 
 const KEPT = new Set([2, 4, 5]);
 const LOST = new Set([1, 3]);
+// A hard or a soft limit: Grbl's critical alarm, which takes nothing but a
+// reset — no homing, no unlock, not even a status report (protocol.c). The
+// server forgets the number at the reset, so the number is the state.
+const RESET_FIRST = new Set([1, 2]);
+
+/** Whether the alarm takes a reset before anything else. */
+export const needsReset = (code) => RESET_FIRST.has(code);
 
 // Written out, so each is a key something can grep for (rule 8).
 const MEANING = {
@@ -61,7 +68,7 @@ export const alarmAdvice = (code, { program = false } = {}) => {
     meaning: MEANING[code] || 'alarm.lock',
     position,
     positionKey: POSITION[position],
-    action: program ? 'abort' : (position === 'kept' ? 'unlock' : 'home'),
+    action: (needsReset(code) && 'reset') || (program && 'abort') || (position === 'kept' ? 'unlock' : 'home'),
   };
 };
 

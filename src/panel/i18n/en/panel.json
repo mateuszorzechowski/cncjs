@@ -438,6 +438,7 @@
     "noTravel": "The machine has not reported how far its axes travel, so this move cannot be planned.",
     "outOfEnvelope": "That point is outside the machine travel.",
     "noRoom": "The axis has reached the end of its travel in that direction.",
+    "resetRequired": "After a limit the controller waits for a reset. Press Reset first, then home.",
     "stoppedShort": "The work zero is at the {{axes}} limit switch. The machine stopped short of it, where homing pulls off to.",
     "programRunning": "A program is running, so the machine will not take a move.",
     "jogging": "Somebody is holding a jog key. The program will not start while the machine is being driven by hand.",
@@ -824,7 +825,9 @@
     "unlock": "Unlock",
     "unlockWarning": "Unlock only if you know where the machine is — the coordinates may not match reality.",
     "code": "ALARM:{{code}}",
-    "abort": "Stop the program"
+    "abort": "Stop the program",
+    "resetFirst": "After a limit the controller waits for a reset and takes nothing until then, homing and unlocking included.",
+    "reset": "Reset"
   },
   "picker": {
     "previous": "Previous month",
