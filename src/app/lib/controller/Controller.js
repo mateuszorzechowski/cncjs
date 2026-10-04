@@ -84,6 +84,16 @@ class Controller {
         'command:refused': [],
 
         /**
+         * A command carried out, but not quite as asked — sent to the client
+         * that asked, like a refusal. `stopped-short`: go-to-zero stopped
+         * short of a limit switch on `axes`.
+         *
+         * @event command:warned
+         * @param {object} warning - `{ cmd, reason, axes }`
+         */
+        'command:warned': [],
+
+        /**
          * What was last opened, as the server remembers it.
          *
          * `{ port, controllerType, baudrate }`, or null on a server that has

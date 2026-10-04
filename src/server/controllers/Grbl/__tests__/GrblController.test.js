@@ -1817,6 +1817,24 @@ describe('intent commands', () => {
       ]);
     });
 
+    // cnc-sim, 2026-10-04: WCO 0 put the work zero on the X and Y switches, `ALARM:1`.
+    test('goToWorkZero on the switch strip goes as near as it may, and says so', () => {
+      const { controller, writes } = setup();
+      const said = asking(controller);
+      reports(controller, { $27: '3' });
+      controller.runner.parse('<Idle|MPos:-500.000,-300.000,-3.000|FS:0,0|WCO:0.000,-100.000,0.000>');
+
+      controller.command('goToWorkZero');
+      controller.runner.parse('ok');
+
+      // The first Idle report also sets off the server's own `$$` and `$#`.
+      expect(writes.map(write => write.data).filter(data => data.startsWith('$J'))).toEqual([
+        '$J=G53 G90 G21 Z-3 F4000\n',
+        '$J=G53 G90 G21 X-3 Y-100 F5000\n',
+      ]);
+      expect(said).toEqual([{ cmd: 'goToWorkZero', reason: 'stopped-short', axes: ['x'] }]);
+    });
+
     test('goToWorkZero is refused when the machine has not said how far it goes', () => {
       const { controller, writes } = setup();
       const refusals = asking(controller);

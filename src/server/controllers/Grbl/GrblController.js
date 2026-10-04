@@ -68,7 +68,7 @@ import units, { toMm } from '../../services/units';
 import { machineTiming } from '../../services/library/estimate';
 import analyse from '../../services/library/analyse';
 import { Progress } from './progress';
-import { goToPointLines, goToWorkZeroLines } from './travel';
+import { goToPointLines, goToWorkZeroLines, workZeroShort } from './travel';
 import { leaseHolder, motionRefusal, renewed } from './lease';
 import { programRefusal } from './program-gate';
 import { describeSettings, groupSummaries, settingsAfter, settingWrite } from './machine-settings';
@@ -3126,7 +3126,9 @@ class GrblController {
             this.refuse(cmd, 'no-homing');
             return;
           }
-          const lines = goToWorkZeroLines(this.runner.settings?.settings);
+          const settings = this.runner.settings?.settings;
+          const wco = this.runner.state?.status?.wco;
+          const lines = goToWorkZeroLines(settings, wco);
           if (!lines) {
             this.refuse(cmd, 'no-travel');
             return;
@@ -3138,6 +3140,11 @@ class GrblController {
             return;
           }
 
+          // A zero on the switch strip is driven to as near as it goes, and said (`workZeroShort`).
+          const short = workZeroShort(settings, wco);
+          if (short.length) {
+            this.commandSocket?.emit('command:warned', { cmd, reason: 'stopped-short', axes: short });
+          }
           this.command('gcode', lines);
         },
         /**
