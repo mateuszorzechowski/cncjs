@@ -54,6 +54,32 @@ export const axisRange = (axis, settings) => {
   return { min: -travel, max: 0 };
 };
 
+// `$23`: a set bit homes that axis to its minimum.
+const HOMES_TO_MIN = { x: 1, y: 2, z: 4 };
+
+/**
+ * How far one axis may be driven: its range less the pull-off `$27` at the
+ * switch end, or null as `axisRange`.
+ *
+ * **The switch is at the end of the range, not past it.** Grbl 1.1 sets the
+ * position after `$H` so the trigger point is the end of `[-travel, 0]` and
+ * the machine stands `$27` inside it — MPos -3 with `$27=3`. A move to the
+ * end is a move onto the switch: go-to-zero's retract to `G53 Z0` raised
+ * `ALARM:1` on cnc-sim (2026-10-04). The box drawn stays `axisRange`, the
+ * machine's own zero (Mateusz: "obwiednia nie pokazywałaby prawdziwego
+ * zera"); only what the server sends keeps off the switch.
+ */
+export const moveRange = (axis, settings) => {
+  const range = axisRange(axis, settings);
+  if (!range) {
+    return null;
+  }
+  const pullOff = Math.max(0, setting(settings, '$27') || 0);
+  return ((setting(settings, '$23') || 0) & HOMES_TO_MIN[axis])
+    ? { min: range.min + pullOff, max: range.max }
+    : { min: range.min, max: range.max - pullOff };
+};
+
 /**
  * Whether the box has a place: `$22`, homing on.
  *

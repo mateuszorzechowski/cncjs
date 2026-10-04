@@ -135,6 +135,14 @@ describe('how much room is left', () => {
     expect(roomFor('z', 1, Z_HOMES_TO_MIN, { ...MIDDLE, z: '0' })).toBe(0);
   });
 
+  test('stops the pull-off short of the switch, at the end the axis homes to', () => {
+    const PULL_OFF = { ...HOMES_TO_MAX, $27: '3' };
+
+    expect(roomFor('z', 1, PULL_OFF, { ...MIDDLE, z: '-3' })).toBe(0);
+    expect(roomFor('z', -1, PULL_OFF, MIDDLE)).toBe(75);
+    expect(roomFor('z', -1, { ...Z_HOMES_TO_MIN, $27: '3' }, MIDDLE)).toBe(72);
+  });
+
   test('is null when the machine has not said how far it goes or where it is', () => {
     expect(roomFor('x', 1, {}, MIDDLE)).toBeNull();
     expect(roomFor('x', 1, HOMES_TO_MAX, {})).toBeNull();
