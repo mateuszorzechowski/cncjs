@@ -1,3 +1,5 @@
+import { needsReset } from './alarm';
+
 /**
  * What to do about the state the machine is in.
  *
@@ -17,7 +19,7 @@
  */
 
 /** Which advice, and whether the connection screen is where it is acted on. */
-export const adviceFor = ({ linked, connected, port, canSendGcode, workflow, settingsWrong } = {}) => {
+export const adviceFor = ({ linked, connected, port, canSendGcode, workflow, settingsWrong, alarm } = {}) => {
   // No server at all. The connection screen still helps — it is the one place
   // that shows which host the panel is pointed at, which is usually the
   // answer when a pendant cannot find its machine.
@@ -50,6 +52,10 @@ export const adviceFor = ({ linked, connected, port, canSendGcode, workflow, set
   }
 
   if (!canSendGcode) {
+    // After a limit Grbl takes a reset before anything, a program's stop included.
+    if (needsReset(alarm)) {
+      return { key: 'advice.resetFirst', go: false };
+    }
     // An alarm that stopped a program: the server takes neither homing nor
     // unlocking until the program is stopped, so that is the advice.
     if (workflow === 'running' || workflow === 'paused') {

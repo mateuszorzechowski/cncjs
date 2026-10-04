@@ -55,12 +55,9 @@ const AlarmAdvice = ({ machine }) => {
       <span className={`text-note font-semibold ${POSITION_TONE[advice.position]}`}>{t(advice.positionKey)}</span>
       {/* A limit: Grbl takes nothing but a reset, and says nothing until it gets one. */}
       {advice.action === 'reset' ? (
-        <>
-          <span className="text-note text-ink">{t('alarm.resetFirst')}</span>
-          <Button tone="stop" onClick={() => controller.command('reset')} className="h-ctl w-full">
-            {t('alarm.reset')}
-          </Button>
-        </>
+        <Button tone="stop" onClick={() => controller.command('reset')} className="h-ctl w-full">
+          {t('alarm.reset')}
+        </Button>
       ) : null}
       {/* The same stop as the footer's Przerwij: hold, wait, reset. */}
       {program && advice.action !== 'reset' ? (
@@ -71,7 +68,7 @@ const AlarmAdvice = ({ machine }) => {
       <div className="flex gap-3">
         {advice.action === 'home' ? [homeButton, unlockButton] : [unlockButton, homeButton]}
       </div>
-      {advice.position === 'kept' || program ? null : (
+      {advice.position === 'kept' || program || advice.action === 'reset' ? null : (
         <span className="text-note text-mut">{t('alarm.unlockWarning')}</span>
       )}
     </div>
