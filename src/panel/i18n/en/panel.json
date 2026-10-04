@@ -542,6 +542,7 @@
     "alarm": "Home the machine, or unlock it, before anything will move. Until then the server sends nothing at all.",
     "attaching": "A port is open and the panel is attaching to it. Nothing to do but wait a moment.",
     "noPort": "No port is open. Choose one and connect.",
+    "resetFirst": "A move went past an axis limit. Press Reset, then home the machine. Until then the controller takes nothing, homing and unlocking included.",
     "alarmInProgram": "The alarm stopped a program. Stop it first — only then can the machine be unlocked or homed. Until then the server sends nothing.",
     "reportInches": "The controller reports in inches ($13=1) and the server reads millimetres: positions, limits and moves are wrong. Fix it before moving the machine."
   },
@@ -826,7 +827,6 @@
     "unlockWarning": "Unlock only if you know where the machine is — the coordinates may not match reality.",
     "code": "ALARM:{{code}}",
     "abort": "Stop the program",
-    "resetFirst": "After a limit the controller waits for a reset and takes nothing until then, homing and unlocking included.",
     "reset": "Reset"
   },
   "picker": {

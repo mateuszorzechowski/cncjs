@@ -438,7 +438,7 @@
     "noTravel": "Maszyna nie podała zakresu ruchu osi, więc nie ma jak zaplanować tego przejazdu.",
     "outOfEnvelope": "Ten punkt leży poza zakresem ruchu maszyny.",
     "noRoom": "Oś doszła do końca zakresu w tym kierunku.",
-    "resetRequired": "Po krańcówce sterownik czeka na reset. Najpierw wciśnij Reset, potem bazuj.",
+    "resetRequired": "Po przekroczeniu limitu sterownik czeka na reset. Najpierw wciśnij Reset, potem bazuj.",
     "stoppedShort": "Zero robocze leży przy krańcówce osi {{axes}}. Maszyna stanęła przed nią, w miejscu odjazdu po bazowaniu.",
     "programRunning": "Trwa program, więc maszyna nie przyjmie ruchu.",
     "jogging": "Ktoś trzyma klawisz jogu. Program nie ruszy, dopóki maszyna jest prowadzona ręcznie.",
@@ -542,6 +542,7 @@
     "alarm": "Zbazuj maszynę albo ją odblokuj, zanim cokolwiek ruszy. Do tego czasu serwer nie wysyła niczego.",
     "attaching": "Port jest otwarty i panel się do niego dopina. Nie ma nic do zrobienia, wystarczy chwilę poczekać.",
     "noPort": "Żaden port nie jest otwarty. Wybierz jeden i połącz.",
+    "resetFirst": "Ruch przekroczył limit osi. Wciśnij Reset, potem zbazuj maszynę. Do tego czasu sterownik nie przyjmie niczego, także bazowania ani odblokowania.",
     "alarmInProgram": "Alarm zatrzymał program. Najpierw go przerwij — dopiero potem odblokujesz albo zbazujesz maszynę. Do tego czasu serwer nie wysyła niczego.",
     "reportInches": "Sterownik raportuje w calach ($13=1), a serwer czyta milimetry: pozycje, limity i ruchy są błędne. Napraw, zanim ruszysz maszyną."
   },
@@ -826,7 +827,6 @@
     "unlockWarning": "Odblokuj tylko, jeśli wiesz, gdzie jest maszyna — współrzędne mogą nie odpowiadać rzeczywistości.",
     "code": "ALARM:{{code}}",
     "abort": "Przerwij program",
-    "resetFirst": "Po krańcówce sterownik czeka na reset i do tego czasu nie przyjmie niczego, także bazowania ani odblokowania.",
     "reset": "Reset"
   },
   "picker": {
