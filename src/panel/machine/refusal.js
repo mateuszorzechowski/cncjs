@@ -97,6 +97,8 @@ const KEYS = {
   // Not a refusal: go-to-zero went, and stopped short of a limit switch on
   // `axes` — the work zero lies on the strip the pull-off keeps clear.
   'stopped-short': 'refusal.stoppedShort',
+  // After a limit (`ALARM:1`, `ALARM:2`) Grbl takes nothing until a reset.
+  'reset-required': 'refusal.resetRequired',
 };
 
 /**
