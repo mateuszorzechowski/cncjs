@@ -58,6 +58,14 @@ describe('adviceFor', () => {
     expect(adviceFor(stopped)).toEqual({ key: 'advice.alarmInProgram', go: false });
   });
 
+  test('after a limit the advice is Reset, program or not: Grbl takes nothing else', () => {
+    const limited = read({
+      connection: 'open', port: 'COM3', type: 'Grbl', attached: true, workflow: 'paused', alarm: 1,
+      state: { status: { activeState: 'Alarm' } },
+    });
+    expect(adviceFor(limited)).toEqual({ key: 'advice.resetFirst', go: false });
+  });
+
   test('a door hold is not an alarm, and needs no advice', () => {
     // The state that looks like alarm and is not: the server sends through
     // it, so there is nothing for anyone to do about it.
