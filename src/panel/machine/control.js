@@ -1,4 +1,5 @@
 import { programHolds } from './readings';
+import { needsReset } from './alarm';
 
 /**
  * The firmware's own controls: unlock, hold, resume, reset.
@@ -33,11 +34,17 @@ const heldByProgram = (id, { status, workflow }) => (
   id === 'unlock' && programHolds(workflow, status?.word)
 );
 
-export const controlsFor = ({ connected, status, workflow }) => Object.fromEntries(CONTROLS.map((id) => [
+// Nor after a limit: that alarm takes a reset first (`alarm.needsReset`).
+const waitsForReset = (id, { status, alarm }) => (
+  id === 'unlock' && status?.word === 'Alarm' && needsReset(alarm)
+);
+
+export const controlsFor = ({ connected, status, workflow, alarm }) => Object.fromEntries(CONTROLS.map((id) => [
   id,
   Boolean(connected) &&
     (id === 'reset' || LIVE_IN[id].includes(status?.word)) &&
-    !heldByProgram(id, { status, workflow }),
+    !heldByProgram(id, { status, workflow }) &&
+    !waitsForReset(id, { status, alarm }),
 ]));
 
 const COMMAND = {

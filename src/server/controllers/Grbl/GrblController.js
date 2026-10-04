@@ -479,7 +479,7 @@ class GrblController {
 
         // Grbl takes its own `$` commands in alarm — `$X`, `$H`, `$$` are
         // how an operator gets out of one — and nothing else.
-        if (this.runner.isAlarm() && !isSystemLine(line)) {
+        if ((this.runner.isAlarm() && !isSystemLine(line)) || this.resetRequired) {
           this.feeder.reset();
           log.warn('Stopped sending G-code commands in Alarm mode');
           return;
@@ -710,6 +710,16 @@ class GrblController {
        * Cleared the moment the machine reports anything but `Alarm`.
        */
       this.alarmCode = null;
+
+      /*
+       * A hard or soft limit (`ALARM:1`, `ALARM:2`): Grbl's critical alarm.
+       * Until a reset it serves nothing, not even a status report — every
+       * byte waits in its buffer and the reset throws it away
+       * (protocol.c, "Block everything … until user issues reset"). A `$H`
+       * sent then was swallowed and, read as a homing, left the state at
+       * `Home` for good (cnc-sim, 2026-10-04). So only a reset goes.
+       */
+      this.resetRequired = false;
 
       /*
        * When the machine was last homed, or null — see `homing.js`.
@@ -1169,6 +1179,9 @@ class GrblController {
         if (alarm) {
           this.setAlarm(code);
         }
+        if (code === 1 || code === 2) {
+          this.resetRequired = true;
+        }
         this.setHoming(false);
         if (losesPosition(code)) {
           this.setHomed(null);
@@ -1386,6 +1399,9 @@ class GrblController {
         this.settingWrite = null;
         // A reset ends a homing cycle too, with no `ok` and no alarm to say so.
         this.setHoming(false);
+        // And the alarm it was: what follows is Grbl's own lock, which has no number.
+        this.resetRequired = false;
+        this.setAlarm(null);
         this.emit('serialport:read', res.raw);
         this.note({ level: 'info', source: 'controller', event: 'startup', data: { text: res.raw } });
 
@@ -3014,6 +3030,10 @@ class GrblController {
          * The lease says nothing about alarm.
          */
         'homing': () => {
+          if (this.resetRequired) {
+            this.refuse(cmd, 'reset-required');
+            return;
+          }
           if (!this.claimMotion(cmd)) {
             return;
           }
@@ -3496,6 +3516,10 @@ class GrblController {
           });
         },
         'unlock': () => {
+          if (this.resetRequired) {
+            this.refuse(cmd, 'reset-required');
+            return;
+          }
           this.writeln('$X');
         },
         'reset': () => {
@@ -3806,6 +3830,10 @@ class GrblController {
            * an alarmed machine went nowhere and nobody was told. Refused as a
            * whole, before anything is fed, so a block is never half sent.
            */
+          if (this.resetRequired) {
+            this.refuse(cmd, 'reset-required');
+            return;
+          }
           if (this.runner.isAlarm() && !data.every(isSystemLine)) {
             this.refuse(cmd, 'alarm');
             return;

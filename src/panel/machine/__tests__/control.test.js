@@ -22,6 +22,11 @@ describe('which commands are live', () => {
     expect(live(machine('Alarm', { workflow: 'running' }))).toEqual(['reset']);
   });
 
+  test('after a limit: only reset, which is all Grbl takes then', () => {
+    expect(live(machine('Alarm', { alarm: 1 }))).toEqual(['reset']);
+    expect(live(machine('Alarm', { alarm: 3 }))).toEqual(['unlock', 'reset']);
+  });
+
   test('moving: hold, and reset', () => {
     expect(live(machine('Run'))).toEqual(['hold', 'reset']);
     expect(live(machine('Jog'))).toEqual(['hold', 'reset']);

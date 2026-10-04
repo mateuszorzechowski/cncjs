@@ -1706,6 +1706,47 @@ describe('intent commands', () => {
     });
   });
 
+  describe('after a limit', () => {
+    // cnc-sim, 2026-10-04: ALARM:1, then `$H` swallowed by Grbl and the state read `Home` for good.
+    const limited = () => {
+      const { controller, writes } = setup();
+      const refusals = [];
+      controller.commandSocket = { emit: (event, payload) => refusals.push(payload) };
+      controller.runner.parse('ALARM:1');
+      writes.length = 0;
+      return { controller, writes, refusals };
+    };
+
+    test.each([['homing'], ['unlock']])('%s waits for a reset, refused out loud', (command) => {
+      const { controller, writes, refusals } = limited();
+
+      controller.command(command);
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: command, reason: 'reset-required' }]);
+      expect(controller.homing.pending).toBe(false);
+    });
+
+    test('a `$` line typed in waits too', () => {
+      const { controller, writes, refusals } = limited();
+
+      controller.command('gcode', '$H');
+
+      expect(writes).toEqual([]);
+      expect(refusals).toEqual([{ cmd: 'gcode', reason: 'reset-required' }]);
+    });
+
+    test('the reset ends it, and the alarm number with it', () => {
+      const { controller, writes } = limited();
+
+      controller.runner.parse('Grbl 1.1h [\'$\' for help]');
+      controller.command('homing');
+
+      expect(controller.alarmCode).toBeNull();
+      expect(writes.map(write => write.data)).toContain('$H\n');
+    });
+  });
+
   describe('while the machine homes', () => {
     // Grbl answers no `?` during the cycle; a report already on its way when
     // `$H` left is the last word until the cycle ends.

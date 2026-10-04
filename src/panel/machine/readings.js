@@ -1,4 +1,5 @@
 import { canHome } from './homing';
+import { needsReset } from './alarm';
 
 /** What a reading says when there is nothing to say. Not "0", not an empty cell. */
 export const NO_READING = '–';
@@ -458,7 +459,7 @@ export const readMachine = ({
     // Held like every other move, and *unlike* every other move it survives
     // an alarm: homing is what clears one. So it is composed from `canHome`
     // and the lease rather than from `canMove`.
-    canHome: connected && canHome(type, settings) && !held,
+    canHome: connected && canHome(type, settings) && !held && !(active?.word === ALARM && needsReset(alarm)),
     // Carried whole because more than one thing needs it: homing reads
     // `$22`, a held jog reads the axis travel so it cannot ask for more
     // than the machine has.
