@@ -1,5 +1,5 @@
 import { machineEnvelope, axisRange, programOverrun } from '../envelope';
-import { RATE_UNKNOWN, goToPointLines, goToWorkZeroLines, rateFor } from '../travel';
+import { RATE_UNKNOWN, goToPointLines, goToWorkZeroLines, rateFor, workZeroShort } from '../travel';
 
 // A Grbl that homes to the maximum: travel is [-range, 0], which is the
 // default and the source of "why are my machine coordinates all minus".
@@ -123,6 +123,16 @@ describe('travelling to a point off the drawing', () => {
     expect(goToPointLines(PULL_OFF, { x: -1, y: -500 })[1]).toBe('$J=G53 G90 G21 X-3 Y-500 F5000');
     // Z homing to the bottom: its switch is down there, the top is free.
     expect(goToWorkZeroLines({ ...Z_HOMES_TO_MIN, $27: '3' })[0]).toBe('$J=G53 G90 G21 Z0 F4000');
+  });
+
+  test('crosses to a work zero on the switch strip only as near as the pull-off allows', () => {
+    const PULL_OFF = { ...HOMES_TO_MAX, $27: '3' };
+
+    expect(goToWorkZeroLines(PULL_OFF, { x: '0.000', y: '-1.000', z: '0.000' })[1]).toBe('$J=G53 G90 G21 X-3 Y-3 F5000');
+    expect(workZeroShort(PULL_OFF, { x: '0.000', y: '-1.000' })).toEqual(['x', 'y']);
+    // Off the strip, or not known: the work zero itself, in work coordinates.
+    expect(goToWorkZeroLines(PULL_OFF, { x: '-100.000', y: '-100.000' })[1]).toBe('$J=G90 G21 X0 Y0 F5000');
+    expect(workZeroShort(PULL_OFF, undefined)).toEqual([]);
   });
 
   test('refuses a point that is not two numbers', () => {
