@@ -94,6 +94,9 @@ const KEYS = {
   g92: 'refusal.g92',
   'arc-plane': 'refusal.arcPlane',
   'bad-arc': 'refusal.badArc',
+  // Not a refusal: go-to-zero went, and stopped short of a limit switch on
+  // `axes` — the work zero lies on the strip the pull-off keeps clear.
+  'stopped-short': 'refusal.stoppedShort',
 };
 
 /**
@@ -116,7 +119,7 @@ export const refusalMessage = (refusal) => {
   // A program the height map cannot bend is refused at a line of the file, from one.
   const line = Number.isInteger(refusal.line) ? refusal.line + 1 : null;
   return key
-    ? { key, values: { cmd: refusal.cmd, ...(line ? { line } : {}) } }
+    ? { key, values: { cmd: refusal.cmd, ...(line ? { line } : {}), ...(refusal.axes ? { axes: refusal.axes.join(', ').toUpperCase() } : {}) } }
     : { key: 'refusal.other', values: { cmd: refusal.cmd, reason: refusal.reason } };
 };
 

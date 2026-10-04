@@ -67,6 +67,24 @@ const retract = (settings) => (
   `$J=G53 G90 G21 Z${moveRange('z', settings).max} F${rateFor(settings, 'z')}`
 );
 
+// Where the work zero is on one axis in machine coordinates (`wco`), or as near as the switch allows.
+const nearest = (settings, axis, wco) => {
+  const range = moveRange(axis, settings);
+  return round(Math.min(range.max, Math.max(range.min, Number(wco[axis]))));
+};
+
+/**
+ * The axes on which the work zero is closer to the switch than the pull-off,
+ * so go-to-zero stops short of it — empty when it does not, or `wco` is not
+ * known. Not refused (Mateusz, 2026-10-04: "dojechanie najbliżej i warning"):
+ * the zero there is mostly one never set, WCO 0, and the reading shows how far.
+ */
+export const workZeroShort = (settings, wco) => ['x', 'y'].filter((axis) => {
+  const at = Number.parseFloat(wco?.[axis]);
+  const range = moveRange(axis, settings);
+  return Number.isFinite(at) && range && (at > range.max || at < range.min);
+});
+
 /**
  * Back to the work zero of whichever system is active, Z first.
  *
@@ -79,16 +97,19 @@ const retract = (settings) => (
  * avoided — so it is refused rather than sent as a `G0 X0 Y0` that looks the
  * same and behaves like the old application.
  */
-export const goToWorkZeroLines = (settings) => {
+export const goToWorkZeroLines = (settings, wco) => {
   const envelope = machineEnvelope(settings);
   // Unhomed, machine Z0 is the power-on height: the "retract" went down (COM3, 2026-09-28).
   if (!envelope || !envelope.placed) {
     return null;
   }
 
+  const short = workZeroShort(settings, wco);
   return [
     retract(settings),
-    `$J=G90 G21 X0 Y0 F${rateFor(settings, 'xy')}`,
+    short.length
+      ? `$J=G53 G90 G21 X${nearest(settings, 'x', wco)} Y${nearest(settings, 'y', wco)} F${rateFor(settings, 'xy')}`
+      : `$J=G90 G21 X0 Y0 F${rateFor(settings, 'xy')}`,
   ];
 };
 

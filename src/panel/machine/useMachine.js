@@ -374,6 +374,13 @@ export const useMachine = () => {
           refusal: { ...refused, seq: (previous.refusal?.seq ?? 0) + 1 },
         }));
       },
+      // Done, but not quite as asked: said by the same notice (`refusal.js`).
+      'command:warned': (warned) => {
+        setSnapshot((previous) => ({
+          ...previous,
+          refusal: { ...warned, seq: (previous.refusal?.seq ?? 0) + 1 },
+        }));
+      },
 
       /*
        * The socket going away, which nothing was listening for.
