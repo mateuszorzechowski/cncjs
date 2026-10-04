@@ -115,6 +115,16 @@ describe('travelling to a point off the drawing', () => {
     expect(goToPointLines(HOMES_TO_MAX, { x: -1000, y: -700 })).not.toBeNull();
   });
 
+  // cnc-sim, 2026-10-04: the retract to `G53 Z0` drove onto the Z switch, `ALARM:1`.
+  test('keeps the pull-off off the switch: the retract, and a point picked on the edge', () => {
+    const PULL_OFF = { ...HOMES_TO_MAX, $27: '3' };
+
+    expect(goToWorkZeroLines(PULL_OFF)[0]).toBe('$J=G53 G90 G21 Z-3 F4000');
+    expect(goToPointLines(PULL_OFF, { x: -1, y: -500 })[1]).toBe('$J=G53 G90 G21 X-3 Y-500 F5000');
+    // Z homing to the bottom: its switch is down there, the top is free.
+    expect(goToWorkZeroLines({ ...Z_HOMES_TO_MIN, $27: '3' })[0]).toBe('$J=G53 G90 G21 Z0 F4000');
+  });
+
   test('refuses a point that is not two numbers', () => {
     expect(goToPointLines(HOMES_TO_MAX, null)).toBeNull();
     expect(goToPointLines(HOMES_TO_MAX, { x: -100 })).toBeNull();

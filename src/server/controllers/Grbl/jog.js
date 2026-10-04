@@ -24,7 +24,7 @@
  * their mind, and everything downstream pays for it.
  */
 
-import { AXES, axisRange, placedBy } from './envelope';
+import { AXES, moveRange, placedBy } from './envelope';
 
 /**
  * Seconds of travel per segment.
@@ -163,10 +163,10 @@ export const segmentDistance = (feedrate, seconds = SEGMENT_SECONDS) => (feedrat
  * machine had (COM3, 2026-09-28).
  *
  * Where the axis reaches to is `envelope.js`, which a travel asks the same
- * question of from the other end.
+ * question of from the other end: short of the switch, by the pull-off.
  */
 export const roomFor = (axis, sign, settings, mpos) => {
-  const range = axisRange(axis, settings);
+  const range = moveRange(axis, settings);
   const at = Number.parseFloat(mpos?.[axis]);
 
   if (!range || !Number.isFinite(at) || !placedBy(settings)) {
@@ -189,7 +189,7 @@ export const roomFor = (axis, sign, settings, mpos) => {
  * and the hardware tier's return move failed the same way.
  *
  * A micron is invisible on any machine this drives. Absolute moves are not
- * affected: a travel's `G53 G90 Z0` is the number itself, not a sum.
+ * affected: a travel's `G53 G90 Z…` is the number itself, not a sum.
  */
 export const EDGE_MM = 0.001;
 

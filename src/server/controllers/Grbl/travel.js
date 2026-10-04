@@ -1,4 +1,4 @@
-import { machineEnvelope } from './envelope';
+import { machineEnvelope, moveRange } from './envelope';
 
 /**
  * Going somewhere, without dragging the tool through the work on the way.
@@ -52,10 +52,10 @@ const round = (value) => Math.round(value * TARGET_PRECISION) / TARGET_PRECISION
 /**
  * The line that lifts Z clear before anything moves across.
  *
- * **To the top of the travel, not to `G53 Z0`.** On a Grbl that homes to the
- * maximum — the default, `$23=0` — zero is at the top and those are the same
- * place. On a machine with the Z bit set in `$23`, machine zero is at the
- * *bottom* and `G53 Z0` would be a plunge to the table.
+ * **To the top of the travel, short of the switch.** The top of `[-travel, 0]`
+ * is `G53 Z0` whichever end Z homes to; on a Grbl that homes to the maximum —
+ * the default, `$23=0` — the switch is there too, and the retract stops the
+ * pull-off `$27` below it, where `$H` left the machine (`moveRange`).
  *
  * `G90` is stated once, on the first line of a travel. `G53` is ignored in
  * relative mode and `G0 X0 Y0` in relative mode means "do not move" — a silent
@@ -63,8 +63,8 @@ const round = (value) => Math.round(value * TARGET_PRECISION) / TARGET_PRECISION
  * nature, so saying so is not a mode change smuggled in: it is the mode this
  * move is.
  */
-const retract = (settings, envelope) => (
-  `$J=G53 G90 G21 Z${envelope.max.z} F${rateFor(settings, 'z')}`
+const retract = (settings) => (
+  `$J=G53 G90 G21 Z${moveRange('z', settings).max} F${rateFor(settings, 'z')}`
 );
 
 /**
@@ -87,7 +87,7 @@ export const goToWorkZeroLines = (settings) => {
   }
 
   return [
-    retract(settings, envelope),
+    retract(settings),
     `$J=G90 G21 X0 Y0 F${rateFor(settings, 'xy')}`,
   ];
 };
@@ -118,14 +118,19 @@ export const goToPointLines = (settings, point) => {
     return null;
   }
 
-  const x = round(point.x);
-  const y = round(point.y);
-  if (!insideEnvelope(envelope, x, y)) {
+  if (!insideEnvelope(envelope, round(point.x), round(point.y))) {
     return null;
   }
+  // A point picked on the drawing's edge strip lands short of the switch, not on it (`moveRange`).
+  const clamp = (axis, value) => {
+    const range = moveRange(axis, settings);
+    return Math.min(range.max, Math.max(range.min, round(value)));
+  };
+  const x = clamp('x', point.x);
+  const y = clamp('y', point.y);
 
   return [
-    retract(settings, envelope),
+    retract(settings),
     `$J=G53 G90 G21 X${x} Y${y} F${rateFor(settings, 'xy')}`,
   ];
 };
