@@ -851,6 +851,7 @@ class GrblController {
         if (res.activeState === GRBL_ACTIVE_STATE_ALARM && this.alarmCode === null) {
           this.setHomed(null);
           this.doubtMap('position-lost');
+          this.doubtProbe('position-lost');
         }
         /**
          * Handle the scenario where a startup message is not received during UART communication.
@@ -939,6 +940,8 @@ class GrblController {
         if (this.homing.pending) {
           this.setHoming(false);
           this.setHomed(Date.now());
+          // Homed, the machine's coordinates are set afresh: a zero measured in the old ones is not written.
+          this.doubtProbe('position-lost');
         }
 
         /*
@@ -1221,6 +1224,7 @@ class GrblController {
         if (losesPosition(code)) {
           this.setHomed(null);
           this.doubtMap('position-lost');
+          this.doubtProbe('position-lost');
         }
 
         if (alarm) {
@@ -2212,6 +2216,23 @@ class GrblController {
         this.holdBent(false);
         this.emit('sender:status', this.senderStatus());
       }
+    }
+
+    /**
+     * The machine may have lost its position (`code`), or been homed since: a
+     * measurement waiting for the operator — a zero, a map, a pair's first
+     * feature — was taken in coordinates that may no longer be the machine's,
+     * so it is not written (audit 2026-10-05, K12). It becomes a failure,
+     * said as one, and the operator measures again.
+     */
+    doubtProbe(code) {
+      if (!this.probe || this.probe.run || !(this.probe.result || this.probe.first)) {
+        return;
+      }
+      const { method, options } = this.probe;
+      Object.assign(this.probe, { result: null, first: null, failure: { code, phase: null } });
+      this.note({ level: 'warn', source: 'server', event: 'probe', code, data: { method, ...options } });
+      this.emit('probe:state', this.probeReport());
     }
 
     /** Remember the alarm number, and tell every attached client when it changes. */

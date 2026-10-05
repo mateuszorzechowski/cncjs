@@ -246,6 +246,8 @@ const FAILURES = {
   'ALARM:2': 'probe.failure.softLimit',
   touched: 'probe.failure.touched',
   reset: 'probe.failure.reset',
+  // A result waiting for Zapisz when the machine lost its position, or was homed (the server's `doubtProbe`).
+  'position-lost': 'probe.failure.positionLost',
 };
 
 export const failureKey = (code) => FAILURES[code] || 'probe.failure.other';
