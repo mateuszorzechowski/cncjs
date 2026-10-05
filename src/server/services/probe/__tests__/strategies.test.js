@@ -770,7 +770,10 @@ describe('Pomiar: a distance, one feature to another', () => {
     const edge = { slants, start: { x: -150, y: -85, z: -45 } };
     const hole = { rounds, start: { x: -139, y: -61, z: -60 } };
 
-    close(between({ shape: 'distance', a: 'edge-front', b: 'circle-inside' }, edge, hole).size, { dist: square });
+    const found = between({ shape: 'distance', a: 'edge-front', b: 'circle-inside' }, edge, hole);
+    close(found.size, { dist: square });
+    // The hole is in the part the edge is the front of.
+    expect(found.beyond).toBe(false);
     close(between({ shape: 'distance', a: 'circle-inside', b: 'edge-front' }, hole, edge).size, { dist: square });
   });
 
@@ -783,6 +786,8 @@ describe('Pomiar: a distance, one feature to another', () => {
     );
 
     close(found.size, { dist: 30, par: 0 });
+    // The back is on the part the front is a side of.
+    expect(found.beyond).toBe(false);
   });
 
   test('two edges facing alike, one turned: the second against the first', () => {
@@ -798,6 +803,8 @@ describe('Pomiar: a distance, one feature to another', () => {
     );
 
     expect(found.size.par).toBeCloseTo(1.5, 6);
+    // The second part's front stands behind the first's, on its part.
+    expect(found.beyond).toBe(false);
     expect(found.size.dist).toBeGreaterThan(9);
   });
 

@@ -27,6 +27,8 @@ const DEGREES = 180 / Math.PI;
 
 // How far `point` stands off the line `{ at, dir }`, `dir` of length one: square to it, unsigned.
 const offLine = (point, { at, dir }) => Math.abs((point.x - at.x) * dir.y - (point.y - at.y) * dir.x);
+// Whether `point` lies off the part an edge `{ at, out }` is the side of, on the side it faces.
+const offPart = (point, { at, out }) => (point.x - at.x) * out.x + (point.y - at.y) * out.y > 0;
 
 /**
  * The distance between the two features measured, `{ kind, size, parts }`:
@@ -35,13 +37,16 @@ const offLine = (point, { at, dir }) => Math.abs((point.x - at.x) * dir.y - (poi
  * centres add `dx`, `dy` (the second's less the first's) and `a`, the line
  * through them anticlockwise from X in degrees; two edges `par`, how far the
  * second is turned against the first, in degrees. `parts` each feature's own
- * kind and size. Each feature comes as Pomiar measured it, an edge with its
- * `line` (machine coordinates).
+ * kind and size; `beyond`, with an edge, whether the other end lies off the
+ * part that edge is a side of — the first edge's, with two — for the
+ * drawing. Each feature comes as Pomiar measured it, an edge with its `line`
+ * (machine coordinates).
  */
 export const distanceOf = (first, second) => {
   const ends = [first, second];
   const lines = ends.filter((one) => one.line);
   let size;
+  let beyond = null;
   if (lines.length === 0) {
     const [dx, dy] = ['x', 'y'].map((axis) => second.centre[axis] - first.centre[axis]);
     size = {
@@ -50,11 +55,13 @@ export const distanceOf = (first, second) => {
   } else if (lines.length === 1) {
     const round = ends.find((one) => !one.line);
     size = { dist: offLine(round.centre, lines[0].line) };
+    beyond = offPart(round.centre, lines[0].line);
   } else {
     const [la, lb] = lines.map((one) => one.line);
     // A line has no way along it: one run backwards is turned by nothing, not by half a turn.
     const turn = Math.atan((la.dir.x * lb.dir.y - la.dir.y * lb.dir.x) / (la.dir.x * lb.dir.x + la.dir.y * lb.dir.y));
     size = { dist: (offLine(lb.at, la) + offLine(la.at, lb)) / 2, par: turn * DEGREES };
+    beyond = offPart(lb.at, la);
   }
   return {
     kind: 'distance',
@@ -63,5 +70,6 @@ export const distanceOf = (first, second) => {
     each: [size],
     centre: {},
     parts: ends.map(({ kind, size: own }) => ({ kind, size: own })),
+    ...(beyond === null ? {} : { beyond }),
   };
 };

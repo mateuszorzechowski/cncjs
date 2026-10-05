@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DistanceDrawing from './DistanceDrawing';
 import SegmentedChoice from './SegmentedChoice';
 import StatTile from './StatTile';
 import { Tiles } from './SizeSteps';
@@ -92,7 +93,12 @@ export const DistanceResult = ({ probe }) => {
   const { size, parts } = probe.result.size;
   const pair = probe.options;
   const kind = pairKind(parts);
+  // Wide, the drawing a column of its own beside the figures, as a size's (`SizeResult`).
   return (
+    <div className="grid items-start gap-4 @3xl/shell:grid-cols-2">
+      <div className="mx-auto w-full max-w-xl overflow-hidden rounded-ctl border border-line bg-panel">
+        <DistanceDrawing probe={probe} label={t(DIST_KEYS[kind])} className="max-h-80 @[1800px]/shell:max-h-[28rem]" />
+      </div>
     <div className="flex min-w-0 flex-col gap-3">
       <div className="grid gap-2 @3xl/shell:grid-cols-2">
         <StatTile label={t(DIST_KEYS[kind])} value={units.figure(size.dist)} unit={units.length} />
@@ -118,6 +124,7 @@ export const DistanceResult = ({ probe }) => {
       </div>
       <p className="m-0 text-note text-mut">{t('probe.size.ball', { ball: units.figure(probe.params?.ballDiameter), unit: units.length })}</p>
       <p className="m-0 text-note text-mut">{t('probe.distance.note')}</p>
+    </div>
     </div>
   );
 };

@@ -77,15 +77,17 @@ export const edgeOf = (edge, params, seen) => {
 /**
  * The edge itself as a line, for a distance to it (`distance`): `at` its
  * point between the two touches, `dir` along it, of length one — machine
- * coordinates, the ball's radius taken off square to it.
+ * coordinates, the ball's radius taken off square to it; `out` the way it
+ * faces, off the part.
  */
 export const edgeLine = (edge, params, seen) => {
-  const { axis, along } = EDGES[edge];
+  const { axis, along, sign } = EDGES[edge];
   const [a, b] = [1, 2].map((n) => seen[keyOf(EDGES[edge], n)]);
   const middle = edgeOf(edge, params, seen).centre[axis];
   const length = Math.hypot(b.x - a.x, b.y - a.y);
   return {
     at: { [axis]: middle, [along]: (a[along] + b[along]) / 2 },
     dir: { x: (b.x - a.x) / length, y: (b.y - a.y) / length },
+    out: { [axis]: sign, [along]: 0 },
   };
 };
