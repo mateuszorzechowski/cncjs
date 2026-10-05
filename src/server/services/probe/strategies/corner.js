@@ -1,4 +1,6 @@
-import { clearDown, liftOver, move, touch } from '../moves';
+import {
+  guarded, liftOver, move, touch,
+} from '../moves';
 
 /**
  * An L-shaped plate on a corner of the work: a top on the work and two walls
@@ -23,13 +25,22 @@ export const CORNERS = {
   'back-right': { x: -1, y: -1 },
 };
 
+/*
+ * How high over the plate's top the tool goes sideways: the lift, not the
+ * back-off between the two touches, which is a couple of millimetres and was
+ * both (audit 2026-10-05, K5) — a clamp or the plate's own lead beside the
+ * corner was in the way of a rapid that low.
+ */
+const travelOver = (params) => Math.max(params.lift, params.retract);
+
 /** One wall: out past it over the top, down beside it, touch — and, `back`, up and back over the start. */
 const wall = (axis, sign, params, back = true) => [
   move(`${axis}-out`, (here) => ({ [axis]: here[axis] - sign * params.travel })),
-  clearDown(`${axis}-down`, params.retract + params.depth, params.fast),
+  // Down to `depth` under the top, from the height it came out at: stopped, and failed, by the plate's top.
+  guarded(`${axis}-down`, (here, seen) => ({ z: seen.z.z - params.depth }), params.fast),
   ...touch(axis, sign, params.maxXY, axis, params),
   ...(back ? [
-    move(`${axis}-up`, (here, seen) => ({ z: seen.z.z + params.retract })),
+    move(`${axis}-up`, (here, seen) => ({ z: seen.z.z + travelOver(params) })),
     move(`${axis}-return`, (here, seen) => ({ x: seen.z.x, y: seen.z.y })),
   ] : []),
 ];
@@ -54,6 +65,7 @@ export default {
 
   steps: (params, { corner }) => [
     ...touch('z', -1, params.maxZ, 'z', params),
+    move('z-travel', (here, seen) => ({ z: Math.max(here.z, seen.z.z + travelOver(params)) })),
     ...wall('x', CORNERS[corner].x, params),
     ...wall('y', CORNERS[corner].y, params, false),
     liftOver('z', params.lift),

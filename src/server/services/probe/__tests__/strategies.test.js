@@ -382,6 +382,13 @@ describe('the Z plate', () => {
     expect(STRATEGIES.z.check({})).toBeNull();
   });
 
+  test('a lift set under the back-off leaves the tool where the back-off left it, never back down onto the plate (audit I5)', () => {
+    const { sent, pos } = measure({ method: 'z', params: { ...params, lift: 0 }, boxes, start: { x: 0, y: 0, z: -40 } });
+
+    expect(pos.z).toBeCloseTo(-47.5 + params.retract, 6);
+    expect(sent.filter((line) => line.includes('G53')).map((line) => wordsOf(line).z).every((z) => z >= -47.5 + params.retract - 1e-6)).toBe(true);
+  });
+
   test('a plate further down than the limit is a failure, and the zero is not touched', () => {
     const { outcome, zero, pos } = measure({ method: 'z', params: { ...params, maxZ: 5 }, boxes, start: { x: 0, y: 0, z: -40 } });
 
@@ -431,6 +438,28 @@ describe('the corner plate', () => {
     });
 
     expect(outcome).toEqual({ failure: 'touched', phase: 'x-down' });
+  });
+
+  test('goes sideways at the lift over the plate, not the couple of millimetres it backs off (audit K5)', () => {
+    const [cx, cy, top] = [-150, -90, -55];
+    const start = { x: cx + 8, y: cy + 8, z: top + params.cornerThickness + 5 };
+    // A clamp beside the corner standing 5 mm over the plate: under the lift, over the back-off.
+    const clamp = { x: [cx + 10, cx + 30], y: [cy - 30, cy - 10], z: [top, top + params.cornerThickness + 5] };
+    const { outcome, sent } = measure({
+      method: 'corner', options: { corner: 'front-left' }, params, boxes: [...plateOn('front-left', cx, cy, top), clamp], start,
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    const plateTop = top + params.cornerThickness;
+    let z = start.z;
+    for (const line of sent) {
+      const way = wordsOf(line);
+      if (way.z !== undefined && line.includes('G53')) {
+        ({ z } = way);
+      } else if (line.includes('G53') && z < plateTop + params.lift - 1e-6) {
+        throw new Error(`sideways at Z ${z}: ${line}`);
+      }
+    }
   });
 
   test('a corner that is not one is refused before anything moves', () => {
