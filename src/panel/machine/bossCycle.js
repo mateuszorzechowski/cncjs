@@ -23,7 +23,7 @@ import {
   AXES, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, above, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
 import {
-  EDGE_TILT, OVAL, SLOT, anglePoints, buildSides, layoutOf, sideGroups,
+  EDGE_TILT, OVAL, SLOT, anglePoints, buildSides, foundOf, layoutOf, sideGroups,
 } from './edgeMoves';
 import { holeSide } from './holeSide';
 import { phasesOf } from './bossPhases';
@@ -33,6 +33,9 @@ import { frameAt, layOut, totalOf } from './timeline';
 
 // What the part's group and its rough size are called; a stud's or a bar's are their own (`names`).
 const PART_NAMES = { group: 'probe.group.part', size: 'probe.field.bossSize' };
+
+// What the last step's line says it is worked out from, where a layout finds an angle or a surface's Z.
+const ZERO_CODES = { angle: 'probe.size.codeEdge', surface: 'probe.size.codeSurface' };
 
 /**
  * The part cycle for `axes` — one for a bar's width — ending in the size
@@ -259,7 +262,7 @@ export const bossCycleOf = ({
       back: () => `G0 ${outward}${texts.retract}`,
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
-      zero: () => [edge || layout?.startsWith('wall') ? 'probe.size.codeEdge' : ({ oval: 'probe.size.codeOval', slot: 'probe.size.codeSlot' }[L?.outline] ?? (layout ? 'probe.size.codeTurned' : 'probe.size.codeBoss'))],
+      zero: () => [ZERO_CODES[layout ? foundOf(layout) : 'size'] ?? ({ oval: 'probe.size.codeOval', slot: 'probe.size.codeSlot' }[L?.outline] ?? (layout ? 'probe.size.codeTurned' : 'probe.size.codeBoss'))],
       centre: () => [move.code ?? 'probe.hole.centreCode'],
     };
     return CODES[move.kind]();

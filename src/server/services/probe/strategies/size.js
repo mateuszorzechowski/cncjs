@@ -1,7 +1,7 @@
 import { touch } from '../moves';
 import { across as bossAcross, overTheTop } from './boss';
 import {
-  PARTS, cornerOf, distanceOf, pairRefusal,
+  PARTS, cornerOf, distanceOf, heightOf, pairRefusal,
 } from './distance';
 import {
   EDGES, edgeLine, edgeOf, edgeSteps, wallSteps,
@@ -63,6 +63,9 @@ export const SHAPES = {
   distance: { kind: 'distance', pair: distanceOf },
   // Two edges that meet: the angle between them, and the corner (`distance`).
   angle: { kind: 'angle', pair: cornerOf },
+  // A surface touched from above: where it is in Z; two of them, how far one stands over the other.
+  surface: { kind: 'surface', surface: true },
+  height: { kind: 'height', pair: heightOf },
 };
 
 // Every pass, the ones that count last.
@@ -70,8 +73,11 @@ const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
 
 const passes = ({
-  axes, side, edge, wall, turned,
+  axes, side, edge, wall, turned, surface,
 }, params, { start } = {}) => {
+  if (surface) {
+    return touch('z', -1, params.maxZ, 'z', params);
+  }
   if (edge) {
     return edgeSteps(edge, params);
   }
@@ -144,8 +150,18 @@ const spreadOf = (values) => Math.max(...values) - Math.min(...values);
  */
 const sizeOf = (shape, params, seen) => {
   const {
-    kind, axes, side, edge, wall, turned,
+    kind, axes, side, edge, wall, turned, surface,
   } = SHAPES[shape];
+  /*
+   * A surface's Z, where the ball's lowest point met it: no zero from it —
+   * a Z0 the probe sets is wrong by the difference in length for the tool
+   * that cuts (`zero: false`).
+   */
+  if (surface) {
+    return {
+      kind, size: {}, spread: null, each: [{}], centre: { z: seen.z.z }, zero: false,
+    };
+  }
   if (edge || wall) {
     return edgeOf(edge || wall, params, seen, Boolean(wall));
   }

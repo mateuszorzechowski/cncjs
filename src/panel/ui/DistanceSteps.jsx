@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import DistanceDrawing from './DistanceDrawing';
+import HeightDrawing from './HeightDrawing';
 import SegmentedChoice from './SegmentedChoice';
 import StatTile from './StatTile';
 import WcsBadge from './WcsBadge';
@@ -175,6 +176,40 @@ export const CornerResult = ({ probe }) => {
         </div>
         <p className="m-0 text-note text-mut">{t('probe.size.angleWhy')}</p>
         <p className="m-0 text-note text-mut">{t('probe.size.note')}</p>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * What a height came out at: two surfaces, how far the second stands over
+ * the first, and each one's Z; one, its Z — in the system measured in, and
+ * never a zero (the probe's length is not the tool's).
+ */
+export const HeightResult = ({ probe }) => {
+  const units = useUnits();
+  const { kind, size, parts = [] } = probe.result.size;
+  const two = kind === 'height';
+  const zs = two ? parts.map((one) => one.centre.z) : [probe.result.size.centre.z];
+  return (
+    <div className="grid items-start gap-4 @3xl/shell:grid-cols-2">
+      <div className="mx-auto w-full max-w-xl overflow-hidden rounded-ctl border border-line bg-panel">
+        <HeightDrawing probe={probe} label={t(two ? 'probe.height.dz' : 'probe.height.z')} className="max-h-80 @[1800px]/shell:max-h-[28rem]" />
+      </div>
+      <div className="flex min-w-0 flex-col gap-3">
+        {two ? <StatTile label={t('probe.height.dz')} value={units.figure(size.dz)} unit={units.length} /> : null}
+        {two ? <p className="m-0 text-note text-mut">{t('probe.height.dzWhy')}</p> : null}
+        <div className="flex items-center gap-3">
+          <span className="text-base text-ink">{t('probe.height.at')}</span>
+          <WcsBadge wcs={probe.wcs} />
+        </div>
+        <div className="grid gap-2 @3xl/shell:grid-cols-2">
+          {zs.map((z, n) => (
+            <StatTile key={ENDS[n]} label={two ? t('probe.height.zOf', { end: t(END_KEYS[ENDS[n]]) }) : t('probe.height.z')} value={units.figure(z)} unit={units.length} />
+          ))}
+        </div>
+        <p className="m-0 text-note text-mut">{t('probe.height.zWhy')}</p>
+        <p className="m-0 text-note text-mut">{t('probe.height.note')}</p>
       </div>
     </div>
   );

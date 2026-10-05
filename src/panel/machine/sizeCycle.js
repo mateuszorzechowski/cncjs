@@ -28,6 +28,7 @@ const CYCLES = {
   'edge-back': bossCycleOf({ layout: 'edge-back' }),
   'edge-left': bossCycleOf({ layout: 'edge-left' }),
   'edge-right': bossCycleOf({ layout: 'edge-right' }),
+  surface: bossCycleOf({ layout: 'surface' }),
   // A pocket's wall from inside, one end of a pair.
   'wall-front': bossCycleOf({ layout: 'wall-front' }),
   'wall-back': bossCycleOf({ layout: 'wall-back' }),

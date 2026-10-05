@@ -12,6 +12,7 @@ export const KINDS = [
   { id: 'edge', key: 'probe.kind.edge', note: 'probe.kind.edgeNote' },
   { id: 'distance', key: 'probe.kind.distance', note: 'probe.kind.distanceNote' },
   { id: 'angle', key: 'probe.kind.angle', note: 'probe.kind.angleNote' },
+  { id: 'height', key: 'probe.kind.height', note: 'probe.kind.heightNote' },
 ];
 
 export const SHAPES = [
@@ -47,6 +48,9 @@ export const SHAPES = [
   { id: 'wall-right', kind: 'wall', key: 'probe.shape.wallRight', side: 'inside', place: 'probe.place.wall' },
   // Two edges that meet (2026-10-05): the angle between them and the corner, a zero there if asked.
   { id: 'angle', kind: 'angle', key: 'probe.shape.angle', side: 'outside', place: 'probe.place.edge' },
+  // A surface from above (2026-10-05): its Z; or two, how far one stands over the other — a pair with one kind of end.
+  { id: 'surface', kind: 'height', key: 'probe.shape.surface', side: 'outside', place: 'probe.place.surface' },
+  { id: 'height', kind: 'height', key: 'probe.shape.height', side: 'outside', place: 'probe.place.surface' },
 ];
 
 /*
@@ -66,6 +70,10 @@ export const PAIRS = {
   distance: { parts: ['circle-inside', 'circle-outside', ...EDGE_PARTS], first: ['circle-inside', 'circle-inside'], fits: (a, b) => !crossing(a, b) },
   // Two edges that run the same way never meet (`edges-parallel`).
   angle: { parts: EDGE_PARTS, first: ['edge-front', 'edge-left'], fits: crossing },
+  // Two surfaces, nothing to pick for either (`fixed`): chosen on the step that says how the others lie.
+  height: {
+    parts: ['surface'], first: ['surface', 'surface'], fits: () => true, fixed: true,
+  },
 };
 
 /** A pair's shape and two features, `{ shape, a, b }`, from the choice; null for any other shape. */
@@ -99,7 +107,7 @@ export const shapeOfKind = (kind, now) => {
   if (was.kind === kind) {
     return PAIRS[kind] ? now : was.id;
   }
-  if (PAIRS[kind]) {
+  if (PAIRS[kind] && !PAIRS[kind].fixed) {
     const [a, b] = PAIRS[kind].first;
     return pairChoice({ shape: kind, a, b });
   }

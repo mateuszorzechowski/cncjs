@@ -102,6 +102,17 @@ const STEPS = {
 const homeOf = (name) => (EDGE_SIDES[LAYOUTS[name].sides.at(-1)].axis === 'y' ? ['retY', 'retX'] : ['retX', 'retY']);
 // One line along an angle's two touches: an edge's from outside, a wall's from inside.
 const angled = (name) => /^(edge|wall)-/.test(name);
+/** What a layout's last stage finds: an angle, a surface's Z, or a size. */
+export const foundOf = (name) => {
+  if (angled(name)) {
+    return 'angle';
+  }
+  return name === 'surface' ? 'surface' : 'size';
+};
+const ZERO_TITLES = { angle: 'probe.size.move.edge', surface: 'probe.size.move.surface' };
+// The last stage on the bar, named for what it finds.
+const BAR_KEYS = { angle: 'probe.bar.angle', surface: 'probe.bar.surface', size: 'probe.bar.size' };
+const STAGE_KEYS = { angle: 'probe.stage.angle', surface: 'probe.stage.surface', size: 'probe.stage.size' };
 
 /** A side's two points, by the names its touches go by: `y1m`, `y2m` for the front. */
 const pointsOf = (side) => {
@@ -110,7 +121,8 @@ const pointsOf = (side) => {
 };
 
 /** The points of the first side touched: from outside an edge's, the front's — the angle's two touches. */
-export const anglePoints = (name) => pointsOf(LAYOUTS[name].sides[0]);
+// None for a surface alone: no side touched.
+export const anglePoints = (name) => (LAYOUTS[name].sides.length ? pointsOf(LAYOUTS[name].sides[0]) : []);
 
 /**
  * The moves of layout `name`, the part drawn turned `tilt` degrees. Each
@@ -203,7 +215,7 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
     at = S;
   }
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: angled(name) ? 'probe.size.move.edge' : ({ oval: 'probe.size.move.oval', slot: 'probe.size.move.slot' }[outline] ?? 'probe.size.move.size'), uses: ['ballDiameter'], end: 0.35,
+    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: ZERO_TITLES[foundOf(name)] ?? ({ oval: 'probe.size.move.oval', slot: 'probe.size.move.slot' }[outline] ?? 'probe.size.move.size'), uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };
@@ -214,7 +226,7 @@ export const sideGroups = (name) => {
   const { sides, from } = LAYOUTS[name];
   const steps = STEPS[from];
   const searching = from === 'inside' ? 3 : 4;
-  const edge = angled(name);
+  const found = foundOf(name);
   return sides.flatMap((side) => pointsOf(side).map((point, k) => ({
     id: point,
     name: `${EDGE_SIDES[side].axis.toUpperCase()}${EDGE_SIDES[side].sign > 0 ? '+' : '−'} · ${k + 1}`,
@@ -224,8 +236,8 @@ export const sideGroups = (name) => {
     ],
   }))).concat([{
     id: 'zero',
-    key: edge ? 'probe.bar.angle' : 'probe.bar.size',
+    key: BAR_KEYS[found],
     folded: true,
-    subs: [{ key: edge ? 'probe.stage.angle' : 'probe.stage.size', moves: [...(from === 'inside' ? homeOf(name) : []), 'zero'] }],
+    subs: [{ key: STAGE_KEYS[found], moves: [...(from === 'inside' ? homeOf(name) : []), 'zero'] }],
   }]);
 };

@@ -1473,7 +1473,8 @@
       "pocket": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, mniej więcej na środek — nie dotykając ścianek.",
       "edge": "Ustaw kulkę sondy nad detalem, kilka milimetrów od wybranej krawędzi i nad wierzchem — mniej niż odsunięcie za bok i limit dojazdu Z.",
       "slot": "Opuść kulkę sondy do fasolki, kilka milimetrów pod jej krawędź, mniej więcej na środek. Odstęp punktów musi być wyraźnie mniejszy niż szerokość fasolki.",
-      "wall": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, z dala od ścianek — dotknie wybranej ścianki od środka w dwóch punktach."
+      "wall": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, z dala od ścianek — dotknie wybranej ścianki od środka w dwóch punktach.",
+      "surface": "Ustaw kulkę sondy nad powierzchnią, kilka milimetrów nad nią — mniej niż limit dojazdu Z."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1658,7 +1659,8 @@
       "search": "szukanie",
       "zero": "zapis zera",
       "size": "rozmiar",
-      "angle": "kąt"
+      "angle": "kąt",
+      "surface": "Z"
     },
     "cycle": {
       "alarm": "ALARM:5 · brak dotyku",
@@ -1712,7 +1714,8 @@
       "measure": "pomiar",
       "zero": "zero",
       "size": "rozmiar",
-      "angle": "kąt"
+      "angle": "kąt",
+      "surface": "Z"
     },
     "group": {
       "plate": "Płytka",
@@ -1925,7 +1928,9 @@
       "wallFront": "Ścianka przód",
       "wallBack": "Ścianka tył",
       "wallLeft": "Ścianka lewa",
-      "wallRight": "Ścianka prawa"
+      "wallRight": "Ścianka prawa",
+      "surface": "Jedna powierzchnia",
+      "height": "Dwie powierzchnie"
     },
     "shapeLabel": "Jak leży",
     "size": {
@@ -1933,7 +1938,8 @@
         "size": "Rozmiar: odstęp dotyków i kulka",
         "edge": "Kąt: z dwóch dotyków i ich odstępu",
         "oval": "Owal: elipsa przez osiem dotyków",
-        "slot": "Fasolka: kształt przez osiem dotyków"
+        "slot": "Fasolka: kształt przez osiem dotyków",
+        "surface": "Z: dotyk najniższym punktem kulki"
       },
       "codeHole": "rozmiar = odstęp dotyków + Ø kulki",
       "codeBoss": "rozmiar = odstęp dotyków − Ø kulki",
@@ -1970,7 +1976,8 @@
       "length": "Długość",
       "across": "Szerokość",
       "offSlot": "Odchyłka od fasolki",
-      "offSlotWhy": "Odchyłka: najdalszy dotyk od dopasowanej fasolki minus najbliższy. Blisko zera — to fasolka; więcej — inny kształt, wada albo punkt za blisko końca."
+      "offSlotWhy": "Odchyłka: najdalszy dotyk od dopasowanej fasolki minus najbliższy. Blisko zera — to fasolka; więcej — inny kształt, wada albo punkt za blisko końca.",
+      "codeSurface": "Z = dotyk wierzchu"
     },
     "kindLabel": "Co mierzysz",
     "kind": {
@@ -1987,7 +1994,9 @@
       "distance": "Odległość",
       "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami: odległość, a dla dwóch środków też w X i Y oraz kąt.",
       "angle": "Kąt i narożnik",
-      "angleNote": "Dwie krawędzie, które się spotykają: kąt między nimi, odchyłka od kąta prostego i gdzie jest narożnik."
+      "angleNote": "Dwie krawędzie, które się spotykają: kąt między nimi, odchyłka od kąta prostego i gdzie jest narożnik.",
+      "height": "Wysokość i głębokość",
+      "heightNote": "Powierzchnia dotykana z góry: jej Z — albo dwie: o ile druga jest wyżej lub niżej, np. wysokość stopnia, głębokość kieszeni."
     },
     "distance": {
       "first": "Pierwszy",
@@ -2012,6 +2021,15 @@
       "angleWhy": "Kąt wewnątrz detalu między krawędziami — przy dwóch ściankach kieszeni wewnątrz kieszeni. 90° — narożnik prosty; odchyłka od kąta prostego to różnica od 90°.",
       "at": "Narożnik w układzie",
       "axis": "Narożnik {{axis}}"
+    },
+    "height": {
+      "dz": "Drugi względem pierwszego",
+      "dzWhy": "Różnica Z maszyny między dotykami: nie zależy od długości narzędzia ani od kulki. Ujemna — druga powierzchnia niżej (głębokość kieszeni), dodatnia — wyżej (wysokość stopnia).",
+      "at": "Z w układzie",
+      "z": "Powierzchnia Z",
+      "zOf": "{{end}} · Z",
+      "zWhy": "Z najniższego punktu kulki w układzie — prawdziwe, jeśli Z0 ustawiono tą samą sondą. Zera z tego nie zapisuję: dla narzędzia o innej długości byłoby złe.",
+      "note": "Zero się nie zmienia. Wynik jest zapisany w Dzienniku."
     }
   }
 }

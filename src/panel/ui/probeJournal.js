@@ -11,12 +11,15 @@ import { t } from '../i18n';
 const AXES = ['x', 'y', 'z'];
 // A size's figures: a circle's diameter, an edge's angle, or each axis.
 // A distance's (`dist`, `dx`, `dy`, `par`) too.
-const SIZES = ['dist', 'd', 'a', 'square', 'major', 'minor', 'length', 'width', 'dx', 'dy', 'par', ...AXES];
+const SIZES = ['dist', 'd', 'a', 'square', 'major', 'minor', 'length', 'width', 'dx', 'dy', 'dz', 'par', ...AXES];
 const sizeName = (key) => ({
   d: 'Ø', a: t('journal.detail.angle'), major: t('journal.detail.major'), minor: t('journal.detail.minor'), length: t('journal.detail.length'), width: t('journal.detail.across'),
-  dist: t('journal.detail.dist'), dx: 'ΔX', dy: 'ΔY', par: t('journal.detail.par'), square: t('journal.detail.square'),
+  dist: t('journal.detail.dist'), dx: 'ΔX', dy: 'ΔY', dz: 'ΔZ', par: t('journal.detail.par'), square: t('journal.detail.square'),
 }[key] ?? key.toUpperCase());
 const ANGLES = ['a', 'par', 'square'];
+// A pair's figures, each with its own unit.
+const MIXED = ['distance', 'angle', 'height'];
+const _isEmpty = (values) => !values || Object.keys(values).length === 0;
 // An angle in degrees, never converted; a length as `units` says it.
 const figureOf = (key, value, units) => (ANGLES.includes(key) ? `${degrees(value)}°` : units.figure(value));
 // A distance mixes lengths and angles: each said with its own unit.
@@ -60,9 +63,10 @@ const SAID = {
   first: (data, units) => t('journal.probe.first', { method: methodName(data), sizes: axesSaid(data.size, (axis) => unitOf(axis, data.size[axis], units)) }),
   size: (data, units) => t('journal.probe.size', {
     method: methodName(data),
-    sizes: axesSaid(data.size, (axis) => (data.shape === 'distance' ? unitOf : figureOf)(axis, data.size[axis], units)),
-    // An angle carries its own degrees, and so does each of a distance's figures.
-    unit: Number.isFinite(data.size?.a) || data.shape === 'distance' ? '' : units.length,
+    // A surface has no size, only where it is: its Z.
+    sizes: _isEmpty(data.size) ? axesSaid(data.centre, (axis) => units.figure(data.centre[axis])) : axesSaid(data.size, (axis) => (MIXED.includes(data.shape) ? unitOf : figureOf)(axis, data.size[axis], units)),
+    // An angle carries its own degrees, and so does each of a pair's figures.
+    unit: Number.isFinite(data.size?.a) || MIXED.includes(data.shape) ? '' : units.length,
     spread: data.spread ? t('journal.probe.spread', { list: axesSaid(data.spread, (axis) => units.figure(data.spread[axis])), n: data.passes ?? '' }) : '',
     ball: units.figure(data.ball),
   }),

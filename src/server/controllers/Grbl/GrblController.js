@@ -2612,9 +2612,13 @@ class GrblController {
           this.emit('probe:state', this.probeReport());
           return;
         }
-        const size = { ...found, centre: _.mapValues(found.centre, (v, axis) => v - (wco[axis] || 0)) };
-        // A distance is between two features: no middle to put a zero at.
-        const zero = _.isEmpty(found.centre) ? {} : this.zeroAt(found.centre, wcs);
+        // Where things are in the system measured in, as the operator reads positions — a pair's ends too.
+        const inWcs = (centre) => _.mapValues(centre, (v, axis) => v - (wco[axis] || 0));
+        const size = {
+          ..._.omit(found, 'zero'), centre: inWcs(found.centre), ...(found.parts ? { parts: found.parts.map((one) => ({ ...one, centre: inWcs(one.centre) })) } : {}),
+        };
+        // A distance is between two features, a height between two surfaces: no middle to put a zero at; a surface's Z, none either.
+        const zero = _.isEmpty(found.centre) || found.zero === false ? {} : this.zeroAt(found.centre, wcs);
         this.probe.result = { size, ...zero };
         this.note({
           level: 'info',

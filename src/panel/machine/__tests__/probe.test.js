@@ -131,6 +131,12 @@ describe('a distance', () => {
     expect(choiceOf(measure, { shape: 'angle', a: 'edge-back', b: 'edge-right' })).toBe('angle:edge-back:edge-right');
   });
 
+  test('a height: one surface first; two, a pair with nothing to pick', () => {
+    expect(shapeOfKind('height', 'circle-inside')).toBe('surface');
+    expect(optionsFor(measure, 'height')).toEqual({ shape: 'height', a: 'surface', b: 'surface' });
+    expect(optionsFor(measure, 'surface')).toEqual({ shape: 'surface' });
+  });
+
   test('its first end measured, the wizard goes into place over the second', () => {
     expect(wizardStep('result', { state: 'between' })).toBe('position');
   });

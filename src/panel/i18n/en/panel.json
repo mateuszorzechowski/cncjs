@@ -1473,7 +1473,8 @@
       "pocket": "Lower the probe's ball into the pocket, a few millimetres below its edge, roughly in the middle — without touching the walls.",
       "edge": "Put the probe's ball over the part, a few millimetres in from the edge chosen and above the top — less than the clearance past the side and the Z travel limit.",
       "slot": "Lower the probe's ball into the slot, a few millimetres below its edge, roughly in the middle. The points' spacing must be well under the slot's width.",
-      "wall": "Lower the probe ball into the pocket, a few millimetres under its edge, clear of the walls — it touches the chosen wall from inside at two points."
+      "wall": "Lower the probe ball into the pocket, a few millimetres under its edge, clear of the walls — it touches the chosen wall from inside at two points.",
+      "surface": "Set the probe ball over the surface, a few millimetres above it — less than the Z travel limit."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1658,7 +1659,8 @@
       "search": "finding",
       "zero": "setting zero",
       "size": "size",
-      "angle": "angle"
+      "angle": "angle",
+      "surface": "Z"
     },
     "cycle": {
       "alarm": "ALARM:5 · no touch",
@@ -1712,7 +1714,8 @@
       "measure": "measure",
       "zero": "zero",
       "size": "size",
-      "angle": "angle"
+      "angle": "angle",
+      "surface": "Z"
     },
     "group": {
       "plate": "Plate",
@@ -1925,7 +1928,9 @@
       "wallFront": "Front wall",
       "wallBack": "Back wall",
       "wallLeft": "Left wall",
-      "wallRight": "Right wall"
+      "wallRight": "Right wall",
+      "surface": "One surface",
+      "height": "Two surfaces"
     },
     "shapeLabel": "How it lies",
     "size": {
@@ -1933,7 +1938,8 @@
         "size": "Size: the touches apart, and the ball",
         "edge": "Angle: from the two touches and their spacing",
         "oval": "Oval: the ellipse through eight touches",
-        "slot": "Slot: the shape through eight touches"
+        "slot": "Slot: the shape through eight touches",
+        "surface": "Z: touched by the ball's lowest point"
       },
       "codeHole": "size = touches apart + ball Ø",
       "codeBoss": "size = touches apart − ball Ø",
@@ -1970,7 +1976,8 @@
       "length": "Length",
       "across": "Width",
       "offSlot": "Off the slot",
-      "offSlotWhy": "Off the slot: the touch farthest from the fitted slot less the nearest. Near zero, it is a slot; more, another shape, a flaw or a point too near an end."
+      "offSlotWhy": "Off the slot: the touch farthest from the fitted slot less the nearest. Near zero, it is a slot; more, another shape, a flaw or a point too near an end.",
+      "codeSurface": "Z = the top touched"
     },
     "kindLabel": "What you measure",
     "kind": {
@@ -1987,7 +1994,9 @@
       "distance": "Distance",
       "distanceNote": "Between two features — holes, studs or edges: the distance, and for two centres X, Y and the angle too.",
       "angle": "Angle and corner",
-      "angleNote": "Two edges that meet: the angle between them, how far off square, and where the corner is."
+      "angleNote": "Two edges that meet: the angle between them, how far off square, and where the corner is.",
+      "height": "Height and depth",
+      "heightNote": "A surface touched from above: its Z — or two: how far the second is higher or lower, e.g. a step's height, a pocket's depth."
     },
     "distance": {
       "first": "First",
@@ -2012,6 +2021,15 @@
       "angleWhy": "The angle inside the part between the edges — with two pocket walls, inside the pocket. 90° — a square corner; off square is the difference from 90°.",
       "at": "Corner in",
       "axis": "Corner {{axis}}"
+    },
+    "height": {
+      "dz": "Second against first",
+      "dzWhy": "The difference in machine Z between the touches: it does not depend on the tool's length or the ball. Negative — the second surface lower (a pocket's depth), positive — higher (a step's height).",
+      "at": "Z in",
+      "z": "Surface Z",
+      "zOf": "{{end}} · Z",
+      "zWhy": "The Z of the ball's lowest point in the system — true if Z0 was set with the same probe. No zero is written from it: for a tool of another length it would be wrong.",
+      "note": "The zero is not changed. The result is in the Journal."
     }
   }
 }

@@ -43,7 +43,16 @@ const wallLayout = (wall) => ({
     { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
   ],
 });
+// A surface from above: the top's touch alone (Wysokość, 2026-10-05).
+const surfaceLayout = {
+  sides: [],
+  from: 'outside',
+  start: [0, 0],
+  reach: 'clear',
+  params: [{ id: 'reach', key: REACH.group, fields: ['maxZ'] }, MEASURE, PROBE],
+};
 export const LAYOUTS = {
+  surface: surfaceLayout,
   ...Object.fromEntries(Object.keys(EDGE_SIDES).map((edge) => [`edge-${edge}`, edgeLayout(edge)])),
   ...Object.fromEntries(Object.keys(EDGE_SIDES).map((wall) => [`wall-${wall}`, wallLayout(wall)])),
   'turned-outside': {

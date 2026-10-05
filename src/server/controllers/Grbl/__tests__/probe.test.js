@@ -372,6 +372,22 @@ describe('a distance', () => {
     expect(sent().some((line) => line.includes('G10'))).toBe(false);
   });
 
+  test('the Z of a surface is shown in the system measured in, with no zero to write', () => {
+    const { controller, sent, probeStates } = setup();
+    controller.command('probe:start', { method: 'measure', options: { shape: 'surface' } });
+    for (let answered = 0; answered < sent().length; answered++) {
+      if (sent()[answered].includes('G38.2')) {
+        controller.runner.parse('[PRB:0.000,0.000,-30.000:1]');
+      }
+      controller.runner.parse('ok');
+    }
+
+    const last = probeStates().pop();
+    expect(last).toMatchObject({ state: 'measured', result: { size: { kind: 'surface', centre: { z: -30 - controller.probe.wco.z } } } });
+    expect(last.result.offset).toBeUndefined();
+    expect(last.result.size.zero).toBeUndefined();
+  });
+
   test('two edges square to each other are refused before anything moves', () => {
     const { controller, sent, refusals } = setup();
 

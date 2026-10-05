@@ -11,6 +11,9 @@ import { EDGES } from './edge';
  *   way: edges square to each other meet in a corner, not at a distance.
  * - A corner's angle (*"zrób 2"*, the same day): two edges that meet, the
  *   angle between them and where they meet.
+ * - A height (*"działaj"*, the same day): two surfaces touched from above,
+ *   how far the second stands over the first — a step's height, a pocket's
+ *   depth, negative.
  *
  * `PARTS` are the features one end may be, by what is measured.
  */
@@ -21,6 +24,7 @@ const edgeParts = ['edge', 'wall'].flatMap((from) => Object.keys(EDGES).map((edg
 export const PARTS = {
   distance: ['circle-inside', 'circle-outside', ...edgeParts],
   angle: edgeParts,
+  height: ['surface'],
 };
 
 const edgeOf = (part) => EDGES[part.replace(/^(edge|wall)-/, '')] ?? null;
@@ -31,6 +35,9 @@ export const pairRefusal = (shape, a, b) => {
     return 'bad-part';
   }
   const [ea, eb] = [edgeOf(a), edgeOf(b)];
+  if (shape === 'height') {
+    return null;
+  }
   if (shape === 'angle') {
     return ea.axis === eb.axis ? 'edges-parallel' : null;
   }
@@ -38,6 +45,9 @@ export const pairRefusal = (shape, a, b) => {
 };
 
 const DEGREES = 180 / Math.PI;
+
+// Each end's own kind, size and where it is (machine coordinates), as it was measured on its own.
+const partsOf = (ends) => ends.map(({ kind, size, centre }) => ({ kind, size, centre }));
 
 // How far `point` stands off the line `{ at, dir }`, `dir` of length one: square to it, unsigned.
 const offLine = (point, { at, dir }) => Math.abs((point.x - at.x) * dir.y - (point.y - at.y) * dir.x);
@@ -83,7 +93,7 @@ export const distanceOf = (first, second) => {
     spread: null,
     each: [size],
     centre: {},
-    parts: ends.map(({ kind, size: own }) => ({ kind, size: own })),
+    parts: partsOf(ends),
     ...(beyond === null ? {} : { beyond }),
   };
 };
@@ -115,6 +125,18 @@ export const cornerOf = (first, second) => {
     spread: null,
     each: [size],
     centre: { x: la.at.x + t * la.dir.x, y: la.at.y + t * la.dir.y },
-    parts: [first, second].map(({ kind, size: own }) => ({ kind, size: own })),
+    parts: partsOf([first, second]),
+  };
+};
+
+/**
+ * A height from two surfaces, `{ kind, size, parts }`: `size.dz` how far the
+ * second stands over the first, negative below it — machine Z, so neither
+ * the tool's length nor the ball's size is in it.
+ */
+export const heightOf = (first, second) => {
+  const size = { dz: second.centre.z - first.centre.z };
+  return {
+    kind: 'height', size, spread: null, each: [size], centre: {}, parts: partsOf([first, second]),
   };
 };

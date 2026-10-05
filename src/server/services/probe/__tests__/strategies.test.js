@@ -844,6 +844,27 @@ describe('Pomiar: a distance, one feature to another', () => {
     close(between({ shape: 'distance', a: 'wall-front', b: 'edge-front' }, inPocket, face).size, { dist: 10 });
   });
 
+  test('a surface: its Z where the ball met it, and no zero from it', () => {
+    const { outcome } = measure({
+      method: 'measure', options: { shape: 'surface' }, params, radius, boxes: [{ x: [-200, 0], y: [-200, 0], z }], start: { x: -100, y: -100, z: -45 },
+    });
+    const found = STRATEGIES.measure.size(params, { shape: 'surface' }, outcome.seen);
+
+    expect(found.centre).toEqual({ z: -50 });
+    expect(found.zero).toBe(false);
+  });
+
+  test('a height: the second surface over the first, below it negative — the depth of a pocket', () => {
+    const top = { boxes: [{ x: [-200, 0], y: [-200, 0], z }], start: { x: -100, y: -100, z: -45 } };
+    const floor = { boxes: [{ x: [-200, 0], y: [-200, 0], z: [-80, -62.5] }], start: { x: -100, y: -100, z: -55 } };
+    const found = between({ shape: 'height', a: 'surface', b: 'surface' }, top, floor);
+
+    expect(found.kind).toBe('height');
+    close(found.size, { dz: -12.5 });
+    close(found.parts[1].centre, { z: -62.5 });
+    expect(found.centre).toEqual({});
+  });
+
   test.each([
     [{ shape: 'angle', a: 'edge-front', b: 'edge-back' }, 'edges-parallel'],
     [{ shape: 'angle', a: 'edge-front', b: 'circle-inside' }, 'bad-part'],

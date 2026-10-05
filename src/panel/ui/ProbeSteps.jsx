@@ -15,7 +15,7 @@ import MapToolChooser from './MapToolChooser';
 import PaperChooser from './PaperChooser';
 import { KindChooser, LieChooser, SizeResult } from './SizeSteps';
 import {
-  CornerResult, DistanceResult, DistanceSetup, PairChooser,
+  CornerResult, DistanceResult, DistanceSetup, HeightResult, PairChooser,
 } from './DistanceSteps';
 import HeightMapSetup from './HeightMapSetup';
 import { HeightMapCycle, HeightMapResult } from './HeightMapSteps';
@@ -25,7 +25,7 @@ import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
 import {
-  METHODS, SURFACE, failureKey, pairOf, phaseWords,
+  METHODS, PAIRS, SURFACE, failureKey, pairOf, phaseWords,
 } from '../machine/probe';
 import { paperScene } from '../machine/paperCycle';
 import { drawnPasses, sizeCycle } from '../machine/sizeCycle';
@@ -101,8 +101,8 @@ export const AfterFoot = ({
   probe, connected, onClose, onAgain, onZero,
 }) => {
   const size = probe?.state !== 'failed' && probe?.result?.size;
-  // A distance has no middle to put a zero at.
-  const zero = size && Object.keys(size.centre).length > 0;
+  // Only where the server found a zero to put: a distance has no middle, a surface's Z is the probe's (`zero: false`).
+  const zero = Boolean(size && probe.result.offset);
   return (
     <Foot>
       <Button tone="outline" onClick={onClose} className="h-ctl">{t('probe.result.close')}</Button>
@@ -146,8 +146,9 @@ export const ChoiceStep = ({
   if (step === 'areaWay') {
     return <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />;
   }
-  // A distance lies as its two ends: each picked on this step.
-  const lie = pairOf(value) ? PairChooser : LieChooser;
+  // A distance lies as its two ends: each picked on this step — unless there is nothing to pick (a height's).
+  const pair = pairOf(value);
+  const lie = pair && !PAIRS[pair.shape].fixed ? PairChooser : LieChooser;
   const Chooser = step === 'lie' ? lie : CHOOSERS[method.id];
   return <Chooser value={value} onChange={onChange} />;
 };
@@ -248,7 +249,9 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
   }
   // A size: what it came out at, nothing to write.
   if (probe?.state !== 'failed' && probe?.result?.size) {
-    const Result = { distance: DistanceResult, angle: CornerResult }[probe.result.size.kind] ?? SizeResult;
+    const Result = {
+      distance: DistanceResult, angle: CornerResult, height: HeightResult, surface: HeightResult,
+    }[probe.result.size.kind] ?? SizeResult;
     return <Result probe={probe} />;
   }
   if (probe?.state === 'failed') {
