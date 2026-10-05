@@ -10,9 +10,9 @@ import { t } from '../i18n';
 
 const AXES = ['x', 'y', 'z'];
 // A size's figures: a circle's diameter, an edge's angle, or each axis.
-const SIZES = ['d', 'a', 'major', 'minor', ...AXES];
+const SIZES = ['d', 'a', 'major', 'minor', 'length', 'width', ...AXES];
 const sizeName = (key) => ({
-  d: 'Ø', a: t('journal.detail.angle'), major: t('journal.detail.major'), minor: t('journal.detail.minor'),
+  d: 'Ø', a: t('journal.detail.angle'), major: t('journal.detail.major'), minor: t('journal.detail.minor'), length: t('journal.detail.length'), width: t('journal.detail.across'),
 }[key] ?? key.toUpperCase());
 // An angle in degrees, never converted; a length as `units` says it.
 const figureOf = (key, value, units) => (key === 'a' ? `${degrees(value)}°` : units.figure(value));

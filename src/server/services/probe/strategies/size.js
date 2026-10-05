@@ -2,6 +2,7 @@ import { touch } from '../moves';
 import { across as bossAcross, overTheTop } from './boss';
 import { EDGES, edgeOf, edgeSteps } from './edge';
 import { ovalOf } from './oval';
+import { slotOf } from './slot';
 import { turnedOf, turnedSteps } from './turned';
 import { across as holeAcross } from './hole';
 
@@ -43,6 +44,9 @@ export const SHAPES = {
   // An oval, along the axes or turned: touched as the rectangle at an angle is, the ellipse fitted (`oval`).
   'oval-inside': { kind: 'oval', side: 'inside', turned: true },
   'oval-outside': { kind: 'oval', side: 'outside', turned: true },
+  // A slot — a fasolka — cut or standing, along the axes or turned (`slot`).
+  'slot-inside': { kind: 'slot', side: 'inside', turned: true },
+  'slot-outside': { kind: 'slot', side: 'outside', turned: true },
   'groove-x': { kind: 'width', axes: ['x'], side: 'inside' },
   'groove-y': { kind: 'width', axes: ['y'], side: 'inside' },
   'bar-x': { kind: 'width', axes: ['x'], side: 'outside' },
@@ -132,7 +136,8 @@ const sizeOf = (shape, params, seen) => {
     return edgeOf(edge, params, seen);
   }
   if (turned) {
-    return kind === 'oval' ? ovalOf(side, params, seen) : turnedOf(side, params, seen);
+    const fit = { oval: ovalOf, slot: slotOf }[kind] ?? turnedOf;
+    return fit(side, params, seen);
   }
   const ball = side === 'inside' ? params.ballDiameter : -params.ballDiameter;
   const last = params.holePasses - 1 + params.repeats;

@@ -102,6 +102,16 @@ describe('a size\'s drawing', () => {
     expect(sizeCycle('measure', 'oval-inside').part).toMatchObject({ kind: 'hole' });
   });
 
+  test('a slot: two half circles and straight sides, drawn so; the oval now one of the circle shapes', () => {
+    const cut = sizeCycle('measure', 'slot-inside', 15);
+    expect(cut.part).toMatchObject({ kind: 'hole', square: false, turn: 15 });
+    expect(cut.part.slot).toHaveLength(2);
+    expect(cut.order(1).filter((name) => name.endsWith('Fast'))).toHaveLength(8);
+    expect(cut.scene('zero', 1).angle.at).toEqual([0, 0]);
+    expect(cut.code('zero', {})).toEqual(['probe.size.codeSlot']);
+    expect(sizeCycle('measure', 'oval-outside').part.oval).toHaveLength(2);
+  });
+
   test('a pass past the second is drawn as the second', () => {
     expect(sizeCycle('measure', 'circle-inside').moveOfPhase('x4a-fast')).toBe('x2pFast');
     expect(sizeCycle('measure', 'circle-outside').moveOfPhase('y3-centre')).toBe('y2c');

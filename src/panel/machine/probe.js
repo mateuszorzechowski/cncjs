@@ -84,7 +84,7 @@ export const KINDS = [
   { id: 'circle', key: 'probe.kind.circle', note: 'probe.kind.circleNote' },
   { id: 'rect', key: 'probe.kind.rect', note: 'probe.kind.rectNote' },
   { id: 'width', key: 'probe.kind.width', note: 'probe.kind.widthNote' },
-  { id: 'oval', key: 'probe.kind.oval', note: 'probe.kind.ovalNote' },
+  { id: 'slot', key: 'probe.kind.slot', note: 'probe.kind.slotNote' },
   { id: 'edge', key: 'probe.kind.edge', note: 'probe.kind.edgeNote' },
 ];
 
@@ -100,9 +100,13 @@ export const SHAPES = [
   { id: 'groove-y', kind: 'width', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
   { id: 'bar-x', kind: 'width', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
   { id: 'bar-y', kind: 'width', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
-  // An oval, along the axes or turned (the server's `strategies/oval`).
-  { id: 'oval-inside', kind: 'oval', key: 'probe.shape.ovalInside', side: 'inside', place: 'probe.place.hole' },
-  { id: 'oval-outside', kind: 'oval', key: 'probe.shape.ovalOutside', side: 'outside', place: 'probe.place.boss' },
+  // A circle's ovality (Mateusz, 2026-10-05: the oval is the circle's check, not a shape of its own): the ellipse
+  // through eight touches, its two axes and their angle (the server's `strategies/oval`).
+  { id: 'oval-inside', kind: 'circle', key: 'probe.shape.ovalInside', side: 'inside', place: 'probe.place.hole' },
+  { id: 'oval-outside', kind: 'circle', key: 'probe.shape.ovalOutside', side: 'outside', place: 'probe.place.boss' },
+  // A slot — a fasolka — cut or standing, along the axes or turned (`strategies/slot`).
+  { id: 'slot-inside', kind: 'slot', key: 'probe.shape.slotInside', side: 'inside', place: 'probe.place.slot' },
+  { id: 'slot-outside', kind: 'slot', key: 'probe.shape.slotOutside', side: 'outside', place: 'probe.place.boss' },
   // An edge, by the way it faces: the front faces −Y (the server's `strategies/edge`).
   { id: 'edge-front', kind: 'edge', key: 'probe.shape.edgeFront', side: 'outside', place: 'probe.place.edge' },
   { id: 'edge-back', kind: 'edge', key: 'probe.shape.edgeBack', side: 'outside', place: 'probe.place.edge' },

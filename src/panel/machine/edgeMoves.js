@@ -42,8 +42,40 @@ export const rimOf = (edge, tilt) => {
   return (u) => (sign * BOSS_R) / Math.cos(a) + slope * u;
 };
 
-// An oval as drawn: its halves, the long along its own X.
+// An oval as drawn: its halves, the long along its own X; a slot: its straight sides' half length and its ends' radius.
 export const OVAL = [BOSS_R, Math.round(BOSS_R * 0.68)];
+export const SLOT = [BOSS_R - 14, 14];
+
+/** How far `p` is from the wall of the slot drawn, turned `tilt` degrees — negative inside. */
+const slotGap = ([px, py], tilt) => {
+  const g = (tilt * Math.PI) / 180;
+  const u = px * Math.cos(g) + py * Math.sin(g);
+  const v = -px * Math.sin(g) + py * Math.cos(g);
+  const over = Math.abs(u) - SLOT[0];
+  return over <= 0 ? Math.abs(v) - SLOT[1] : Math.hypot(over, v) - SLOT[1];
+};
+
+/**
+ * Where the line along `axis` through `spot` meets the line `level` off the
+ * slot's wall (0 the wall, the ball's radius out or in for its centre), on
+ * its `sign` side: out from the line's middle, halving.
+ */
+const slotCross = (axis, spot, sign, level, tilt) => {
+  const at = (t) => (axis === 'x' ? [t, spot[1]] : [spot[0], t]);
+  let [lo, hi] = [0, sign * 3 * BOSS_R];
+  if (slotGap(at(lo), tilt) >= level) {
+    return sign * BOSS_R;
+  }
+  for (let k = 0; k < 60; k++) {
+    const mid = (lo + hi) / 2;
+    if (slotGap(at(mid), tilt) < level) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return (lo + hi) / 2;
+};
 
 /**
  * Where the line along `axis` through `spot` crosses the oval — halves
@@ -108,7 +140,7 @@ const LAYOUTS = {
     from: 'outside',
     start: [4, -3],
     reach: 'part',
-    oval: true,
+    outline: 'oval',
     // Closer than a square's: on an oval the four ways' points would meet in pairs at its shoulders.
     span: 9,
     params: [
@@ -121,10 +153,35 @@ const LAYOUTS = {
     from: 'inside',
     start: [3, 2],
     reach: 'holeSize',
-    oval: true,
+    outline: 'oval',
     span: 9,
     params: [
       { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'], names: { holeSize: 'probe.field.ovalHoleSize' } },
+      { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
+    ],
+  },
+  // A slot — a fasolka: as the oval, its outline two half circles and two straight sides (`strategies/slot`).
+  'slot-outside': {
+    sides: FOUR,
+    from: 'outside',
+    start: [4, -3],
+    reach: 'part',
+    outline: 'slot',
+    span: 7,
+    params: [
+      { id: 'part', key: 'probe.group.slot', fields: ['bossSize'], names: { bossSize: 'probe.field.slotStudSize' } },
+      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE,
+    ],
+  },
+  'slot-inside': {
+    sides: FOUR,
+    from: 'inside',
+    start: [3, 2],
+    reach: 'holeSize',
+    outline: 'slot',
+    span: 7,
+    params: [
+      { id: 'hole', key: 'probe.group.slot', fields: ['holeSize'], names: { holeSize: 'probe.field.slotHoleSize' } },
       { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
     ],
   },
@@ -156,7 +213,7 @@ export const anglePoints = (name) => pointsOf(LAYOUTS[name].sides[0]);
  */
 export const buildSides = (name, tilt = EDGE_TILT) => {
   const {
-    sides, from, start: S, oval, span = SPAN,
+    sides, from, start: S, outline, span = SPAN,
   } = LAYOUTS[name];
   const inside = from === 'inside';
   const level = inside ? 0 : ABOVE;
@@ -194,11 +251,15 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
         ...common, ...leg(at, spot, 'centre', 'probe.edge.move.along', ['spacing']), axis: along, spanAt, span: [S[j] - span, S[j] + span], code: 'probe.edge.alongCode',
       };
       const out = inside ? spot : setOn(axis, spot, sign * OUT);
-      // A square's side is straight; an oval's is crossed where the line through the point meets it, the ball's
-      // centre where it meets the oval grown — or, inside, shrunk — by the ball's radius.
-      const rim = oval ? ovalCross(axis, spot, sign, OVAL, tilt) : rimAt(spot[j]);
-      const grown = OVAL.map((half) => half + (inside ? -TOOL_R : TOOL_R));
-      const wall = setOn(axis, out, oval ? ovalCross(axis, spot, sign, grown, tilt) : rim - dir * reach);
+      // A square's side is straight; an oval's or a slot's is crossed where the line through the point meets it,
+      // the ball's centre where it meets the outline grown — or, inside, shrunk — by the ball's radius.
+      const grown = inside ? -TOOL_R : TOOL_R;
+      const CROSS = {
+        oval: (level) => ovalCross(axis, spot, sign, OVAL.map((half) => half + level), tilt),
+        slot: (level) => slotCross(axis, spot, sign, level, tilt),
+      }[outline];
+      const rim = CROSS ? CROSS(0) : rimAt(spot[j]);
+      const wall = setOn(axis, out, CROSS ? CROSS(grown) : rim - dir * reach);
       const off = setOn(axis, wall, wall[i] - dir * BACK);
       const touchAt = setOn(axis, wall, rim);
       // How far the search may go, as drawn: in to the start from outside, past the wall from inside.
@@ -230,7 +291,7 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
     at = S;
   }
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: { true: 'probe.size.move.edge', false: oval ? 'probe.size.move.oval' : 'probe.size.move.size' }[name.startsWith('edge')], uses: ['ballDiameter'], end: 0.35,
+    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: name.startsWith('edge') ? 'probe.size.move.edge' : ({ oval: 'probe.size.move.oval', slot: 'probe.size.move.slot' }[outline] ?? 'probe.size.move.size'), uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };

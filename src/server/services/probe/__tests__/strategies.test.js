@@ -220,10 +220,63 @@ const ovalContact = (ovals, radius, from, to) => {
   return null;
 };
 
+/*
+ * Where a move first meets a slot — `{ x, y, half (the straight sides' half
+ * length), r, angle (degrees), z: [bottom, top], inside }`: standing (its top
+ * too), or cut (`inside`, the ball in it) — or null: the first place along
+ * the move where the ball's centre is its radius from the wall, narrowed by
+ * halving.
+ */
+const slotContact = (slots, radius, from, to) => {
+  const axis = AXES.find((a) => to[a] !== from[a]);
+  for (const slot of slots) {
+    const g = (slot.angle * Math.PI) / 180;
+    // How far from the wall, negative inside.
+    const gap = (p) => {
+      const u = (p.x - slot.x) * Math.cos(g) + (p.y - slot.y) * Math.sin(g);
+      const v = -(p.x - slot.x) * Math.sin(g) + (p.y - slot.y) * Math.cos(g);
+      const over = Math.abs(u) - slot.half;
+      return over <= 0 ? Math.abs(v) - slot.r : Math.hypot(over, v) - slot.r;
+    };
+    if (axis === 'z') {
+      if (!slot.inside && gap(from) < 0 && from.z >= slot.z[1] && to.z <= slot.z[1]) {
+        return { ...from, z: slot.z[1] };
+      }
+      continue;
+    }
+    if (from.z <= slot.z[0] || from.z >= slot.z[1]) {
+      continue;
+    }
+    const clear = (t) => {
+      const p = { ...from, [axis]: from[axis] + t * (to[axis] - from[axis]) };
+      return slot.inside ? gap(p) < -radius : gap(p) > radius;
+    };
+    const steps = 400;
+    let k = 1;
+    while (k <= steps && clear(k / steps)) {
+      k += 1;
+    }
+    if (k > steps) {
+      continue;
+    }
+    let [lo, hi] = [(k - 1) / steps, k / steps];
+    for (let n = 0; n < 60; n++) {
+      const mid = (lo + hi) / 2;
+      if (clear(mid)) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    return { ...from, [axis]: from[axis] + lo * (to[axis] - from[axis]) };
+  }
+  return null;
+};
+
 /** Run one method on the bench to the end; the outcome and every line sent. */
 // `radius`: what touches — the tool, or a 3D probe's ball.
 const measure = ({
-  method, options = {}, params, boxes = [], rounds = [], slants = [], turned = [], ovals = [], start, radius = params.toolDiameter / 2,
+  method, options = {}, params, boxes = [], rounds = [], slants = [], turned = [], ovals = [], slots = [], start, radius = params.toolDiameter / 2,
 }) => {
   const strategy = STRATEGIES[method];
   const queue = [];
@@ -252,7 +305,7 @@ const measure = ({
       for (const axis of AXES.filter((a) => words[a] !== undefined)) {
         target[axis] = words[axis] + WCO[axis];
       }
-      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target), slantContact(slants, radius, pos, target), turnedContact(turned, radius, pos, target), ovalContact(ovals, radius, pos, target)].filter(Boolean);
+      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target), slantContact(slants, radius, pos, target), turnedContact(turned, radius, pos, target), ovalContact(ovals, radius, pos, target), slotContact(slots, radius, pos, target)].filter(Boolean);
       const way = (one) => AXES.reduce((sum, a) => sum + Math.abs(one[a] - pos[a]), 0);
       const hit = hits.sort((a, b) => way(a) - way(b))[0] ?? null;
       if (hit) {
@@ -741,6 +794,40 @@ describe('Pomiar: an oval', () => {
     expect(found.size.major).toBeCloseTo(40, 3);
     expect(found.size.minor).toBeCloseTo(26, 3);
     expect(found.turn.a).toBeCloseTo(angle, 2);
+    expect(found.centre.x).toBeCloseTo(hx, 3);
+    expect(found.centre.y).toBeCloseTo(hy, 3);
+    expect(found.off).toBeLessThan(0.002);
+  });
+});
+
+describe('Pomiar: a slot', () => {
+  const params = {
+    ...probeParams(), ballDiameter: 4, clear: 10, depth: 5, spacing: 12, bossSize: 60, holeSize: 60,
+  };
+  const radius = params.ballDiameter / 2;
+  const z = [-80, -50];
+  const [hx, hy] = [-120, -70];
+
+  test.each([[0, 'inside'], [20, 'inside'], [-35, 'outside'], [90, 'outside']])('turned %s°, %s: length, width, the angle, the middle, on its wall', (angle, side) => {
+    const options = { shape: `slot-${side}` };
+    // 40 end to end, 16 across.
+    const slots = [{
+      x: hx, y: hy, half: 12, r: 8, angle, z, inside: side === 'inside',
+    }];
+    const start = side === 'inside' ? { x: hx + 1, y: hy - 1, z: -60 } : { x: hx + 1, y: hy - 1, z: -45 };
+    // From inside the points must sit well within its width, the ball and the start's offset with them.
+    const own = side === 'inside' ? { ...params, spacing: 6 } : params;
+    const { outcome } = measure({
+      method: 'measure', options, params: own, radius, slots, start,
+    });
+    const found = STRATEGIES.measure.size(own, options, outcome.seen);
+
+    expect(outcome.failure).toBeUndefined();
+    expect(found.kind).toBe('slot');
+    expect(found.size.length).toBeCloseTo(40, 3);
+    expect(found.size.width).toBeCloseTo(16, 3);
+    // A slot lies the same either way along it: its angle folded to ±90°.
+    expect(Math.abs(found.turn.a)).toBeCloseTo(Math.abs(angle), 2);
     expect(found.centre.x).toBeCloseTo(hx, 3);
     expect(found.centre.y).toBeCloseTo(hy, 3);
     expect(found.off).toBeLessThan(0.002);
