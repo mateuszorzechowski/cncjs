@@ -248,6 +248,8 @@ const FAILURES = {
   reset: 'probe.failure.reset',
   // A result waiting for Zapisz when the machine lost its position, or was homed (the server's `doubtProbe`).
   'position-lost': 'probe.failure.positionLost',
+  // A line unanswered with the machine standing Idle, given up (the server's `watchProbe`).
+  'no-answer': 'probe.failure.noAnswer',
 };
 
 export const failureKey = (code) => FAILURES[code] || 'probe.failure.other';

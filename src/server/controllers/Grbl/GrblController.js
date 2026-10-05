@@ -110,6 +110,9 @@ const STAGE_ORPHAN_MS = 5000;
 // How long a probe's start waits for the machine to settle — see `probeSettled` — before it is said why not.
 const SETTLE_WAIT_MS = 3000;
 
+// How long a measurement's line may go unanswered with the machine standing Idle before it is given up (`watchProbe`).
+const PROBE_SILENCE_MS = 8000;
+
 // https://github.com/gnea/grbl/blob/master/doc/markdown/commands.md#grbl-v11-realtime-commands
 const isRealtimeCommand = (data) => (
   _.includes(GRBL_REALTIME_COMMANDS, data) || Boolean(String(data).match(/[\x80-\xff]/))
@@ -291,6 +294,9 @@ class GrblController {
 
     // The modes a probe that ended in an alarm could not put back, sent once it is cleared (`payModesOwed`).
     modesOwed = null;
+
+    // Since when a measurement's line has stood unanswered with the machine Idle (`watchProbe`).
+    probeIdleSince = null;
 
     // Message Slot
     messageSlot = null;
@@ -906,8 +912,9 @@ class GrblController {
           this.holdMotion(holder);
         }
 
-        // A probe's start waiting for this report (`probeSettled`).
+        // A probe's start waiting for this report (`probeSettled`), and one whose answer may have been lost.
         this.settleProbe();
+        this.watchProbe(res.activeState);
 
         if (this.actionMask.replyStatusReport) {
           this.actionMask.replyStatusReport = false;
@@ -2734,6 +2741,29 @@ class GrblController {
       const line = this.modesOwed;
       this.modesOwed = null;
       this.command('gcode', line);
+    }
+
+    /**
+     * A measurement whose line has gone unanswered while the machine stands
+     * Idle — nothing moving, nothing dwelling — for `PROBE_SILENCE_MS`: the
+     * answer was lost on the cable, and the run would otherwise hold the
+     * panel as by a program until somebody pressed STOP (audit 2026-10-05,
+     * I1). Given up as `no-answer`, the modes put back as after any error.
+     * Any report not Idle starts the count again; a run waiting for the
+     * operator's hands is not counted at all.
+     */
+    watchProbe(activeState) {
+      const run = this.probe?.run;
+      if (!run || run.waiting || activeState !== GRBL_ACTIVE_STATE_IDLE) {
+        this.probeIdleSince = null;
+        return;
+      }
+      const now = Date.now();
+      this.probeIdleSince = this.probeIdleSince ?? now;
+      if (now - this.probeIdleSince >= PROBE_SILENCE_MS && now - run.sentAt >= PROBE_SILENCE_MS) {
+        this.probeIdleSince = null;
+        run.error('no-answer');
+      }
     }
 
     /** Grbl answered the line the feeder sent — an `ok` or an `error` that fell through to it, or a jog segment's. */

@@ -1622,6 +1622,7 @@
       "touched": "{{axis}}: the tool came down on the plate instead of beside it. Nothing was written. Increase “Out past the wall” or start closer to the corner.",
       "reset": "The measurement was stopped. Nothing was written.",
       "positionLost": "Since the measurement the machine may have lost its position, or was homed, so the result no longer holds. Nothing was saved. Measure again.",
+      "noAnswer": "The machine stands still and has not answered the measurement's line — the answer may have been lost on the cable. Nothing was saved. Check the connection and measure again.",
       "other": "The measurement failed ({{code}}). Nothing was written."
     },
     "result": {
