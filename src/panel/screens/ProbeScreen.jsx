@@ -12,7 +12,7 @@ import ProbeJoin from '../ui/ProbeJoin';
 import Notice from '../ui/Notice';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
-  AreaWayStep, ChooseStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
+  ChoiceStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
 import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
@@ -194,9 +194,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
         <MethodStep onPick={pick} />
       </>
     );
-  } else if (step === 'choose' || step === 'areaWay') {
-    // What the method chooses — or, the height map's own step, how its area is given.
-    body = step === 'areaWay' ? <AreaWayStep map={heightMap} /> : <ChooseStep method={method} value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;
+  } else if (step === 'choose' || step === 'areaWay' || step === 'lie') {
+    body = <ChoiceStep step={step} method={method} value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} map={heightMap} />;
     foot = (
       <Foot back={() => go(-1)}>
         <Button tone="primary" onClick={() => go(1)} className="h-ctl">{t('probe.next')}</Button>

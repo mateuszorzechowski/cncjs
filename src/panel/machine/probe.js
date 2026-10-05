@@ -75,16 +75,42 @@ export const MAP_TOOLS = [
  * device that joins it measures the same.
  */
 /*
- * One width, by what it is and which way (Mateusz, 2026-10-03): a groove
- * touched from inside, or a bar from outside, along X or Y — the server's
- * `size` strategy's shapes.
+ * Pomiar (Mateusz, 2026-10-03: *"odpada jeden przycisk na każdy z tych
+ * elementów"*): one method, what is measured chosen first (`KINDS`), then
+ * how it lies — from inside or outside, a width's axis too. Both steps set
+ * one choice, the shape, the server's `size` strategy's `SHAPES`.
  */
-export const SHAPES = [
-  { id: 'groove-x', key: 'probe.shape.grooveX', side: 'inside', axis: 'x', place: 'probe.place.groove' },
-  { id: 'groove-y', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
-  { id: 'bar-x', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
-  { id: 'bar-y', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
+export const KINDS = [
+  { id: 'circle', key: 'probe.kind.circle', note: 'probe.kind.circleNote' },
+  { id: 'rect', key: 'probe.kind.rect', note: 'probe.kind.rectNote' },
+  { id: 'width', key: 'probe.kind.width', note: 'probe.kind.widthNote' },
 ];
+
+export const SHAPES = [
+  { id: 'circle-inside', kind: 'circle', key: 'probe.shape.circleInside', side: 'inside', place: 'probe.place.hole' },
+  { id: 'circle-outside', kind: 'circle', key: 'probe.shape.circleOutside', side: 'outside', place: 'probe.place.boss' },
+  { id: 'rect-inside', kind: 'rect', key: 'probe.shape.rectInside', side: 'inside', place: 'probe.place.pocket' },
+  { id: 'rect-outside', kind: 'rect', key: 'probe.shape.rectOutside', side: 'outside', place: 'probe.place.boss' },
+  { id: 'groove-x', kind: 'width', key: 'probe.shape.grooveX', side: 'inside', axis: 'x', place: 'probe.place.groove' },
+  { id: 'groove-y', kind: 'width', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
+  { id: 'bar-x', kind: 'width', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
+  { id: 'bar-y', kind: 'width', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
+];
+
+export const shapeOf = (id) => SHAPES.find((one) => one.id === id) ?? SHAPES[0];
+
+/** The shape a kind picked comes to: the one chosen if it is of that kind, else the kind's first — lying the same way where it can. */
+export const shapeOfKind = (kind, now) => {
+  const was = shapeOf(now);
+  if (was.kind === kind) {
+    return was.id;
+  }
+  const same = SHAPES.find((one) => one.kind === kind && one.side === was.side);
+  return (same ?? SHAPES.find((one) => one.kind === kind)).id;
+};
+
+// What is measured, then how it lies.
+const MEASURE_STEPS = ['method', 'choose', 'lie', 'prepare', 'wire', 'position', 'measure', 'result'];
 
 export const METHODS = [
   {
@@ -114,19 +140,11 @@ export const METHODS = [
     start: 'probe.position.start', steps: MAP_STEPS, touches: true, apart: true, asks: true,
     choice: { option: 'tool', key: 'probe.map.toolLabel', list: MAP_TOOLS, first: 'board', step: 'probe.step.tool' },
   },
-  // Sizes, not zeros (Mateusz, 2026-10-03): in the height map's row, the zero left as it is. `size` says so.
+  // A size, not a zero (Mateusz, 2026-10-03): in the height map's row, the zero left as it is. `size` says so.
   {
-    id: 'hole-size', key: 'probe.method.holeSize', note: 'probe.method.holeSizeNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
-    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe', apart: true, size: true,
-  },
-  {
-    id: 'boss-size', key: 'probe.method.bossSize', note: 'probe.method.bossSizeNote', lay: 'probe.lay.hole', place: 'probe.place.boss',
-    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe', apart: true, size: true,
-  },
-  {
-    id: 'width', key: 'probe.method.width', note: 'probe.method.widthNote', lay: 'probe.lay.hole', place: 'probe.place.groove',
-    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: CHOOSE_FIRST, touches: true, plate: 'probe', apart: true, size: true,
-    choice: { option: 'shape', key: 'probe.shapeLabel', list: SHAPES, first: 'groove-x', step: 'probe.step.shape' },
+    id: 'measure', key: 'probe.method.measure', note: 'probe.method.measureNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: MEASURE_STEPS, touches: true, plate: 'probe', apart: true, size: true,
+    choice: { option: 'shape', key: 'probe.shapeLabel', list: SHAPES, first: 'circle-inside', step: 'probe.step.kind' },
   },
 ];
 
@@ -180,6 +198,7 @@ const STEPS = [
   { id: 'method', key: 'probe.step.method' },
   { id: 'prepare', key: 'probe.step.prepare' },
   { id: 'areaWay', key: 'probe.step.areaWay' },
+  { id: 'lie', key: 'probe.step.lie' },
   { id: 'area', key: 'probe.step.area' },
   { id: 'wire', key: 'probe.step.wire' },
   { id: 'position', key: 'probe.step.position' },

@@ -12,6 +12,9 @@ import { t } from '../i18n';
 // A figure and nothing else, a comma taken as a point — the jog steps' mask.
 const figureOnly = (text) => text.replace(/[^0-9.,]/g, '');
 
+// A figure's name: the section's own for it where it has one — a groove's rough size is its width.
+const nameOf = (section, name) => t(section.names?.[name] ?? FIELDS[name].key);
+
 // A field the server would not take, framed in red.
 const BAD = 'bad';
 
@@ -30,9 +33,9 @@ export const ProbeFields = ({
     <div className="flex min-w-0 flex-col">
       {section.head}
       {section.fields.map((name) => (
-        <SettingRow key={name} title={t(FIELDS[name].key)}>
+        <SettingRow key={name} title={nameOf(section, name)}>
           <TextField
-            label={t(FIELDS[name].key)}
+            label={nameOf(section, name)}
             inputMode="decimal"
             unit={fieldUnit(name, units.rule)}
             value={texts[name] ?? ''}
@@ -54,9 +57,9 @@ export const ProbeFields = ({
  * wide screen, as a sheet on a phone, a row per figure as the settings'
  * rows. The drawing plays the stage open.
  *
- * `sections` is `[{ id, title, fields, head, summary }]` — `head` a group's
- * own controls above its figures, `summary` `[label, value]` lines for them
- * in its box; `open` the one open, or null;
+ * `sections` is `[{ id, title, fields, head, summary, names }]` — `head` a
+ * group's own controls above its figures, `summary` `[label, value]` lines
+ * for them in its box, `names` a figure's own name here by its field; `open` the one open, or null;
  * `onField(name)` the figure being set, or null once it is left; `lit` the
  * figures the drawing's move uses. `selected`, on a PC: the list alone, the
  * group whose figures stand beside it lit — the fields are `ProbeFields`.
@@ -109,7 +112,7 @@ const ProbeSections = ({
             const on = lit.includes(name);
             return (
               <span key={name} className={`flex justify-between gap-2.5 rounded-ctl px-2 py-0.5 text-note ${on ? 'bg-accS' : ''}`}>
-                <span className={on ? 'font-semibold text-ink' : 'text-mut'}>{t(FIELDS[name].key)}</span>
+                <span className={on ? 'font-semibold text-ink' : 'text-mut'}>{nameOf(section, name)}</span>
                 <span className={`whitespace-nowrap font-num ${on ? 'font-semibold text-acc' : 'text-ink'}`}>{`${texts[name] ?? ''} ${fieldUnit(name, units.rule)}`}</span>
               </span>
             );

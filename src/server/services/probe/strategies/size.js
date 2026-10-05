@@ -3,39 +3,48 @@ import { across as bossAcross } from './boss';
 import { across as holeAcross } from './hole';
 
 /**
- * A size, not a zero (Mateusz, 2026-10-03, "pomiar rozmiaru obok mapy"): a
- * hole or a part across X and Y, or one width — a groove from inside, a bar
- * from outside — along one axis. The moves are the hole's and the part's
- * centre's; the zero is never touched. What comes out is the size, for the
- * screen and the journal.
+ * Pomiar: a size, not a zero (Mateusz, 2026-10-03, "odpada jeden przycisk na
+ * każdy z tych elementów"). One method; what is measured and how it lies is
+ * one choice, `shape`. The moves are the hole's and the part's centre's; the
+ * zero is never touched. What comes out is the size and where its middle is,
+ * for the screen and the journal.
  *
  * Measured `repeats` times (1–5, his "do wyboru"), after `holePasses` − 1
  * passes that only find the centre, so each counted pass starts square to
  * the walls. One counted pass is the centre methods' size; more give their
  * mean and the spread, the largest less the smallest.
  *
+ * A circle is not read off the two chords: every wall touch is a point on
+ * it, and the circle through them is fitted (least squares). Its diameter
+ * then does not hang on the chords crossing at the middle, and how far the
+ * touches stand off the circle says whether it is one. A rectangle's or a
+ * width's walls are square to the axes, so each axis is its chord.
+ *
  * The ball's diameter is added back inside and taken off outside: the size
  * is only as good as that figure, which the panel says under it.
  */
 
 /*
- * One width, by what it is and along which axis (Mateusz, 2026-10-03): a
- * groove, touched from inside, or a bar, from outside — one choice, as the
- * corner's and the paper's edge are.
+ * What is measured, and how it lies: a circle or a rectangle from inside (a
+ * hole, a pocket) or outside (a stud, a part), or one width along one axis —
+ * a groove from inside, a bar from outside.
  */
 export const SHAPES = {
-  'groove-x': { axes: ['x'], side: 'inside' },
-  'groove-y': { axes: ['y'], side: 'inside' },
-  'bar-x': { axes: ['x'], side: 'outside' },
-  'bar-y': { axes: ['y'], side: 'outside' },
+  'circle-inside': { kind: 'circle', axes: ['x', 'y'], side: 'inside' },
+  'circle-outside': { kind: 'circle', axes: ['x', 'y'], side: 'outside' },
+  'rect-inside': { kind: 'rect', axes: ['x', 'y'], side: 'inside' },
+  'rect-outside': { kind: 'rect', axes: ['x', 'y'], side: 'outside' },
+  'groove-x': { kind: 'width', axes: ['x'], side: 'inside' },
+  'groove-y': { kind: 'width', axes: ['y'], side: 'inside' },
+  'bar-x': { kind: 'width', axes: ['x'], side: 'outside' },
+  'bar-y': { kind: 'width', axes: ['y'], side: 'outside' },
 };
-const BOTH = ['x', 'y'];
 
 // Every pass, the ones that count last.
 const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
 
-const passes = (axes, side, params) => {
+const passes = ({ axes, side }, params) => {
   const across = side === 'inside' ? holeAcross : bossAcross;
   const all = [];
   for (let n = 1; n <= passCount(params); n++) {
@@ -45,42 +54,96 @@ const passes = (axes, side, params) => {
   return side === 'inside' ? all : [...touch('z', -1, params.maxZ, 'z', params), ...all];
 };
 
-/** `{ size, spread, each }`: the mean per axis, the largest less the smallest (null for one pass), and every pass's. */
-const sizeOf = (axes, side, params, seen) => {
-  const ball = side === 'inside' ? params.ballDiameter : -params.ballDiameter;
-  const each = counted(params).map((n) => Object.fromEntries(axes.map((axis) => (
-    [axis, Math.abs(seen[`${axis}${n}a`][axis] - seen[`${axis}${n}b`][axis]) + ball]
-  ))));
-  const of = (pick) => Object.fromEntries(axes.map((axis) => [axis, pick(each.map((one) => one[axis]))]));
+// The ball's centre at each wall touch of pass `n`, `[x, y]`.
+const pointsOf = (seen, n) => ['x', 'y'].flatMap((axis) => ['a', 'b'].map((wall) => [seen[`${axis}${n}${wall}`].x, seen[`${axis}${n}${wall}`].y]));
+
+/**
+ * The circle through `points` by least squares (Kåsa): `{ x, y, r }`, and
+ * `off`, the largest less the smallest distance of a point from the centre —
+ * zero for a true circle.
+ */
+export const fitCircle = (points) => {
+  // About their mean, so the sums stay small far from the machine's origin.
+  const [mx, my] = [0, 1].map((i) => points.reduce((sum, p) => sum + p[i], 0) / points.length);
+  const ps = points.map(([x, y]) => [x - mx, y - my]);
+  let [suu, suv, svv, suz, svz, su, sv, sz] = [0, 0, 0, 0, 0, 0, 0, 0];
+  for (const [u, v] of ps) {
+    const z = u * u + v * v;
+    suu += u * u;
+    suv += u * v;
+    svv += v * v;
+    suz += u * z;
+    svz += v * z;
+    su += u;
+    sv += v;
+    sz += z;
+  }
+  const n = ps.length;
+  // u² + v² = a·u + b·v + c, solved by Cramer's rule.
+  const det3 = (m) => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+    m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+    m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  const A = [[suu, suv, su], [suv, svv, sv], [su, sv, n]];
+  const rhs = [suz, svz, sz];
+  const swapped = (col) => A.map((row, i) => row.map((value, j) => (j === col ? rhs[i] : value)));
+  const d = det3(A);
+  const [a, b, c] = [0, 1, 2].map((col) => det3(swapped(col)) / d);
+  const [cu, cv] = [a / 2, b / 2];
+  const r = Math.sqrt(c + cu * cu + cv * cv);
+  const radii = ps.map(([u, v]) => Math.hypot(u - cu, v - cv));
   return {
-    size: of((values) => values.reduce((sum, v) => sum + v, 0) / values.length),
-    spread: each.length > 1 ? of((values) => Math.max(...values) - Math.min(...values)) : null,
-    each,
+    x: cu + mx, y: cv + my, r, off: Math.max(...radii) - Math.min(...radii),
   };
 };
 
-const HOLE_FIELDS = ['holeSize', 'holePasses', 'repeats', 'ballDiameter', 'retract', 'fast', 'slow'];
-const BOSS_FIELDS = ['bossSize', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'depth', 'maxZ', 'retract', 'fast', 'slow'];
+const mean = (values) => values.reduce((sum, v) => sum + v, 0) / values.length;
+const spreadOf = (values) => Math.max(...values) - Math.min(...values);
 
-const fixed = (side, fields) => ({
-  fields,
-  options: {},
-  touches: true,
-  check: () => null,
-  steps: (params) => passes(BOTH, side, params),
-  size: (params, options, seen) => sizeOf(BOTH, side, params, seen),
-});
+/**
+ * What came out, `{ kind, size, spread, each, centre }`: the size by `d`
+ * (a circle's diameter) or by axis, the mean of the counted passes; the
+ * largest less the smallest (null for one pass); every counted pass's; and
+ * the middle, machine coordinates, the last pass's. A circle adds `off`, how
+ * far its touches stand from round, over every pass.
+ */
+const sizeOf = (shape, params, seen) => {
+  const { kind, axes, side } = SHAPES[shape];
+  const ball = side === 'inside' ? params.ballDiameter : -params.ballDiameter;
+  const last = params.holePasses - 1 + params.repeats;
+  let each;
+  let centre;
+  let off;
+  if (kind === 'circle') {
+    each = counted(params).map((n) => ({ d: 2 * fitCircle(pointsOf(seen, n)).r + ball }));
+    const all = Array.from({ length: last }, (_, k) => pointsOf(seen, k + 1)).flat();
+    const fit = fitCircle(all);
+    centre = { x: fit.x, y: fit.y };
+    off = fit.off;
+  } else {
+    each = counted(params).map((n) => Object.fromEntries(axes.map((axis) => (
+      [axis, Math.abs(seen[`${axis}${n}a`][axis] - seen[`${axis}${n}b`][axis]) + ball]
+    ))));
+    centre = Object.fromEntries(axes.map((axis) => [axis, (seen[`${axis}${last}a`][axis] + seen[`${axis}${last}b`][axis]) / 2]));
+  }
+  const keys = Object.keys(each[0]);
+  const of = (pick) => Object.fromEntries(keys.map((key) => [key, pick(each.map((one) => one[key]))]));
+  return {
+    kind,
+    size: of(mean),
+    spread: each.length > 1 ? of(spreadOf) : null,
+    each,
+    centre,
+    ...(kind === 'circle' ? { off } : {}),
+  };
+};
 
-export const holeSize = fixed('inside', HOLE_FIELDS);
-export const bossSize = fixed('outside', BOSS_FIELDS);
-
-/** One axis, two walls: `shape` one of `SHAPES`. */
-export const width = {
-  // A groove's figures are a hole's, a bar's a part's; the panel shows the ones for the shape chosen.
-  fields: [...new Set([...BOSS_FIELDS, ...HOLE_FIELDS])],
+/** One method, `shape` one of `SHAPES`. */
+export default {
+  // An inside shape's figures are a hole's, an outside one's a part's; the panel shows the ones for the shape chosen.
+  fields: ['holeSize', 'bossSize', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'depth', 'maxZ', 'retract', 'fast', 'slow'],
   options: { shape: Object.keys(SHAPES) },
   touches: true,
   check: (options) => (SHAPES[options.shape] ? null : 'bad-shape'),
-  steps: (params, options) => passes(SHAPES[options.shape].axes, SHAPES[options.shape].side, params),
-  size: (params, options, seen) => sizeOf(SHAPES[options.shape].axes, SHAPES[options.shape].side, params, seen),
+  steps: (params, options) => passes(SHAPES[options.shape], params),
+  size: (params, options, seen) => sizeOf(options.shape, params, seen),
 };

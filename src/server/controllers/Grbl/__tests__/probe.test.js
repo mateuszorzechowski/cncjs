@@ -289,12 +289,14 @@ describe('a size', () => {
     probeSettings.set({ ballDiameter: 2, holePasses: 1 });
     const recorded = jest.spyOn(controller, 'note');
 
-    controller.command('probe:start', { method: 'width', options: { shape: 'groove-x' } });
+    controller.command('probe:start', { method: 'measure', options: { shape: 'groove-x' } });
     across(controller, sent, 9);
 
-    expect(probeStates().pop()).toMatchObject({ state: 'measured', result: { size: { size: { x: 20 }, spread: null } } });
+    // The middle in the system measured in: the machine's X0 less the work offset.
+    const centre = { x: 0 - controller.probe.wco.x };
+    expect(probeStates().pop()).toMatchObject({ state: 'measured', result: { size: { size: { x: 20 }, spread: null, centre } } });
     expect(recorded).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'width', shape: 'groove-x', size: { x: 20 }, spread: null, passes: 1, ball: 2 }),
+      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'measure', shape: 'groove-x', size: { x: 20 }, spread: null, centre, passes: 1, ball: 2 }),
     }));
     controller.command('probe:apply');
     expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
@@ -303,10 +305,10 @@ describe('a size', () => {
     expect(controller.probe).toBeNull();
   });
 
-  test('a width that is no shape is refused before anything moves', () => {
+  test('no shape is refused before anything moves', () => {
     const { controller, sent, refusals } = setup();
 
-    controller.command('probe:start', { method: 'width', options: {} });
+    controller.command('probe:start', { method: 'measure', options: {} });
     expect(refusals.pop()).toMatchObject({ reason: 'bad-shape' });
     expect(sent()).toHaveLength(0);
   });

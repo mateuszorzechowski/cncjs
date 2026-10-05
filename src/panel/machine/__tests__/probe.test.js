@@ -1,5 +1,5 @@
 import {
-  METHODS, failureKey, mapAsk, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
+  METHODS, failureKey, mapAsk, methodOf, optionsFor, phaseWords, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -93,8 +93,23 @@ describe('a kept figure in a field', () => {
   });
 
   test('every method the server may name has words, and every figure a kind', () => {
-    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'hole', 'boss', 'paper', 'height-map', 'hole-size', 'boss-size', 'width']);
+    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'hole', 'boss', 'paper', 'height-map', 'measure']);
     expect(Object.values(FIELDS).every((f) => ['length', 'feed', 'count'].includes(f.kind))).toBe(true);
+  });
+});
+
+describe('Pomiar: what is measured, then how it lies', () => {
+  test('two steps of one choice, the shape', () => {
+    const measure = methodOf('measure');
+    expect(stepsOf(measure).map((step) => step.id)).toEqual(['method', 'choose', 'lie', 'prepare', 'wire', 'position', 'measure', 'result']);
+    expect(optionsFor(measure, 'rect-outside')).toEqual({ shape: 'rect-outside' });
+  });
+
+  test('a kind picked keeps how it lay where it can', () => {
+    expect(shapeOfKind('rect', 'circle-outside')).toBe('rect-outside');
+    expect(shapeOfKind('width', 'circle-outside')).toBe('bar-x');
+    expect(shapeOfKind('circle', 'groove-y')).toBe('circle-inside');
+    expect(shapeOfKind('width', 'groove-y')).toBe('groove-y');
   });
 });
 

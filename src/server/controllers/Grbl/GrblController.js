@@ -2580,7 +2580,9 @@ class GrblController {
         this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, points: map.xs.length * map.ys.length } });
       } else if (strategy.size) {
         // A size: for the screen and the journal, nothing to write (Mateusz, 2026-10-03).
-        const size = strategy.size(params, options, outcome.seen);
+        // Its middle in the system it was measured in, as the operator reads positions.
+        const found = strategy.size(params, options, outcome.seen);
+        const size = { ...found, centre: _.mapValues(found.centre, (v, axis) => v - (wco[axis] || 0)) };
         this.probe.result = { size };
         this.note({
           level: 'info',
@@ -2588,7 +2590,7 @@ class GrblController {
           event: 'probe',
           code: 'size',
           data: {
-            method, ...options, size: size.size, spread: size.spread, passes: size.each.length, ball: params.ballDiameter,
+            method, ...options, wcs, size: size.size, spread: size.spread, centre: size.centre, off: size.off, passes: size.each.length, ball: params.ballDiameter,
           },
         });
       } else {

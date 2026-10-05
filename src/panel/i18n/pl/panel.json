@@ -729,7 +729,9 @@
       "method": "Metoda",
       "spread": "Rozrzut",
       "passes": "Przejścia",
-      "ball": "Kulka"
+      "ball": "Kulka",
+      "off": "Odchyłka od okręgu",
+      "centre": "Środek ({{wcs}})"
     },
     "range": {
       "m15": "15 min",
@@ -1437,12 +1439,8 @@
       "bossNote": "Środek czopu albo detalu, sondą od zewnątrz: X0 i Y0, Z bez zmian.",
       "map": "Mapa wysokości",
       "mapNote": "Siatka punktów sondą: program pójdzie za krzywą płytką. Zero bez zmian.",
-      "holeSize": "Rozmiar otworu",
-      "holeSizeNote": "Średnica albo wymiar otworu w X i Y, sondą. Zero bez zmian.",
-      "bossSize": "Rozmiar detalu",
-      "bossSizeNote": "Wymiar detalu albo czopu w X i Y, sondą od zewnątrz. Zero bez zmian.",
-      "width": "Szerokość w jednej osi",
-      "widthNote": "Rowek od środka albo listwa z zewnątrz, w X albo Y. Zero bez zmian."
+      "measure": "Pomiar",
+      "measureNote": "Okrąg, prostokąt albo szerokość, sondą: wymiar i środek. Zero bez zmian."
     },
     "how": {
       "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
@@ -1460,7 +1458,8 @@
       "boss": "Ustaw kulkę sondy nad środkiem detalu, kilka milimetrów nad jego wierzchem — mniej niż limit dojazdu Z.",
       "map": "Podnieś narzędzie ponad imadła, nie wyżej niż limit dojazdu Z nad płytką. X i Y nie mają znaczenia: na tej wysokości maszyna sama przejedzie nad pierwszy punkt i zacznie szukać płytki.",
       "groove": "Opuść kulkę sondy do rowka, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek.",
-      "bar": "Ustaw kulkę sondy nad środkiem listwy, kilka milimetrów nad jej wierzchem — mniej niż limit dojazdu Z."
+      "bar": "Ustaw kulkę sondy nad środkiem listwy, kilka milimetrów nad jej wierzchem — mniej niż limit dojazdu Z.",
+      "pocket": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, mniej więcej na środek — nie dotykając ścianek."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1522,7 +1521,12 @@
       "holePasses": "Przejścia",
       "bossSize": "Szerokość detalu (w przybliżeniu)",
       "mapLift": "Uniesienie między punktami",
-      "repeats": "Powtórzenia"
+      "repeats": "Powtórzenia",
+      "studSize": "Średnica czopu (w przybliżeniu)",
+      "pocketSize": "Dłuższy bok kieszeni (w przybliżeniu)",
+      "partSize": "Dłuższy bok detalu (w przybliżeniu)",
+      "grooveSize": "Szerokość rowka (w przybliżeniu)",
+      "barSize": "Szerokość listwy (w przybliżeniu)"
     },
     "step": {
       "method": "Metoda",
@@ -1537,7 +1541,8 @@
       "tool": "Sposób",
       "area": "Wymiary",
       "areaWay": "Obszar",
-      "shape": "Kształt"
+      "kind": "Co mierzysz",
+      "lie": "Jak leży"
     },
     "wire": {
       "how": "Przypnij krokodylek do frezu. Dotknij płytką frezu i puść. Panel czyta stan sondy ze sterownika: przy dotyku pokaże „Dotyk”, po puszczeniu „Działa”.",
@@ -1678,7 +1683,11 @@
       "paper": "Kartka",
       "hole": "Otwór",
       "probe": "Sonda",
-      "part": "Detal"
+      "part": "Detal",
+      "stud": "Czop",
+      "pocket": "Kieszeń",
+      "groove": "Rowek",
+      "bar": "Listwa"
     },
     "play": {
       "pause": "Pauza",
@@ -1851,12 +1860,16 @@
       "startDrawing": "Z boku: płytka między imadłami, narzędzie w pasie nad imadłami i pod limitem dojazdu Z"
     },
     "shape": {
+      "circleInside": "Otwór",
+      "circleOutside": "Czop",
+      "rectInside": "Kieszeń",
+      "rectOutside": "Detal",
       "grooveX": "Rowek X",
       "grooveY": "Rowek Y",
       "barX": "Listwa X",
       "barY": "Listwa Y"
     },
-    "shapeLabel": "Co mierzysz i w której osi",
+    "shapeLabel": "Jak leży",
     "size": {
       "move": {
         "size": "Rozmiar: odstęp dotyków i kulka"
@@ -1870,7 +1883,21 @@
       "each": "{{axis}}, każde przejście: {{list}} {{unit}}",
       "ball": "Wynik zależy od średnicy kulki: {{ball}} {{unit}}.",
       "note": "Zero bez zmian. Wynik jest zapisany w Dzienniku.",
-      "again": "Zmierz ponownie"
+      "again": "Zmierz ponownie",
+      "diameter": "Średnica",
+      "off": "Odchyłka od okręgu",
+      "offWhy": "Odchyłka: najdalszy dotyk od środka minus najbliższy. Blisko zera — to okrąg; więcej — owal, kształt pod kątem albo wada.",
+      "centreIn": "Środek w układzie",
+      "centre": "Środek {{axis}}"
+    },
+    "kindLabel": "Co mierzysz",
+    "kind": {
+      "circle": "Okrąg",
+      "circleNote": "Otwór albo czop: średnica, środek i odchyłka od okręgu.",
+      "rect": "Prostokąt",
+      "rectNote": "Kieszeń albo detal, boki wzdłuż X i Y: wymiary i środek.",
+      "width": "Szerokość",
+      "widthNote": "Rowek albo listwa, w jednej osi: szerokość i środek."
     }
   }
 }

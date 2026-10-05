@@ -25,12 +25,20 @@ import { frameAt, layOut, totalOf } from './timeline';
 
 export { HOLE_R, LOOP_HOLD_MS, toolAt };
 
+// What the hole's group and its rough size are called; a pocket's or a groove's are their own (`names`).
+const HOLE_NAMES = { group: 'probe.group.hole', size: 'probe.field.holeSize' };
+
 /**
  * The hole cycle for `axes` — one for a width — and, with `size`, ending in
- * the size measured rather than a zero (Mateusz, 2026-10-03).
+ * the size measured rather than a zero (Mateusz, 2026-10-03); `square`, a
+ * rectangle's, drawn so.
  */
-export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
+export const holeCycleOf = ({
+  axes = AXES, size = false, square = false, names = HOLE_NAMES,
+} = {}) => {
   const { moves: MOVES, order: ORDER } = build({ axes, size });
+  // A round hole's size is its diameter, said once.
+  const round = !square && axes.length === 2;
 
   /** The moves in order, for one pass or two. */
   const holeOrder = (passes = 2) => ORDER.filter((name) => passes !== 1 || MOVES[name].pass !== 2);
@@ -71,7 +79,7 @@ export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
   }]);
 
   const HOLE_PARAMS = [
-    { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'] },
+    { id: 'hole', key: names.group, fields: ['holeSize'], names: { holeSize: names.size } },
     // How many passes, a switch at the group's head.
     { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: size },
     // Only for the hole's size said back: the centre needs no radius.
@@ -124,7 +132,7 @@ export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
    * moves, the search's limit on a fast touch, the walls touched so far this
    * pass, the touch under way and the zero's lines. `texts` the figures,
    * `say(field, text)` one as a label says it, `upTo(v)` as a limit;
-   * `sizes`, what a size's lines say per axis, the axis's letter if not given.
+   * `sizes`, what a size's lines say per axis — `d` a round one's diameter — the axis's letter (Ø) if not given.
    */
   const holeScene = (name, p, {
     texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, sizes = {},
@@ -178,9 +186,9 @@ export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
         axis: move.axis, from: move.from, to: move.to, kind: 'rapid', feed: null,
       };
     } else if (move.size) {
-      // The size across the hole, wall to wall, each axis measured — under it and beside it.
-      dims = axes.map((axis) => ({
-        id: `size${axis}`, axis, at: HOLE_R + 16, from: along(axis, [0, 0], -HOLE_R), to: along(axis, [0, 0], HOLE_R), text: sizes[axis] ?? axis.toUpperCase(), lit: false,
+      // The size across the hole, wall to wall, each axis measured — under it and beside it; a round one's one diameter.
+      dims = (round ? ['x'] : axes).map((axis) => ({
+        id: `size${axis}`, axis, at: HOLE_R + 16, from: along(axis, [0, 0], -HOLE_R), to: along(axis, [0, 0], HOLE_R), text: (round ? sizes.d : sizes[axis]) ?? (round ? 'Ø' : axis.toUpperCase()), lit: false,
       }));
     }
     let zero = 0;
@@ -290,6 +298,8 @@ export const holeCycleOf = ({ axes = AXES, size = false } = {}) => {
     kind: 'hole', r: HOLE_R, toolR: TOOL_R, grow: 1.2, view: [-101, -94, 202, 188],
     // One axis: a groove, drawn as a strip that wide (`CentreScene`).
     strip: axes.length === 1 ? axes[0] : null,
+    // A rectangle measured (Pomiar): drawn square, not round.
+    square,
   };
 
   /** The hole as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */

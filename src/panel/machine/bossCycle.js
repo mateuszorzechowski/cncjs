@@ -26,12 +26,20 @@ import { bossSide } from './bossSide';
 import { slowReach } from './probeFields';
 import { frameAt, layOut, totalOf } from './timeline';
 
+// What the part's group and its rough size are called; a stud's or a bar's are their own (`names`).
+const PART_NAMES = { group: 'probe.group.part', size: 'probe.field.bossSize' };
+
 /**
  * The part cycle for `axes` — one for a width — and, with `size`, ending in
- * the size measured rather than a zero (Mateusz, 2026-10-03).
+ * the size measured rather than a zero (Mateusz, 2026-10-03); `square`, a
+ * rectangle's, drawn so.
  */
-export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
+export const bossCycleOf = ({
+  axes = AXES, size = false, square = false, names = PART_NAMES,
+} = {}) => {
   const { moves: MOVES, order: ORDER } = build({ axes, size });
+  // A round part's size is its diameter, said once.
+  const round = !square && axes.length === 2;
 
   /** The moves in order, for one pass or two. */
   const bossOrder = (passes = 2) => ORDER.filter((name) => passes !== 1 || MOVES[name].pass !== 2);
@@ -68,7 +76,7 @@ export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
   }]);
 
   const BOSS_PARAMS = [
-    { id: 'part', key: 'probe.group.part', fields: ['bossSize'] },
+    { id: 'part', key: names.group, fields: ['bossSize'], names: { bossSize: names.size } },
     { id: 'reach', key: 'probe.group.reach', fields: ['clear', 'depth', 'maxZ'] },
     // How many passes, a switch at the group's head.
     { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: size },
@@ -135,7 +143,7 @@ export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
    * of the step under way, a figure's dimension, the sides this pass has
    * touched, the touch under way and the zero's lines. `texts` the figures,
    * `say(field, text)` one as a label says it, `upTo(v)` as a limit;
-   * `sizes`, what a size's lines say per axis, the axis's letter if not given.
+   * `sizes`, what a size's lines say per axis — `d` a round one's diameter — the axis's letter (Ø) if not given.
    */
   const bossScene = (name, p, {
     texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, sizes = {},
@@ -164,9 +172,9 @@ export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
         id: lit('size') ? 'size' : 'clear', axis: move.axis, at, from: setOn(move.axis, move.out, move.guess), mid: edge, to: move.out, text: say('clear', reachOf(texts)), lit: lit('clear') || lit('size'),
       }];
     } else if (move.size) {
-      // The part's size, side to side, each axis measured — under it and beside it.
-      dims = axes.map((axis) => ({
-        id: `size${axis}`, axis, at: BOSS_R + ASIDE_PART, from: setOn(axis, [0, 0], -BOSS_R), to: setOn(axis, [0, 0], BOSS_R), text: sizes[axis] ?? axis.toUpperCase(), lit: false,
+      // The part's size, side to side, each axis measured — under it and beside it; a round one's one diameter.
+      dims = (round ? ['x'] : axes).map((axis) => ({
+        id: `size${axis}`, axis, at: BOSS_R + ASIDE_PART, from: setOn(axis, [0, 0], -BOSS_R), to: setOn(axis, [0, 0], BOSS_R), text: (round ? sizes.d : sizes[axis]) ?? (round ? 'Ø' : axis.toUpperCase()), lit: false,
       }));
     }
     const zero = move.zeroAt ? clamp((p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0])) : 0;
@@ -303,6 +311,8 @@ export const bossCycleOf = ({ axes = AXES, size = false } = {}) => {
       kind: 'boss', r: BOSS_R, toolR: TOOL_R, grow: 0.6, view: [-101, -94, 202, 188],
       // One axis: a bar, drawn as a strip that wide (`CentreScene`).
       strip: axes.length === 1 ? axes[0] : null,
+      // A rectangle measured (Pomiar): drawn square, not round.
+      square,
     },
     // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
     side: (name, p, how) => bossSide(MOVES[name], p, how),

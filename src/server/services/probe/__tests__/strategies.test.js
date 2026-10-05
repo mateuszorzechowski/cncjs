@@ -3,6 +3,7 @@ import { probeParams } from '..';
 import { STRATEGIES, describeStrategies } from '../strategies';
 import { CORNERS } from '../strategies/corner';
 import { EDGES } from '../strategies/paper';
+import { fitCircle } from '../strategies/size';
 
 /*
  * Every method, run against a bench: plates as boxes in machine coordinates,
@@ -36,10 +37,52 @@ const contact = (boxes, radius, from, to) => {
   return best === null ? null : { ...from, [axis]: best };
 };
 
+/*
+ * Where a move along one axis first meets a round wall, or null: `{ x, y, r,
+ * z: [bottom, top], inside }` — a hole's wall from inside, a stud from
+ * outside (its top too, from above). The ball's centre stops `radius` off it.
+ */
+const roundContact = (rounds, radius, from, to) => {
+  const axis = AXES.find((a) => to[a] !== from[a]);
+  let best = null;
+  const nearer = (at) => {
+    if (best === null || Math.abs(at - from[axis]) < Math.abs(best - from[axis])) {
+      best = at;
+    }
+  };
+  for (const round of rounds) {
+    if (axis === 'z') {
+      const over = Math.hypot(from.x - round.x, from.y - round.y) < round.r;
+      if (!round.inside && over && from.z >= round.z[1] + radius && to.z <= round.z[1] + radius) {
+        nearer(round.z[1] + radius);
+      }
+      continue;
+    }
+    if (from.z <= round.z[0] || from.z >= round.z[1]) {
+      continue;
+    }
+    const other = axis === 'x' ? 'y' : 'x';
+    const reach = round.inside ? round.r - radius : round.r + radius;
+    const off = from[other] - round[other];
+    if (Math.abs(off) >= reach) {
+      continue;
+    }
+    const half = Math.sqrt(reach * reach - off * off);
+    const dir = Math.sign(to[axis] - from[axis]);
+    // Inside, the wall ahead; outside, the near side of the stud.
+    const at = round.inside ? round[axis] + dir * half : round[axis] - dir * half;
+    const ahead = dir > 0 ? at >= from[axis] - 1e-9 && at <= to[axis] : at <= from[axis] + 1e-9 && at >= to[axis];
+    if (ahead) {
+      nearer(at);
+    }
+  }
+  return best === null ? null : { ...from, [axis]: best };
+};
+
 /** Run one method on the bench to the end; the outcome and every line sent. */
 // `radius`: what touches — the tool, or a 3D probe's ball.
 const measure = ({
-  method, options = {}, params, boxes, start, radius = params.toolDiameter / 2,
+  method, options = {}, params, boxes = [], rounds = [], start, radius = params.toolDiameter / 2,
 }) => {
   const strategy = STRATEGIES[method];
   const queue = [];
@@ -68,7 +111,9 @@ const measure = ({
       for (const axis of AXES.filter((a) => words[a] !== undefined)) {
         target[axis] = words[axis] + WCO[axis];
       }
-      const hit = contact(boxes, radius, pos, target);
+      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target)].filter(Boolean);
+      const way = (one) => AXES.reduce((sum, a) => sum + Math.abs(one[a] - pos[a]), 0);
+      const hit = hits.sort((a, b) => way(a) - way(b))[0] ?? null;
       if (hit) {
         pos = hit;
         run.prb({ ...pos, result: 1 });
@@ -296,11 +341,14 @@ describe('the centre of a part, from outside', () => {
   });
 });
 
-describe('a size, not a zero', () => {
+describe('Pomiar: a size, not a zero', () => {
   const params = { ...probeParams(), ballDiameter: 4, holeSize: 30, bossSize: 40, clear: 10, depth: 5 };
   const radius = params.ballDiameter / 2;
   const [hx, hy] = [-120, -70];
   const z = [-80, -50];
+  const { measure: pomiar } = STRATEGIES;
+  const sizeOf = (shape, outcome, own = params) => pomiar.size(own, { shape }, outcome.seen);
+  const once = { ...params, holePasses: 1 };
 
   /** A rectangular hole `w` × `d` around (hx, hy). */
   const holeOf = (w, d) => [
@@ -311,37 +359,75 @@ describe('a size, not a zero', () => {
   ];
   /** A rectangular part `w` × `d` around (hx, hy), its top at Z -50. */
   const partOf = (w, d) => [{ x: [hx - w / 2, hx + w / 2], y: [hy - d / 2, hy + d / 2], z }];
+  const roundHole = [{ x: hx, y: hy, r: 12, z, inside: true }];
   const touches = (sent) => sent.filter((line) => line.includes('G38.2')).length;
 
-  test('a hole each way, the ball added back, the tool at its centre; no zero', () => {
-    const { outcome, pos } = measure({
-      method: 'hole-size', params, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
-    });
-    const found = STRATEGIES['hole-size'].size(params, {}, outcome.seen);
+  test('is no zero', () => {
+    expect(pomiar.zero).toBeUndefined();
+  });
 
-    expect(STRATEGIES['hole-size'].zero).toBeUndefined();
+  test('a round hole: the diameter fitted through every touch, true from a start off the middle', () => {
+    const { outcome, pos } = measure({
+      method: 'measure', options: { shape: 'circle-inside' }, params: once, radius, rounds: roundHole, start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const found = sizeOf('circle-inside', outcome, once);
+
+    expect(outcome.failure).toBeUndefined();
+    expect(found.kind).toBe('circle');
+    // One pass from off the middle: the chords miss the centre, the fit does not.
+    close(found.size, { d: 24 });
+    close(found.centre, { x: hx, y: hy });
+    expect(found.off).toBeCloseTo(0, 6);
+    close(pos, { x: hx, y: hy });
+  });
+
+  test('a stud from outside: the ball taken off', () => {
+    const { outcome } = measure({
+      method: 'measure', options: { shape: 'circle-outside' }, params, radius, rounds: [{ x: hx, y: hy, r: 15, z }], start: { x: hx + 3, y: hy - 2, z: -45 },
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    close(sizeOf('circle-outside', outcome).size, { d: 30 });
+  });
+
+  test('a square hole is no circle: the touches stand off round', () => {
+    const { outcome } = measure({
+      method: 'measure', options: { shape: 'circle-inside' }, params: once, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+
+    expect(sizeOf('circle-inside', outcome, once).off).toBeGreaterThan(1);
+  });
+
+  test('a pocket each way, the ball added back, the tool at its middle', () => {
+    const { outcome, pos } = measure({
+      method: 'measure', options: { shape: 'rect-inside' }, params, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
+    });
+    const found = sizeOf('rect-inside', outcome);
+
     close(found.size, { x: 24, y: 18 });
+    close(found.centre, { x: hx, y: hy });
     expect(found.spread).toBeNull();
     expect(found.each).toHaveLength(1);
+    expect(found.off).toBeUndefined();
     close(pos, { x: hx, y: hy, z: -60 });
   });
 
   test('a part from outside each way, the ball taken off, after touching its top', () => {
     const { outcome, sent } = measure({
-      method: 'boss-size', params, radius, boxes: partOf(30, 20), start: { x: hx + 3, y: hy - 2, z: -45 },
+      method: 'measure', options: { shape: 'rect-outside' }, params, radius, boxes: partOf(30, 20), start: { x: hx + 3, y: hy - 2, z: -45 },
     });
 
     expect(outcome.failure).toBeUndefined();
-    close(STRATEGIES['boss-size'].size(params, {}, outcome.seen).size, { x: 30, y: 20 });
+    close(sizeOf('rect-outside', outcome).size, { x: 30, y: 20 });
     expect(wordsOf(sent.find((line) => line.includes('G38.2'))).z).toBeDefined();
   });
 
   test('repeated: the centre found first, then every pass counted — the mean and the spread', () => {
     const three = { ...params, repeats: 3 };
     const { outcome, sent } = measure({
-      method: 'hole-size', params: three, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
+      method: 'measure', options: { shape: 'rect-inside' }, params: three, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
     });
-    const found = STRATEGIES['hole-size'].size(three, {}, outcome.seen);
+    const found = sizeOf('rect-inside', outcome, three);
 
     // One pass to find the centre (holePasses 2), three counted: four touches per axis each, two touches a pass.
     expect(touches(sent)).toBe(4 * 2 * 2 * 2);
@@ -350,43 +436,55 @@ describe('a size, not a zero', () => {
     close(found.spread, { x: 0, y: 0 });
   });
 
-  test('repeated with one pass to the centre: every pass counts, the first from where the tool stood', () => {
+  test('a circle repeated: a diameter per counted pass', () => {
+    const two = { ...params, holePasses: 1, repeats: 2 };
     const { outcome, sent } = measure({
-      method: 'hole-size', params: { ...params, holePasses: 1, repeats: 2 }, radius, boxes: holeOf(24, 18), start: { x: hx + 5, y: hy - 3, z: -60 },
+      method: 'measure', options: { shape: 'circle-inside' }, params: two, radius, rounds: roundHole, start: { x: hx + 5, y: hy - 3, z: -60 },
     });
+    const found = sizeOf('circle-inside', outcome, two);
 
     expect(touches(sent)).toBe(2 * 2 * 2 * 2);
-    expect(STRATEGIES['hole-size'].size({ ...params, holePasses: 1, repeats: 2 }, {}, outcome.seen).each).toHaveLength(2);
+    expect(found.each).toHaveLength(2);
+    close(found.spread, { d: 0 });
   });
 
   test('one width: a groove from inside along one axis touches only that axis', () => {
-    const options = { shape: 'groove-y' };
     const { outcome, sent, pos } = measure({
-      method: 'width', options, params, radius, boxes: holeOf(24, 12), start: { x: hx + 5, y: hy - 3, z: -60 },
+      method: 'measure', options: { shape: 'groove-y' }, params, radius, boxes: holeOf(24, 12), start: { x: hx + 5, y: hy - 3, z: -60 },
     });
-    const found = STRATEGIES.width.size(params, options, outcome.seen);
+    const found = sizeOf('groove-y', outcome);
 
     expect(sent.filter((line) => line.includes('G38') && wordsOf(line).x !== undefined)).toHaveLength(0);
     expect(found.size).toEqual({ y: expect.any(Number) });
     close(found.size, { y: 12 });
+    expect(Object.keys(found.centre)).toEqual(['y']);
     close(pos, { x: hx + 5, y: hy, z: -60 });
   });
 
   test('one width: a bar from outside along X', () => {
-    const options = { shape: 'bar-x' };
     const { outcome } = measure({
-      method: 'width', options, params, radius, boxes: partOf(16, 100), start: { x: hx + 3, y: hy - 2, z: -45 },
+      method: 'measure', options: { shape: 'bar-x' }, params, radius, boxes: partOf(16, 100), start: { x: hx + 3, y: hy - 2, z: -45 },
     });
 
     expect(outcome.failure).toBeUndefined();
-    close(STRATEGIES.width.size(params, options, outcome.seen).size, { x: 16 });
+    close(sizeOf('bar-x', outcome).size, { x: 16 });
   });
 
   test.each([
     [{ shape: 'groove-z' }, 'bad-shape'],
     [{}, 'bad-shape'],
-  ])('a width that is not one is refused: %j', (options, code) => {
-    expect(STRATEGIES.width.check(options)).toBe(code);
+  ])('a shape that is not one is refused: %j', (options, code) => {
+    expect(pomiar.check(options)).toBe(code);
+  });
+});
+
+describe('a circle fitted', () => {
+  test('through points on it: its centre and radius, nothing off round', () => {
+    const points = [0, 1.1, 2.5, 4].map((a) => [500 + 7 * Math.cos(a), -300 + 7 * Math.sin(a)]);
+
+    close(fitCircle(points), {
+      x: 500, y: -300, r: 7, off: 0,
+    });
   });
 });
 

@@ -729,7 +729,9 @@
       "method": "Method",
       "spread": "Spread",
       "passes": "Passes",
-      "ball": "Ball"
+      "ball": "Ball",
+      "off": "Out of round",
+      "centre": "Middle ({{wcs}})"
     },
     "range": {
       "m15": "15 min",
@@ -1437,12 +1439,8 @@
       "bossNote": "The centre of a boss or a part, by probe from outside: X0 and Y0, Z unchanged.",
       "map": "Height map",
       "mapNote": "A grid of points by probe: the program follows a warped board. The zero stays as it is.",
-      "holeSize": "Hole size",
-      "holeSizeNote": "A hole's diameter or size in X and Y, with the probe. Zero unchanged.",
-      "bossSize": "Part size",
-      "bossSizeNote": "A part's or boss's size in X and Y, probed from outside. Zero unchanged.",
-      "width": "Width along one axis",
-      "widthNote": "A groove from inside or a bar from outside, in X or Y. Zero unchanged."
+      "measure": "Measure",
+      "measureNote": "A circle, a rectangle or a width, with the probe: its size and middle. The zero stays as it is."
     },
     "how": {
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
@@ -1460,7 +1458,8 @@
       "boss": "Set the probe's ball over the middle of the part, a few millimetres above its top — less than the Z travel limit.",
       "map": "Raise the tool above the clamps, no higher than the Z reach limit over the board. X and Y do not matter: at this height the machine travels over the first point by itself and starts looking for the board.",
       "groove": "Lower the probe's ball into the groove, a few millimetres below its edge, roughly in the middle — clear of the walls.",
-      "bar": "Set the probe's ball over the middle of the bar, a few millimetres above its top — less than the Z travel limit."
+      "bar": "Set the probe's ball over the middle of the bar, a few millimetres above its top — less than the Z travel limit.",
+      "pocket": "Lower the probe's ball into the pocket, a few millimetres below its edge, roughly in the middle — without touching the walls."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1522,7 +1521,12 @@
       "holePasses": "Passes",
       "bossSize": "Part width (roughly)",
       "mapLift": "Lift between points",
-      "repeats": "Repeats"
+      "repeats": "Repeats",
+      "studSize": "Stud diameter (roughly)",
+      "pocketSize": "Pocket's longer side (roughly)",
+      "partSize": "Part's longer side (roughly)",
+      "grooveSize": "Groove width (roughly)",
+      "barSize": "Bar width (roughly)"
     },
     "step": {
       "method": "Method",
@@ -1537,7 +1541,8 @@
       "tool": "Touch",
       "area": "Figures",
       "areaWay": "Area",
-      "shape": "Shape"
+      "kind": "What",
+      "lie": "How it lies"
     },
     "wire": {
       "how": "Clip the lead to the tool. Touch the plate to the tool and let go. The panel reads the probe from the controller: it shows “Touching” while they touch and “Works” once you let go.",
@@ -1678,7 +1683,11 @@
       "paper": "Paper",
       "hole": "Hole",
       "probe": "Probe",
-      "part": "Part"
+      "part": "Part",
+      "stud": "Stud",
+      "pocket": "Pocket",
+      "groove": "Groove",
+      "bar": "Bar"
     },
     "play": {
       "pause": "Pause",
@@ -1851,12 +1860,16 @@
       "startDrawing": "Side-on: the board between the clamps, the tool in the band above the clamps and under the Z reach limit"
     },
     "shape": {
+      "circleInside": "Hole",
+      "circleOutside": "Stud",
+      "rectInside": "Pocket",
+      "rectOutside": "Part",
       "grooveX": "Groove X",
       "grooveY": "Groove Y",
       "barX": "Bar X",
       "barY": "Bar Y"
     },
-    "shapeLabel": "What you measure, and along which axis",
+    "shapeLabel": "How it lies",
     "size": {
       "move": {
         "size": "Size: the touches apart, and the ball"
@@ -1870,7 +1883,21 @@
       "each": "{{axis}}, each pass: {{list}} {{unit}}",
       "ball": "The size rests on the ball diameter: {{ball}} {{unit}}.",
       "note": "Zero unchanged. The size is kept in the journal.",
-      "again": "Measure again"
+      "again": "Measure again",
+      "diameter": "Diameter",
+      "off": "Out of round",
+      "offWhy": "Out of round: the farthest touch from the middle less the nearest. Near zero, it is a circle; more, an oval, a shape at an angle or a flaw.",
+      "centreIn": "Middle in",
+      "centre": "Middle {{axis}}"
+    },
+    "kindLabel": "What you measure",
+    "kind": {
+      "circle": "Circle",
+      "circleNote": "A hole or a stud: diameter, middle and how far from round.",
+      "rect": "Rectangle",
+      "rectNote": "A pocket or a part, its sides along X and Y: sizes and middle.",
+      "width": "Width",
+      "widthNote": "A groove or a bar, along one axis: width and middle."
     }
   }
 }

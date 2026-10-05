@@ -13,7 +13,7 @@ import { AREA_MODES } from './useHeightMapAsk';
 import CornerChooser from './CornerChooser';
 import MapToolChooser from './MapToolChooser';
 import PaperChooser from './PaperChooser';
-import { ShapeChooser, SizeResult } from './SizeSteps';
+import { KindChooser, LieChooser, SizeResult } from './SizeSteps';
 import HeightMapSetup from './HeightMapSetup';
 import { HeightMapCycle, HeightMapResult } from './HeightMapSteps';
 import PaperParams from './PaperParams';
@@ -49,10 +49,8 @@ const EDITORS = {
   boss: (props) => <CentreParams cycle={BOSS_CYCLE} {...props} />,
   paper: PaperParams,
   'height-map': HeightMapSetup,
-  // A size's, the centre's moves ending in the size; a width's by the shape chosen.
-  'hole-size': (props) => <CentreParams cycle={sizeCycle('hole-size')} {...props} />,
-  'boss-size': (props) => <CentreParams cycle={sizeCycle('boss-size')} {...props} />,
-  width: (props) => <CentreParams cycle={sizeCycle('width', props.chosen)} {...props} />,
+  // A size's, the centre's moves ending in the size, by the shape chosen.
+  measure: (props) => <CentreParams cycle={sizeCycle('measure', props.chosen)} {...props} />,
 };
 // A size measured, as the centre's: its passes those it was asked for.
 const SizeCycle = ({ phase, probe }) => {
@@ -65,9 +63,7 @@ const CYCLES = {
   hole: ({ phase, probe }) => <CentreCycle cycle={HOLE_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
   boss: ({ phase, probe }) => <CentreCycle cycle={BOSS_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
   'height-map': HeightMapCycle,
-  'hole-size': SizeCycle,
-  'boss-size': SizeCycle,
-  width: SizeCycle,
+  measure: SizeCycle,
 };
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
@@ -115,30 +111,33 @@ const MethodTile = ({ method, onPick }) => (
 // The methods that find a zero; under them, in a row of their own, the height map (Mateusz, 2026-10-02).
 // The methods whose one choice is a step of its own, and what it is picked on.
 const CHOOSERS = {
-  corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser, width: ShapeChooser,
+  corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser, measure: KindChooser,
 };
 
-export const ChooseStep = ({ method, value, onChange }) => {
-  const Chooser = CHOOSERS[method.id];
+/**
+ * A step that chooses (`step`): what the method chooses; Pomiar's second
+ * choice, how what is measured lies — the same choice, the shape (Mateusz,
+ * 2026-10-03); or how the height map's area is given, a step of its own
+ * before its figures (review note, 2026-10-02).
+ */
+export const ChoiceStep = ({
+  step, method, value, onChange, map,
+}) => {
+  if (step === 'areaWay') {
+    return <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />;
+  }
+  const Chooser = step === 'lie' ? LieChooser : CHOOSERS[method.id];
   return <Chooser value={value} onChange={onChange} />;
 };
-
-// How the height map's area is given, a step of its own before its figures (review note, 2026-10-02).
-export const AreaWayStep = ({ map }) => (
-  <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />
-);
 
 export const MethodStep = ({ onPick }) => (
   <div className="flex flex-col gap-3">
     <div className="grid gap-3 @3xl/shell:grid-cols-3">
       {METHODS.filter((method) => !method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
+    {/* The height map and Pomiar, in a row of their own: no zero. */}
     <div className="grid gap-3 @3xl/shell:grid-cols-3">
-      {METHODS.filter((method) => method.apart && !method.size).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
-    </div>
-    {/* The sizes, a row of their own under the map (Mateusz, 2026-10-03). */}
-    <div className="grid gap-3 @3xl/shell:grid-cols-3">
-      {METHODS.filter((method) => method.size).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
+      {METHODS.filter((method) => method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
   </div>
 );

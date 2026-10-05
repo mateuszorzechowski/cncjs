@@ -144,14 +144,18 @@ const CentreScene = ({
   }
 
   const boss = part.kind === BOSS;
-  // The part's outline from above: round, or a groove's or a bar's strip across the drawing, `strip` its width's axis.
+  // The part's outline from above: round, square for a rectangle, or a groove's or a bar's strip across the drawing, `strip` its width's axis.
   let outline = { r: part.r };
   if (part.strip === 'x') {
     outline = { x: -part.r, y: VIEW[1] - 2, width: 2 * part.r, height: VIEW[3] + 4 };
   } else if (part.strip === 'y') {
     outline = { x: VIEW[0] - 2, y: -part.r, width: VIEW[2] + 4, height: 2 * part.r };
+  } else if (part.square) {
+    outline = {
+      x: -part.r, y: -part.r, width: 2 * part.r, height: 2 * part.r,
+    };
   }
-  const Outline = part.strip ? 'rect' : 'circle';
+  const Outline = part.strip || part.square ? 'rect' : 'circle';
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />

@@ -65,7 +65,9 @@ const CentreParams = ({
   const groups = namedGroups(groupsOf(passes), t, (id) => t(...titleOf(id)));
   const sections = PARAMS.map((one) => (one.passes
     ? passesSection(one, fields, texts, onText)
-    : { id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)) }))
+    : {
+      id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)), names: one.names,
+    }))
     .filter((one) => one.fields.length || one.head);
 
   const left = (

@@ -28,9 +28,7 @@ const MOVES = {
   boss: () => <CentrePosition cycle={BOSS_CYCLE} />,
   paper: ({ choice }) => <PaperPosition edge={choice} />,
   'height-map': HeightMapPosition,
-  'hole-size': () => <CentrePosition cycle={HOLE_CYCLE} />,
-  'boss-size': () => <CentrePosition cycle={BOSS_CYCLE} />,
-  width: ({ choice }) => <CentrePosition cycle={sizeCycle('width', choice)} />,
+  measure: ({ choice }) => <CentrePosition cycle={sizeCycle('measure', choice)} />,
 };
 
 /**
