@@ -232,6 +232,77 @@ describe('probe:start', () => {
     expect(probeStates().pop().result.shift.z).toBeCloseTo(29.9, 6);
   });
 
+  test('a line still unanswered — a jog step tapped just before — is waited for, and a report after it, before the start reads where the tool is (audit K11)', () => {
+    const { controller, sent } = setup();
+    // Up and running: a report does not set the port's first questions going.
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.command('gcode', 'G91 G0 Z-0.1');
+    controller.command('probe:start', { method: 'z' });
+    // Its `ok` is still to come: it would be taken for the touch's.
+    expect(sent()).toEqual(['G91 G0 Z-0.1']);
+
+    controller.runner.parse('ok');
+    // Answered, but no report has seen the step yet.
+    expect(sent()).toHaveLength(1);
+    // The step under way: it waits on.
+    controller.runner.parse('<Jog|MPos:0.000,0.000,-0.050|FS:100,0|WCO:0.000,0.000,-30.000>');
+    expect(sent()).toHaveLength(1);
+
+    controller.runner.parse('<Idle|MPos:0.000,0.000,-0.100|FS:0,0|WCO:0.000,0.000,-30.000>');
+    // From where the step left it: machine -0.1 less 15, in work coordinates.
+    expect(sent().slice(1)).toEqual(['G90 G21 G94 G38.2 Z14.9 F100']);
+    expect(controller.probe.start.z).toBeCloseTo(-0.1, 6);
+  });
+
+  test('a second start while one waits is refused, and one never answered is said to be busy', () => {
+    const { controller, sent, refusals } = setup();
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.command('gcode', 'G4 P5');
+    controller.command('probe:start', { method: 'z' });
+    controller.command('probe:start', { method: 'z' });
+    expect(refusals.map(({ reason }) => reason)).toEqual(['probing']);
+
+    // A dwell reports Idle while it waits, and its `ok` has not come: still not the probe's.
+    controller.runner.parse('<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>');
+    expect(sent()).toEqual(['G4 P5']);
+    controller.settleProbe(true);
+    expect(refusals.map(({ reason }) => reason)).toEqual(['probing', 'busy']);
+    expect(sent()).toEqual(['G4 P5']);
+    expect(controller.probeDeferred).toBeNull();
+  });
+
+  test('a zero waiting for the operator is not overwritten by another start — a second tap, another device', () => {
+    const { controller, sent, refusals } = setup();
+    controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
+    controller.runner.parse('ok');
+    controller.runner.parse('ok');
+    expect(controller.probe.result.offset).toBeDefined();
+
+    controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
+    expect(refusals.map(({ reason }) => reason)).toEqual(['result-waiting']);
+    expect(sent()).toHaveLength(2);
+
+    // Put away, a new one goes.
+    controller.command('probe:discard');
+    controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
+    expect(sent()).toHaveLength(3);
+  });
+
+  test('a failure is only read: a start goes over it', () => {
+    const { controller, sent, refusals } = setup();
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.command('probe:start', { method: 'z' });
+    controller.runner.parse('ALARM:5');
+    controller.runner.parse('[PRB:0.000,0.000,-3.000:0]');
+    // The miss's `ok` comes after the run has ended, and falls through: a report is waited for after it.
+    controller.runner.parse('ok');
+    controller.runner.parse('<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>');
+
+    controller.command('probe:start', { method: 'z' });
+    expect(refusals).toEqual([]);
+    expect(sent()).toHaveLength(2);
+  });
+
   test('not in a pause, for now', () => {
     expect(programRefusal('probe:start', { workflow: 'paused', firmware: 'Idle' })).toBe('program-running');
     expect(programRefusal('probe:apply', { workflow: 'paused', firmware: 'Idle' })).toBe('program-running');

@@ -80,6 +80,10 @@ const KEYS = {
   // The machine in no state for a probe to move: the spindle turning, a feed override above 100 %.
   'spindle-on': 'refusal.spindleOn',
   'feed-override': 'refusal.feedOverride',
+  // A zero, a map or a pair's first feature waiting for Zapisz or Odrzuć: not overwritten by another start.
+  'result-waiting': 'refusal.resultWaiting',
+  // A line still unanswered when a probe was to start: where the tool stands is not known yet.
+  busy: 'refusal.busy',
   'no-result': 'refusal.noResult',
   'bad-method': 'refusal.badMethod',
   'bad-corner': 'refusal.badCorner',
