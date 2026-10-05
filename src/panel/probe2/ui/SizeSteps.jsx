@@ -189,7 +189,12 @@ export const KindChooser = ({ value, onChange, method }) => (
 export const LieChooser = ({ value, onChange }) => {
   const { kind } = shapeOf(value);
   const items = SHAPES.filter((one) => one.kind === kind).map((one) => ({ ...one, shape: one.id }));
-  return <Tiles label={t('probe.shapeLabel')} items={items} on={shapeOf(value).id} onPick={onChange} className={items.length > 2 ? '@3xl/shell:grid-cols-4' : '@3xl/shell:grid-cols-2'} />;
+  // A corner's eight two by two even on a phone: back row first, as they lie seen from above.
+  let columns = items.length > 2 ? '@3xl/shell:grid-cols-4' : '@3xl/shell:grid-cols-2';
+  if (kind === 'corner') {
+    columns = 'grid-cols-2 @3xl/shell:grid-cols-4';
+  }
+  return <Tiles label={t('probe.shapeLabel')} items={items} on={shapeOf(value).id} onPick={onChange} className={columns} />;
 };
 
 const AXES = ['x', 'y'];
