@@ -319,7 +319,22 @@ const measure = ({
         run.prb({ x: 0, y: 0, z: 0, result: 0 });
       }
     } else if (line.includes('G53')) {
-      pos = { ...pos, ...words };
+      /*
+       * A rapid runs into whatever stands in its way: the bench used to put the
+       * ball at its target whatever lay between, and a G0 along a pocket's wall
+       * went unseen (audit 2026-10-05, K4). A crash fails the test outright.
+       */
+      const target = { ...pos, ...words };
+      for (const axis of AXES.filter((a) => words[a] !== undefined && Math.abs(words[a] - pos[a]) > 1e-9)) {
+        const leg = { ...pos, [axis]: target[axis] };
+        // Off a touch the ball starts in contact: a hit where it already stands is the wall it is leaving.
+        const hit = [contact(boxes, radius, pos, leg), roundContact(rounds, radius, pos, leg), slantContact(slants, radius, pos, leg), turnedContact(turned, radius, pos, leg), ovalContact(ovals, radius, pos, leg), slotContact(slots, radius, pos, leg)]
+          .find((one) => one && Math.abs(one[axis] - pos[axis]) > 1e-6);
+        if (hit) {
+          throw new Error(`G0 into the work: ${line}, from ${JSON.stringify(pos)} — stopped at ${JSON.stringify(hit)}`);
+        }
+        pos = leg;
+      }
     }
     run.ok();
   }
@@ -923,6 +938,31 @@ describe('Pomiar: a rectangle at an angle', () => {
     expect(found.centre.x).toBeCloseTo(hx, 6);
     expect(found.centre.y).toBeCloseTo(hy, 6);
     close(pos, start);
+  });
+
+  test.each([15, -15])('a pocket turned %s° — past atan(2·retract/spacing): no rapid runs along a wall it has just left (audit K4b)', (angle) => {
+    const options = { shape: 'rect-inside-turned' };
+    const turned = [{ x: hx, y: hy, w: 50, h: 40, angle, z, inside: true }];
+    const start = { x: hx, y: hy, z: -60 };
+    // `measure` throws on a rapid into the wall.
+    const { outcome } = measure({
+      method: 'measure', options, params, radius, turned, start,
+    });
+
+    expect(outcome.failure).toBeUndefined();
+    close(STRATEGIES.measure.size(params, options, outcome.seen).turn, { a: angle, square: 0 });
+  });
+
+  test('a pocket narrower than the points are apart stops the ball on its wall, said, not driven into it (audit K4a)', () => {
+    const options = { shape: 'rect-inside-turned' };
+    const turned = [{ x: hx, y: hy, w: 60, h: 14, angle: 0, z, inside: true }];
+    const { outcome, sent } = measure({
+      method: 'measure', options, params: { ...params, holeSize: 60 }, radius, turned, start: { x: hx, y: hy, z: -60 },
+    });
+
+    expect(outcome).toEqual({ failure: 'touched', phase: 'x1a-along' });
+    // Along to the next point guarded, at the fast touch's feed.
+    expect(sent.at(-2)).toMatch(/^G90 G21 G94 G38\.3 Y-?[\d.]+ F100$/);
   });
 
   test('points too far apart for the pocket meet the next wall: the corners come out far off square', () => {
