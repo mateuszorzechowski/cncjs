@@ -459,6 +459,8 @@
     "noHoming": "Homing is off, so where the machine's travel is is not known: neither where the top of Z is, nor where a point on the drawing lies.",
     "probeTriggered": "The probe input is lit, so the measurement did not start: the plate is touching the tool or the lead is shorted.",
     "probing": "A measurement is already running.",
+    "spindleOn": "The spindle is turning, so the measurement did not start. Stop it (M5) and try again.",
+    "feedOverride": "The feed override is above 100 %, so the touch would be faster than set. Put it back to 100 % and try again.",
     "noResult": "There is no measurement to save.",
     "badMethod": "The server does not know that probing method.",
     "badCorner": "That is not a corner the server knows.",

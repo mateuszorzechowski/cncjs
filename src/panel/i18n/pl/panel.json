@@ -459,6 +459,8 @@
     "noHoming": "Bazowanie jest wyłączone, więc nie wiadomo, gdzie jest obszar maszyny: ani gdzie jest góra osi Z, ani gdzie leży punkt z rysunku.",
     "probeTriggered": "Wejście sondy świeci, więc pomiar nie ruszył: płytka dotyka freza albo przewód jest zwarty.",
     "probing": "Pomiar już trwa.",
+    "spindleOn": "Wrzeciono się kręci, więc pomiar nie ruszył. Zatrzymaj je (M5) i spróbuj ponownie.",
+    "feedOverride": "Korekta posuwu jest powyżej 100 %, więc dotyk byłby szybszy niż ustawiony. Przywróć 100 % i spróbuj ponownie.",
     "noResult": "Nie ma pomiaru do zapisania.",
     "badMethod": "Serwer nie zna tej metody sondowania.",
     "badCorner": "Serwer nie zna takiego narożnika.",
