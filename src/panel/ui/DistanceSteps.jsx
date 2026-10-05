@@ -50,7 +50,7 @@ export const PairChooser = ({ value, onChange }) => {
             }))}
             on={pair[end]}
             onPick={(part) => pick(end, part)}
-            className={`grid-cols-2 ${parts.length > 4 ? '@3xl/shell:grid-cols-6' : '@3xl/shell:grid-cols-4'}`}
+            className={`grid-cols-2 ${parts.length > 8 ? '@3xl/shell:grid-cols-5' : '@3xl/shell:grid-cols-4'}`}
           />
         </div>
       ))}

@@ -3,7 +3,9 @@ import { across as bossAcross, overTheTop } from './boss';
 import {
   PARTS, cornerOf, distanceOf, pairRefusal,
 } from './distance';
-import { EDGES, edgeLine, edgeOf, edgeSteps } from './edge';
+import {
+  EDGES, edgeLine, edgeOf, edgeSteps, wallSteps,
+} from './edge';
 import { ovalOf } from './oval';
 import { slotOf } from './slot';
 import { turnedOf, turnedSteps } from './turned';
@@ -55,6 +57,8 @@ export const SHAPES = {
   'bar-x': { kind: 'width', axes: ['x'], side: 'outside' },
   'bar-y': { kind: 'width', axes: ['y'], side: 'outside' },
   ...Object.fromEntries(Object.keys(EDGES).map((edge) => [`edge-${edge}`, { kind: 'edge', edge }])),
+  // A pocket's wall from inside, one end of a pair (`edge`'s `wallSteps`).
+  ...Object.fromEntries(Object.keys(EDGES).map((wall) => [`wall-${wall}`, { kind: 'edge', wall }])),
   // One feature to another, each one of `distance`'s `PARTS`, options `a` and `b`, measured one after the other.
   distance: { kind: 'distance', pair: distanceOf },
   // Two edges that meet: the angle between them, and the corner (`distance`).
@@ -66,10 +70,13 @@ const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
 
 const passes = ({
-  axes, side, edge, turned,
+  axes, side, edge, wall, turned,
 }, params, { start } = {}) => {
   if (edge) {
     return edgeSteps(edge, params);
+  }
+  if (wall) {
+    return wallSteps(wall, params, start);
   }
   if (turned) {
     return turnedSteps(side, params, start);
@@ -137,10 +144,10 @@ const spreadOf = (values) => Math.max(...values) - Math.min(...values);
  */
 const sizeOf = (shape, params, seen) => {
   const {
-    kind, axes, side, edge, turned,
+    kind, axes, side, edge, wall, turned,
   } = SHAPES[shape];
-  if (edge) {
-    return edgeOf(edge, params, seen);
+  if (edge || wall) {
+    return edgeOf(edge || wall, params, seen, Boolean(wall));
   }
   if (turned) {
     const fit = { oval: ovalOf, slot: slotOf }[kind] ?? turnedOf;
@@ -182,7 +189,8 @@ const sizeOf = (shape, params, seen) => {
  */
 const partOf = (shape, params, seen) => {
   const found = sizeOf(shape, params, seen);
-  return SHAPES[shape].edge ? { ...found, line: edgeLine(SHAPES[shape].edge, params, seen) } : found;
+  const { edge, wall } = SHAPES[shape];
+  return edge || wall ? { ...found, line: edgeLine(edge || wall, params, seen, Boolean(wall)) } : found;
 };
 
 /** One method, `shape` one of `SHAPES`. */

@@ -16,13 +16,14 @@ import { EDGES } from './edge';
  */
 // Lower case: `react-refresh/babel` takes a capitalised name set by a call
 // for a component, and the server then dies on `$RefreshReg$` at start.
-const edgeParts = Object.keys(EDGES).map((edge) => `edge-${edge}`);
+// An edge of a part from outside, or a pocket's wall from inside (`wall-…`).
+const edgeParts = ['edge', 'wall'].flatMap((from) => Object.keys(EDGES).map((edge) => `${from}-${edge}`));
 export const PARTS = {
   distance: ['circle-inside', 'circle-outside', ...edgeParts],
   angle: edgeParts,
 };
 
-const edgeOf = (part) => EDGES[part.replace(/^edge-/, '')] ?? null;
+const edgeOf = (part) => EDGES[part.replace(/^(edge|wall)-/, '')] ?? null;
 
 /** Why the pair `a`, `b` will not do for `shape` (`distance` or `angle`), or null. */
 export const pairRefusal = (shape, a, b) => {

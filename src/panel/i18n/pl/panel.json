@@ -1472,7 +1472,8 @@
       "bar": "Ustaw kulkę sondy nad środkiem listwy, kilka milimetrów nad jej wierzchem — mniej niż limit dojazdu Z.",
       "pocket": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, mniej więcej na środek — nie dotykając ścianek.",
       "edge": "Ustaw kulkę sondy nad detalem, kilka milimetrów od wybranej krawędzi i nad wierzchem — mniej niż odsunięcie za bok i limit dojazdu Z.",
-      "slot": "Opuść kulkę sondy do fasolki, kilka milimetrów pod jej krawędź, mniej więcej na środek. Odstęp punktów musi być wyraźnie mniejszy niż szerokość fasolki."
+      "slot": "Opuść kulkę sondy do fasolki, kilka milimetrów pod jej krawędź, mniej więcej na środek. Odstęp punktów musi być wyraźnie mniejszy niż szerokość fasolki.",
+      "wall": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, z dala od ścianek — dotknie wybranej ścianki od środka w dwóch punktach."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1920,7 +1921,11 @@
       "slotInside": "Fasolka wycięta",
       "slotOutside": "Fasolka wystająca",
       "distance": "Odległość",
-      "angle": "Kąt i narożnik"
+      "angle": "Kąt i narożnik",
+      "wallFront": "Ścianka przód",
+      "wallBack": "Ścianka tył",
+      "wallLeft": "Ścianka lewa",
+      "wallRight": "Ścianka prawa"
     },
     "shapeLabel": "Jak leży",
     "size": {
@@ -2004,7 +2009,7 @@
     },
     "meet": {
       "angle": "Kąt narożnika",
-      "angleWhy": "Kąt wewnątrz detalu między krawędziami. 90° — narożnik prosty; odchyłka od kąta prostego to różnica od 90°.",
+      "angleWhy": "Kąt wewnątrz detalu między krawędziami — przy dwóch ściankach kieszeni wewnątrz kieszeni. 90° — narożnik prosty; odchyłka od kąta prostego to różnica od 90°.",
       "at": "Narożnik w układzie",
       "axis": "Narożnik {{axis}}"
     }

@@ -1472,7 +1472,8 @@
       "bar": "Set the probe's ball over the middle of the bar, a few millimetres above its top — less than the Z travel limit.",
       "pocket": "Lower the probe's ball into the pocket, a few millimetres below its edge, roughly in the middle — without touching the walls.",
       "edge": "Put the probe's ball over the part, a few millimetres in from the edge chosen and above the top — less than the clearance past the side and the Z travel limit.",
-      "slot": "Lower the probe's ball into the slot, a few millimetres below its edge, roughly in the middle. The points' spacing must be well under the slot's width."
+      "slot": "Lower the probe's ball into the slot, a few millimetres below its edge, roughly in the middle. The points' spacing must be well under the slot's width.",
+      "wall": "Lower the probe ball into the pocket, a few millimetres under its edge, clear of the walls — it touches the chosen wall from inside at two points."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1920,7 +1921,11 @@
       "slotInside": "Slot cut",
       "slotOutside": "Slot standing",
       "distance": "Distance",
-      "angle": "Angle and corner"
+      "angle": "Angle and corner",
+      "wallFront": "Front wall",
+      "wallBack": "Back wall",
+      "wallLeft": "Left wall",
+      "wallRight": "Right wall"
     },
     "shapeLabel": "How it lies",
     "size": {
@@ -2004,7 +2009,7 @@
     },
     "meet": {
       "angle": "Corner angle",
-      "angleWhy": "The angle inside the part between the edges. 90° — a square corner; off square is the difference from 90°.",
+      "angleWhy": "The angle inside the part between the edges — with two pocket walls, inside the pocket. 90° — a square corner; off square is the difference from 90°.",
       "at": "Corner in",
       "axis": "Corner {{axis}}"
     }

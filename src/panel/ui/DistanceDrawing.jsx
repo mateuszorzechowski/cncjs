@@ -39,6 +39,11 @@ const FRAMES = {
   'edge-left': { U: [0, 1], V: [1, 0] },
   'edge-right': { U: [0, 1], V: [-1, 0] },
 };
+// A pocket's wall faces back into the pocket, as the opposite edge of a part faces out of it.
+const AS_EDGE = {
+  'wall-front': 'edge-back', 'wall-back': 'edge-front', 'wall-left': 'edge-right', 'wall-right': 'edge-left',
+};
+const facing = (part) => AS_EDGE[part] ?? part;
 const FACING_APART = { 'edge-front': 'edge-back', 'edge-back': 'edge-front', 'edge-left': 'edge-right', 'edge-right': 'edge-left' };
 
 // A centre found.
@@ -103,7 +108,7 @@ const FromEdge = ({
   size, pair, ends, beyond, said, hatch, k,
 }) => {
   const first = ends[0].kind === 'edge' ? 'a' : 'b';
-  const edge = pair[first];
+  const edge = facing(pair[first]);
   const other = first === 'a' ? 'b' : 'a';
   const two = ends.every((one) => one.kind === 'edge');
   const { U, V } = FRAMES[edge];
@@ -128,7 +133,7 @@ const FromEdge = ({
   let way = HALF * 0.45;
   if (!two) {
     work = band(0, Math.max(hi, 0) + BAND, -HALF, HALF);
-  } else if (FACING_APART[edge] === pair[other]) {
+  } else if (FACING_APART[edge] === facing(pair[other])) {
     // Facing apart: one part between them, or two with the gap between.
     work = v1 > 0 ? band(0, v1, -HALF, HALF) : <>{band(0, BAND, -HALF, HALF)}{band(v1 - BAND, v1, -HALF, HALF)}</>;
   } else {
@@ -169,10 +174,13 @@ const OUT = {
 const Corner = ({
   size, pair, said, hatch, k,
 }) => {
-  const [oa, ob] = [OUT[pair.a], OUT[pair.b]];
-  // Along the first edge, into the second's part; the second turned off that by the angle drawn.
-  const ra = [-ob[0], -ob[1]];
-  const towards = Math.sign(ra[0] * -oa[1] - ra[1] * -oa[0]);
+  const [oa, ob] = [OUT[facing(pair.a)], OUT[facing(pair.b)]];
+  // A pocket's corner, two walls: the angle is the pocket's, the work round it.
+  const pocket = [pair.a, pair.b].every((part) => part.startsWith('wall-'));
+  const k0 = pocket ? 1 : -1;
+  // Along the first edge, into the second's part — or the pocket; the second turned off that by the angle drawn.
+  const ra = [k0 * ob[0], k0 * ob[1]];
+  const towards = Math.sign(ra[0] * k0 * oa[1] - ra[1] * k0 * oa[0]);
   const off = Math.abs(size.square) < LEVEL ? 0 : Math.sign(size.square) * Math.min(STEEP, Math.max(SEEN, Math.abs(size.square)));
   const turn = ((90 + off) * Math.PI / 180) * towards;
   const rb = [ra[0] * Math.cos(turn) - ra[1] * Math.sin(turn), ra[0] * Math.sin(turn) + ra[1] * Math.cos(turn)];
@@ -189,7 +197,8 @@ const Corner = ({
   };
   return (
     <>
-      <path d={`M${c[0]} ${c[1]} L${ea[0]} ${ea[1]} L${far[0]} ${far[1]} L${eb[0]} ${eb[1]} Z`} fill={`url(#${hatch})`} />
+      {pocket ? <rect x={0} y={0} width={W} height={H} fill={`url(#${hatch})`} /> : null}
+      <path d={`M${c[0]} ${c[1]} L${ea[0]} ${ea[1]} L${far[0]} ${far[1]} L${eb[0]} ${eb[1]} Z`} fill={pocket ? undefined : `url(#${hatch})`} className={pocket ? 'fill-field' : undefined} />
       <path d={`M${ea[0]} ${ea[1]} L${c[0]} ${c[1]} L${eb[0]} ${eb[1]}`} fill="none" className="stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
       <AngleMark angle={arc} />
       <circle cx={c[0]} cy={c[1]} r={3} className="fill-acc" />

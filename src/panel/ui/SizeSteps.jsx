@@ -102,6 +102,14 @@ const MARKS = {
       <path d="M26 38 A14 14 0 0 0 12 24" fill="none" className="stroke-acc" strokeWidth={1.6} />
     </>
   ),
+  // A pocket's front wall from inside: the work round the pocket, the ball in it, the two heads out to the wall.
+  wall: (
+    <>
+      <path d={`${AROUND}M10 10 H38 V36 H10 Z`} fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+      <circle cx={24} cy={27} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
+      <path d="M15 33.2 L18 36 L21 33.2 Z M27 33.2 L30 36 L33 33.2 Z" className="fill-acc" />
+    </>
+  ),
   // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it —
   // spaced as the others, a tip on the edge, the base 2 off the ball's row.
   edge: (
@@ -116,13 +124,14 @@ const MARKS = {
 // An edge's marks turned from the front's to face its own way.
 const EDGE_TURN = {
   'edge-front': undefined, 'edge-back': 'rotate(180 24 24)', 'edge-left': 'rotate(90 24 24)', 'edge-right': 'rotate(-90 24 24)',
+  'wall-front': undefined, 'wall-back': 'rotate(180 24 24)', 'wall-left': 'rotate(90 24 24)', 'wall-right': 'rotate(-90 24 24)',
 };
 
 /** A shape's marks in a 48-unit box. */
 const ShapeMarks = ({ shape }) => {
   const one = shapeOf(shape);
-  if (one.kind === 'edge') {
-    return <g transform={EDGE_TURN[one.id]}>{MARKS.edge}</g>;
+  if (one.kind === 'edge' || one.kind === 'wall') {
+    return <g transform={EDGE_TURN[one.id]}>{MARKS[one.kind]}</g>;
   }
   if (one.kind !== 'width') {
     return MARKS[one.id];

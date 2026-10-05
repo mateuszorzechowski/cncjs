@@ -822,6 +822,28 @@ describe('Pomiar: a distance, one feature to another', () => {
     close(back.centre, { x: -150, y: -70 });
   });
 
+  // A pocket 40 × 30, its front wall 10 thick: the work's front face at Y -100.
+  const pocket = [
+    { x: [-200, -150], y: [-100, 0], z },
+    { x: [-110, 0], y: [-100, 0], z },
+    { x: [-200, 0], y: [-100, -90], z },
+    { x: [-200, 0], y: [-60, 0], z },
+  ];
+  const inPocket = { boxes: pocket, start: { x: -128, y: -73, z: -60 } };
+
+  test('the corner of a pocket from inside: square, where its walls meet', () => {
+    const found = between({ shape: 'angle', a: 'wall-front', b: 'wall-left' }, inPocket, inPocket);
+
+    close(found.size, { a: 90, square: 0 });
+    close(found.centre, { x: -150, y: -90 });
+  });
+
+  test('a pocket from wall to wall, and the wall between it and the front face', () => {
+    close(between({ shape: 'distance', a: 'wall-left', b: 'wall-right' }, inPocket, inPocket).size, { dist: 40, par: 0 });
+    const face = { boxes: pocket, start: { x: -128, y: -97, z: -45 } };
+    close(between({ shape: 'distance', a: 'wall-front', b: 'edge-front' }, inPocket, face).size, { dist: 10 });
+  });
+
   test.each([
     [{ shape: 'angle', a: 'edge-front', b: 'edge-back' }, 'edges-parallel'],
     [{ shape: 'angle', a: 'edge-front', b: 'circle-inside' }, 'bad-part'],

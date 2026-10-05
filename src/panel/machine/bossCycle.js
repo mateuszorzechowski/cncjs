@@ -259,7 +259,7 @@ export const bossCycleOf = ({
       back: () => `G0 ${outward}${texts.retract}`,
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
-      zero: () => [edge ? 'probe.size.codeEdge' : ({ oval: 'probe.size.codeOval', slot: 'probe.size.codeSlot' }[L?.outline] ?? (layout ? 'probe.size.codeTurned' : 'probe.size.codeBoss'))],
+      zero: () => [edge || layout?.startsWith('wall') ? 'probe.size.codeEdge' : ({ oval: 'probe.size.codeOval', slot: 'probe.size.codeSlot' }[L?.outline] ?? (layout ? 'probe.size.codeTurned' : 'probe.size.codeBoss'))],
       centre: () => [move.code ?? 'probe.hole.centreCode'],
     };
     return CODES[move.kind]();

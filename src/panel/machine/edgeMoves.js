@@ -1,6 +1,9 @@
 import {
   ABOVE, AXES, BACK, BOSS_R, OUT, TOOL_R, setOn, topOf,
 } from './bossMoves';
+import { EDGE_SIDES, LAYOUTS } from './edgeLayouts';
+
+export { EDGE_SIDES, layoutOf } from './edgeLayouts';
 
 /*
  * Sides touched at two points each (Pomiar, the server's `strategies/edge`
@@ -15,16 +18,8 @@ import {
  * pocket: for each point back to the middle across the side, along it to the
  * point, the touch moving out; at the end back to the middle.
  */
-export const EDGE_SIDES = {
-  front: { axis: 'y', along: 'x', sign: -1 },
-  back: { axis: 'y', along: 'x', sign: 1 },
-  left: { axis: 'x', along: 'y', sign: -1 },
-  right: { axis: 'x', along: 'y', sign: 1 },
-};
-const FOUR = ['front', 'right', 'back', 'left'];
-// Half the way between the points along the side, and how far in from an edge the ball starts.
+// Half the way between the points along the side.
 const SPAN = 18;
-const INSIDE = 12;
 // How far past a pocket's wall its search is drawn going.
 const PAST = 12;
 // How far the part is drawn turned for the Setup: an angle is the thing measured, so it is never drawn square.
@@ -98,105 +93,15 @@ const ovalCross = (axis, spot, sign, [ea, eb], tilt) => {
   return sign > 0 ? (-qb + root) / (2 * qa) : (-qb - root) / (2 * qa);
 };
 
-/*
- * The layouts by name: an edge's (`edge-front` …), the part's and the
- * pocket's at an angle. `sides` in the order touched; `from`; where the ball
- * starts; what a side's search is said by (`reach`: the clearance, the part's
- * half and the clearance, the pocket's rough size); the figures to set.
- */
-const REACH = { group: 'probe.group.reach' };
-const MEASURE = { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] };
-const PROBE = { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] };
-const edgeLayout = (edge) => ({
-  sides: [edge],
-  from: 'outside',
-  start: setOn(EDGE_SIDES[edge].axis, [0, 0], EDGE_SIDES[edge].sign * (BOSS_R - INSIDE)),
-  reach: 'clear',
-  params: [{ id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE],
-});
-const LAYOUTS = {
-  ...Object.fromEntries(Object.keys(EDGE_SIDES).map((edge) => [`edge-${edge}`, edgeLayout(edge)])),
-  'turned-outside': {
-    sides: FOUR,
-    from: 'outside',
-    start: [4, -3],
-    reach: 'part',
-    params: [
-      { id: 'part', key: 'probe.group.part', fields: ['bossSize'], names: { bossSize: 'probe.field.partSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE,
-    ],
-  },
-  'turned-inside': {
-    sides: FOUR,
-    from: 'inside',
-    start: [3, 2],
-    reach: 'holeSize',
-    params: [
-      { id: 'hole', key: 'probe.group.pocket', fields: ['holeSize'], names: { holeSize: 'probe.field.pocketSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
-    ],
-  },
-  // An oval: touched as the rectangle at an angle, the ellipse fitted (the server's `strategies/oval`).
-  'oval-outside': {
-    sides: FOUR,
-    from: 'outside',
-    start: [4, -3],
-    reach: 'part',
-    outline: 'oval',
-    // Closer than a square's: on an oval the four ways' points would meet in pairs at its shoulders.
-    span: 9,
-    params: [
-      { id: 'part', key: 'probe.group.stud', fields: ['bossSize'], names: { bossSize: 'probe.field.ovalStudSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE,
-    ],
-  },
-  'oval-inside': {
-    sides: FOUR,
-    from: 'inside',
-    start: [3, 2],
-    reach: 'holeSize',
-    outline: 'oval',
-    span: 9,
-    params: [
-      { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'], names: { holeSize: 'probe.field.ovalHoleSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
-    ],
-  },
-  // A slot — a fasolka: as the oval, its outline two half circles and two straight sides (`strategies/slot`).
-  'slot-outside': {
-    sides: FOUR,
-    from: 'outside',
-    start: [4, -3],
-    reach: 'part',
-    outline: 'slot',
-    span: 7,
-    params: [
-      { id: 'part', key: 'probe.group.slot', fields: ['bossSize'], names: { bossSize: 'probe.field.slotStudSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE,
-    ],
-  },
-  'slot-inside': {
-    sides: FOUR,
-    from: 'inside',
-    start: [3, 2],
-    reach: 'holeSize',
-    outline: 'slot',
-    span: 7,
-    params: [
-      { id: 'hole', key: 'probe.group.slot', fields: ['holeSize'], names: { holeSize: 'probe.field.slotHoleSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
-    ],
-  },
-};
-export const layoutOf = (name) => LAYOUTS[name];
-
 // A point's steps, in order, from outside and from inside; from inside the way back to the middle at the end.
 const STEPS = {
   outside: ['Along', 'Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'],
   inside: ['In', 'Along', 'Fast', 'Back', 'Slow', 'Off'],
 };
-// Away from the last side's wall first (X, the left's), then along it — as the server goes.
-const HOME = ['retX', 'retY'];
+// Away from the last side's wall first (X, the left's), then along it — as the server goes; one wall's, across it first.
+const homeOf = (name) => (EDGE_SIDES[LAYOUTS[name].sides.at(-1)].axis === 'y' ? ['retY', 'retX'] : ['retX', 'retY']);
+// One line along an angle's two touches: an edge's from outside, a wall's from inside.
+const angled = (name) => /^(edge|wall)-/.test(name);
 
 /** A side's two points, by the names its touches go by: `y1m`, `y2m` for the front. */
 const pointsOf = (side) => {
@@ -288,14 +193,17 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
   });
   if (inside) {
     // Back to the middle, one axis at a time, as the server goes: away from the last wall first.
-    const x = setOn('x', at, S[0]);
-    moves.retX = { ...leg(at, x, 'centre', 'probe.edge.move.home', []), axis: 'x', way: 'X', code: 'probe.edge.homeCode' };
-    moves.retY = { ...leg(x, S, 'centre', 'probe.edge.move.home', []), axis: 'y', way: 'Y', code: 'probe.edge.homeCode' };
-    order.push(...HOME);
+    const home = homeOf(name);
+    const first = home[0] === 'retX' ? 'x' : 'y';
+    const second = first === 'x' ? 'y' : 'x';
+    const half = setOn(first, at, S[AXES.indexOf(first)]);
+    moves[home[0]] = { ...leg(at, half, 'centre', 'probe.edge.move.home', []), axis: first, way: first.toUpperCase(), code: 'probe.edge.homeCode' };
+    moves[home[1]] = { ...leg(half, S, 'centre', 'probe.edge.move.home', []), axis: second, way: second.toUpperCase(), code: 'probe.edge.homeCode' };
+    order.push(...home);
     at = S;
   }
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: name.startsWith('edge') ? 'probe.size.move.edge' : ({ oval: 'probe.size.move.oval', slot: 'probe.size.move.slot' }[outline] ?? 'probe.size.move.size'), uses: ['ballDiameter'], end: 0.35,
+    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: angled(name) ? 'probe.size.move.edge' : ({ oval: 'probe.size.move.oval', slot: 'probe.size.move.slot' }[outline] ?? 'probe.size.move.size'), uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };
@@ -306,7 +214,7 @@ export const sideGroups = (name) => {
   const { sides, from } = LAYOUTS[name];
   const steps = STEPS[from];
   const searching = from === 'inside' ? 3 : 4;
-  const edge = name.startsWith('edge');
+  const edge = angled(name);
   return sides.flatMap((side) => pointsOf(side).map((point, k) => ({
     id: point,
     name: `${EDGE_SIDES[side].axis.toUpperCase()}${EDGE_SIDES[side].sign > 0 ? '+' : '−'} · ${k + 1}`,
@@ -318,6 +226,6 @@ export const sideGroups = (name) => {
     id: 'zero',
     key: edge ? 'probe.bar.angle' : 'probe.bar.size',
     folded: true,
-    subs: [{ key: edge ? 'probe.stage.angle' : 'probe.stage.size', moves: [...(from === 'inside' ? HOME : []), 'zero'] }],
+    subs: [{ key: edge ? 'probe.stage.angle' : 'probe.stage.size', moves: [...(from === 'inside' ? homeOf(name) : []), 'zero'] }],
   }]);
 };

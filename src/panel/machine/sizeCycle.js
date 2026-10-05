@@ -28,6 +28,11 @@ const CYCLES = {
   'edge-back': bossCycleOf({ layout: 'edge-back' }),
   'edge-left': bossCycleOf({ layout: 'edge-left' }),
   'edge-right': bossCycleOf({ layout: 'edge-right' }),
+  // A pocket's wall from inside, one end of a pair.
+  'wall-front': bossCycleOf({ layout: 'wall-front' }),
+  'wall-back': bossCycleOf({ layout: 'wall-back' }),
+  'wall-left': bossCycleOf({ layout: 'wall-left' }),
+  'wall-right': bossCycleOf({ layout: 'wall-right' }),
   'rect-outside-turned': bossCycleOf({ layout: 'turned-outside' }),
   'rect-inside-turned': bossCycleOf({ layout: 'turned-inside' }),
   'oval-outside': bossCycleOf({ layout: 'oval-outside' }),

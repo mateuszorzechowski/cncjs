@@ -40,21 +40,27 @@ export const SHAPES = [
   { id: 'edge-right', kind: 'edge', key: 'probe.shape.edgeRight', side: 'outside', place: 'probe.place.edge' },
   // One feature to another (Mateusz, 2026-10-05): the two picked on the step that says how the others lie.
   { id: 'distance', kind: 'distance', key: 'probe.shape.distance', side: 'inside', place: 'probe.place.hole' },
+  // A pocket's wall from inside, one end of a pair only (2026-10-05: *"a angle i corner działa w środku?"*).
+  { id: 'wall-front', kind: 'wall', key: 'probe.shape.wallFront', side: 'inside', place: 'probe.place.wall' },
+  { id: 'wall-back', kind: 'wall', key: 'probe.shape.wallBack', side: 'inside', place: 'probe.place.wall' },
+  { id: 'wall-left', kind: 'wall', key: 'probe.shape.wallLeft', side: 'inside', place: 'probe.place.wall' },
+  { id: 'wall-right', kind: 'wall', key: 'probe.shape.wallRight', side: 'inside', place: 'probe.place.wall' },
   // Two edges that meet (2026-10-05): the angle between them and the corner, a zero there if asked.
   { id: 'angle', kind: 'angle', key: 'probe.shape.angle', side: 'outside', place: 'probe.place.edge' },
 ];
 
 /*
  * A pair, two features measured one after the other (the server's
- * `strategies/distance`): a distance's two ends — a hole, a stud or an edge
- * — or a corner's two edges, which must meet. Kept in the wizard's one
+ * `strategies/distance`): a distance's two ends — a hole, a stud, an edge
+ * or a pocket's wall from inside — or a corner's two edges or walls, which
+ * must meet. Kept in the wizard's one
  * choice as `shape:a:b`, so it goes wherever a shape goes; asked for as
  * `{ shape, a, b }`.
  */
-const EDGE_PARTS = ['edge-front', 'edge-back', 'edge-left', 'edge-right'];
-const across = (part) => (['edge-front', 'edge-back'].includes(part) ? 'y' : 'x');
+const EDGE_PARTS = ['edge-front', 'edge-back', 'edge-left', 'edge-right', 'wall-front', 'wall-back', 'wall-left', 'wall-right'];
+const across = (part) => (/-(front|back)$/.test(part) ? 'y' : 'x');
 // Two edges square to each other: they meet in a corner.
-const crossing = (a, b) => a.startsWith('edge-') && b.startsWith('edge-') && across(a) !== across(b);
+const crossing = (a, b) => EDGE_PARTS.includes(a) && EDGE_PARTS.includes(b) && across(a) !== across(b);
 export const PAIRS = {
   // Edges square to each other meet in a corner, not at a distance: the server refuses them (`edges-crossing`).
   distance: { parts: ['circle-inside', 'circle-outside', ...EDGE_PARTS], first: ['circle-inside', 'circle-inside'], fits: (a, b) => !crossing(a, b) },

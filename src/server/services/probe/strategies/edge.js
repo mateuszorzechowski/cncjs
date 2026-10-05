@@ -54,14 +54,45 @@ export const edgeSteps = (edge, params) => {
 };
 
 /**
+ * A pocket's wall from inside (Mateusz, 2026-10-05: *"a angle i corner
+ * działa w środku?"*), for a distance or a corner (`distance`): the ball
+ * starts in the pocket under its edge, as for a hole. At each of two points,
+ * `spacing` apart along the wall — half of it each way from the start — it
+ * goes back to the start across the wall, along it to the point, and
+ * touches the wall moving out to it; at the end back to the start, across
+ * the wall first, away from it. `wall` names it as an edge is named: the
+ * front wall is towards −Y, touched moving −Y.
+ */
+export const wallSteps = (wall, params, start) => {
+  const { axis, along, sign } = EDGES[wall];
+  const point = (n) => {
+    const key = keyOf(EDGES[wall], n);
+    return [
+      move(`${key}-in`, () => ({ [axis]: start[axis] })),
+      move(`${key}-along`, () => ({ [along]: start[along] + (n === 1 ? -1 : 1) * params.spacing / 2 })),
+      ...touch(axis, sign, params.holeSize, key, params),
+    ];
+  };
+  return [
+    ...point(1),
+    ...point(2),
+    move(`return-${axis}`, () => ({ [axis]: start[axis] })),
+    move(`return-${along}`, () => ({ [along]: start[along] })),
+  ];
+};
+
+/**
  * The edge from its two touches: `{ kind, size: { a }, spread, each, centre }`
  * — `a` its angle in degrees, anticlockwise from the axis it runs along (X
  * for the front and back, Y for the sides); `centre` where it crosses the
  * line through the start, on its own axis, machine coordinates. The ball's
- * centres run parallel to the edge, its radius off it square to it.
+ * centres run parallel to the edge, its radius off it square to it — into
+ * the part, or out into the wall for a pocket's wall (`inside`).
  */
-export const edgeOf = (edge, params, seen) => {
-  const { axis, along, sign } = EDGES[edge];
+export const edgeOf = (edge, params, seen, inside = false) => {
+  const { axis, along } = EDGES[edge];
+  // The way it faces, off the material: a wall faces back into its pocket.
+  const sign = inside ? -EDGES[edge].sign : EDGES[edge].sign;
   const [a, b] = [1, 2].map((n) => seen[keyOf(EDGES[edge], n)]);
   const runs = b[along] - a[along];
   const off = b[axis] - a[axis];
@@ -80,10 +111,11 @@ export const edgeOf = (edge, params, seen) => {
  * coordinates, the ball's radius taken off square to it; `out` the way it
  * faces, off the part.
  */
-export const edgeLine = (edge, params, seen) => {
-  const { axis, along, sign } = EDGES[edge];
+export const edgeLine = (edge, params, seen, inside = false) => {
+  const { axis, along } = EDGES[edge];
+  const sign = inside ? -EDGES[edge].sign : EDGES[edge].sign;
   const [a, b] = [1, 2].map((n) => seen[keyOf(EDGES[edge], n)]);
-  const middle = edgeOf(edge, params, seen).centre[axis];
+  const middle = edgeOf(edge, params, seen, inside).centre[axis];
   const length = Math.hypot(b.x - a.x, b.y - a.y);
   return {
     at: { [axis]: middle, [along]: (a[along] + b[along]) / 2 },
