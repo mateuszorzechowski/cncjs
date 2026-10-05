@@ -84,6 +84,7 @@ export const KINDS = [
   { id: 'circle', key: 'probe.kind.circle', note: 'probe.kind.circleNote' },
   { id: 'rect', key: 'probe.kind.rect', note: 'probe.kind.rectNote' },
   { id: 'width', key: 'probe.kind.width', note: 'probe.kind.widthNote' },
+  { id: 'oval', key: 'probe.kind.oval', note: 'probe.kind.ovalNote' },
   { id: 'edge', key: 'probe.kind.edge', note: 'probe.kind.edgeNote' },
 ];
 
@@ -99,6 +100,9 @@ export const SHAPES = [
   { id: 'groove-y', kind: 'width', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
   { id: 'bar-x', kind: 'width', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
   { id: 'bar-y', kind: 'width', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
+  // An oval, along the axes or turned (the server's `strategies/oval`).
+  { id: 'oval-inside', kind: 'oval', key: 'probe.shape.ovalInside', side: 'inside', place: 'probe.place.hole' },
+  { id: 'oval-outside', kind: 'oval', key: 'probe.shape.ovalOutside', side: 'outside', place: 'probe.place.boss' },
   // An edge, by the way it faces: the front faces −Y (the server's `strategies/edge`).
   { id: 'edge-front', kind: 'edge', key: 'probe.shape.edgeFront', side: 'outside', place: 'probe.place.edge' },
   { id: 'edge-back', kind: 'edge', key: 'probe.shape.edgeBack', side: 'outside', place: 'probe.place.edge' },

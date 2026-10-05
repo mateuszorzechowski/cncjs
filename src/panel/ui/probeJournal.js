@@ -10,8 +10,10 @@ import { t } from '../i18n';
 
 const AXES = ['x', 'y', 'z'];
 // A size's figures: a circle's diameter, an edge's angle, or each axis.
-const SIZES = ['d', 'a', ...AXES];
-const sizeName = (key) => ({ d: 'Ø', a: t('journal.detail.angle') }[key] ?? key.toUpperCase());
+const SIZES = ['d', 'a', 'major', 'minor', ...AXES];
+const sizeName = (key) => ({
+  d: 'Ø', a: t('journal.detail.angle'), major: t('journal.detail.major'), minor: t('journal.detail.minor'),
+}[key] ?? key.toUpperCase());
 // An angle in degrees, never converted; a length as `units` says it.
 const figureOf = (key, value, units) => (key === 'a' ? `${degrees(value)}°` : units.figure(value));
 
@@ -91,7 +93,10 @@ export const probeDetails = (entry, units) => {
       rows.push([t('journal.detail.off'), mm(data.off)]);
     }
     if (data.turn) {
-      rows.push([t('journal.detail.angle'), `${degrees(data.turn.a)}°`], [t('journal.detail.square'), `${degrees(data.turn.square)}°`]);
+      rows.push([t('journal.detail.angle'), `${degrees(data.turn.a)}°`]);
+    }
+    if (Number.isFinite(data.turn?.square)) {
+      rows.push([t('journal.detail.square'), `${degrees(data.turn.square)}°`]);
     }
     if (data.centre) {
       rows.push([t('journal.detail.centre', { wcs: data.wcs ?? '' }), `${axesSaid(data.centre, (axis) => units.figure(data.centre[axis]))} ${units.length}`]);

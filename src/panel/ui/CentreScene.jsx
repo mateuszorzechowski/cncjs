@@ -154,8 +154,10 @@ const CentreScene = ({
     outline = {
       x: -part.r, y: -part.r, width: 2 * part.r, height: 2 * part.r,
     };
+  } else if (part.oval) {
+    outline = { rx: part.oval[0], ry: part.oval[1] };
   }
-  const Outline = part.strip || part.square ? 'rect' : 'circle';
+  const Outline = { true: 'rect', false: part.oval ? 'ellipse' : 'circle' }[Boolean(part.strip || part.square)];
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />

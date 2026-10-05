@@ -23,7 +23,7 @@ import {
   AXES, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, above, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
 import {
-  EDGE_TILT, anglePoints, buildSides, layoutOf, sideGroups,
+  EDGE_TILT, OVAL, anglePoints, buildSides, layoutOf, sideGroups,
 } from './edgeMoves';
 import { holeSide } from './holeSide';
 import { phasesOf } from './bossPhases';
@@ -221,8 +221,12 @@ export const bossCycleOf = ({
       touched: (layout && move.kind === 'zero' ? ORDER.filter((one) => MOVES[one].kind === 'fast' && MOVES[one].point).map((one) => MOVES[one].side) : sides)
         .map((side) => onSide(MOVES[`${side}Fast`])),
       // And the angle itself: from the axis the side runs along, at the first touch, to the line through both.
+      // An oval's from its middle along its long axis; a side's through its first two touches.
       angle: layout && move.kind === 'zero' ? {
-        ...Object.fromEntries(['at', 'to'].map((end, k) => [end, onSide(MOVES[`${ANGLE[k]}Fast`])])), base: setOn(MOVES[`${ANGLE[0]}Along`].axis, [0, 0], 1), text: sizes.a ?? '∠', lit: lit('dim'),
+        ...(L.oval ? { at: [0, 0], to: [Math.cos((tilt * Math.PI) / 180), Math.sin((tilt * Math.PI) / 180)] } : Object.fromEntries(['at', 'to'].map((end, k) => [end, onSide(MOVES[`${ANGLE[k]}Fast`])]))),
+        base: setOn(MOVES[`${ANGLE[0]}Along`].axis, [0, 0], 1),
+        text: sizes.a ?? '∠',
+        lit: lit('dim'),
       } : null,
       contact,
       centre: move.kind === 'centre' && p >= move.end ? move.to : null,
@@ -253,7 +257,7 @@ export const bossCycleOf = ({
       back: () => `G0 ${outward}${texts.retract}`,
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
-      zero: () => [{ true: 'probe.size.codeEdge', false: layout ? 'probe.size.codeTurned' : 'probe.size.codeBoss' }[edge]],
+      zero: () => [{ true: 'probe.size.codeEdge', false: { true: 'probe.size.codeOval', false: layout ? 'probe.size.codeTurned' : 'probe.size.codeBoss' }[Boolean(L?.oval)] }[edge]],
       centre: () => [move.code ?? 'probe.hole.centreCode'],
     };
     return CODES[move.kind]();
@@ -287,8 +291,9 @@ export const bossCycleOf = ({
     kind: inside ? 'hole' : 'boss', r: BOSS_R, toolR: TOOL_R, grow: inside ? 1.2 : 0.6, view: [-101, -94, 202, 188],
     // One axis: a bar, drawn as a strip that wide (`CentreScene`).
     strip: axes.length === 1 ? axes[0] : null,
-    // A rectangle measured (Pomiar), or a turned part's: drawn square, not round — turned by its angle.
-    square: square || Boolean(layout),
+    // A rectangle measured (Pomiar), or a turned part's: drawn square, not round — an oval as one — turned by its angle.
+    square: square || (Boolean(layout) && !L.oval),
+    oval: L?.oval ? OVAL : null,
     turn: layout ? tilt : 0,
   };
 

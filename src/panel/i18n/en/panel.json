@@ -733,7 +733,9 @@
       "off": "Out of round",
       "centre": "Middle ({{wcs}})",
       "angle": "angle",
-      "square": "Off square"
+      "square": "Off square",
+      "major": "Long axis",
+      "minor": "Short axis"
     },
     "range": {
       "m15": "15 min",
@@ -1526,7 +1528,9 @@
       "partSize": "Part's longer side (roughly)",
       "grooveSize": "Groove width (roughly)",
       "barSize": "Bar width (roughly)",
-      "spacing": "Spacing of the points on the edge"
+      "spacing": "Spacing of the points on the edge",
+      "ovalStudSize": "Stud's long axis (roughly)",
+      "ovalHoleSize": "Hole's long axis (roughly)"
     },
     "step": {
       "method": "Method",
@@ -1892,13 +1896,16 @@
       "edgeLeft": "Left side",
       "edgeRight": "Right side",
       "rectInsideTurned": "Pocket at an angle",
-      "rectOutsideTurned": "Part at an angle"
+      "rectOutsideTurned": "Part at an angle",
+      "ovalInside": "Oval hole",
+      "ovalOutside": "Oval stud"
     },
     "shapeLabel": "How it lies",
     "size": {
       "move": {
         "size": "Size: the touches apart, and the ball",
-        "edge": "Angle: from the two touches and their spacing"
+        "edge": "Angle: from the two touches and their spacing",
+        "oval": "Oval: the ellipse through eight touches"
       },
       "codeHole": "size = touches apart + ball Ø",
       "codeBoss": "size = touches apart − ball Ø",
@@ -1924,7 +1931,13 @@
       "codeTurned": "sides and angle = from the lines through each side's touches",
       "square": "Off square",
       "squareWhy": "How far the sides across differ in angle from those along. Near zero, the corners are square; more, a rhombus, or a touch that met the next wall (make the spacing smaller).",
-      "turnAngle": "Turn"
+      "turnAngle": "Turn",
+      "codeOval": "axes, angle and middle = the ellipse fitted to the touches, the ball taken off",
+      "major": "Long axis",
+      "minor": "Short axis",
+      "majorAngle": "Long axis angle",
+      "offOval": "Off the ellipse",
+      "offOvalWhy": "Off the ellipse: the touch farthest from the fitted ellipse less the nearest. Near zero, it is an oval; more, the shape is no ellipse (a slot with round ends, say) or has a flaw."
     },
     "kindLabel": "What you measure",
     "kind": {
@@ -1935,7 +1948,9 @@
       "width": "Width",
       "widthNote": "A groove or a bar, along one axis: width and middle.",
       "edge": "Edge and angle",
-      "edgeNote": "A side of the part at two points: its angle to the axis and where the edge lies."
+      "edgeNote": "A side of the part at two points: its angle to the axis and where the edge lies.",
+      "oval": "Oval",
+      "ovalNote": "An oval hole or stud, along the axes or turned: both axes, the angle and the middle."
     }
   }
 }

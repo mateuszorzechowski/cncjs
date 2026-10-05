@@ -3,6 +3,7 @@ import { probeParams } from '..';
 import { STRATEGIES, describeStrategies } from '../strategies';
 import { CORNERS } from '../strategies/corner';
 import { EDGES } from '../strategies/paper';
+import { fitEllipse } from '../strategies/oval';
 import { fitCircle } from '../strategies/size';
 
 /*
@@ -149,10 +150,80 @@ const turnedContact = (turned, radius, from, to) => {
   return best && best.hit;
 };
 
+/*
+ * Where a move first meets an ellipse — `{ x, y, a, b (halves), angle
+ * (degrees), z: [bottom, top], inside }`: a stud standing (its top too), or
+ * an oval hole (`inside`, the ball in it) — or null. Found as the machine
+ * would: the first place along the move where the ball's centre is its
+ * radius from the wall, narrowed by halving.
+ */
+const ovalContact = (ovals, radius, from, to) => {
+  const axis = AXES.find((a) => to[a] !== from[a]);
+  for (const oval of ovals) {
+    const g = (oval.angle * Math.PI) / 180;
+    const local = (p) => [(p.x - oval.x) * Math.cos(g) + (p.y - oval.y) * Math.sin(g), -(p.x - oval.x) * Math.sin(g) + (p.y - oval.y) * Math.cos(g)];
+    const within = (p) => (local(p)[0] / oval.a) ** 2 + (local(p)[1] / oval.b) ** 2 < 1;
+    if (axis === 'z') {
+      if (!oval.inside && within(from) && from.z >= oval.z[1] && to.z <= oval.z[1]) {
+        return { ...from, z: oval.z[1] };
+      }
+      continue;
+    }
+    if (from.z <= oval.z[0] || from.z >= oval.z[1]) {
+      continue;
+    }
+    // How far the ball's centre is from the wall: sampled round it, then narrowed.
+    const gap = (p) => {
+      const [u, v] = local(p);
+      const d = (t) => Math.hypot(oval.a * Math.cos(t) - u, oval.b * Math.sin(t) - v);
+      let best = 0;
+      for (let k = 1; k < 720; k++) {
+        if (d((k * Math.PI) / 360) < d(best)) {
+          best = (k * Math.PI) / 360;
+        }
+      }
+      let [lo, hi] = [best - Math.PI / 360, best + Math.PI / 360];
+      for (let k = 0; k < 80; k++) {
+        const [m1, m2] = [lo + (hi - lo) / 3, hi - (hi - lo) / 3];
+        if (d(m1) < d(m2)) {
+          hi = m2;
+        } else {
+          lo = m1;
+        }
+      }
+      return d((lo + hi) / 2);
+    };
+    // Clear of the wall while the ball is on its own side of it, by more than its radius.
+    const clear = (t) => {
+      const p = { ...from, [axis]: from[axis] + t * (to[axis] - from[axis]) };
+      return within(p) === Boolean(oval.inside) && gap(p) > radius;
+    };
+    const steps = 400;
+    let k = 1;
+    while (k <= steps && clear(k / steps)) {
+      k += 1;
+    }
+    if (k > steps) {
+      continue;
+    }
+    let [lo, hi] = [(k - 1) / steps, k / steps];
+    for (let n = 0; n < 50; n++) {
+      const mid = (lo + hi) / 2;
+      if (clear(mid)) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    return { ...from, [axis]: from[axis] + lo * (to[axis] - from[axis]) };
+  }
+  return null;
+};
+
 /** Run one method on the bench to the end; the outcome and every line sent. */
 // `radius`: what touches — the tool, or a 3D probe's ball.
 const measure = ({
-  method, options = {}, params, boxes = [], rounds = [], slants = [], turned = [], start, radius = params.toolDiameter / 2,
+  method, options = {}, params, boxes = [], rounds = [], slants = [], turned = [], ovals = [], start, radius = params.toolDiameter / 2,
 }) => {
   const strategy = STRATEGIES[method];
   const queue = [];
@@ -181,7 +252,7 @@ const measure = ({
       for (const axis of AXES.filter((a) => words[a] !== undefined)) {
         target[axis] = words[axis] + WCO[axis];
       }
-      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target), slantContact(slants, radius, pos, target), turnedContact(turned, radius, pos, target)].filter(Boolean);
+      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target), slantContact(slants, radius, pos, target), turnedContact(turned, radius, pos, target), ovalContact(ovals, radius, pos, target)].filter(Boolean);
       const way = (one) => AXES.reduce((sum, a) => sum + Math.abs(one[a] - pos[a]), 0);
       const hit = hits.sort((a, b) => way(a) - way(b))[0] ?? null;
       if (hit) {
@@ -620,6 +691,48 @@ describe('Pomiar: a rectangle at an angle', () => {
     });
 
     expect(Math.abs(STRATEGIES.measure.size(params, options, outcome.seen).turn.square)).toBeGreaterThan(1);
+  });
+});
+
+describe('Pomiar: an oval', () => {
+  const params = {
+    ...probeParams(), ballDiameter: 4, clear: 10, depth: 5, spacing: 14, bossSize: 50, holeSize: 50,
+  };
+  const radius = params.ballDiameter / 2;
+  const z = [-80, -50];
+  const [hx, hy] = [-120, -70];
+
+  test.each([[0, 'inside'], [25, 'inside'], [-60, 'outside'], [0, 'outside']])('turned %s°, %s: both axes, the long one\'s angle, the middle, round its wall', (angle, side) => {
+    const options = { shape: `oval-${side}` };
+    const ovals = [{
+      x: hx, y: hy, a: 20, b: 13, angle, z, inside: side === 'inside',
+    }];
+    const start = side === 'inside' ? { x: hx + 1, y: hy - 1, z: -60 } : { x: hx + 1, y: hy - 1, z: -45 };
+    const { outcome } = measure({
+      method: 'measure', options, params, radius, ovals, start,
+    });
+    const found = STRATEGIES.measure.size(params, options, outcome.seen);
+
+    expect(outcome.failure).toBeUndefined();
+    expect(found.kind).toBe('oval');
+    expect(found.size.major).toBeCloseTo(40, 3);
+    expect(found.size.minor).toBeCloseTo(26, 3);
+    expect(found.turn.a).toBeCloseTo(angle, 2);
+    expect(found.centre.x).toBeCloseTo(hx, 3);
+    expect(found.centre.y).toBeCloseTo(hy, 3);
+    expect(found.off).toBeLessThan(0.002);
+  });
+});
+
+describe('an ellipse fitted', () => {
+  test('through points on it: its middle, halves and the long one\'s way', () => {
+    const [cx, cy, a, b, g] = [300, -200, 9, 4, 0.5];
+    const points = [0, 0.7, 1.5, 2.2, 3.1, 4, 5.2].map((t) => [cx + a * Math.cos(t) * Math.cos(g) - b * Math.sin(t) * Math.sin(g), cy + a * Math.cos(t) * Math.sin(g) + b * Math.sin(t) * Math.cos(g)]);
+    const fit = fitEllipse(points);
+
+    close(fit, {
+      x: cx, y: cy, a, b, angle: g,
+    });
   });
 });
 

@@ -42,6 +42,28 @@ export const rimOf = (edge, tilt) => {
   return (u) => (sign * BOSS_R) / Math.cos(a) + slope * u;
 };
 
+// An oval as drawn: its halves, the long along its own X.
+export const OVAL = [BOSS_R, Math.round(BOSS_R * 0.68)];
+
+/**
+ * Where the line along `axis` through `spot` crosses the oval — halves
+ * `[ea, eb]`, turned `tilt` degrees — on its `sign` side, along that axis.
+ */
+const ovalCross = (axis, spot, sign, [ea, eb], tilt) => {
+  const g = (tilt * Math.PI) / 180;
+  const [c, s] = [Math.cos(g), Math.sin(g)];
+  // The point is spot + t·w, w the axis's way; into the oval's own frame, a quadratic in t.
+  const w = axis === 'x' ? [1, 0] : [0, 1];
+  const base = axis === 'x' ? [0, spot[1]] : [spot[0], 0];
+  const local = (p) => [p[0] * c + p[1] * s, -p[0] * s + p[1] * c];
+  const [p0, d] = [local(base), local(w)];
+  const qa = (d[0] / ea) ** 2 + (d[1] / eb) ** 2;
+  const qb = 2 * ((p0[0] * d[0]) / ea ** 2 + (p0[1] * d[1]) / eb ** 2);
+  const qc = (p0[0] / ea) ** 2 + (p0[1] / eb) ** 2 - 1;
+  const root = Math.sqrt(Math.max(0, qb * qb - 4 * qa * qc));
+  return sign > 0 ? (-qb + root) / (2 * qa) : (-qb - root) / (2 * qa);
+};
+
 /*
  * The layouts by name: an edge's (`edge-front` …), the part's and the
  * pocket's at an angle. `sides` in the order touched; `from`; where the ball
@@ -80,6 +102,32 @@ const LAYOUTS = {
       { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
     ],
   },
+  // An oval: touched as the rectangle at an angle, the ellipse fitted (the server's `strategies/oval`).
+  'oval-outside': {
+    sides: FOUR,
+    from: 'outside',
+    start: [4, -3],
+    reach: 'part',
+    oval: true,
+    // Closer than a square's: on an oval the four ways' points would meet in pairs at its shoulders.
+    span: 9,
+    params: [
+      { id: 'part', key: 'probe.group.stud', fields: ['bossSize'], names: { bossSize: 'probe.field.ovalStudSize' } },
+      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'depth', 'maxZ'] }, MEASURE, PROBE,
+    ],
+  },
+  'oval-inside': {
+    sides: FOUR,
+    from: 'inside',
+    start: [3, 2],
+    reach: 'holeSize',
+    oval: true,
+    span: 9,
+    params: [
+      { id: 'hole', key: 'probe.group.hole', fields: ['holeSize'], names: { holeSize: 'probe.field.ovalHoleSize' } },
+      { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
+    ],
+  },
 };
 export const layoutOf = (name) => LAYOUTS[name];
 
@@ -106,7 +154,9 @@ export const anglePoints = (name) => pointsOf(LAYOUTS[name].sides[0]);
  * an Along move, where its spacing's dimension stands (`spanAt`).
  */
 export const buildSides = (name, tilt = EDGE_TILT) => {
-  const { sides, from, start: S } = LAYOUTS[name];
+  const {
+    sides, from, start: S, oval, span = SPAN,
+  } = LAYOUTS[name];
   const inside = from === 'inside';
   const level = inside ? 0 : ABOVE;
   // The ball's centre touching a turned side is its radius off it, square to it.
@@ -136,15 +186,18 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
         order.push(`${side}In`);
         at = home;
       }
-      const spot = setOn(along, at, S[j] + (point === 1 ? -1 : 1) * SPAN);
+      const spot = setOn(along, at, S[j] + (point === 1 ? -1 : 1) * span);
       // The spacing's dimension outside the part — or inside the pocket — on the side away from this one.
       const spanAt = (axis === 'y' ? sign : -sign) * (BOSS_R + (inside ? -10 : 10));
       moves[`${side}Along`] = {
-        ...common, ...leg(at, spot, 'centre', 'probe.edge.move.along', ['spacing']), axis: along, spanAt, span: [S[j] - SPAN, S[j] + SPAN], code: 'probe.edge.alongCode',
+        ...common, ...leg(at, spot, 'centre', 'probe.edge.move.along', ['spacing']), axis: along, spanAt, span: [S[j] - span, S[j] + span], code: 'probe.edge.alongCode',
       };
       const out = inside ? spot : setOn(axis, spot, sign * OUT);
-      const rim = rimAt(spot[j]);
-      const wall = setOn(axis, out, rim - dir * reach);
+      // A square's side is straight; an oval's is crossed where the line through the point meets it, the ball's
+      // centre where it meets the oval grown — or, inside, shrunk — by the ball's radius.
+      const rim = oval ? ovalCross(axis, spot, sign, OVAL, tilt) : rimAt(spot[j]);
+      const grown = OVAL.map((half) => half + (inside ? -TOOL_R : TOOL_R));
+      const wall = setOn(axis, out, oval ? ovalCross(axis, spot, sign, grown, tilt) : rim - dir * reach);
       const off = setOn(axis, wall, wall[i] - dir * BACK);
       const touchAt = setOn(axis, wall, rim);
       // How far the search may go, as drawn: in to the start from outside, past the wall from inside.
@@ -176,7 +229,7 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
     at = S;
   }
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: name.startsWith('edge') ? 'probe.size.move.edge' : 'probe.size.move.size', uses: ['ballDiameter'], end: 0.35,
+    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: { true: 'probe.size.move.edge', false: oval ? 'probe.size.move.oval' : 'probe.size.move.size' }[name.startsWith('edge')], uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };

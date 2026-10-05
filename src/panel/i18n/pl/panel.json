@@ -733,7 +733,9 @@
       "off": "Odchyłka od okręgu",
       "centre": "Środek ({{wcs}})",
       "angle": "kąt",
-      "square": "Odchyłka od kąta prostego"
+      "square": "Odchyłka od kąta prostego",
+      "major": "Oś długa",
+      "minor": "Oś krótka"
     },
     "range": {
       "m15": "15 min",
@@ -1526,7 +1528,9 @@
       "partSize": "Dłuższy bok detalu (w przybliżeniu)",
       "grooveSize": "Szerokość rowka (w przybliżeniu)",
       "barSize": "Szerokość listwy (w przybliżeniu)",
-      "spacing": "Odstęp punktów na krawędzi"
+      "spacing": "Odstęp punktów na krawędzi",
+      "ovalStudSize": "Dłuższa oś czopu (w przybliżeniu)",
+      "ovalHoleSize": "Dłuższa oś otworu (w przybliżeniu)"
     },
     "step": {
       "method": "Metoda",
@@ -1892,13 +1896,16 @@
       "edgeLeft": "Lewy bok",
       "edgeRight": "Prawy bok",
       "rectInsideTurned": "Kieszeń pod kątem",
-      "rectOutsideTurned": "Detal pod kątem"
+      "rectOutsideTurned": "Detal pod kątem",
+      "ovalInside": "Owalny otwór",
+      "ovalOutside": "Owalny czop"
     },
     "shapeLabel": "Jak leży",
     "size": {
       "move": {
         "size": "Rozmiar: odstęp dotyków i kulka",
-        "edge": "Kąt: z dwóch dotyków i ich odstępu"
+        "edge": "Kąt: z dwóch dotyków i ich odstępu",
+        "oval": "Owal: elipsa przez osiem dotyków"
       },
       "codeHole": "rozmiar = odstęp dotyków + Ø kulki",
       "codeBoss": "rozmiar = odstęp dotyków − Ø kulki",
@@ -1924,7 +1931,13 @@
       "codeTurned": "boki i kąt = z prostych przez dotyki każdego boku",
       "square": "Odchyłka od kąta prostego",
       "squareWhy": "Różnica kątów boków poprzecznych i podłużnych. Blisko zera — narożniki proste; więcej — romb albo dotyk, który trafił w sąsiednią ściankę (zmniejsz odstęp punktów).",
-      "turnAngle": "Kąt obrotu"
+      "turnAngle": "Kąt obrotu",
+      "codeOval": "osie, kąt i środek = elipsa dopasowana do dotyków, kulka odjęta",
+      "major": "Oś długa",
+      "minor": "Oś krótka",
+      "majorAngle": "Kąt osi długiej",
+      "offOval": "Odchyłka od elipsy",
+      "offOvalWhy": "Odchyłka: najdalszy dotyk od dopasowanej elipsy minus najbliższy. Blisko zera — to owal; więcej — kształt nie jest elipsą (np. fasolka albo prostokąt z zaokrągleniami) albo wada."
     },
     "kindLabel": "Co mierzysz",
     "kind": {
@@ -1935,7 +1948,9 @@
       "width": "Szerokość",
       "widthNote": "Rowek albo listwa, w jednej osi: szerokość i środek.",
       "edge": "Krawędź i kąt",
-      "edgeNote": "Bok detalu w dwóch punktach: kąt do osi i gdzie leży krawędź."
+      "edgeNote": "Bok detalu w dwóch punktach: kąt do osi i gdzie leży krawędź.",
+      "oval": "Owal",
+      "ovalNote": "Owalny otwór albo czop, w osiach albo obrócony: obie osie, kąt i środek."
     }
   }
 }

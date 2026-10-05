@@ -30,10 +30,12 @@ const CYCLES = {
   'edge-right': bossCycleOf({ layout: 'edge-right' }),
   'rect-outside-turned': bossCycleOf({ layout: 'turned-outside' }),
   'rect-inside-turned': bossCycleOf({ layout: 'turned-inside' }),
+  'oval-outside': bossCycleOf({ layout: 'oval-outside' }),
+  'oval-inside': bossCycleOf({ layout: 'oval-inside' }),
 };
 // The shapes drawn turned, by the layout that draws them.
 const TURNED = {
-  'edge-front': 'edge-front', 'edge-back': 'edge-back', 'edge-left': 'edge-left', 'edge-right': 'edge-right', 'rect-outside-turned': 'turned-outside', 'rect-inside-turned': 'turned-inside',
+  'edge-front': 'edge-front', 'edge-back': 'edge-back', 'edge-left': 'edge-left', 'edge-right': 'edge-right', 'rect-outside-turned': 'turned-outside', 'rect-inside-turned': 'turned-inside', 'oval-outside': 'oval-outside', 'oval-inside': 'oval-inside',
 };
 
 /**

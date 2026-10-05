@@ -1,6 +1,7 @@
 import { touch } from '../moves';
 import { across as bossAcross } from './boss';
 import { EDGES, edgeOf, edgeSteps } from './edge';
+import { ovalOf } from './oval';
 import { turnedOf, turnedSteps } from './turned';
 import { across as holeAcross } from './hole';
 
@@ -39,6 +40,9 @@ export const SHAPES = {
   // At an angle: four sides at two points each, every move along one axis (`turned`).
   'rect-inside-turned': { kind: 'rect', side: 'inside', turned: true },
   'rect-outside-turned': { kind: 'rect', side: 'outside', turned: true },
+  // An oval, along the axes or turned: touched as the rectangle at an angle is, the ellipse fitted (`oval`).
+  'oval-inside': { kind: 'oval', side: 'inside', turned: true },
+  'oval-outside': { kind: 'oval', side: 'outside', turned: true },
   'groove-x': { kind: 'width', axes: ['x'], side: 'inside' },
   'groove-y': { kind: 'width', axes: ['y'], side: 'inside' },
   'bar-x': { kind: 'width', axes: ['x'], side: 'outside' },
@@ -128,7 +132,7 @@ const sizeOf = (shape, params, seen) => {
     return edgeOf(edge, params, seen);
   }
   if (turned) {
-    return turnedOf(side, params, seen);
+    return kind === 'oval' ? ovalOf(side, params, seen) : turnedOf(side, params, seen);
   }
   const ball = side === 'inside' ? params.ballDiameter : -params.ballDiameter;
   const last = params.holePasses - 1 + params.repeats;

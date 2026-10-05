@@ -19,10 +19,10 @@ import { EDGES } from './edge';
  * `depth`, moving in. From inside it starts in the middle of the pocket,
  * below its edge, and each search goes out no further than `holeSize`.
  */
-const SIDES = ['front', 'right', 'back', 'left'];
+export const SIDES = ['front', 'right', 'back', 'left'];
 
 // A point's touch, by the side's axis, the point and the side the ball comes from — as an edge's.
-const keyOf = ({ axis, sign }, n) => `${axis}${n}${sign > 0 ? 'a' : 'b'}`;
+export const keyOf = ({ axis, sign }, n) => `${axis}${n}${sign > 0 ? 'a' : 'b'}`;
 
 const outside = (params) => {
   const out = params.bossSize / 2 + params.clear;

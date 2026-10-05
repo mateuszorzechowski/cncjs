@@ -89,6 +89,19 @@ describe('a size\'s drawing', () => {
     expect(result.angle).toMatchObject({ base: [1, 0], text: '2,000°' });
   });
 
+  test('an oval: touched as the rectangle at an angle, drawn as an ellipse; its angle along the long axis', () => {
+    const stud = sizeCycle('measure', 'oval-outside', 20);
+    expect(stud.part).toMatchObject({ kind: 'boss', square: false, turn: 20 });
+    expect(stud.part.oval).toHaveLength(2);
+    expect(stud.order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast')).toHaveLength(8);
+    // Every touch on the wall of the oval grown by the ball, inside the bounds of its long half.
+    expect(stud.order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast').every((name) => Math.hypot(...stud.moveOf(name).touchAt) <= stud.part.oval[0] + 1e-9)).toBe(true);
+    const angle = stud.scene('zero', 1, { sizes: { a: '20,000°' } }).angle;
+    expect(angle.at).toEqual([0, 0]);
+    expect(angle.to[1] / angle.to[0]).toBeCloseTo(Math.tan((20 * Math.PI) / 180), 9);
+    expect(sizeCycle('measure', 'oval-inside').part).toMatchObject({ kind: 'hole' });
+  });
+
   test('a pass past the second is drawn as the second', () => {
     expect(sizeCycle('measure', 'circle-inside').moveOfPhase('x4a-fast')).toBe('x2pFast');
     expect(sizeCycle('measure', 'circle-outside').moveOfPhase('y3-centre')).toBe('y2c');
