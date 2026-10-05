@@ -22,6 +22,9 @@
 import {
   AXES, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, above, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
+import {
+  EDGE_PARAMS, EDGE_SIDES, EDGE_TILT, buildEdge, edgeGroups, edgePoints, edgeStart, rimOf,
+} from './edgeMoves';
 import { bossSide } from './bossSide';
 import { slowReach } from './probeFields';
 import { frameAt, layOut, totalOf } from './timeline';
@@ -32,11 +35,17 @@ const PART_NAMES = { group: 'probe.group.part', size: 'probe.field.bossSize' };
 /**
  * The part cycle for `axes` — one for a bar's width — ending in the size
  * measured (Mateusz, 2026-10-03); `square`, a rectangular part's, drawn so.
+ * `edge`, one of `EDGE_SIDES`: that side touched at two points for its angle
+ * instead, the part drawn square and turned `tilt` degrees — the angle
+ * measured, made large enough to see.
  */
-export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } = {}) => {
-  const { moves: MOVES, order: ORDER } = build({ axes });
+export const bossCycleOf = ({
+  axes = AXES, square = false, names = PART_NAMES, edge = null, tilt = EDGE_TILT,
+} = {}) => {
+  const { moves: MOVES, order: ORDER } = edge ? buildEdge({ edge, tilt }) : build({ axes });
+  const [rim, rimAt] = edge ? [EDGE_SIDES[edge], rimOf(edge, tilt)] : [];
   // A round part's size is its diameter, said once.
-  const round = !square && axes.length === 2;
+  const round = !square && !edge && axes.length === 2;
 
   /** The moves in order, for one pass or two. */
   const bossOrder = (passes = 2) => ORDER.filter((name) => passes !== 1 || MOVES[name].pass !== 2);
@@ -55,9 +64,10 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
    * pass across X and across Y, the zero. Two walls on an axis, so a
    * sub-stage there is a wall, as the hole's (rule, Mateusz 2026-10-01).
    */
-  const bossGroups = (passes = 2) => [{
+  const TOP = {
     id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow', 'zOff'] }],
-  }].concat([1, 2].slice(0, passes).flatMap((pass) => axes.map((axis) => {
+  };
+  const bossGroups = (passes = 2) => (edge ? [TOP, ...edgeGroups(edge)] : [TOP].concat([1, 2].slice(0, passes).flatMap((pass) => axes.map((axis) => {
     const AXIS = axis.toUpperCase();
     return {
       id: `${axis}${pass}`,
@@ -70,9 +80,9 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
     };
   }))).concat([{
     id: 'zero', key: 'probe.bar.size', folded: true, subs: [{ key: 'probe.stage.size', moves: ['zero'] }],
-  }]);
+  }]));
 
-  const BOSS_PARAMS = [
+  const BOSS_PARAMS = edge ? EDGE_PARAMS : [
     { id: 'part', key: names.group, fields: ['bossSize'], names: { bossSize: names.size } },
     { id: 'reach', key: 'probe.group.reach', fields: ['clear', 'depth', 'maxZ'] },
     // How many passes, a switch at the group's head.
@@ -82,8 +92,9 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
   ];
 
   // A figure being set loops the step it changes, its part lit.
-  const first = `${axes[0]}1p`;
+  const first = edge ? `${rim.axis}1${rim.sign > 0 ? 'p' : 'm'}` : `${axes[0]}1p`;
   const EDIT = {
+    spacing: [`${first}Along`, 'spacing'],
     bossSize: [`${first}Out`, 'size'],
     clear: [`${first}Out`, 'clear'],
     depth: [`${first}Down`, 'depth'],
@@ -129,8 +140,12 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
   // How far outside the part a set-up's dimensions stand, in the drawing's units.
   const ASIDE_PART = 10;
 
-  // Where the ball meets the side, from where its centre stands then.
-  const onSide = (centre) => [centre[0] * (BOSS_R / (BOSS_R + TOOL_R)), centre[1] * (BOSS_R / (BOSS_R + TOOL_R))];
+  // Where the ball meets the side, from where its centre stands then: on the round part's rim, or on an edge's straight side.
+  const onSide = (centre) => (edge
+    ? setOn(rim.axis, centre, rimAt(centre[AXES.indexOf(rim.along)]))
+    : [centre[0] * (BOSS_R / (BOSS_R + TOOL_R)), centre[1] * (BOSS_R / (BOSS_R + TOOL_R))]);
+
+  const EDGE_POINTS = edge ? edgePoints(edge) : [];
 
   // The steps after a side's fast touch: the side is touched.
   const TOUCHED = ['back', 'slow', 'up'];
@@ -153,21 +168,32 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
     const sides = [...new Set(ORDER.slice(0, ORDER.indexOf(name))
       .filter((one) => MOVES[one].kind === 'fast' && MOVES[one].pass === move.pass && (MOVES[one].side !== move.side || TOUCHED.includes(move.kind)))
       .map((one) => MOVES[one].side))];
+    // How far a side's search goes: out past it from the middle thought, or, for an edge, from where the ball started.
+    const out = say('clear', edge ? texts.clear : reachOf(texts));
     const {
       motion = null, limit = null, reach = null, dims: stepDims = [],
-    } = above(move, p, isGoing(move, p), said, upTo, lit, say('clear', reachOf(texts)), upTo(say('retract', slowReach(texts))));
+    } = above(move, p, isGoing(move, p), said, upTo, lit, out, upTo(say('retract', slowReach(texts))));
     // The step's arrow over its whole run, drawn or not: labels keep off it all along (L16).
     const { motion: way = null } = above(move, p, true, said, upTo, lit, '');
     // On a set-up, how far out from the middle thought: half the part and the way past it, one figure, the sum,
     // a short tick at the part's edge (rule 1, Mateusz 2026-10-02); lit, and named, with either figure.
     let dims = stepDims;
     if (move.kind === 'out') {
-      const edge = setOn(move.axis, move.out, move.guess + move.sign * BOSS_R);
       // Just outside the part, by its edge (review note #8, 2026-10-02: "bliżej krawędzi materiału").
       const at = BOSS_R + ASIDE_PART;
       dims = [{
-        id: lit('size') ? 'size' : 'clear', axis: move.axis, at, from: setOn(move.axis, move.out, move.guess), mid: edge, to: move.out, text: say('clear', reachOf(texts)), lit: lit('clear') || lit('size'),
+        id: lit('size') ? 'size' : 'clear', axis: move.axis, at, from: setOn(move.axis, move.out, move.guess), mid: setOn(move.axis, move.out, move.rim), to: move.out, text: out, lit: lit('clear') || lit('size'),
       }];
+    } else if (move.point && move.kind === 'centre') {
+      // The way between an edge's two points, along it, outside the part on its other side.
+      const span = setOn(move.axis, [0, 0], -Math.abs(move.to[AXES.indexOf(move.axis)]));
+      const across = rim.axis === 'y' ? -rim.sign : rim.sign;
+      dims = [{
+        id: 'spacing', axis: move.axis, at: -across * (BOSS_R + ASIDE_PART), from: span, to: setOn(move.axis, span, -span[AXES.indexOf(move.axis)]), text: said('spacing'), lit: lit('spacing'),
+      }];
+    } else if (edge && move.kind === 'zero') {
+      // An edge's result is an angle, said beside the drawing, not a size across it.
+      dims = [];
     } else if (move.kind === 'zero') {
       // The part's size, side to side, each axis measured — under it and beside it; a round one's one diameter.
       dims = (round ? ['x'] : axes).map((axis) => ({
@@ -188,7 +214,12 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
       limit,
       dims,
       reach,
-      touched: sides.map((side) => onSide(MOVES[`${side}Fast`].wall)),
+      // An edge's result shows both its touches: the angle is the line through them.
+      touched: (edge && move.kind === 'zero' ? EDGE_POINTS : sides).map((side) => onSide(MOVES[`${side}Fast`].wall)),
+      // And the angle itself: from the axis the side runs along, at the first touch, to the line through both.
+      angle: edge && move.kind === 'zero' ? {
+        ...Object.fromEntries(['at', 'to'].map((end, k) => [end, onSide(MOVES[`${EDGE_POINTS[k]}Fast`].wall)])), base: setOn(rim.along, [0, 0], 1), text: sizes.a ?? '∠', lit: lit('dim'),
+      } : null,
       contact,
       centre: move.kind === 'centre' && p >= move.end ? move.to : null,
       // The ball's diameter: it is taken off to say the part's size.
@@ -211,14 +242,14 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
       topBack: () => `G0 Z+${texts.retract}`,
       // The slow touch goes twice the way back, as the server's `touch` does.
       topSlow: () => `G38.2 Z-${twice} F${texts.slow}`,
-      out: () => ['probe.boss.outCode'],
+      out: () => [edge ? 'probe.edge.outCode' : 'probe.boss.outCode'],
       down: () => `G38.3 Z-${down} F${texts.fast}`,
-      fast: () => `G38.2 ${inward}${reachOf(texts)} F${texts.fast}`,
+      fast: () => `G38.2 ${inward}${edge ? texts.clear : reachOf(texts)} F${texts.fast}`,
       back: () => `G0 ${outward}${texts.retract}`,
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
-      zero: () => ['probe.size.codeBoss'],
-      centre: () => ['probe.hole.centreCode'],
+      zero: () => [edge ? 'probe.size.codeEdge' : 'probe.size.codeBoss'],
+      centre: () => [move.point ? 'probe.edge.alongCode' : 'probe.hole.centreCode'],
     };
     return CODES[move.kind]();
   };
@@ -236,14 +267,16 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
     const p = (ms % POSITION_MS) / POSITION_MS;
     const k = ease(clamp((p - 0.1) / 0.45));
     const from = [-150, 58];
+    const to = edge ? edgeStart(edge) : START;
     return {
-      tool: [from[0] + (START[0] - from[0]) * k, from[1] + (START[1] - from[1]) * k],
+      tool: [from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k],
       level: 2 - ease(clamp((p - 0.6) / 0.2)),
     };
   };
 
   // The server's parts of a touch, as the steps drawn: `x1a-out`, `-down`, `-fast`, `-back`, `-settle`, the slow one bare, `-off`, `-up`.
   const STEP_OF = {
+    along: 'Along',
     out: 'Out', down: 'Down', fast: 'Fast', back: 'Back', settle: 'Back', off: 'Off', up: 'Up',
   };
   const TOP_OF = {
@@ -279,6 +312,7 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
     down: 'probe.phase.down',
     up: 'probe.boss.phase.up',
     centre: 'probe.hole.phase.centre',
+    along: 'probe.edge.phase.along',
   };
 
   /** What the ball is doing at the server's step, as `t(key, vars)`. */
@@ -296,8 +330,9 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
       kind: 'boss', r: BOSS_R, toolR: TOOL_R, grow: 0.6, view: [-101, -94, 202, 188],
       // One axis: a bar, drawn as a strip that wide (`CentreScene`).
       strip: axes.length === 1 ? axes[0] : null,
-      // A rectangle measured (Pomiar): drawn square, not round.
-      square,
+      // A rectangle measured (Pomiar), or an edge's part: drawn square, not round — the edge's turned.
+      square: square || Boolean(edge),
+      turn: edge ? tilt : 0,
     },
     // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
     side: (name, p, how) => bossSide(MOVES[name], p, how),
@@ -308,7 +343,7 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
       const vertical = ['topFast', 'topBack', 'topSlow', 'down', 'up'].includes(move.kind);
       return vertical || focus === 'depth' ? 'side' : 'top';
     },
-    place: 'probe.place.boss',
+    place: edge ? 'probe.place.edge' : 'probe.place.boss',
     params: BOSS_PARAMS,
     hold: LOOP_HOLD_MS,
     order: bossOrder,
@@ -319,7 +354,8 @@ export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } 
     titleOf,
     scene: bossScene,
     code: bossCode,
-    explain: (name, texts, say) => explainOf(MOVES[name], texts, say),
+    // An edge's search is the clearance alone, no sum to explain.
+    explain: (name, texts, say) => (edge && ['out', 'fast'].includes(MOVES[name].kind) ? null : explainOf(MOVES[name], texts, say)),
     usesAt,
     positionAt,
     moveOfPhase,

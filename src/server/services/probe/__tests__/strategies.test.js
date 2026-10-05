@@ -79,10 +79,37 @@ const roundContact = (rounds, radius, from, to) => {
   return best === null ? null : { ...from, [axis]: best };
 };
 
+/*
+ * Where a move first meets a part whose front edge runs at an angle — `{ x,
+ * y, angle (degrees), z: [bottom, top] }`, the part on the +Y side of the
+ * line through (x, y) — or null: its edge moving +Y, its top from above.
+ * The ball's centre stops `radius` off the edge, square to it; on the top,
+ * where a box's does.
+ */
+const slantContact = (slants, radius, from, to) => {
+  const axis = AXES.find((a) => to[a] !== from[a]);
+  for (const slant of slants) {
+    const t = Math.tan(slant.angle * Math.PI / 180);
+    const edgeAt = (x) => slant.y + t * (x - slant.x);
+    if (axis === 'z') {
+      // As a box's top: met where the tool's end is, at the top itself.
+      if (from.y > edgeAt(from.x) && from.z >= slant.z[1] && to.z <= slant.z[1]) {
+        return { ...from, z: slant.z[1] };
+      }
+    } else if (axis === 'y' && to.y > from.y && from.z > slant.z[0] && from.z < slant.z[1]) {
+      const stop = edgeAt(from.x) - radius / Math.cos(Math.atan(t));
+      if (stop >= from.y - 1e-9 && stop <= to.y) {
+        return { ...from, y: stop };
+      }
+    }
+  }
+  return null;
+};
+
 /** Run one method on the bench to the end; the outcome and every line sent. */
 // `radius`: what touches — the tool, or a 3D probe's ball.
 const measure = ({
-  method, options = {}, params, boxes = [], rounds = [], start, radius = params.toolDiameter / 2,
+  method, options = {}, params, boxes = [], rounds = [], slants = [], start, radius = params.toolDiameter / 2,
 }) => {
   const strategy = STRATEGIES[method];
   const queue = [];
@@ -111,7 +138,7 @@ const measure = ({
       for (const axis of AXES.filter((a) => words[a] !== undefined)) {
         target[axis] = words[axis] + WCO[axis];
       }
-      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target)].filter(Boolean);
+      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target), slantContact(slants, radius, pos, target)].filter(Boolean);
       const way = (one) => AXES.reduce((sum, a) => sum + Math.abs(one[a] - pos[a]), 0);
       const hit = hits.sort((a, b) => way(a) - way(b))[0] ?? null;
       if (hit) {
@@ -454,6 +481,47 @@ describe('Pomiar: a size, not a zero', () => {
     [{}, 'bad-shape'],
   ])('a shape that is not one is refused: %j', (options, code) => {
     expect(pomiar.check(options)).toBe(code);
+  });
+});
+
+describe('Pomiar: an edge and its angle', () => {
+  const params = {
+    ...probeParams(), ballDiameter: 4, clear: 10, depth: 5, spacing: 30,
+  };
+  const radius = params.ballDiameter / 2;
+  const options = { shape: 'edge-front' };
+  const z = [-80, -50];
+
+  test.each([0, 1.5, -3])('the front edge at %s°: its angle and where it crosses the start', (angle) => {
+    const slants = [{ x: -100, y: -60, angle, z }];
+    const start = { x: -100, y: -55, z: -45 };
+    const { outcome, pos } = measure({
+      method: 'measure', options, params, radius, slants, start,
+    });
+    const found = STRATEGIES.measure.size(params, options, outcome.seen);
+
+    expect(outcome.failure).toBeUndefined();
+    expect(found.kind).toBe('edge');
+    expect(found.size.a).toBeCloseTo(angle, 6);
+    close(found.centre, { y: -60 });
+    expect(Object.keys(found.centre)).toEqual(['y']);
+    // Over the second point at the end, just above the top.
+    close(pos, { x: start.x + params.spacing / 2, z: -50 + params.retract });
+  });
+
+  test('two touches, spacing apart along the edge, each from out past it', () => {
+    const { sent } = measure({
+      method: 'measure', options, params, radius, slants: [{ x: -100, y: -60, angle: 0, z }], start: { x: -100, y: -55, z: -45 },
+    });
+    const sideways = sent.filter((line) => line.includes('G38.2') && wordsOf(line).y !== undefined);
+
+    // Fast and slow at each point.
+    expect(sideways).toHaveLength(4);
+    // Every way one axis: along the edge to the point, then out past it.
+    const ways = sent.filter((line) => line.includes('G53 G0')).map(wordsOf);
+    expect(ways.every((way) => Object.keys(way).length === 1)).toBe(true);
+    expect(ways.filter((way) => way.x !== undefined).map((way) => way.x)).toEqual([-115, -85]);
+    expect(ways.find((way) => way.y !== undefined).y).toBeCloseTo(-65, 6);
   });
 });
 

@@ -731,7 +731,8 @@
       "passes": "Passes",
       "ball": "Ball",
       "off": "Out of round",
-      "centre": "Middle ({{wcs}})"
+      "centre": "Middle ({{wcs}})",
+      "angle": "angle"
     },
     "range": {
       "m15": "15 min",
@@ -1455,7 +1456,8 @@
       "map": "Raise the tool above the clamps, no higher than the Z reach limit over the board. X and Y do not matter: at this height the machine travels over the first point by itself and starts looking for the board.",
       "groove": "Lower the probe's ball into the groove, a few millimetres below its edge, roughly in the middle — clear of the walls.",
       "bar": "Set the probe's ball over the middle of the bar, a few millimetres above its top — less than the Z travel limit.",
-      "pocket": "Lower the probe's ball into the pocket, a few millimetres below its edge, roughly in the middle — without touching the walls."
+      "pocket": "Lower the probe's ball into the pocket, a few millimetres below its edge, roughly in the middle — without touching the walls.",
+      "edge": "Put the probe's ball over the part, a few millimetres in from the edge chosen and above the top — less than the clearance past the side and the Z travel limit."
     },
     "corner": {
       "backLeft": "Back left",
@@ -1522,7 +1524,8 @@
       "pocketSize": "Pocket's longer side (roughly)",
       "partSize": "Part's longer side (roughly)",
       "grooveSize": "Groove width (roughly)",
-      "barSize": "Bar width (roughly)"
+      "barSize": "Bar width (roughly)",
+      "spacing": "Spacing of the points on the edge"
     },
     "step": {
       "method": "Method",
@@ -1608,12 +1611,28 @@
       "xLeft": "Left side (X)",
       "xRight": "Right side (X)",
       "yFront": "Front side (Y)",
-      "yBack": "Back side (Y)"
+      "yBack": "Back side (Y)",
+      "move": {
+        "along": "Point {{pass}} · along the edge, over the top",
+        "setOut": "Point {{pass}} · {{axis}}: set-up — past the edge",
+        "setDown": "Point {{pass}} · {{axis}}: set-up — down beside the edge",
+        "fast": "Point {{pass}} · {{axis}}: fast touch of the edge",
+        "back": "Point {{pass}} · {{axis}}: back off",
+        "slow": "Point {{pass}} · {{axis}}: slow measurement",
+        "off": "Point {{pass}} · {{axis}}: off",
+        "up": "Point {{pass}} · {{axis}}: up over the part"
+      },
+      "alongCode": "G0 along the edge to the point",
+      "phase": {
+        "along": "along the edge to the point"
+      },
+      "outCode": "G0 past the edge, over the top"
     },
     "stage": {
       "search": "finding",
       "zero": "setting zero",
-      "size": "size"
+      "size": "size",
+      "angle": "angle"
     },
     "cycle": {
       "alarm": "ALARM:5 · no touch",
@@ -1666,7 +1685,8 @@
     "bar": {
       "measure": "measure",
       "zero": "zero",
-      "size": "size"
+      "size": "size",
+      "angle": "angle"
     },
     "group": {
       "plate": "Plate",
@@ -1861,12 +1881,17 @@
       "grooveX": "Groove X",
       "grooveY": "Groove Y",
       "barX": "Bar X",
-      "barY": "Bar Y"
+      "barY": "Bar Y",
+      "edgeFront": "Front",
+      "edgeBack": "Back",
+      "edgeLeft": "Left side",
+      "edgeRight": "Right side"
     },
     "shapeLabel": "How it lies",
     "size": {
       "move": {
-        "size": "Size: the touches apart, and the ball"
+        "size": "Size: the touches apart, and the ball",
+        "edge": "Angle: from the two touches and their spacing"
       },
       "codeHole": "size = touches apart + ball Ø",
       "codeBoss": "size = touches apart − ball Ø",
@@ -1883,7 +1908,12 @@
       "offWhy": "Out of round: the farthest touch from the middle less the nearest. Near zero, it is a circle; more, an oval, a shape at an angle or a flaw.",
       "centreIn": "Middle in",
       "centre": "Middle {{axis}}",
-      "zero": "Set zero {{axes}}"
+      "zero": "Set zero {{axes}}",
+      "codeEdge": "angle = atan(touch difference / spacing)",
+      "angle": "Edge angle",
+      "angleWhy": "The angle from the axis, anticlockwise. Grbl does not rotate coordinates (no G68): square the part, or allow for the angle in the program.",
+      "edgeIn": "Edge in",
+      "edgeAt": "Edge {{axis}}"
     },
     "kindLabel": "What you measure",
     "kind": {
@@ -1892,7 +1922,9 @@
       "rect": "Rectangle",
       "rectNote": "A pocket or a part, its sides along X and Y: sizes and middle.",
       "width": "Width",
-      "widthNote": "A groove or a bar, along one axis: width and middle."
+      "widthNote": "A groove or a bar, along one axis: width and middle.",
+      "edge": "Edge and angle",
+      "edgeNote": "A side of the part at two points: its angle to the axis and where the edge lies."
     }
   }
 }

@@ -731,7 +731,8 @@
       "passes": "Przejścia",
       "ball": "Kulka",
       "off": "Odchyłka od okręgu",
-      "centre": "Środek ({{wcs}})"
+      "centre": "Środek ({{wcs}})",
+      "angle": "kąt"
     },
     "range": {
       "m15": "15 min",
@@ -1455,7 +1456,8 @@
       "map": "Podnieś narzędzie ponad imadła, nie wyżej niż limit dojazdu Z nad płytką. X i Y nie mają znaczenia: na tej wysokości maszyna sama przejedzie nad pierwszy punkt i zacznie szukać płytki.",
       "groove": "Opuść kulkę sondy do rowka, kilka milimetrów pod jego krawędź, mniej więcej na środek — nie dotykając ścianek.",
       "bar": "Ustaw kulkę sondy nad środkiem listwy, kilka milimetrów nad jej wierzchem — mniej niż limit dojazdu Z.",
-      "pocket": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, mniej więcej na środek — nie dotykając ścianek."
+      "pocket": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, mniej więcej na środek — nie dotykając ścianek.",
+      "edge": "Ustaw kulkę sondy nad detalem, kilka milimetrów od wybranej krawędzi i nad wierzchem — mniej niż odsunięcie za bok i limit dojazdu Z."
     },
     "corner": {
       "backLeft": "Tył lewy",
@@ -1522,7 +1524,8 @@
       "pocketSize": "Dłuższy bok kieszeni (w przybliżeniu)",
       "partSize": "Dłuższy bok detalu (w przybliżeniu)",
       "grooveSize": "Szerokość rowka (w przybliżeniu)",
-      "barSize": "Szerokość listwy (w przybliżeniu)"
+      "barSize": "Szerokość listwy (w przybliżeniu)",
+      "spacing": "Odstęp punktów na krawędzi"
     },
     "step": {
       "method": "Metoda",
@@ -1608,12 +1611,28 @@
       "xLeft": "Lewy bok (X)",
       "xRight": "Prawy bok (X)",
       "yFront": "Przedni bok (Y)",
-      "yBack": "Tylny bok (Y)"
+      "yBack": "Tylny bok (Y)",
+      "move": {
+        "along": "{{pass}}. punkt · wzdłuż krawędzi, nad wierzchem",
+        "setOut": "{{pass}}. punkt · {{axis}}: ustawienie — za krawędź",
+        "setDown": "{{pass}}. punkt · {{axis}}: ustawienie — w dół przy krawędzi",
+        "fast": "{{pass}}. punkt · {{axis}}: szybki dotyk krawędzi",
+        "back": "{{pass}}. punkt · {{axis}}: cofnięcie",
+        "slow": "{{pass}}. punkt · {{axis}}: wolny pomiar",
+        "off": "{{pass}}. punkt · {{axis}}: odsunięcie",
+        "up": "{{pass}}. punkt · {{axis}}: w górę nad detal"
+      },
+      "alongCode": "G0 wzdłuż krawędzi do punktu",
+      "phase": {
+        "along": "wzdłuż krawędzi do punktu"
+      },
+      "outCode": "G0 za krawędź, nad wierzchem"
     },
     "stage": {
       "search": "szukanie",
       "zero": "zapis zera",
-      "size": "rozmiar"
+      "size": "rozmiar",
+      "angle": "kąt"
     },
     "cycle": {
       "alarm": "ALARM:5 · brak dotyku",
@@ -1666,7 +1685,8 @@
     "bar": {
       "measure": "pomiar",
       "zero": "zero",
-      "size": "rozmiar"
+      "size": "rozmiar",
+      "angle": "kąt"
     },
     "group": {
       "plate": "Płytka",
@@ -1861,12 +1881,17 @@
       "grooveX": "Rowek X",
       "grooveY": "Rowek Y",
       "barX": "Listwa X",
-      "barY": "Listwa Y"
+      "barY": "Listwa Y",
+      "edgeFront": "Przód",
+      "edgeBack": "Tył",
+      "edgeLeft": "Lewy bok",
+      "edgeRight": "Prawy bok"
     },
     "shapeLabel": "Jak leży",
     "size": {
       "move": {
-        "size": "Rozmiar: odstęp dotyków i kulka"
+        "size": "Rozmiar: odstęp dotyków i kulka",
+        "edge": "Kąt: z dwóch dotyków i ich odstępu"
       },
       "codeHole": "rozmiar = odstęp dotyków + Ø kulki",
       "codeBoss": "rozmiar = odstęp dotyków − Ø kulki",
@@ -1883,7 +1908,12 @@
       "offWhy": "Odchyłka: najdalszy dotyk od środka minus najbliższy. Blisko zera — to okrąg; więcej — owal, kształt pod kątem albo wada.",
       "centreIn": "Środek w układzie",
       "centre": "Środek {{axis}}",
-      "zero": "Zapisz zero {{axes}}"
+      "zero": "Zapisz zero {{axes}}",
+      "codeEdge": "kąt = atan(różnica dotyków / ich odstęp)",
+      "angle": "Kąt krawędzi",
+      "angleWhy": "Kąt od osi, przeciwnie do ruchu wskazówek zegara. Grbl nie obraca układu współrzędnych (nie ma G68): wyrównaj detal albo uwzględnij kąt w programie.",
+      "edgeIn": "Krawędź w układzie",
+      "edgeAt": "Krawędź {{axis}}"
     },
     "kindLabel": "Co mierzysz",
     "kind": {
@@ -1892,7 +1922,9 @@
       "rect": "Prostokąt",
       "rectNote": "Kieszeń albo detal, boki wzdłuż X i Y: wymiary i środek.",
       "width": "Szerokość",
-      "widthNote": "Rowek albo listwa, w jednej osi: szerokość i środek."
+      "widthNote": "Rowek albo listwa, w jednej osi: szerokość i środek.",
+      "edge": "Krawędź i kąt",
+      "edgeNote": "Bok detalu w dwóch punktach: kąt do osi i gdzie leży krawędź."
     }
   }
 }

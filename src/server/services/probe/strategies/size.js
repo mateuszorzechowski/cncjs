@@ -1,5 +1,6 @@
 import { touch } from '../moves';
 import { across as bossAcross } from './boss';
+import { EDGES, edgeOf, edgeSteps } from './edge';
 import { across as holeAcross } from './hole';
 
 /**
@@ -26,8 +27,8 @@ import { across as holeAcross } from './hole';
 
 /*
  * What is measured, and how it lies: a circle or a rectangle from inside (a
- * hole, a pocket) or outside (a stud, a part), or one width along one axis —
- * a groove from inside, a bar from outside.
+ * hole, a pocket) or outside (a stud, a part), one width along one axis — a
+ * groove from inside, a bar from outside — or an edge and its angle (`edge`).
  */
 export const SHAPES = {
   'circle-inside': { kind: 'circle', axes: ['x', 'y'], side: 'inside' },
@@ -38,13 +39,17 @@ export const SHAPES = {
   'groove-y': { kind: 'width', axes: ['y'], side: 'inside' },
   'bar-x': { kind: 'width', axes: ['x'], side: 'outside' },
   'bar-y': { kind: 'width', axes: ['y'], side: 'outside' },
+  ...Object.fromEntries(Object.keys(EDGES).map((edge) => [`edge-${edge}`, { kind: 'edge', edge }])),
 };
 
 // Every pass, the ones that count last.
 const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
 
-const passes = ({ axes, side }, params) => {
+const passes = ({ axes, side, edge }, params) => {
+  if (edge) {
+    return edgeSteps(edge, params);
+  }
   const across = side === 'inside' ? holeAcross : bossAcross;
   const all = [];
   for (let n = 1; n <= passCount(params); n++) {
@@ -107,7 +112,12 @@ const spreadOf = (values) => Math.max(...values) - Math.min(...values);
  * far its touches stand from round, over every pass.
  */
 const sizeOf = (shape, params, seen) => {
-  const { kind, axes, side } = SHAPES[shape];
+  const {
+    kind, axes, side, edge,
+  } = SHAPES[shape];
+  if (edge) {
+    return edgeOf(edge, params, seen);
+  }
   const ball = side === 'inside' ? params.ballDiameter : -params.ballDiameter;
   const last = params.holePasses - 1 + params.repeats;
   let each;
@@ -140,7 +150,7 @@ const sizeOf = (shape, params, seen) => {
 /** One method, `shape` one of `SHAPES`. */
 export default {
   // An inside shape's figures are a hole's, an outside one's a part's; the panel shows the ones for the shape chosen.
-  fields: ['holeSize', 'bossSize', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'depth', 'maxZ', 'retract', 'fast', 'slow'],
+  fields: ['holeSize', 'bossSize', 'spacing', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'depth', 'maxZ', 'retract', 'fast', 'slow'],
   options: { shape: Object.keys(SHAPES) },
   touches: true,
   check: (options) => (SHAPES[options.shape] ? null : 'bad-shape'),

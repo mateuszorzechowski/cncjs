@@ -37,6 +37,8 @@ export const FIELDS = {
   holeSize: { value: 20, min: 1, max: 300 },
   // A part's rough width, touched from outside: how far out the probe goes.
   bossSize: { value: 30, min: 1, max: 300 },
+  // An edge's two touches, this far apart along it (Pomiar, its angle).
+  spacing: { value: 20, min: 2, max: 500 },
   // Across a hole or a part once or twice: a count, never converted (`count`).
   holePasses: { value: 2, min: 1, max: 2, count: true },
   // A size measured: how many passes count, after the ones that find the centre (Mateusz, 2026-10-03).

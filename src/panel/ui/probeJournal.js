@@ -1,4 +1,5 @@
 import { failureKey, methodOf, phaseWords } from '../machine/probe';
+import { degrees } from '../machine/units';
 import { t } from '../i18n';
 
 /**
@@ -8,9 +9,11 @@ import { t } from '../i18n';
  */
 
 const AXES = ['x', 'y', 'z'];
-// A size's figures: a circle's diameter, or each axis.
-const SIZES = ['d', ...AXES];
-const sizeName = (key) => (key === 'd' ? 'Ø' : key.toUpperCase());
+// A size's figures: a circle's diameter, an edge's angle, or each axis.
+const SIZES = ['d', 'a', ...AXES];
+const sizeName = (key) => ({ d: 'Ø', a: t('journal.detail.angle') }[key] ?? key.toUpperCase());
+// An angle in degrees, never converted; a length as `units` says it.
+const figureOf = (key, value, units) => (key === 'a' ? `${degrees(value)}°` : units.figure(value));
 
 // The method by its name, and its one choice where it has one: "Szerokość · listwa X".
 const methodName = (data) => {
@@ -48,8 +51,9 @@ const SAID = {
     : t('journal.probe.applied', { method: methodName(data), wcs: data.wcs ?? '' })),
   size: (data, units) => t('journal.probe.size', {
     method: methodName(data),
-    sizes: axesSaid(data.size, (axis) => units.figure(data.size[axis])),
-    unit: units.length,
+    sizes: axesSaid(data.size, (axis) => figureOf(axis, data.size[axis], units)),
+    // An angle carries its own degrees.
+    unit: Number.isFinite(data.size?.a) ? '' : units.length,
     spread: data.spread ? t('journal.probe.spread', { list: axesSaid(data.spread, (axis) => units.figure(data.spread[axis])), n: data.passes ?? '' }) : '',
     ball: units.figure(data.ball),
   }),
@@ -79,7 +83,7 @@ export const probeDetails = (entry, units) => {
   const rows = [[t('journal.detail.method'), methodName(data)]];
   if (entry.code === 'size' && data.size) {
     const mm = (value) => `${units.figure(value)} ${units.length}`;
-    SIZES.filter((axis) => Number.isFinite(data.size[axis])).forEach((axis) => rows.push([sizeName(axis), mm(data.size[axis])]));
+    SIZES.filter((axis) => Number.isFinite(data.size[axis])).forEach((axis) => rows.push([sizeName(axis), axis === 'a' ? figureOf(axis, data.size.a) : mm(data.size[axis])]));
     if (data.spread) {
       rows.push([t('journal.detail.spread'), `${axesSaid(data.spread, (axis) => units.figure(data.spread[axis]))} ${units.length}`]);
     }

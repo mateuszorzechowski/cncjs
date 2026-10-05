@@ -28,6 +28,14 @@ describe('a probe entry in words', () => {
     expect(line).toContain('"ball":"2.000"');
   });
 
+  test('an edge by its angle, in degrees, with no length unit', () => {
+    const line = probeLine(entry('size', {
+      method: 'measure', shape: 'edge-front', size: { a: 0.5123 }, spread: null, centre: { y: -60 }, passes: 1, ball: 2,
+    }), units);
+    expect(line).toContain('"sizes":"journal.detail.angle 0.512°"');
+    expect(line).toContain('"unit":""');
+  });
+
   test('a circle by its diameter', () => {
     expect(probeLine(entry('size', {
       method: 'measure', shape: 'circle-inside', size: { d: 24.012 }, spread: null, passes: 1, ball: 2,

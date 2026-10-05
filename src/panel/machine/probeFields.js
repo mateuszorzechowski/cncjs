@@ -16,6 +16,7 @@ export const FIELDS = {
   toolDiameter: { key: 'probe.field.toolDiameter', kind: 'length' },
   holeSize: { key: 'probe.field.holeSize', kind: 'length' },
   bossSize: { key: 'probe.field.bossSize', kind: 'length' },
+  spacing: { key: 'probe.field.spacing', kind: 'length' },
   // A count: said as it is, in no unit.
   holePasses: { key: 'probe.field.holePasses', kind: 'count' },
   repeats: { key: 'probe.field.repeats', kind: 'count' },

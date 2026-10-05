@@ -16,7 +16,7 @@ export const HOLD_MS = 700;
 // The part's radius and the ball's, and how far out past the part the ball goes down.
 export const BOSS_R = 34;
 export const TOOL_R = 8;
-const OUT = BOSS_R + 26;
+export const OUT = BOSS_R + 26;
 // Off the side after a touch, and where the ball starts, off the centre.
 export const BACK = 14;
 export const START = [9, -6];
@@ -38,15 +38,8 @@ const wallFrom = (at, axis, sign) => {
   return setOn(axis, at, sign * reach);
 };
 
-/*
- * The steps, each with keyframes `[t, place, level, eased]` and how far into
- * its run it stops changing (`end`): the top touched as a plate's is — fast,
- * back, slow; for each side its set-up, the fast touch, back off it, the slow
- * one, up again; the way to the middle; the zero, still.
- */
-/** `axes` as the hole's (`holeMoves.build`). */
-export const build = ({ axes = AXES } = {}) => {
-  const S = START;
+/** The top, touched as a plate's — fast, back, slow, off — from `S`: `{ moves, order }` to go on from. */
+export const topOf = (S) => {
   const moves = {
     zFast: {
       kind: 'topFast', frames: [[0, S, HIGH], [0.1, S, HIGH], [0.85, S, ON_TOP, true], [1, S, ON_TOP]], end: 0.85, titleKey: 'probe.boss.move.topFast', uses: ['maxZ', 'fast'],
@@ -62,7 +55,18 @@ export const build = ({ axes = AXES } = {}) => {
       kind: 'topBack', frames: [[0, S, ON_TOP], [0.15, S, ON_TOP], [0.7, S, ABOVE, true], [1, S, ABOVE]], end: 0.7, titleKey: 'probe.boss.move.topOff', uses: ['retract'],
     },
   };
-  const order = ['zFast', 'zBack', 'zSlow', 'zOff'];
+  return { moves, order: ['zFast', 'zBack', 'zSlow', 'zOff'] };
+};
+
+/*
+ * The steps, each with keyframes `[t, place, level, eased]` and how far into
+ * its run it stops changing (`end`): the top touched as a plate's is — fast,
+ * back, slow; for each side its set-up, the fast touch, back off it, the slow
+ * one, up again; the way to the middle; the size, still. `axes` as the
+ * hole's (`holeMoves.build`).
+ */
+export const build = ({ axes = AXES } = {}) => {
+  const { moves, order } = topOf(START);
   let at = START;
   const guess = [...START];
   [1, 2].forEach((pass) => {
@@ -74,8 +78,9 @@ export const build = ({ axes = AXES } = {}) => {
         const wall = wallFrom(out, axis, sign);
         const off = setOn(axis, wall, wall[i] + sign * BACK);
         const side = `${axis}${pass}${sign > 0 ? 'p' : 'm'}`;
+        // `rim`, where the part's side is along the axis: the middle thought, and half the part.
         const common = {
-          axis, sign, pass, side, out, wall, off, guess: guess[i], way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
+          axis, sign, pass, side, out, wall, off, guess: guess[i], rim: guess[i] + sign * BOSS_R, way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
         };
         // The set-up, two moves — two lines of G-code, two segments on the bar (rule; review note, 2026-10-01):
         // out past the side over the top, and down beside it.
@@ -185,7 +190,7 @@ export const above = (move, p, going, said, upTo, lit, reach, slow) => {
     case 'fast': return {
       motion: arrow(move.out, move.wall, 'probe', said('fast'), lit('feed')),
       limit: {
-        axis: move.axis, from: move.out, mid: setOn(move.axis, move.out, move.guess + move.sign * BOSS_R), to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false,
+        axis: move.axis, from: move.out, mid: setOn(move.axis, move.out, move.rim), to: setOn(move.axis, move.out, move.guess), text: upTo(reach), lit: false,
       },
     };
     // As the Z plate's: the arrow bare, the way back a dimension with its figure.

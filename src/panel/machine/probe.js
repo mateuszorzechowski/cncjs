@@ -84,6 +84,7 @@ export const KINDS = [
   { id: 'circle', key: 'probe.kind.circle', note: 'probe.kind.circleNote' },
   { id: 'rect', key: 'probe.kind.rect', note: 'probe.kind.rectNote' },
   { id: 'width', key: 'probe.kind.width', note: 'probe.kind.widthNote' },
+  { id: 'edge', key: 'probe.kind.edge', note: 'probe.kind.edgeNote' },
 ];
 
 export const SHAPES = [
@@ -95,6 +96,11 @@ export const SHAPES = [
   { id: 'groove-y', kind: 'width', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
   { id: 'bar-x', kind: 'width', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
   { id: 'bar-y', kind: 'width', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
+  // An edge, by the way it faces: the front faces −Y (the server's `strategies/edge`).
+  { id: 'edge-front', kind: 'edge', key: 'probe.shape.edgeFront', side: 'outside', place: 'probe.place.edge' },
+  { id: 'edge-back', kind: 'edge', key: 'probe.shape.edgeBack', side: 'outside', place: 'probe.place.edge' },
+  { id: 'edge-left', kind: 'edge', key: 'probe.shape.edgeLeft', side: 'outside', place: 'probe.place.edge' },
+  { id: 'edge-right', kind: 'edge', key: 'probe.shape.edgeRight', side: 'outside', place: 'probe.place.edge' },
 ];
 
 export const shapeOf = (id) => SHAPES.find((one) => one.id === id) ?? SHAPES[0];

@@ -6,6 +6,7 @@ import { shownView } from './probeLabels';
 import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
+import AngleMark from './AngleMark';
 
 /**
  * A hole, or a part touched from outside, from above, drawn by the probe
@@ -38,7 +39,7 @@ const sy = (y) => -y;
 const BOSS = 'boss';
 
 const CentreScene = ({
-  part, tool, level = 0, motion = null, way = motion, limit = null, dims = [], reach = null, touched = [], contact = null, centre = null, dia = null, focus = null,
+  part, tool, level = 0, motion = null, way = motion, limit = null, dims = [], reach = null, touched = [], contact = null, centre = null, dia = null, angle = null, focus = null,
   bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
@@ -159,7 +160,8 @@ const CentreScene = ({
       <WorkHatch id={id} />
       {/* The work round the hole, or the part alone — no table under it, as no other drawing has (review note, 2026-10-01). */}
       {boss ? (
-        <Outline {...outline} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+        // An edge's part turned by its angle, anticlockwise: Y is up, so against the SVG's turn.
+        <Outline {...outline} transform={part.turn ? `rotate(${-part.turn})` : undefined} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} fill={`url(#${id})`} />
@@ -168,6 +170,7 @@ const CentreScene = ({
         </>
       )}
       {/* The walls touched before, still: the one under way beats. */}
+      {angle ? <AngleMark angle={angle} size={size} bare={bare} /> : null}
       {touched.map(([x, y]) => <circle key={`${x} ${y}`} cx={x} cy={sy(y)} r={3 / k} className="fill-grn" opacity={0.6} />)}
       {centre ? <path d={`M${centre[0] - 6} ${sy(centre[1])} H${centre[0] + 6} M${centre[0]} ${sy(centre[1]) - 6} V${sy(centre[1]) + 6}`} className="stroke-mut" strokeWidth={1} vectorEffect={NS} /> : null}
       <circle cx={cx} cy={cy} r={r} className="fill-surf stroke-ink" strokeWidth={2} vectorEffect={NS} />

@@ -6,6 +6,7 @@ import {
 } from '../machine/probe';
 import { decimal, figureSaid } from '../machine/probeFields';
 import { sizeCycle } from '../machine/sizeCycle';
+import { degrees } from '../machine/units';
 import { useUnits } from './units';
 import { t } from '../i18n';
 
@@ -69,6 +70,14 @@ const MARKS = {
       {OUT_HEADS}
     </>
   ),
+  // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it.
+  edge: (
+    <>
+      <path d="M8 8 H40 V30 H8 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
+      <circle cx={24} cy={39} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
+      <path d="M13.2 35.6 L16 32.8 L18.8 35.6 Z M29.2 35.6 L32 32.8 L34.8 35.6 Z" className="fill-acc" />
+    </>
+  ),
   bar: (
     <>
       <path d="M17 8 H31 V40 H17 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
@@ -79,8 +88,16 @@ const MARKS = {
 };
 
 /** A shape's marks in a 48-unit box. */
+// An edge's marks turned from the front's to face its own way.
+const EDGE_TURN = {
+  'edge-front': undefined, 'edge-back': 'rotate(180 24 24)', 'edge-left': 'rotate(90 24 24)', 'edge-right': 'rotate(-90 24 24)',
+};
+
 const ShapeMarks = ({ shape }) => {
   const one = shapeOf(shape);
+  if (one.kind === 'edge') {
+    return <g transform={EDGE_TURN[one.id]}>{MARKS.edge}</g>;
+  }
   if (one.kind !== 'width') {
     return MARKS[one.id];
   }
@@ -142,18 +159,23 @@ const AXES = ['x', 'y'];
 export const SizeResult = ({ probe }) => {
   const units = useUnits();
   const shape = probe.options?.shape;
-  const cycle = sizeCycle(probe.method, shape);
+  const cycle = sizeCycle(probe.method, shape, probe.result.size.size.a);
   const {
     size, spread, each, centre = {}, off,
   } = probe.result.size;
-  // A circle's one diameter, or each axis measured.
-  const keys = 'd' in size ? ['d'] : AXES.filter((axis) => axis in size);
+  // A circle's one diameter, an edge's angle, or each axis measured.
+  const keys = ['d', 'a'].find((key) => key in size) ? [['d', 'a'].find((key) => key in size)] : AXES.filter((axis) => axis in size);
+  const edge = 'a' in size;
   const name = (key) => (key === 'd' ? 'Ø' : key.toUpperCase());
+  // An angle in degrees, never converted; a length in the panel's units.
+  const figureOf = (key, value) => (key === 'a' ? degrees(value) : units.figure(value));
+  const unitOf = (key) => (key === 'a' ? '°' : units.length);
+  const LABELS = { d: 'probe.size.diameter', a: 'probe.size.angle' };
   // On the drawing as its other labels: the language's decimal sign (Mateusz, 2026-10-02).
   const said = (mm) => `${decimal(units.figure(mm))} ${units.length}`;
   const ball = units.figure(probe.params?.ballDiameter);
   const how = {
-    texts: { ballDiameter: ball }, say: (field, text) => figureSaid(field, text, units.rule), sizes: Object.fromEntries(keys.map((key) => [key, `${key === 'd' ? 'Ø' : ''}${said(size[key])}`])),
+    texts: { ballDiameter: ball }, say: (field, text) => figureSaid(field, text, units.rule), sizes: Object.fromEntries(keys.map((key) => [key, key === 'a' ? `${decimal(degrees(size.a))}°` : `${key === 'd' ? 'Ø' : ''}${said(size[key])}`])),
   };
   /*
    * Wide, the drawing a column of its own beside the figures, as the height
@@ -178,7 +200,7 @@ export const SizeResult = ({ probe }) => {
       <div className="flex min-w-0 flex-col gap-3">
       <div className="grid gap-2 @3xl/shell:grid-cols-2">
         {keys.map((key) => (
-          <StatTile key={key} label={key === 'd' ? t('probe.size.diameter') : t('probe.size.axis', { axis: name(key) })} value={units.figure(size[key])} unit={units.length} />
+          <StatTile key={key} label={LABELS[key] ? t(LABELS[key]) : t('probe.size.axis', { axis: name(key) })} value={figureOf(key, size[key])} unit={unitOf(key)} />
         ))}
         {spread ? keys.map((key) => (
           <StatTile key={`spread${key}`} label={t('probe.size.spread', { axis: name(key) })} value={units.figure(spread[key])} unit={units.length} />
@@ -191,13 +213,14 @@ export const SizeResult = ({ probe }) => {
         </p>
       )) : null}
       {Number.isFinite(off) ? <p className="m-0 text-note text-mut">{t('probe.size.offWhy')}</p> : null}
+      {edge ? <p className="m-0 text-note text-mut">{t('probe.size.angleWhy')}</p> : null}
       <div className="flex items-center gap-3">
-        <span className="text-base text-ink">{t('probe.size.centreIn')}</span>
+        <span className="text-base text-ink">{t(edge ? 'probe.size.edgeIn' : 'probe.size.centreIn')}</span>
         <WcsBadge wcs={probe.wcs} />
       </div>
       <div className="grid gap-2 @3xl/shell:grid-cols-2">
         {AXES.filter((axis) => Number.isFinite(centre[axis])).map((axis) => (
-          <StatTile key={`centre${axis}`} label={t('probe.size.centre', { axis: axis.toUpperCase() })} value={units.figure(centre[axis])} unit={units.length} />
+          <StatTile key={`centre${axis}`} label={t(edge ? 'probe.size.edgeAt' : 'probe.size.centre', { axis: axis.toUpperCase() })} value={units.figure(centre[axis])} unit={units.length} />
         ))}
       </div>
       <p className="m-0 text-note text-mut">{t('probe.size.ball', { ball, unit: units.length })}</p>
