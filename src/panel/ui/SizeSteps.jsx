@@ -72,7 +72,8 @@ const MARKS = {
   ),
   'slot-inside': (
     <>
-      <path d="M4 6 H44 V42 H4 Z M15 15 H33 A9 9 0 0 1 33 33 H15 A9 9 0 0 1 15 15 Z" fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} transform="rotate(-15 24 24)" />
+      {/* The slot turned by its own points, not the work round it: two straight sides, two half circles. */}
+      <path d="M4 6 H44 V42 H4 Z M17.64 35.02 L35.02 30.36 A9 9 0 0 0 30.36 12.98 L12.98 17.64 A9 9 0 0 0 17.64 35.02 Z" fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} />
       {BALL}
       <path d="M12.2 21 L9.4 24 L12.2 27 Z M35.8 21 L38.6 24 L35.8 27 Z" className="fill-acc" />
     </>
