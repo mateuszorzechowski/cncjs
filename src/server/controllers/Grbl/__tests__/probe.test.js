@@ -284,7 +284,7 @@ describe('a size', () => {
     }
   };
 
-  test('is shown and journalled, the zero never written, and closed rather than applied', () => {
+  test('is shown and journalled, the zero not written unless asked: closed, nothing sent', () => {
     const { controller, sent, refusals, probeStates } = setup();
     probeSettings.set({ ballDiameter: 2, holePasses: 1 });
     const recorded = jest.spyOn(controller, 'note');
@@ -298,10 +298,22 @@ describe('a size', () => {
     expect(recorded).toHaveBeenCalledWith(expect.objectContaining({
       event: 'probe', code: 'size', data: expect.objectContaining({ method: 'measure', shape: 'groove-x', size: { x: 20 }, spread: null, centre, passes: 1, ball: 2 }),
     }));
-    controller.command('probe:apply');
-    expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
-    expect(sent().some((line) => line.includes('G10'))).toBe(false);
     controller.command('probe:discard');
+    expect(sent().some((line) => line.includes('G10'))).toBe(false);
+    expect(controller.probe).toBeNull();
+    expect(refusals).toHaveLength(0);
+  });
+
+  test('asked, its middle is the zero — one axis only for a width (Mateusz, 2026-10-05: the centres are in Pomiar)', () => {
+    const { controller, sent } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 1 });
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'groove-x' } });
+    across(controller, sent, 9);
+    controller.command('probe:apply');
+
+    const written = sent().find((line) => line.includes('G10'));
+    expect(written).toMatch(/G10 L2 P\d X-?0(\.0+)?$/);
     expect(controller.probe).toBeNull();
   });
 

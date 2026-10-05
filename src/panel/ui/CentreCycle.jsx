@@ -9,16 +9,15 @@ import { DRAWING_FIT_MEASURING } from './probeDraw';
  * A centre measured as it happens, played by the machine rather than a
  * clock: the move the server's step belongs to, looping until the next step
  * comes in, drawn as the Setup's without the figures. The words are what
- * the probe is doing, said under it; `done`, the result: the zero written,
- * held. `cycle` is the hole's or the part's; `passes`, as the measurement
- * was asked for.
+ * the probe is doing, said under it. `cycle` is the hole's or the part's;
+ * `passes`, as the measurement was asked for.
  */
 const CentreCycle = ({
-  cycle, phase = null, done = false, passes = 2, className = '',
+  cycle, phase = null, passes = 2, className = '',
 }) => {
-  const name = done ? 'zero' : cycle.moveOfPhase(phase);
-  const ms = useTicker(done ? null : phase || name);
-  const { p } = done ? { p: 1 } : cycle.playAt(ms, { pinned: name });
+  const name = cycle.moveOfPhase(phase);
+  const ms = useTicker(phase || name);
+  const { p } = cycle.playAt(ms, { pinned: name });
   const items = cycle.timeline(passes);
   const groups = namedGroups(cycle.groups(passes), t, (id) => t(...cycle.titleOf(id)));
   return (
@@ -36,8 +35,8 @@ const CentreCycle = ({
           className={DRAWING_FIT_MEASURING}
         />
       </div>
-      {done ? null : <MoveBar groups={groups} active={name} fills={fillsAt(items, timeAt(items, name, p))} />}
-      {phase && !done ? <div className="border-t border-line px-2 py-3 text-center text-base font-semibold text-ink">{t(...cycle.words(phase))}</div> : null}
+      <MoveBar groups={groups} active={name} fills={fillsAt(items, timeAt(items, name, p))} />
+      {phase ? <div className="border-t border-line px-2 py-3 text-center text-base font-semibold text-ink">{t(...cycle.words(phase))}</div> : null}
     </div>
   );
 };

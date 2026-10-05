@@ -1433,14 +1433,10 @@
       "cornerNote": "Narożnik materiału: X0, Y0 i Z0, płytką w kształcie L.",
       "paper": "Kartka",
       "paperNote": "Ręcznie, kartką papieru: wierzch albo dowolny bok, bez sondy.",
-      "hole": "Środek otworu",
-      "holeNote": "Środek okrągłego otworu sondą: X0 i Y0, Z bez zmian.",
-      "boss": "Środek z zewnątrz",
-      "bossNote": "Środek czopu albo detalu, sondą od zewnątrz: X0 i Y0, Z bez zmian.",
       "map": "Mapa wysokości",
       "mapNote": "Siatka punktów sondą: program pójdzie za krzywą płytką. Zero bez zmian.",
       "measure": "Pomiar",
-      "measureNote": "Okrąg, prostokąt albo szerokość, sondą: wymiar i środek. Zero bez zmian."
+      "measureNote": "Okrąg, prostokąt albo szerokość, sondą: wymiar i środek — a w środku, jeśli chcesz, zero."
     },
     "how": {
       "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
@@ -1604,8 +1600,7 @@
       "save": "Zapisz zero",
       "discard": "Odrzuć",
       "close": "Zamknij",
-      "again": "Spróbuj ponownie",
-      "found": "Zmierzony wymiar w {{axis}}"
+      "again": "Spróbuj ponownie"
     },
     "edgeLabel": "Która powierzchnia materiału",
     "edge": {
@@ -1739,8 +1734,7 @@
         "back": "{{pass}}. przejście · {{axis}}: cofnięcie",
         "slow": "{{pass}}. przejście · {{axis}}: wolny pomiar",
         "off": "{{pass}}. przejście · {{axis}}: odsunięcie",
-        "centre": "{{pass}}. przejście · {{axis}}: na środek",
-        "zero": "Zapis zera: X0 i Y0"
+        "centre": "{{pass}}. przejście · {{axis}}: na środek"
       },
       "centreCode": "G0 na środek między dotykami",
       "phase": {
@@ -1882,13 +1876,14 @@
       "spread": "Rozrzut {{axis}}",
       "each": "{{axis}}, każde przejście: {{list}} {{unit}}",
       "ball": "Wynik zależy od średnicy kulki: {{ball}} {{unit}}.",
-      "note": "Zero bez zmian. Wynik jest zapisany w Dzienniku.",
+      "note": "Zero zmieni się dopiero po „Zapisz zero”. Wynik jest zapisany w Dzienniku.",
       "again": "Zmierz ponownie",
       "diameter": "Średnica",
       "off": "Odchyłka od okręgu",
       "offWhy": "Odchyłka: najdalszy dotyk od środka minus najbliższy. Blisko zera — to okrąg; więcej — owal, kształt pod kątem albo wada.",
       "centreIn": "Środek w układzie",
-      "centre": "Środek {{axis}}"
+      "centre": "Środek {{axis}}",
+      "zero": "Zapisz zero {{axes}}"
     },
     "kindLabel": "Co mierzysz",
     "kind": {

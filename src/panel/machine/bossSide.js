@@ -132,6 +132,5 @@ export const bossSide = (move, p, {
     gap,
     vdims,
     contact,
-    zero: move.zeroAt ? Math.max(0, Math.min(1, (p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0]))) : 0,
   };
 };

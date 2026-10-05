@@ -230,9 +230,11 @@ describe('the corner plate', () => {
   });
 });
 
-describe('the centre of a hole', () => {
+describe('Pomiar: the middle of a pocket', () => {
   const params = { ...probeParams(), ballDiameter: 4, holeSize: 30 };
   const radius = params.ballDiameter / 2;
+  const options = { shape: 'rect-inside' };
+  const middleOf = (own, outcome) => STRATEGIES.measure.size(own, options, outcome.seen).centre;
 
   /** A square hole `size` across centred on (hx, hy), its walls from Z -80 to -50. */
   const holeAt = (hx, hy, size) => {
@@ -246,98 +248,75 @@ describe('the centre of a hole', () => {
     ];
   };
 
-  test('puts X0 Y0 at the centre, from a start off it, the tool there at the end', () => {
+  test('found from a start off it, the tool there at the end', () => {
     const [hx, hy] = [-120, -70];
-    const { outcome, zero, pos } = measure({
-      method: 'hole', params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    const { outcome, pos } = measure({
+      method: 'measure', options, params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
     });
 
     expect(outcome.failure).toBeUndefined();
-    close(zero, { x: hx, y: hy });
-    expect(Object.keys(zero)).toEqual(['x', 'y']);
+    close(middleOf(params, outcome), { x: hx, y: hy });
     close(pos, { x: hx, y: hy, z: -60 });
   });
 
-  test('says how big the hole is each way, the ball added back', () => {
-    const [hx, hy] = [-120, -70];
-    const { outcome } = measure({
-      method: 'hole', params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
-    });
-    const found = STRATEGIES.hole.found(params, {}, outcome.seen);
-
-    close(found, { x: 24, y: 24 });
-  });
-
-  test('one pass, if asked: half the touches, the same centre and size', () => {
+  test('one pass, if asked: half the touches, the same middle', () => {
     const [hx, hy] = [-120, -70];
     const once = { ...params, holePasses: 1 };
-    const { outcome, zero, sent } = measure({
-      method: 'hole', params: once, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+    const { outcome, sent } = measure({
+      method: 'measure', options, params: once, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
     });
     const twice = measure({
-      method: 'hole', params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
+      method: 'measure', options, params, radius, boxes: holeAt(hx, hy, 24), start: { x: hx + 5, y: hy - 3, z: -60 },
     });
 
-    close(zero, { x: hx, y: hy });
-    close(STRATEGIES.hole.found(once, {}, outcome.seen), { x: 24, y: 24 });
+    close(middleOf(once, outcome), { x: hx, y: hy });
     expect(sent.filter((line) => line.includes('G38')).length * 2).toBe(twice.sent.filter((line) => line.includes('G38')).length);
   });
 
-  test('a hole wider than its rough size is a failure, nothing written', () => {
-    const { outcome, zero } = measure({
-      method: 'hole', params: { ...params, holeSize: 5 }, radius, boxes: holeAt(-120, -70, 40), start: { x: -120, y: -70, z: -60 },
+  test('a hole wider than its rough size is a failure', () => {
+    const { outcome } = measure({
+      method: 'measure', options, params: { ...params, holeSize: 5 }, radius, boxes: holeAt(-120, -70, 40), start: { x: -120, y: -70, z: -60 },
     });
 
     expect(outcome).toEqual({ failure: 'ALARM:5', phase: 'x1a-fast' });
-    expect(zero).toBeNull();
   });
 });
 
-describe('the centre of a part, from outside', () => {
+describe('Pomiar: the middle of a part, from outside', () => {
   const params = { ...probeParams(), ballDiameter: 4, bossSize: 30, clear: 10, depth: 5 };
   const radius = params.ballDiameter / 2;
   const [hx, hy] = [-120, -70];
+  const options = { shape: 'rect-outside' };
 
   /** A square part `size` across centred on (hx, hy), its top at Z -50. */
   const partAt = (size) => [{ x: [hx - size / 2, hx + size / 2], y: [hy - size / 2, hy + size / 2], z: [-80, -50] }];
   const start = { x: hx + 3, y: hy - 2, z: -45 };
 
-  test('touches the top, then each side from outside: X0 Y0 at the centre, the ball over it', () => {
-    const { outcome, zero, pos } = measure({
-      method: 'boss', params, radius, boxes: partAt(24), start,
+  test('touches the top, then each side from outside: the middle found, the ball over it', () => {
+    const { outcome, pos } = measure({
+      method: 'measure', options, params, radius, boxes: partAt(24), start,
     });
 
     expect(outcome.failure).toBeUndefined();
-    close(zero, { x: hx, y: hy });
-    expect(Object.keys(zero)).toEqual(['x', 'y']);
+    close(STRATEGIES.measure.size(params, options, outcome.seen).centre, { x: hx, y: hy });
     close(pos, { x: hx, y: hy, z: -50 + params.retract });
-    close(STRATEGIES.boss.found(params, {}, outcome.seen), { x: 24, y: 24 });
   });
 
   test('goes down beside a side by the depth under the top it found, not under where it started', () => {
     const { sent } = measure({
-      method: 'boss', params, radius, boxes: partAt(24), start: { ...start, z: -38 },
+      method: 'measure', options, params, radius, boxes: partAt(24), start: { ...start, z: -38 },
     });
     // The first way down beside a side, in work coordinates: from the top plus the retract to the depth under it.
     const down = sent.find((line) => line.includes('G38.3'));
     expect(wordsOf(down).z + WCO.z).toBeCloseTo(-50 - params.depth, 6);
   });
 
-  test('one pass, if asked: the same centre', () => {
-    const { zero } = measure({
-      method: 'boss', params: { ...params, holePasses: 1 }, radius, boxes: partAt(24), start,
-    });
-
-    close(zero, { x: hx, y: hy });
-  });
-
-  test('a part wider than its rough size lands the ball on its top: a failure, nothing written', () => {
-    const { outcome, zero } = measure({
-      method: 'boss', params: { ...params, bossSize: 10, clear: 2 }, radius, boxes: partAt(40), start,
+  test('a part wider than its rough size lands the ball on its top: a failure', () => {
+    const { outcome } = measure({
+      method: 'measure', options, params: { ...params, bossSize: 10, clear: 2 }, radius, boxes: partAt(40), start,
     });
 
     expect(outcome).toMatchObject({ failure: 'touched', phase: 'x1a-down' });
-    expect(zero).toBeNull();
   });
 });
 

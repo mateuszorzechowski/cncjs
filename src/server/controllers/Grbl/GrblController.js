@@ -2579,11 +2579,12 @@ class GrblController {
         this.bendResult();
         this.note({ level: 'info', source: 'server', event: 'probe', code: 'measured', data: { method, points: map.xs.length * map.ys.length } });
       } else if (strategy.size) {
-        // A size: for the screen and the journal, nothing to write (Mateusz, 2026-10-03).
-        // Its middle in the system it was measured in, as the operator reads positions.
+        // A size: for the screen and the journal (Mateusz, 2026-10-03). Its middle in the system it was
+        // measured in, as the operator reads positions — and, if asked with `probe:apply`, the zero put
+        // there, X0 Y0 or the one axis a width has (Mateusz, 2026-10-05: the centres are Pomiar's now).
         const found = strategy.size(params, options, outcome.seen);
         const size = { ...found, centre: _.mapValues(found.centre, (v, axis) => v - (wco[axis] || 0)) };
-        this.probe.result = { size };
+        this.probe.result = { size, ...this.zeroAt(found.centre, wcs) };
         this.note({
           level: 'info',
           source: 'server',
@@ -2594,18 +2595,9 @@ class GrblController {
           },
         });
       } else {
-        const parameters = this.runner.getParameters();
         const zero = strategy.zero(params, options, outcome.seen, start);
-        const offset = offsetFor(zero, {
-          g92: this.reportedMm(parameters.G92),
-          tlo: this.reportedMm({ z: parameters.TLO }).z || 0,
-        });
-        const current = this.reportedMm(parameters[wcs]);
-        const shift = _.mapValues(offset, (v, axis) => v - (current[axis] || 0));
-        const found = strategy.found ? strategy.found(params, options, outcome.seen) : null;
-        this.probe.result = {
-          zero, offset, shift, found,
-        };
+        const { offset, shift } = this.zeroAt(zero, wcs);
+        this.probe.result = { zero, offset, shift };
         this.note({
           level: 'info', source: 'server', event: 'probe', code: 'measured', data: {
             method, wcs, offset, shift,
@@ -2613,6 +2605,21 @@ class GrblController {
         });
       }
       this.emit('probe:state', this.probeReport());
+    }
+
+    /**
+     * A zero at `zero` (machine coordinates, the axes it has) in system
+     * `wcs`: the offset `G10 L2` would write, and how far that moves the
+     * zero from where it is now.
+     */
+    zeroAt(zero, wcs) {
+      const parameters = this.runner.getParameters();
+      const offset = offsetFor(zero, {
+        g92: this.reportedMm(parameters.G92),
+        tlo: this.reportedMm({ z: parameters.TLO }).z || 0,
+      });
+      const current = this.reportedMm(parameters[wcs]);
+      return { offset, shift: _.mapValues(offset, (v, axis) => v - (current[axis] || 0)) };
     }
 
     /**
@@ -3333,8 +3340,8 @@ class GrblController {
         'probe:apply': () => {
           const result = this.probe?.result;
 
-          // A size has nothing to write: it is closed with `probe:discard`.
-          if (!result || result.size) {
+          // Nothing measured, or nothing to write: closed with `probe:discard`.
+          if (!result || !(result.map || result.offset)) {
             this.refuse(cmd, 'no-result');
             return;
           }

@@ -12,7 +12,7 @@ import ProbeJoin from '../ui/ProbeJoin';
 import Notice from '../ui/Notice';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
-  ChoiceStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
+  AfterFoot, ChoiceStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
 import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
@@ -254,14 +254,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else if (probe?.state === 'failed' || probe?.result?.size) {
-    // Failed, or a size, which has nothing to write (Mateusz, 2026-10-03): closed, or measured again.
     body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
-    foot = (
-      <Foot>
-        <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.close')}</Button>
-        <Button tone="primary" onClick={again} className="h-ctl">{t(probe?.result?.size ? 'probe.size.again' : 'probe.result.again')}</Button>
-      </Foot>
-    );
+    foot = <AfterFoot probe={probe} connected={machine.connected} onClose={() => finish(false)} onAgain={again} onZero={() => finish(true)} />;
   } else {
     body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (

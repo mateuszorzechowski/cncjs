@@ -55,7 +55,7 @@ export const fieldUnit = (name, rule) => settingFigure(0, FIELDS[name].kind, rul
 
 // A decimal point as the language writes it: `0,1 mm` in Polish, as the titles say it (Mateusz, 2026-10-02).
 // G-code and the readout keep the point: that is the controller's.
-const decimal = (text) => (currentLanguage() === 'pl' ? String(text).replace('.', ',') : String(text));
+export const decimal = (text) => (currentLanguage() === 'pl' ? String(text).replace('.', ',') : String(text));
 
 /** A figure as a drawing's badge says it: a rate as `F100`, a length with its unit. */
 export const figureSaid = (name, text, rule) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${decimal(text)} ${fieldUnit(name, rule)}`);

@@ -14,8 +14,6 @@ import ZPlatePosition from './ZPlatePosition';
 import { HeightMapPosition } from './HeightMapSteps';
 import { Foot } from './ProbeSteps';
 import JogWidget from '../widgets/JogWidget';
-import { BOSS_CYCLE } from '../machine/bossCycle';
-import { HOLE_CYCLE } from '../machine/holeCycle';
 import { sizeCycle } from '../machine/sizeCycle';
 import { useIsPhone } from './shell';
 import { t } from '../i18n';
@@ -24,8 +22,6 @@ import { t } from '../i18n';
 const MOVES = {
   z: ZPlatePosition,
   corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
-  hole: () => <CentrePosition cycle={HOLE_CYCLE} />,
-  boss: () => <CentrePosition cycle={BOSS_CYCLE} />,
   paper: ({ choice }) => <PaperPosition edge={choice} />,
   'height-map': HeightMapPosition,
   measure: ({ choice }) => <CentrePosition cycle={sizeCycle('measure', choice)} />,

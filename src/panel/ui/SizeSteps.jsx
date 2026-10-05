@@ -1,14 +1,16 @@
 import CentreViews from './CentreViews';
 import StatTile from './StatTile';
 import WcsBadge from './WcsBadge';
-import { DRAWING_FIT } from './probeDraw';
 import {
   KINDS, SHAPES, methodOf, shapeOf, shapeOfKind,
 } from '../machine/probe';
-import { figureSaid } from '../machine/probeFields';
+import { decimal, figureSaid } from '../machine/probeFields';
 import { sizeCycle } from '../machine/sizeCycle';
 import { useUnits } from './units';
 import { t } from '../i18n';
+
+// The result's drawing, larger than a Setup's (`DRAWING_FIT`).
+const RESULT_FIT = 'max-h-80 @[1800px]/shell:max-h-[28rem]';
 
 /**
  * Pomiar (Mateusz, 2026-10-03): what is measured, how it lies, and what came
@@ -26,6 +28,8 @@ const OUT_HEADS = <path d="M20.2 21 L17.4 24 L20.2 27 Z M27.8 21 L30.6 24 L27.8 
 const IN_HEADS = <path d="M13.8 21 L16.6 24 L13.8 27 Z M34.2 21 L31.4 24 L34.2 27 Z" className="fill-acc" />;
 const OUT_BALL = <circle cx={8} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
 const WORK = 'fill-mutS stroke-line';
+// A part standing alone, with nothing round it to show its edge: outlined darker.
+const PART = 'fill-mutS stroke-mut';
 // SVG's word for a shape with a hole cut in it.
 const EVEN_ODD = 'evenodd';
 
@@ -39,9 +43,9 @@ const MARKS = {
   ),
   'circle-outside': (
     <>
-      <circle cx={24} cy={24} r={9} className={WORK} strokeWidth={1.6} />
+      <circle cx={26} cy={24} r={12} className={PART} strokeWidth={1.6} />
       {OUT_BALL}
-      <path d="M12.2 21 L15 24 L12.2 27 Z M35.8 21 L33 24 L35.8 27 Z" className="fill-acc" />
+      <path d="M10.8 21 L13.6 24 L10.8 27 Z M40.8 21 L38 24 L40.8 27 Z" className="fill-acc" />
     </>
   ),
   'rect-inside': (
@@ -53,9 +57,9 @@ const MARKS = {
   ),
   'rect-outside': (
     <>
-      <path d="M17 17 H31 V31 H17 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+      <path d="M15 13 H37 V35 H15 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
       {OUT_BALL}
-      {IN_HEADS}
+      <path d="M10.8 21 L13.6 24 L10.8 27 Z M40.8 21 L38 24 L40.8 27 Z" className="fill-acc" />
     </>
   ),
   groove: (
@@ -67,7 +71,7 @@ const MARKS = {
   ),
   bar: (
     <>
-      <path d="M17 8 H31 V40 H17 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+      <path d="M17 8 H31 V40 H17 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
       {OUT_BALL}
       {IN_HEADS}
     </>
@@ -145,25 +149,33 @@ export const SizeResult = ({ probe }) => {
   // A circle's one diameter, or each axis measured.
   const keys = 'd' in size ? ['d'] : AXES.filter((axis) => axis in size);
   const name = (key) => (key === 'd' ? 'Ø' : key.toUpperCase());
-  const said = (mm) => `${units.figure(mm)} ${units.length}`;
+  // On the drawing as its other labels: the language's decimal sign (Mateusz, 2026-10-02).
+  const said = (mm) => `${decimal(units.figure(mm))} ${units.length}`;
   const ball = units.figure(probe.params?.ballDiameter);
   const how = {
     texts: { ballDiameter: ball }, say: (field, text) => figureSaid(field, text, units.rule), sizes: Object.fromEntries(keys.map((key) => [key, `${key === 'd' ? 'Ø' : ''}${said(size[key])}`])),
   };
+  /*
+   * Wide, the drawing a column of its own beside the figures, as the height
+   * map's result (2026-10-05): taller than the Setup's, so its labels — they
+   * keep their size — find room beside their lines, out of the part, and the
+   * buttons stay in sight. On a phone one above the other.
+   */
   return (
-    <div className="flex flex-col gap-3">
+    <div className="grid items-start gap-4 @3xl/shell:grid-cols-2">
       {cycle ? (
-        <div className="mx-auto w-full max-w-md">
+        <div className="mx-auto w-full max-w-xl">
           <CentreViews
             cycle={cycle}
             top={{ ...cycle.scene('zero', 1, how), limit: null }}
             side={cycle.side ? cycle.side('zero', 1) : null}
             name="zero"
             label={`${t(methodOf(probe.method)?.key)} · ${t(shapeOf(shape).key)}`}
-            className={DRAWING_FIT}
+            className={RESULT_FIT}
           />
         </div>
       ) : null}
+      <div className="flex min-w-0 flex-col gap-3">
       <div className="grid gap-2 @3xl/shell:grid-cols-2">
         {keys.map((key) => (
           <StatTile key={key} label={key === 'd' ? t('probe.size.diameter') : t('probe.size.axis', { axis: name(key) })} value={units.figure(size[key])} unit={units.length} />
@@ -190,6 +202,7 @@ export const SizeResult = ({ probe }) => {
       </div>
       <p className="m-0 text-note text-mut">{t('probe.size.ball', { ball, unit: units.length })}</p>
       <p className="m-0 text-note text-mut">{t('probe.size.note')}</p>
+      </div>
     </div>
   );
 };

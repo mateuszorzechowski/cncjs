@@ -22,8 +22,6 @@ import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
 import { METHODS, SURFACE, failureKey, phaseWords } from '../machine/probe';
-import { BOSS_CYCLE } from '../machine/bossCycle';
-import { HOLE_CYCLE } from '../machine/holeCycle';
 import { paperScene } from '../machine/paperCycle';
 import { drawnPasses, sizeCycle } from '../machine/sizeCycle';
 import { NO_READING } from '../machine/readings';
@@ -45,8 +43,6 @@ const signed = (text) => (text.startsWith('-') || text === NO_READING ? text : `
 const EDITORS = {
   z: ZPlateParams,
   corner: CornerParams,
-  hole: (props) => <CentreParams cycle={HOLE_CYCLE} {...props} />,
-  boss: (props) => <CentreParams cycle={BOSS_CYCLE} {...props} />,
   paper: PaperParams,
   'height-map': HeightMapSetup,
   // A size's, the centre's moves ending in the size, by the shape chosen.
@@ -55,13 +51,11 @@ const EDITORS = {
 // A size measured, as the centre's: its passes those it was asked for.
 const SizeCycle = ({ phase, probe }) => {
   const cycle = sizeCycle(probe?.method, probe?.options?.shape);
-  return <CentreCycle cycle={cycle} phase={phase} passes={drawnPasses(cycle, probe?.params?.holePasses, probe?.params?.repeats)} />;
+  return <CentreCycle cycle={cycle} phase={phase} passes={drawnPasses(probe?.params?.holePasses, probe?.params?.repeats)} />;
 };
 const CYCLES = {
   z: ZPlateCycle,
   corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
-  hole: ({ phase, probe }) => <CentreCycle cycle={HOLE_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
-  boss: ({ phase, probe }) => <CentreCycle cycle={BOSS_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
   'height-map': HeightMapCycle,
   measure: SizeCycle,
 };
@@ -78,10 +72,6 @@ const OUTCOMES = {
   ),
   // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
   corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} done className="mx-auto w-full max-w-md" />,
-  // X0 Y0 from above, at the middle of the hole.
-  hole: () => <CentreCycle cycle={HOLE_CYCLE} done className="mx-auto w-full max-w-md" />,
-  // X0 Y0 from above, at the middle of the part.
-  boss: () => <CentreCycle cycle={BOSS_CYCLE} done className="mx-auto w-full max-w-md" />,
   // The paper's zero written: the sheet flat under the tool, the zero's line on the surface.
   paper: ({ probe }) => (
     <PaperScene {...paperScene('zero', 1, { edge: probe?.options?.edge || 'z', surface: surfaceOf(probe) })} dim={null} dia={null} stock={null} label={t('probe.method.paper')} className="mx-auto w-full max-w-md" />
@@ -95,6 +85,27 @@ export const Foot = ({ back, backLabel = null, children }) => (
     <div className="flex gap-2">{children}</div>
   </div>
 );
+
+/**
+ * The foot of a measurement failed, or of a size (Mateusz, 2026-10-03): closed, or measured again — and a
+ * size's middle may become the zero, X0 Y0 or a width's one axis (2026-10-05: the centres are in Pomiar).
+ */
+export const AfterFoot = ({
+  probe, connected, onClose, onAgain, onZero,
+}) => {
+  const size = probe?.state !== 'failed' && probe?.result?.size;
+  return (
+    <Foot>
+      <Button tone="outline" onClick={onClose} className="h-ctl">{t('probe.result.close')}</Button>
+      <Button tone={size ? 'outline' : 'primary'} onClick={onAgain} className="h-ctl">{t(size ? 'probe.size.again' : 'probe.result.again')}</Button>
+      {size ? (
+        <Button tone="primary" disabled={!connected} onClick={onZero} className="h-ctl">
+          {t('probe.size.zero', { axes: Object.keys(size.centre).map((axis) => `${axis.toUpperCase()}0`).join(' ') })}
+        </Button>
+      ) : null}
+    </Foot>
+  );
+};
 
 const MethodTile = ({ method, onPick }) => (
   <button
@@ -238,8 +249,6 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
     );
   }
   const shift = probe?.result?.shift || {};
-  // What else the touches told, for the operator to check: a hole's size each way.
-  const found = probe?.result?.found || {};
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -253,14 +262,6 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
             key={axis}
             label={t('probe.result.shift', { axis: axis.toUpperCase() })}
             value={signed(units.figure(shift[axis]))}
-            unit={units.length}
-          />
-        ))}
-        {['x', 'y'].filter((axis) => axis in found).map((axis) => (
-          <StatTile
-            key={`found${axis}`}
-            label={t('probe.result.found', { axis: axis.toUpperCase() })}
-            value={units.figure(found[axis])}
             unit={units.length}
           />
         ))}

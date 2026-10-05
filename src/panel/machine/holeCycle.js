@@ -1,11 +1,10 @@
 /**
- * The centre of a hole as its drawing moves through it (Mateusz, 2026-10-01;
- * the server's `services/probe/strategies/hole`): seen from above, the ball
- * in a round hole touches the wall +X, then −X, goes to the middle of the
- * two, and does the same across Y — twice, the second pass from the centre
- * the first found, or once (`passes`). Then X0 Y0 is written there; Z is not
- * touched. The first pass already ends at the centre, so one pass is the
- * first half of the same moves and the zero.
+ * A hole measured, as its drawing moves through it (Mateusz, 2026-10-01; the
+ * server's `services/probe/strategies/size`): seen from above, the ball in
+ * the hole touches the wall +X, then −X, goes to the middle of the two, and
+ * does the same across Y — twice, the second pass from the centre the first
+ * found, or once (`passes`). Then its size is said. The first pass already
+ * ends at the centre, so one pass is the first half of the same moves.
  *
  * Each touch is the corner's steps (review note, 2026-10-01: *"kroki w
  * pomiarze otworu to zlepek kilku kroków, w pomiarze XYZ wygląda inaczej"*):
@@ -29,14 +28,11 @@ export { HOLE_R, LOOP_HOLD_MS, toolAt };
 const HOLE_NAMES = { group: 'probe.group.hole', size: 'probe.field.holeSize' };
 
 /**
- * The hole cycle for `axes` — one for a width — and, with `size`, ending in
- * the size measured rather than a zero (Mateusz, 2026-10-03); `square`, a
- * rectangle's, drawn so.
+ * The hole cycle for `axes` — one for a groove's width — ending in the size
+ * measured (Mateusz, 2026-10-03); `square`, a pocket's, drawn so.
  */
-export const holeCycleOf = ({
-  axes = AXES, size = false, square = false, names = HOLE_NAMES,
-} = {}) => {
-  const { moves: MOVES, order: ORDER } = build({ axes, size });
+export const holeCycleOf = ({ axes = AXES, square = false, names = HOLE_NAMES } = {}) => {
+  const { moves: MOVES, order: ORDER } = build({ axes });
   // A round hole's size is its diameter, said once.
   const round = !square && axes.length === 2;
 
@@ -53,7 +49,7 @@ export const holeCycleOf = ({
   /*
    * The bar's stages, as the corner's are by axis: each pass across X, then
    * across Y — a wall's three steps, the other wall's, the way to the middle —
-   * then the zero. Named by the axis, and the pass when there are two.
+   * then the size. Named by the axis, and the pass when there are two.
    * Two walls on an axis, so a sub-stage is a wall, not a search and a
    * measuring (rule, Mateusz 2026-10-01: `cncjs-notes/probe/oznaczenia.html` §8).
    */
@@ -70,19 +66,15 @@ export const holeCycleOf = ({
         { key: 'probe.hole.middle', moves: [`${axis}${pass}c`] },
       ],
     };
-  })).concat([size
-? {
+  })).concat([{
     id: 'zero', key: 'probe.bar.size', folded: true, subs: [{ key: 'probe.stage.size', moves: ['zero'] }],
-  }
-: {
-    id: 'zero', key: 'probe.bar.zero', folded: true, subs: [{ key: 'probe.stage.zero', moves: ['zero'] }],
   }]);
 
   const HOLE_PARAMS = [
     { id: 'hole', key: names.group, fields: ['holeSize'], names: { holeSize: names.size } },
     // How many passes, a switch at the group's head.
-    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: size },
-    // Only for the hole's size said back: the centre needs no radius.
+    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: true },
+    // Only for the size said back: the centre needs no radius.
     { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
   ];
 
@@ -130,7 +122,7 @@ export const holeCycleOf = ({
   /**
    * The drawing of move `name` at `p`: the ball's centre, the arrow while it
    * moves, the search's limit on a fast touch, the walls touched so far this
-   * pass, the touch under way and the zero's lines. `texts` the figures,
+   * pass, the touch under way and the size measured. `texts` the figures,
    * `say(field, text)` one as a label says it, `upTo(v)` as a limit;
    * `sizes`, what a size's lines say per axis — `d` a round one's diameter — the axis's letter (Ø) if not given.
    */
@@ -185,15 +177,11 @@ export const holeCycleOf = ({
       motion = {
         axis: move.axis, from: move.from, to: move.to, kind: 'rapid', feed: null,
       };
-    } else if (move.size) {
+    } else if (move.kind === 'zero') {
       // The size across the hole, wall to wall, each axis measured — under it and beside it; a round one's one diameter.
       dims = (round ? ['x'] : axes).map((axis) => ({
         id: `size${axis}`, axis, at: HOLE_R + 16, from: along(axis, [0, 0], -HOLE_R), to: along(axis, [0, 0], HOLE_R), text: (round ? sizes.d : sizes[axis]) ?? (round ? 'Ø' : axis.toUpperCase()), lit: false,
       }));
-    }
-    let zero = 0;
-    if (move.zeroAt) {
-      zero = clamp((p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0]));
     }
     return {
       tool,
@@ -204,15 +192,14 @@ export const holeCycleOf = ({
       touched: move.kind === 'back' || move.kind === 'slow' ? [...touched, onWall(move.wall)] : touched,
       contact: TOUCHING.includes(move.kind) && near(tool, move.wall) ? onWall(move.wall) : null,
       centre: move.kind === 'centre' && p >= move.end ? move.to : null,
-      zero,
-      // The ball's diameter, the one figure the zero uses: it is added back to say the hole's size.
-      dia: move.kind === 'zero' ? { text: `Ø${said('ballDiameter')}`, lit: focus === 'dim', fade: move.size ? 1 : zero } : null,
+      // The ball's diameter: it is added back to say the hole's size.
+      dia: move.kind === 'zero' ? { text: `Ø${said('ballDiameter')}`, lit: focus === 'dim' } : null,
       focus,
     };
   };
 
   /** The step's line, with the figures typed; a way to the middle is said in words, `[key]`. */
-  const holeCode = (name, texts, wcs = 1) => {
+  const holeCode = (name, texts) => {
     const move = MOVES[name];
     const forward = `${move.axis?.toUpperCase()}${move.sign > 0 ? '+' : '-'}`;
     const backward = `${move.axis?.toUpperCase()}${move.sign > 0 ? '-' : '+'}`;
@@ -226,22 +213,10 @@ export const holeCycleOf = ({
       // The slow touch goes twice the way back, as the server's `touch` does.
       return `G38.2 ${forward}${slowReach(texts)} F${texts.slow}`;
     }
-    if (move.size) {
+    if (move.kind === 'zero') {
       return ['probe.size.codeHole'];
     }
-    if (move.kind === 'zero') {
-      return `G10 L20 P${wcs} X0 Y0`;
-    }
     return ['probe.hole.centreCode'];
-  };
-
-  // An example of where the ball stood against the old zero.
-  const BEFORE = { x: 123.456, y: 78.9 };
-
-  /** The readout: X and Y against the old zero before, 0 after — held through the moves. */
-  const holeReadout = (name) => {
-    const after = Boolean(MOVES[name].after);
-    return { axes: after ? [['x', 0], ['y', 0]] : [['x', BEFORE.x], ['y', BEFORE.y]], after };
   };
 
   /*
@@ -304,7 +279,6 @@ export const holeCycleOf = ({
 
   /** The hole as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */
   return {
-    size,
     part,
     // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place.
     side: (name, p, how) => holeSide({ ...MOVES[name], at: toolAt(MOVES[name], p) }, p, how, part),
@@ -322,15 +296,8 @@ export const holeCycleOf = ({
     code: holeCode,
     explain: (name, texts, say) => (MOVES[name].kind === 'slow' ? slowReachWhy(texts, say) : null),
     usesAt: (name) => MOVES[name].uses,
-    readout: holeReadout,
     positionAt,
     moveOfPhase,
     words: holeWords,
   };
 };
-
-export const HOLE_CYCLE = holeCycleOf();
-
-export const {
-  order: holeOrder, groups: holeGroups, timeline: holeTimeline, playAt, moveOf, titleOf, scene: holeScene, code: holeCode, readout: holeReadout, moveOfPhase, words: holeWords, params: HOLE_PARAMS, positionAt,
-} = HOLE_CYCLE;

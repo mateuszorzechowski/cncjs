@@ -1,5 +1,4 @@
 import { drawnPasses, sizeCycle } from '../sizeCycle';
-import { HOLE_CYCLE } from '../holeCycle';
 
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
 
@@ -8,7 +7,6 @@ describe('a size\'s drawing', () => {
     const groove = sizeCycle('measure', 'groove-y');
     expect(groove.order(1).filter((name) => name !== 'zero').every((name) => groove.moveOf(name).axis === 'y')).toBe(true);
     expect(groove.code('zero', {})).toEqual(['probe.size.codeHole']);
-    expect(groove.readout('zero').after).toBe(false);
     expect(sizeCycle('measure', 'bar-x').code('zero', {})).toEqual(['probe.size.codeBoss']);
     expect(sizeCycle('z')).toBeNull();
   });
@@ -16,7 +14,6 @@ describe('a size\'s drawing', () => {
   test('a rectangle\'s size drawn across each axis, said as given', () => {
     const scene = sizeCycle('measure', 'rect-inside').scene('zero', 1, { sizes: { x: '24.012 mm' } });
     expect(scene.dims.map((dim) => [dim.axis, dim.text])).toEqual([['x', '24.012 mm'], ['y', 'Y']]);
-    expect(scene.zero).toBe(0);
   });
 
   test('a circle\'s once, its diameter', () => {
@@ -41,11 +38,9 @@ describe('a size\'s drawing', () => {
     expect(sizeCycle('measure', 'circle-outside').moveOfPhase('y3-centre')).toBe('y2c');
   });
 
-  test('passes drawn: a centre\'s as asked, a size\'s centring and counted ones, at most two', () => {
-    expect(drawnPasses(HOLE_CYCLE, 1, 5)).toBe(1);
-    const size = sizeCycle('measure', 'circle-inside');
-    expect(drawnPasses(size, 1, 1)).toBe(1);
-    expect(drawnPasses(size, 2, 1)).toBe(2);
-    expect(drawnPasses(size, 1, 3)).toBe(2);
+  test('passes drawn: the centring and the counted ones, at most two', () => {
+    expect(drawnPasses(1, 1)).toBe(1);
+    expect(drawnPasses(2, 1)).toBe(2);
+    expect(drawnPasses(1, 3)).toBe(2);
   });
 });

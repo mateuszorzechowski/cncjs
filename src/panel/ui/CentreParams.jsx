@@ -3,7 +3,6 @@ import { passesSection } from './HolePasses';
 import CentreViews from './CentreViews';
 import MoveBar, { namedGroups } from './MoveBar';
 import PlayControls from './PlayControls';
-import ProbeReadout from './ProbeReadout';
 import { figureColumns } from './ProbeSections';
 import { useReducedMotion } from './useClock';
 import useSetupPlayer from './useSetupPlayer';
@@ -17,26 +16,22 @@ import { DRAWING_FIT } from './probeDraw';
 
 // An empty line's place kept, a no-break space.
 const NBSP = ' ';
-// The coordinate system's number in G10 L20 P…: G54 is 1.
-const systemNumber = (wcs) => (Number(String(wcs || 'G54').slice(1)) || 54) - 53;
-
 /**
- * A centre's Setup — a hole's or a part's from outside, `cycle` — drawn as
- * the Z plate's (Claude Design, probe proposals, 2026-09-30): it from above
+ * Pomiar's Setup — a hole's or a part's from outside, `cycle` — drawn as the
+ * Z plate's (Claude Design, probe proposals, 2026-09-30): it from above
  * large, one bar of its moves — one pass or two, each across X and across Y,
- * then the zero — a player's controls, the probe's X and Y before and after
- * the zero, and the move's name with its G-code; beside it the figures by
- * what they are about, those the move playing uses lit. A figure being set
- * loops the move it changes.
+ * then the size — a player's controls, and the move's name with its G-code;
+ * beside it the figures by what they are about, those the move playing uses
+ * lit. A figure being set loops the move it changes.
  *
  * `split(left, right)`, wide: the screen lays the drawing and the figures out
  * as cards of their own.
  */
 const CentreParams = ({
-  cycle, fields, texts, onText, bad, wcs, intro = null, note = null, split = null,
+  cycle, fields, texts, onText, bad, intro = null, note = null, split = null,
 }) => {
   const {
-    params: PARAMS, hold, order, groups: groupsOf, timeline, playAt, moveOf, titleOf, scene: sceneOf, code: codeOf, usesAt, readout,
+    params: PARAMS, hold, order, groups: groupsOf, timeline, playAt, moveOf, titleOf, scene: sceneOf, code: codeOf, usesAt,
   } = cycle;
   const units = useUnits();
   const wide = useIsWide();
@@ -44,7 +39,7 @@ const CentreParams = ({
   const still = useReducedMotion();
   const group = PARAMS.find((one) => one.id === open);
   // Once or twice across, and a size's repeats: the cycle drawn is the one that will run.
-  const passes = drawnPasses(cycle, texts.holePasses, texts.repeats);
+  const passes = drawnPasses(texts.holePasses, texts.repeats);
   const items = useMemo(() => timeline(passes), [timeline, passes]);
   const {
     player, picked, loop, frame, p, onField, pick,
@@ -56,8 +51,7 @@ const CentreParams = ({
   const how = {
     texts, say, upTo: (v) => t('probe.cycle.upTo', { v }), focus,
   };
-  const code = codeOf(name, texts, systemNumber(wcs), p);
-  const read = readout(name);
+  const code = codeOf(name, texts);
   const title = t(...titleOf(name));
   // Where the step's figure comes from, when it is a sum (review note #9, 2026-10-02).
   const why = cycle.explain ? cycle.explain(name, texts, say) : null;
@@ -91,7 +85,6 @@ const CentreParams = ({
         marked={picked || group ? order(passes).filter((id) => moveOf(id).uses.some((use) => (picked ? use === picked : group.fields.includes(use)))) : []}
       />
       <PlayControls paused={player.paused} ended={player.ended} mode={player.mode} locked={loop} onPlay={player.play} onPause={player.pause} onStep={player.step} onMode={player.setMode} />
-      <ProbeReadout wcs={wcs} after={read.after} axes={read.axes} />
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-line px-3 py-2">
         <span className="min-w-0 text-base font-semibold text-ink">{title}</span>
         {/* A way with no numbers to show says where it goes. */}

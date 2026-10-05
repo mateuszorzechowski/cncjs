@@ -44,8 +44,8 @@ const wallFrom = (at, axis, sign) => {
  * back, slow; for each side its set-up, the fast touch, back off it, the slow
  * one, up again; the way to the middle; the zero, still.
  */
-/** `axes` and `size` as the hole's (`holeMoves.build`). */
-export const build = ({ axes = AXES, size = false } = {}) => {
+/** `axes` as the hole's (`holeMoves.build`). */
+export const build = ({ axes = AXES } = {}) => {
   const S = START;
   const moves = {
     zFast: {
@@ -118,12 +118,8 @@ export const build = ({ axes = AXES, size = false } = {}) => {
       at = middle;
     });
   });
-  moves.zero = size
-? {
-    kind: 'zero', from: at, frames: [[0, at, ABOVE], [1, at, ABOVE]], titleKey: 'probe.size.move.size', uses: ['ballDiameter'], end: 0.35, size: true,
-  }
-: {
-    kind: 'zero', from: at, frames: [[0, at, ABOVE], [1, at, ABOVE]], zeroAt: [0.1, 0.35], titleKey: 'probe.hole.move.zero', uses: ['ballDiameter'], end: 0.35, after: true,
+  moves.zero = {
+    kind: 'zero', from: at, frames: [[0, at, ABOVE], [1, at, ABOVE]], titleKey: 'probe.size.move.size', uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };

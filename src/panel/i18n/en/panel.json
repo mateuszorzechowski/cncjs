@@ -1433,14 +1433,10 @@
       "cornerNote": "Corner of the work: X0, Y0 and Z0, with an L-shaped plate.",
       "paper": "Paper",
       "paperNote": "By hand with a sheet of paper: the top or any side, no probe.",
-      "hole": "Hole centre",
-      "holeNote": "The centre of a round hole, by probe: X0 and Y0, Z unchanged.",
-      "boss": "Centre from outside",
-      "bossNote": "The centre of a boss or a part, by probe from outside: X0 and Y0, Z unchanged.",
       "map": "Height map",
       "mapNote": "A grid of points by probe: the program follows a warped board. The zero stays as it is.",
       "measure": "Measure",
-      "measureNote": "A circle, a rectangle or a width, with the probe: its size and middle. The zero stays as it is."
+      "measureNote": "A circle, a rectangle or a width, with the probe: its size and middle — and, if you want, the zero there."
     },
     "how": {
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
@@ -1604,8 +1600,7 @@
       "save": "Save zero",
       "discard": "Discard",
       "close": "Close",
-      "again": "Try again",
-      "found": "Measured size in {{axis}}"
+      "again": "Try again"
     },
     "edgeLabel": "Which surface of the work",
     "edge": {
@@ -1739,8 +1734,7 @@
         "back": "Pass {{pass}} · {{axis}}: back off",
         "slow": "Pass {{pass}} · {{axis}}: slow measure",
         "off": "Pass {{pass}} · {{axis}}: move off",
-        "centre": "Pass {{pass}} · {{axis}}: to the middle",
-        "zero": "Zero written: X0 and Y0"
+        "centre": "Pass {{pass}} · {{axis}}: to the middle"
       },
       "centreCode": "G0 to the middle of the touches",
       "phase": {
@@ -1882,13 +1876,14 @@
       "spread": "Spread {{axis}}",
       "each": "{{axis}}, each pass: {{list}} {{unit}}",
       "ball": "The size rests on the ball diameter: {{ball}} {{unit}}.",
-      "note": "Zero unchanged. The size is kept in the journal.",
+      "note": "The zero changes only with “Set zero”. The result is in the Journal.",
       "again": "Measure again",
       "diameter": "Diameter",
       "off": "Out of round",
       "offWhy": "Out of round: the farthest touch from the middle less the nearest. Near zero, it is a circle; more, an oval, a shape at an angle or a flaw.",
       "centreIn": "Middle in",
-      "centre": "Middle {{axis}}"
+      "centre": "Middle {{axis}}",
+      "zero": "Set zero {{axes}}"
     },
     "kindLabel": "What you measure",
     "kind": {

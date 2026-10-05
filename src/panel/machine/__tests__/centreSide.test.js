@@ -1,6 +1,10 @@
-import { BOSS_CYCLE, moveOf as bossMove } from '../bossCycle';
+import { bossCycleOf } from '../bossCycle';
 import { heightOf, scaleAt } from '../bossSide';
-import { HOLE_CYCLE } from '../holeCycle';
+import { holeCycleOf } from '../holeCycle';
+
+const BOSS_CYCLE = bossCycleOf();
+const HOLE_CYCLE = holeCycleOf();
+const bossMove = BOSS_CYCLE.moveOf;
 
 describe('the centres from the front', () => {
   test('the part: always along X; Y is depth — larger at the front, dashed behind the part', () => {

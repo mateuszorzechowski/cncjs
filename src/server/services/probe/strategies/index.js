@@ -1,7 +1,5 @@
-import boss from './boss';
 import corner from './corner';
 import heightMap from './height-map';
-import hole from './hole';
 import paper from './paper';
 import measure from './size';
 import zPlate from './z-plate';
@@ -23,8 +21,6 @@ import zPlate from './z-plate';
  *   is and where its middle is, and nothing else (`measure`);
  * - `read(options, units)`, if it has one — the choices in millimetres,
  *   for figures given per measurement (`{ options }` or `{ error }`);
- * - `found(params, options, seen)`, if it has one — what else the touches
- *   tell, for the operator to check (a hole's size).
  * - `partial(params, options, seen)`, if it has one — what the touches so
  *   far tell while it runs (a height map's heights), for every device.
  *
@@ -33,8 +29,6 @@ import zPlate from './z-plate';
 export const STRATEGIES = {
   z: zPlate,
   corner,
-  hole,
-  boss,
   paper,
   'height-map': heightMap,
   measure,

@@ -1,10 +1,10 @@
 /**
- * The centre of a part, touched from outside, as its drawing moves through
- * it (Mateusz, 2026-10-01; the server's `services/probe/strategies/boss`):
- * seen from above, the ball touches the top first, then for each side goes
- * out past it over the top, down beside it, touches it moving in and rises
- * again — +X, −X, to the middle, then the same across Y; twice, or once
- * (`passes`). Then X0 Y0 is written there; Z is not touched.
+ * A part measured from outside, as its drawing moves through it (Mateusz,
+ * 2026-10-01; the server's `services/probe/strategies/size`): seen from
+ * above, the ball touches the top first, then for each side goes out past it
+ * over the top, down beside it, touches it moving in and rises again — +X,
+ * −X, to the middle, then the same across Y; twice, or once (`passes`). Then
+ * its size is said.
  *
  * In the corner's steps (review note, 2026-10-01: *"w pomiarze XYZ wygląda
  * inaczej"*): the top's search and its measuring; each side's set-up (out,
@@ -30,14 +30,11 @@ import { frameAt, layOut, totalOf } from './timeline';
 const PART_NAMES = { group: 'probe.group.part', size: 'probe.field.bossSize' };
 
 /**
- * The part cycle for `axes` — one for a width — and, with `size`, ending in
- * the size measured rather than a zero (Mateusz, 2026-10-03); `square`, a
- * rectangle's, drawn so.
+ * The part cycle for `axes` — one for a bar's width — ending in the size
+ * measured (Mateusz, 2026-10-03); `square`, a rectangular part's, drawn so.
  */
-export const bossCycleOf = ({
-  axes = AXES, size = false, square = false, names = PART_NAMES,
-} = {}) => {
-  const { moves: MOVES, order: ORDER } = build({ axes, size });
+export const bossCycleOf = ({ axes = AXES, square = false, names = PART_NAMES } = {}) => {
+  const { moves: MOVES, order: ORDER } = build({ axes });
   // A round part's size is its diameter, said once.
   const round = !square && axes.length === 2;
 
@@ -72,15 +69,15 @@ export const bossCycleOf = ({
       ],
     };
   }))).concat([{
-    id: 'zero', key: size ? 'probe.bar.size' : 'probe.bar.zero', folded: true, subs: [{ key: size ? 'probe.stage.size' : 'probe.stage.zero', moves: ['zero'] }],
+    id: 'zero', key: 'probe.bar.size', folded: true, subs: [{ key: 'probe.stage.size', moves: ['zero'] }],
   }]);
 
   const BOSS_PARAMS = [
     { id: 'part', key: names.group, fields: ['bossSize'], names: { bossSize: names.size } },
     { id: 'reach', key: 'probe.group.reach', fields: ['clear', 'depth', 'maxZ'] },
     // How many passes, a switch at the group's head.
-    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: size },
-    // Only for the part's size said back: the centre needs no radius.
+    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: true },
+    // Only for the size said back: the centre needs no radius.
     { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
   ];
 
@@ -141,7 +138,7 @@ export const bossCycleOf = ({
   /**
    * The drawing of move `name` at `p`: the ball's centre and height, the arrow
    * of the step under way, a figure's dimension, the sides this pass has
-   * touched, the touch under way and the zero's lines. `texts` the figures,
+   * touched, the touch under way and the size measured. `texts` the figures,
    * `say(field, text)` one as a label says it, `upTo(v)` as a limit;
    * `sizes`, what a size's lines say per axis — `d` a round one's diameter — the axis's letter (Ø) if not given.
    */
@@ -171,13 +168,12 @@ export const bossCycleOf = ({
       dims = [{
         id: lit('size') ? 'size' : 'clear', axis: move.axis, at, from: setOn(move.axis, move.out, move.guess), mid: edge, to: move.out, text: say('clear', reachOf(texts)), lit: lit('clear') || lit('size'),
       }];
-    } else if (move.size) {
+    } else if (move.kind === 'zero') {
       // The part's size, side to side, each axis measured — under it and beside it; a round one's one diameter.
       dims = (round ? ['x'] : axes).map((axis) => ({
         id: `size${axis}`, axis, at: BOSS_R + ASIDE_PART, from: setOn(axis, [0, 0], -BOSS_R), to: setOn(axis, [0, 0], BOSS_R), text: (round ? sizes.d : sizes[axis]) ?? (round ? 'Ø' : axis.toUpperCase()), lit: false,
       }));
     }
-    const zero = move.zeroAt ? clamp((p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0])) : 0;
     let contact = null;
     if ((move.kind === 'fast' || move.kind === 'slow') && near(tool, move.wall)) {
       contact = onSide(move.wall);
@@ -195,15 +191,14 @@ export const bossCycleOf = ({
       touched: sides.map((side) => onSide(MOVES[`${side}Fast`].wall)),
       contact,
       centre: move.kind === 'centre' && p >= move.end ? move.to : null,
-      zero,
-      // The ball's diameter, the one figure the zero uses: it is taken off to say the part's size.
-      dia: move.kind === 'zero' ? { text: `Ø${said('ballDiameter')}`, lit: lit('dim'), fade: move.size ? 1 : zero } : null,
+      // The ball's diameter: it is taken off to say the part's size.
+      dia: move.kind === 'zero' ? { text: `Ø${said('ballDiameter')}`, lit: lit('dim') } : null,
       focus,
     };
   };
 
   /** The step's line at `p`, with the figures typed; a way with no figures is said in words, `[key]`. */
-  const bossCode = (name, texts, wcs = 1, p = 0) => {
+  const bossCode = (name, texts) => {
     const move = MOVES[name];
     const twice = fmt(2 * numberOf(texts.retract));
     const down = downOf(texts);
@@ -222,7 +217,7 @@ export const bossCycleOf = ({
       back: () => `G0 ${outward}${texts.retract}`,
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
-      zero: () => (size ? ['probe.size.codeBoss'] : `G10 L20 P${wcs} X0 Y0`),
+      zero: () => ['probe.size.codeBoss'],
       centre: () => ['probe.hole.centreCode'],
     };
     return CODES[move.kind]();
@@ -230,15 +225,6 @@ export const bossCycleOf = ({
 
   /** What lights at `p` of a move: a set-up's leg's figures, or the whole move's. */
   const usesAt = (name) => MOVES[name].uses;
-
-  // An example of where the ball stood against the old zero.
-  const BEFORE = { x: 123.456, y: 78.9 };
-
-  /** The readout: X and Y against the old zero before, 0 after — held through the moves. */
-  const bossReadout = (name) => {
-    const after = Boolean(MOVES[name].after);
-    return { axes: after ? [['x', 0], ['y', 0]] : [['x', BEFORE.x], ['y', BEFORE.y]], after };
-  };
 
   /*
    * Into place: from off to the side, across over the part, down to a few
@@ -306,7 +292,6 @@ export const bossCycleOf = ({
 
   /** The part as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */
   return {
-    size,
     part: {
       kind: 'boss', r: BOSS_R, toolR: TOOL_R, grow: 0.6, view: [-101, -94, 202, 188],
       // One axis: a bar, drawn as a strip that wide (`CentreScene`).
@@ -336,15 +321,8 @@ export const bossCycleOf = ({
     code: bossCode,
     explain: (name, texts, say) => explainOf(MOVES[name], texts, say),
     usesAt,
-    readout: bossReadout,
     positionAt,
     moveOfPhase,
     words: bossWords,
   };
 };
-
-export const BOSS_CYCLE = bossCycleOf();
-
-export const {
-  order: bossOrder, groups: bossGroups, timeline: bossTimeline, playAt, moveOf, titleOf, scene: bossScene, code: bossCode, readout: bossReadout, moveOfPhase, words: bossWords, params: BOSS_PARAMS, usesAt, positionAt,
-} = BOSS_CYCLE;
