@@ -33,7 +33,8 @@ const FIXED_LABELS = { us: 'units.us', ms: 'units.ms', rpm: 'units.rpm' };
 const usable = (value) => typeof value === 'number' && Number.isFinite(value);
 
 /** An angle in degrees, as a reading — a point and three digits, as a position — never converted. */
-export const degrees = (value) => (usable(value) ? value.toFixed(3) : NO_READING);
+// Rounded first: a hair under zero is no turn, and says 0.000, not -0.000.
+export const degrees = (value) => (usable(value) ? (Math.round(value * 1000) / 1000 || 0).toFixed(3) : NO_READING);
 
 /**
  * A length in millimetres, as text in the server's units.

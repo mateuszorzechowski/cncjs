@@ -24,15 +24,21 @@ const CYCLES = {
   'groove-y': holeCycleOf({ axes: ['y'], names: GROOVE }),
   'bar-x': bossCycleOf({ axes: ['x'], names: BAR }),
   'bar-y': bossCycleOf({ axes: ['y'], names: BAR }),
-  'edge-front': bossCycleOf({ edge: 'front' }),
-  'edge-back': bossCycleOf({ edge: 'back' }),
-  'edge-left': bossCycleOf({ edge: 'left' }),
-  'edge-right': bossCycleOf({ edge: 'right' }),
+  'edge-front': bossCycleOf({ layout: 'edge-front' }),
+  'edge-back': bossCycleOf({ layout: 'edge-back' }),
+  'edge-left': bossCycleOf({ layout: 'edge-left' }),
+  'edge-right': bossCycleOf({ layout: 'edge-right' }),
+  'rect-outside-turned': bossCycleOf({ layout: 'turned-outside' }),
+  'rect-inside-turned': bossCycleOf({ layout: 'turned-inside' }),
+};
+// The shapes drawn turned, by the layout that draws them.
+const TURNED = {
+  'edge-front': 'edge-front', 'edge-back': 'edge-back', 'edge-left': 'edge-left', 'edge-right': 'edge-right', 'rect-outside-turned': 'turned-outside', 'rect-inside-turned': 'turned-inside',
 };
 
 /**
  * The cycle of a size, by its shape; null for any other method. `angle`, an
- * edge measured: its part drawn turned that way — at least `SEEN` degrees, at
+ * edge or a turned rectangle measured: its part drawn turned that way — at least `SEEN` degrees, at
  * most `STEEP`, so a small angle can be seen and a large one still reads as
  * an edge; level when it is.
  */
@@ -42,10 +48,9 @@ export const sizeCycle = (method, shape, angle = null) => {
   if (method !== 'measure') {
     return null;
   }
-  const edge = /^edge-(\w+)$/.exec(shape || '');
-  if (edge && Number.isFinite(angle)) {
+  if (TURNED[shape] && Number.isFinite(angle)) {
     const size = Math.abs(angle) < 0.0005 ? 0 : Math.min(STEEP, Math.max(SEEN, Math.abs(angle)));
-    return bossCycleOf({ edge: edge[1], tilt: Math.sign(angle) * size });
+    return bossCycleOf({ layout: TURNED[shape], tilt: Math.sign(angle) * size });
   }
   return CYCLES[shape] ?? CYCLES['circle-inside'];
 };

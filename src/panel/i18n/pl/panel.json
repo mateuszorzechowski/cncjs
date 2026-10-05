@@ -732,7 +732,8 @@
       "ball": "Kulka",
       "off": "Odchyłka od okręgu",
       "centre": "Środek ({{wcs}})",
-      "angle": "kąt"
+      "angle": "kąt",
+      "square": "Odchyłka od kąta prostego"
     },
     "range": {
       "m15": "15 min",
@@ -1613,20 +1614,24 @@
       "yFront": "Przedni bok (Y)",
       "yBack": "Tylny bok (Y)",
       "move": {
-        "along": "{{pass}}. punkt · wzdłuż krawędzi, nad wierzchem",
-        "setOut": "{{pass}}. punkt · {{axis}}: ustawienie — za krawędź",
-        "setDown": "{{pass}}. punkt · {{axis}}: ustawienie — w dół przy krawędzi",
-        "fast": "{{pass}}. punkt · {{axis}}: szybki dotyk krawędzi",
+        "along": "{{pass}}. punkt · wzdłuż boku, nad wierzchem",
+        "setOut": "{{pass}}. punkt · {{axis}}: ustawienie — za bok",
+        "setDown": "{{pass}}. punkt · {{axis}}: ustawienie — w dół przy boku",
+        "fast": "{{pass}}. punkt · {{axis}}: szybki dotyk boku",
         "back": "{{pass}}. punkt · {{axis}}: cofnięcie",
         "slow": "{{pass}}. punkt · {{axis}}: wolny pomiar",
         "off": "{{pass}}. punkt · {{axis}}: odsunięcie",
-        "up": "{{pass}}. punkt · {{axis}}: w górę nad detal"
+        "up": "{{pass}}. punkt · {{axis}}: w górę nad detal",
+        "in": "{{pass}}. punkt · {{axis}}: na środek, w poprzek boku",
+        "home": "Powrót na środek · {{axis}}"
       },
-      "alongCode": "G0 wzdłuż krawędzi do punktu",
+      "alongCode": "G0 wzdłuż boku do punktu",
       "phase": {
-        "along": "wzdłuż krawędzi do punktu"
+        "along": "wzdłuż boku do punktu",
+        "in": "na środek przed punktem"
       },
-      "outCode": "G0 za krawędź, nad wierzchem"
+      "inCode": "G0 na środek, w poprzek boku",
+      "homeCode": "G0 na środek kieszeni"
     },
     "stage": {
       "search": "szukanie",
@@ -1885,7 +1890,9 @@
       "edgeFront": "Przód",
       "edgeBack": "Tył",
       "edgeLeft": "Lewy bok",
-      "edgeRight": "Prawy bok"
+      "edgeRight": "Prawy bok",
+      "rectInsideTurned": "Kieszeń pod kątem",
+      "rectOutsideTurned": "Detal pod kątem"
     },
     "shapeLabel": "Jak leży",
     "size": {
@@ -1913,7 +1920,11 @@
       "angle": "Kąt krawędzi",
       "angleWhy": "Kąt od osi, przeciwnie do ruchu wskazówek zegara. Grbl nie obraca układu współrzędnych (nie ma G68): wyrównaj detal albo uwzględnij kąt w programie.",
       "edgeIn": "Krawędź w układzie",
-      "edgeAt": "Krawędź {{axis}}"
+      "edgeAt": "Krawędź {{axis}}",
+      "codeTurned": "boki i kąt = z prostych przez dotyki każdego boku",
+      "square": "Odchyłka od kąta prostego",
+      "squareWhy": "Różnica kątów boków poprzecznych i podłużnych. Blisko zera — narożniki proste; więcej — romb albo dotyk, który trafił w sąsiednią ściankę (zmniejsz odstęp punktów).",
+      "turnAngle": "Kąt obrotu"
     },
     "kindLabel": "Co mierzysz",
     "kind": {

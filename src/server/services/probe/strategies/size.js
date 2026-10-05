@@ -1,6 +1,7 @@
 import { touch } from '../moves';
 import { across as bossAcross } from './boss';
 import { EDGES, edgeOf, edgeSteps } from './edge';
+import { turnedOf, turnedSteps } from './turned';
 import { across as holeAcross } from './hole';
 
 /**
@@ -35,6 +36,9 @@ export const SHAPES = {
   'circle-outside': { kind: 'circle', axes: ['x', 'y'], side: 'outside' },
   'rect-inside': { kind: 'rect', axes: ['x', 'y'], side: 'inside' },
   'rect-outside': { kind: 'rect', axes: ['x', 'y'], side: 'outside' },
+  // At an angle: four sides at two points each, every move along one axis (`turned`).
+  'rect-inside-turned': { kind: 'rect', side: 'inside', turned: true },
+  'rect-outside-turned': { kind: 'rect', side: 'outside', turned: true },
   'groove-x': { kind: 'width', axes: ['x'], side: 'inside' },
   'groove-y': { kind: 'width', axes: ['y'], side: 'inside' },
   'bar-x': { kind: 'width', axes: ['x'], side: 'outside' },
@@ -46,9 +50,14 @@ export const SHAPES = {
 const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
 
-const passes = ({ axes, side, edge }, params) => {
+const passes = ({
+  axes, side, edge, turned,
+}, params, { start } = {}) => {
   if (edge) {
     return edgeSteps(edge, params);
+  }
+  if (turned) {
+    return turnedSteps(side, params, start);
   }
   const across = side === 'inside' ? holeAcross : bossAcross;
   const all = [];
@@ -113,10 +122,13 @@ const spreadOf = (values) => Math.max(...values) - Math.min(...values);
  */
 const sizeOf = (shape, params, seen) => {
   const {
-    kind, axes, side, edge,
+    kind, axes, side, edge, turned,
   } = SHAPES[shape];
   if (edge) {
     return edgeOf(edge, params, seen);
+  }
+  if (turned) {
+    return turnedOf(side, params, seen);
   }
   const ball = side === 'inside' ? params.ballDiameter : -params.ballDiameter;
   const last = params.holePasses - 1 + params.repeats;
@@ -154,6 +166,6 @@ export default {
   options: { shape: Object.keys(SHAPES) },
   touches: true,
   check: (options) => (SHAPES[options.shape] ? null : 'bad-shape'),
-  steps: (params, options) => passes(SHAPES[options.shape], params),
+  steps: (params, options, where) => passes(SHAPES[options.shape], params, where),
   size: (params, options, seen) => sizeOf(options.shape, params, seen),
 };

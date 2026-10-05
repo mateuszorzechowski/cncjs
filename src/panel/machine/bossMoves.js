@@ -200,7 +200,8 @@ export const above = (move, p, going, said, upTo, lit, reach, slow) => {
     case 'slow': return {
       motion: arrow(move.off, move.wall, 'probe', said('slow'), lit('feed')),
       reach: {
-        axis: move.axis, from: move.off, mid: move.wall, to: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] - move.sign * BACK), text: slow, lit: lit('retract'),
+        // Past the side the way the ball goes to it: in from outside, out from inside a pocket (`dir`).
+        axis: move.axis, from: move.off, mid: move.wall, to: setOn(move.axis, move.wall, move.wall[AXES.indexOf(move.axis)] + (move.dir ?? -move.sign) * BACK), text: slow, lit: lit('retract'),
       },
     };
     case 'centre': return { motion: arrow(move.from, move.to, 'rapid') };

@@ -90,6 +90,9 @@ export const probeDetails = (entry, units) => {
     if (Number.isFinite(data.off)) {
       rows.push([t('journal.detail.off'), mm(data.off)]);
     }
+    if (data.turn) {
+      rows.push([t('journal.detail.angle'), `${degrees(data.turn.a)}°`], [t('journal.detail.square'), `${degrees(data.turn.square)}°`]);
+    }
     if (data.centre) {
       rows.push([t('journal.detail.centre', { wcs: data.wcs ?? '' }), `${axesSaid(data.centre, (axis) => units.figure(data.centre[axis]))} ${units.length}`]);
     }

@@ -13,6 +13,16 @@ const sy = (y) => -y;
  */
 const ANGLE_ARM = 76;
 const ANGLE_ARC = 56;
+/** The box the mark's arms take, SVG units — for labels to keep off it. */
+export const angleBox = (angle) => {
+  const [x, y] = [angle.at[0], sy(angle.at[1])];
+  const run = [angle.to[0] - angle.at[0], sy(angle.to[1]) - y];
+  const length = Math.hypot(...run) || 1;
+  const ends = [[x, y], [x + angle.base[0] * ANGLE_ARM, y - angle.base[1] * ANGLE_ARM], [x + (run[0] / length) * ANGLE_ARM, y + (run[1] / length) * ANGLE_ARM]];
+  const [xs, ys] = [ends.map(([u]) => u), ends.map(([, v]) => v)];
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+};
+
 const AngleMark = ({ angle, size, bare }) => {
   const [x, y] = [angle.at[0], sy(angle.at[1])];
   const base = [angle.base[0], -angle.base[1]];

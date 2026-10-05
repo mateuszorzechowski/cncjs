@@ -2591,7 +2591,7 @@ class GrblController {
           event: 'probe',
           code: 'size',
           data: {
-            method, ...options, wcs, size: size.size, spread: size.spread, centre: size.centre, off: size.off, passes: size.each.length, ball: params.ballDiameter,
+            method, ...options, wcs, size: size.size, spread: size.spread, centre: size.centre, off: size.off, turn: size.turn, passes: size.each.length, ball: params.ballDiameter,
           },
         });
       } else {

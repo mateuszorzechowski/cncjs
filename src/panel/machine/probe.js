@@ -92,6 +92,9 @@ export const SHAPES = [
   { id: 'circle-outside', kind: 'circle', key: 'probe.shape.circleOutside', side: 'outside', place: 'probe.place.boss' },
   { id: 'rect-inside', kind: 'rect', key: 'probe.shape.rectInside', side: 'inside', place: 'probe.place.pocket' },
   { id: 'rect-outside', kind: 'rect', key: 'probe.shape.rectOutside', side: 'outside', place: 'probe.place.boss' },
+  // At an angle (the server's `strategies/turned`): four sides at two points each.
+  { id: 'rect-inside-turned', kind: 'rect', key: 'probe.shape.rectInsideTurned', side: 'inside', place: 'probe.place.pocket' },
+  { id: 'rect-outside-turned', kind: 'rect', key: 'probe.shape.rectOutsideTurned', side: 'outside', place: 'probe.place.boss' },
   { id: 'groove-x', kind: 'width', key: 'probe.shape.grooveX', side: 'inside', axis: 'x', place: 'probe.place.groove' },
   { id: 'groove-y', kind: 'width', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
   { id: 'bar-x', kind: 'width', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },

@@ -106,10 +106,53 @@ const slantContact = (slants, radius, from, to) => {
   return null;
 };
 
+/*
+ * Where a move first meets a turned rectangle — `{ x, y, w, h, angle
+ * (degrees), z: [bottom, top], inside }`: a part standing (its top too, from
+ * above), or a pocket cut (`inside`, the ball in it) — or null. The ball's
+ * centre stops `radius` off a side, square to it; the corners are not met.
+ */
+const turnedContact = (turned, radius, from, to) => {
+  const axis = AXES.find((a) => to[a] !== from[a]);
+  let best = null;
+  for (const rect of turned) {
+    const a = (rect.angle * Math.PI) / 180;
+    const [c, s] = [Math.cos(a), Math.sin(a)];
+    // Into the rectangle's own frame and back.
+    const local = (p) => [(p.x - rect.x) * c + (p.y - rect.y) * s, -(p.x - rect.x) * s + (p.y - rect.y) * c];
+    const within = (p) => Math.abs(local(p)[0]) < rect.w / 2 && Math.abs(local(p)[1]) < rect.h / 2;
+    if (axis === 'z') {
+      if (!rect.inside && within(from) && from.z >= rect.z[1] && to.z <= rect.z[1]) {
+        return { ...from, z: rect.z[1] };
+      }
+      continue;
+    }
+    if (from.z <= rect.z[0] || from.z >= rect.z[1]) {
+      continue;
+    }
+    // Each side as the line the ball's centre may reach: out by the radius from a part, in from a pocket's wall.
+    const grow = rect.inside ? -radius : radius;
+    const sides = [[0, rect.w / 2 + grow, rect.h / 2], [0, -(rect.w / 2 + grow), rect.h / 2], [1, rect.h / 2 + grow, rect.w / 2], [1, -(rect.h / 2 + grow), rect.w / 2]];
+    for (const [k, at, half] of sides) {
+      // Along the move, local coordinate k reaches `at` where?
+      const [p0, p1] = [local(from), local(to)];
+      if (p1[k] === p0[k]) {
+        continue;
+      }
+      const t = (at - p0[k]) / (p1[k] - p0[k]);
+      const along = p0[1 - k] + t * (p1[1 - k] - p0[1 - k]);
+      if (t >= -1e-9 && t <= 1 && Math.abs(along) <= half && (best === null || t < best.t)) {
+        best = { t, hit: { ...from, [axis]: from[axis] + t * (to[axis] - from[axis]) } };
+      }
+    }
+  }
+  return best && best.hit;
+};
+
 /** Run one method on the bench to the end; the outcome and every line sent. */
 // `radius`: what touches — the tool, or a 3D probe's ball.
 const measure = ({
-  method, options = {}, params, boxes = [], rounds = [], slants = [], start, radius = params.toolDiameter / 2,
+  method, options = {}, params, boxes = [], rounds = [], slants = [], turned = [], start, radius = params.toolDiameter / 2,
 }) => {
   const strategy = STRATEGIES[method];
   const queue = [];
@@ -117,7 +160,7 @@ const measure = ({
   let pos = { ...start };
   let outcome = null;
   const run = createProbeRun({
-    steps: strategy.steps(params, options),
+    steps: strategy.steps(params, options, { start, wco: WCO }),
     start,
     wco: WCO,
     restore: 'G90 G21',
@@ -138,7 +181,7 @@ const measure = ({
       for (const axis of AXES.filter((a) => words[a] !== undefined)) {
         target[axis] = words[axis] + WCO[axis];
       }
-      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target), slantContact(slants, radius, pos, target)].filter(Boolean);
+      const hits = [contact(boxes, radius, pos, target), roundContact(rounds, radius, pos, target), slantContact(slants, radius, pos, target), turnedContact(turned, radius, pos, target)].filter(Boolean);
       const way = (one) => AXES.reduce((sum, a) => sum + Math.abs(one[a] - pos[a]), 0);
       const hit = hits.sort((a, b) => way(a) - way(b))[0] ?? null;
       if (hit) {
@@ -522,6 +565,61 @@ describe('Pomiar: an edge and its angle', () => {
     expect(ways.every((way) => Object.keys(way).length === 1)).toBe(true);
     expect(ways.filter((way) => way.x !== undefined).map((way) => way.x)).toEqual([-115, -85]);
     expect(ways.find((way) => way.y !== undefined).y).toBeCloseTo(-65, 6);
+  });
+});
+
+describe('Pomiar: a rectangle at an angle', () => {
+  const params = {
+    ...probeParams(), ballDiameter: 4, clear: 10, depth: 5, spacing: 20, bossSize: 40, holeSize: 40,
+  };
+  const radius = params.ballDiameter / 2;
+  const z = [-80, -50];
+  const [hx, hy] = [-120, -70];
+
+  test.each([0, 4, -7])('a part turned %s°: its sides square to them, the angle, the middle; the corners square', (angle) => {
+    const options = { shape: 'rect-outside-turned' };
+    const turned = [{ x: hx, y: hy, w: 36, h: 28, angle, z }];
+    const { outcome, sent } = measure({
+      method: 'measure', options, params, radius, turned, start: { x: hx + 2, y: hy - 1, z: -45 },
+    });
+    const found = STRATEGIES.measure.size(params, options, outcome.seen);
+
+    expect(outcome.failure).toBeUndefined();
+    close(found.size, { x: 36, y: 28 });
+    close(found.turn, { a: angle, square: 0 });
+    expect(found.centre.x).toBeCloseTo(hx, 6);
+    expect(found.centre.y).toBeCloseTo(hy, 6);
+    // Eight touches, fast and slow, after the top's two; every way along one axis.
+    expect(sent.filter((line) => line.includes('G38.2')).length).toBe(2 + 8 * 2);
+    expect(sent.filter((line) => line.includes('G53 G0')).map(wordsOf).every((way) => Object.keys(way).length === 1)).toBe(true);
+  });
+
+  test.each([0, 5])('a pocket turned %s°, from its middle — the points well inside its shorter side', (angle) => {
+    const options = { shape: 'rect-inside-turned' };
+    const own = { ...params, spacing: 12 };
+    const turned = [{ x: hx, y: hy, w: 36, h: 28, angle, z, inside: true }];
+    const start = { x: hx + 1, y: hy + 2, z: -60 };
+    const { outcome, pos } = measure({
+      method: 'measure', options, params: own, radius, turned, start,
+    });
+    const found = STRATEGIES.measure.size(own, options, outcome.seen);
+
+    expect(outcome.failure).toBeUndefined();
+    close(found.size, { x: 36, y: 28 });
+    close(found.turn, { a: angle, square: 0 });
+    expect(found.centre.x).toBeCloseTo(hx, 6);
+    expect(found.centre.y).toBeCloseTo(hy, 6);
+    close(pos, start);
+  });
+
+  test('points too far apart for the pocket meet the next wall: the corners come out far off square', () => {
+    const options = { shape: 'rect-inside-turned' };
+    const turned = [{ x: hx, y: hy, w: 36, h: 28, angle: 5, z, inside: true }];
+    const { outcome } = measure({
+      method: 'measure', options, params, radius, turned, start: { x: hx + 1, y: hy + 2, z: -60 },
+    });
+
+    expect(Math.abs(STRATEGIES.measure.size(params, options, outcome.seen).turn.square)).toBeGreaterThan(1);
   });
 });
 

@@ -6,7 +6,7 @@ import { shownView } from './probeLabels';
 import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
-import AngleMark from './AngleMark';
+import AngleMark, { angleBox } from './AngleMark';
 
 /**
  * A hole, or a part touched from outside, from above, drawn by the probe
@@ -59,7 +59,8 @@ const CentreScene = ({
   const [x0, x1] = [Math.min(...path.map(([x]) => x)), Math.max(...path.map(([x]) => x))];
   const [y0, y1] = [Math.min(...path.map(([, y]) => y)), Math.max(...path.map(([, y]) => y))];
   const sweep = [x0 - r, y0 - r, x1 - x0 + 2 * r, y1 - y0 + 2 * r];
-  const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep];
+  // Nor on an angle's arms (L15's rule for lines that say something).
+  const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep, ...(angle ? [angleBox(angle)] : [])];
   const place = (line) => (bare ? [] : placePaired(line, { view: shownView(VIEW, k, box), avoid, size }, other));
   const tags = (line, face) => place(line).map((tag) => {
     const drawn = <Tag key={`${tag.text}${tag.x}`} x={tag.x} y={tag.y} text={tag.text} face={face} ext={tag.ext} size={size} />;
@@ -166,7 +167,7 @@ const CentreScene = ({
         <>
           <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} fill={`url(#${id})`} />
           {/* Its bottom further back, as its far wall from the front (review note, 2026-10-01). */}
-          <Outline {...outline} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+          <Outline {...outline} transform={part.turn ? `rotate(${-part.turn})` : undefined} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
         </>
       )}
       {/* The walls touched before, still: the one under way beats. */}

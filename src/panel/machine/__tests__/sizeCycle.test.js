@@ -43,7 +43,7 @@ describe('a size\'s drawing', () => {
     // Its search goes in by the clearance alone, from out past the edge to where the ball started.
     expect(front.code('y1mFast', { clear: '10', fast: '300' })).toBe('G38.2 Y+10 F300');
     expect(front.code('y1mAlong', {})).toEqual(['probe.edge.alongCode']);
-    expect(front.code('y1mOut', {})).toEqual(['probe.edge.outCode']);
+    expect(front.code('y1mOut', {})).toEqual(['probe.boss.outCode']);
     expect(front.explain('y1mFast', { clear: '10' })).toBeNull();
     // The server's step names: `y2b-along` is the second point's way along the front.
     expect(front.moveOfPhase('y2b-along')).toBe('y2mAlong');
@@ -62,6 +62,31 @@ describe('a size\'s drawing', () => {
     expect(sizeCycle('measure', 'edge-front', -0.5).part.turn).toBe(-8);
     expect(sizeCycle('measure', 'edge-front', 0).part.turn).toBe(0);
     expect(sizeCycle('measure', 'edge-right').order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast')).toEqual(['x1pFast', 'x2pFast']);
+  });
+
+  test('a rectangle at an angle: four sides, two points each — a part from over the top, a pocket from its middle', () => {
+    const part = sizeCycle('measure', 'rect-outside-turned');
+    const fasts = (cycle) => cycle.order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast');
+    expect(fasts(part)).toEqual(['y1mFast', 'y2mFast', 'x1pFast', 'x2pFast', 'y1pFast', 'y2pFast', 'x1mFast', 'x2mFast']);
+    expect(part.order(1)[0]).toBe('zFast');
+    expect(part.part).toMatchObject({ kind: 'boss', square: true, turn: 8 });
+    // From outside the front is touched moving +Y; its search goes in by half the part and the clearance.
+    expect(part.code('y1mFast', { bossSize: '40', clear: '20', fast: '300' })).toBe('G38.2 Y+40 F300');
+
+    const pocket = sizeCycle('measure', 'rect-inside-turned');
+    expect(pocket.order(1)[0]).toBe('y1mIn');
+    expect(pocket.order(1).slice(-3)).toEqual(['retY', 'retX', 'zero']);
+    expect(pocket.part).toMatchObject({ kind: 'hole', square: true });
+    // From inside the ball goes out to the front's wall, −Y, as far as the pocket's rough size.
+    expect(pocket.code('y1mFast', { holeSize: '40', fast: '300' })).toBe('G38.2 Y-40 F300');
+    expect(pocket.code('y1mBack', { retract: '3' })).toBe('G0 Y+3');
+    expect(pocket.moveOfPhase('return-x')).toBe('retX');
+    expect(pocket.moveOfPhase('x2a-in')).toBe('x2pIn');
+    expect(pocket.groups(1).flatMap((group) => group.subs.flatMap((sub) => sub.moves))).toEqual(pocket.order(1));
+    // The result: every touch, the angle through the front's two.
+    const result = pocket.scene('zero', 1, { sizes: { a: '2,000°' } });
+    expect(result.touched).toHaveLength(8);
+    expect(result.angle).toMatchObject({ base: [1, 0], text: '2,000°' });
   });
 
   test('a pass past the second is drawn as the second', () => {

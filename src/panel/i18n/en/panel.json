@@ -732,7 +732,8 @@
       "ball": "Ball",
       "off": "Out of round",
       "centre": "Middle ({{wcs}})",
-      "angle": "angle"
+      "angle": "angle",
+      "square": "Off square"
     },
     "range": {
       "m15": "15 min",
@@ -1613,20 +1614,24 @@
       "yFront": "Front side (Y)",
       "yBack": "Back side (Y)",
       "move": {
-        "along": "Point {{pass}} · along the edge, over the top",
-        "setOut": "Point {{pass}} · {{axis}}: set-up — past the edge",
-        "setDown": "Point {{pass}} · {{axis}}: set-up — down beside the edge",
-        "fast": "Point {{pass}} · {{axis}}: fast touch of the edge",
+        "along": "Point {{pass}} · along the side, over the top",
+        "setOut": "Point {{pass}} · {{axis}}: set-up — past the side",
+        "setDown": "Point {{pass}} · {{axis}}: set-up — down beside the side",
+        "fast": "Point {{pass}} · {{axis}}: fast touch of the side",
         "back": "Point {{pass}} · {{axis}}: back off",
         "slow": "Point {{pass}} · {{axis}}: slow measurement",
         "off": "Point {{pass}} · {{axis}}: off",
-        "up": "Point {{pass}} · {{axis}}: up over the part"
+        "up": "Point {{pass}} · {{axis}}: up over the part",
+        "in": "Point {{pass}} · {{axis}}: to the middle, across the side",
+        "home": "Back to the middle · {{axis}}"
       },
-      "alongCode": "G0 along the edge to the point",
+      "alongCode": "G0 along the side to the point",
       "phase": {
-        "along": "along the edge to the point"
+        "along": "along the side to the point",
+        "in": "to the middle before the point"
       },
-      "outCode": "G0 past the edge, over the top"
+      "inCode": "G0 to the middle, across the side",
+      "homeCode": "G0 to the pocket's middle"
     },
     "stage": {
       "search": "finding",
@@ -1885,7 +1890,9 @@
       "edgeFront": "Front",
       "edgeBack": "Back",
       "edgeLeft": "Left side",
-      "edgeRight": "Right side"
+      "edgeRight": "Right side",
+      "rectInsideTurned": "Pocket at an angle",
+      "rectOutsideTurned": "Part at an angle"
     },
     "shapeLabel": "How it lies",
     "size": {
@@ -1913,7 +1920,11 @@
       "angle": "Edge angle",
       "angleWhy": "The angle from the axis, anticlockwise. Grbl does not rotate coordinates (no G68): square the part, or allow for the angle in the program.",
       "edgeIn": "Edge in",
-      "edgeAt": "Edge {{axis}}"
+      "edgeAt": "Edge {{axis}}",
+      "codeTurned": "sides and angle = from the lines through each side's touches",
+      "square": "Off square",
+      "squareWhy": "How far the sides across differ in angle from those along. Near zero, the corners are square; more, a rhombus, or a touch that met the next wall (make the spacing smaller).",
+      "turnAngle": "Turn"
     },
     "kindLabel": "What you measure",
     "kind": {

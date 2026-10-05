@@ -88,6 +88,9 @@ const MARKS = {
 };
 
 /** A shape's marks in a 48-unit box. */
+// A rectangle at an angle: the axis-aligned one's marks, turned.
+const TURNED = { 'rect-inside-turned': 'rect-inside', 'rect-outside-turned': 'rect-outside' };
+
 // An edge's marks turned from the front's to face its own way.
 const EDGE_TURN = {
   'edge-front': undefined, 'edge-back': 'rotate(180 24 24)', 'edge-left': 'rotate(90 24 24)', 'edge-right': 'rotate(-90 24 24)',
@@ -97,6 +100,9 @@ const ShapeMarks = ({ shape }) => {
   const one = shapeOf(shape);
   if (one.kind === 'edge') {
     return <g transform={EDGE_TURN[one.id]}>{MARKS.edge}</g>;
+  }
+  if (TURNED[one.id]) {
+    return <g transform="rotate(-12 24 24)">{MARKS[TURNED[one.id]]}</g>;
   }
   if (one.kind !== 'width') {
     return MARKS[one.id];
@@ -159,10 +165,11 @@ const AXES = ['x', 'y'];
 export const SizeResult = ({ probe }) => {
   const units = useUnits();
   const shape = probe.options?.shape;
-  const cycle = sizeCycle(probe.method, shape, probe.result.size.size.a);
   const {
-    size, spread, each, centre = {}, off,
+    size, spread, each, centre = {}, off, turn,
   } = probe.result.size;
+  // An edge or a rectangle at an angle: drawn turned the way it was found.
+  const cycle = sizeCycle(probe.method, shape, size.a ?? turn?.a);
   // A circle's one diameter, an edge's angle, or each axis measured.
   const keys = ['d', 'a'].find((key) => key in size) ? [['d', 'a'].find((key) => key in size)] : AXES.filter((axis) => axis in size);
   const edge = 'a' in size;
@@ -175,7 +182,10 @@ export const SizeResult = ({ probe }) => {
   const said = (mm) => `${decimal(units.figure(mm))} ${units.length}`;
   const ball = units.figure(probe.params?.ballDiameter);
   const how = {
-    texts: { ballDiameter: ball }, say: (field, text) => figureSaid(field, text, units.rule), sizes: Object.fromEntries(keys.map((key) => [key, key === 'a' ? `${decimal(degrees(size.a))}°` : `${key === 'd' ? 'Ø' : ''}${said(size[key])}`])),
+    texts: { ballDiameter: ball }, say: (field, text) => figureSaid(field, text, units.rule), sizes: {
+      ...Object.fromEntries(keys.map((key) => [key, key === 'a' ? `${decimal(degrees(size.a))}°` : `${key === 'd' ? 'Ø' : ''}${said(size[key])}`])),
+      ...(turn ? { a: `${decimal(degrees(turn.a))}°` } : {}),
+    },
   };
   /*
    * Wide, the drawing a column of its own beside the figures, as the height
@@ -206,6 +216,8 @@ export const SizeResult = ({ probe }) => {
           <StatTile key={`spread${key}`} label={t('probe.size.spread', { axis: name(key) })} value={units.figure(spread[key])} unit={units.length} />
         )) : null}
         {Number.isFinite(off) ? <StatTile label={t('probe.size.off')} value={units.figure(off)} unit={units.length} /> : null}
+        {turn ? <StatTile label={t('probe.size.turnAngle')} value={degrees(turn.a)} unit="°" /> : null}
+        {turn ? <StatTile label={t('probe.size.square')} value={degrees(turn.square)} unit="°" /> : null}
       </div>
       {each.length > 1 ? keys.map((key) => (
         <p key={`each${key}`} className="m-0 font-num text-note text-mut">
@@ -213,7 +225,8 @@ export const SizeResult = ({ probe }) => {
         </p>
       )) : null}
       {Number.isFinite(off) ? <p className="m-0 text-note text-mut">{t('probe.size.offWhy')}</p> : null}
-      {edge ? <p className="m-0 text-note text-mut">{t('probe.size.angleWhy')}</p> : null}
+      {edge || turn ? <p className="m-0 text-note text-mut">{t('probe.size.angleWhy')}</p> : null}
+      {turn ? <p className="m-0 text-note text-mut">{t('probe.size.squareWhy')}</p> : null}
       <div className="flex items-center gap-3">
         <span className="text-base text-ink">{t(edge ? 'probe.size.edgeIn' : 'probe.size.centreIn')}</span>
         <WcsBadge wcs={probe.wcs} />

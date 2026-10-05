@@ -3,12 +3,17 @@ import {
 } from './bossMoves';
 
 /*
- * An edge and its angle (Pomiar, the server's `strategies/edge`): the part's
- * one side, touched at two points along it. The ball starts over the part
- * near that side (`EDGE_START`); the top as for the part; then for each
- * point, along the side to it over the top, out past the side, down beside
- * it, the touch moving in, up again. Each point is its own pass, so the bar
- * and the server's step names (`y1b`, `y2b`) say which.
+ * Sides touched at two points each (Pomiar, the server's `strategies/edge`
+ * and `strategies/turned`): an edge alone, for its angle, or the four sides
+ * of a rectangle at an angle — a part from outside, a pocket from inside.
+ * Every move along one axis. Each point is a pass of its own on the bar, and
+ * the server's step names (`y1b`, `y2b`) say which.
+ *
+ * From outside the ball starts over the part; the top as for the part; then
+ * for each point, along the side to it over the top, out past the side, down
+ * beside it, the touch moving in, up again. From inside it starts in the
+ * pocket: for each point back to the middle across the side, along it to the
+ * point, the touch moving out; at the end back to the middle.
  */
 export const EDGE_SIDES = {
   front: { axis: 'y', along: 'x', sign: -1 },
@@ -16,10 +21,13 @@ export const EDGE_SIDES = {
   left: { axis: 'x', along: 'y', sign: -1 },
   right: { axis: 'x', along: 'y', sign: 1 },
 };
-// Half the way between the points along the side, and how far in from the side the ball starts.
+const FOUR = ['front', 'right', 'back', 'left'];
+// Half the way between the points along the side, and how far in from an edge the ball starts.
 const SPAN = 18;
 const INSIDE = 12;
-// How far the part is drawn turned for the Setup: an edge's angle is the thing measured, so it is never drawn square.
+// How far past a pocket's wall its search is drawn going.
+const PAST = 12;
+// How far the part is drawn turned for the Setup: an angle is the thing measured, so it is never drawn square.
 export const EDGE_TILT = 8;
 
 /**
@@ -34,97 +42,163 @@ export const rimOf = (edge, tilt) => {
   return (u) => (sign * BOSS_R) / Math.cos(a) + slope * u;
 };
 
-/** Where the ball starts for `edge`: over the part, `INSIDE` from that side. */
-export const edgeStart = (edge) => {
-  const { axis, sign } = EDGE_SIDES[edge];
-  return setOn(axis, [0, 0], sign * (BOSS_R - INSIDE));
+/*
+ * The layouts by name: an edge's (`edge-front` …), the part's and the
+ * pocket's at an angle. `sides` in the order touched; `from`; where the ball
+ * starts; what a side's search is said by (`reach`: the clearance, the part's
+ * half and the clearance, the pocket's rough size); the figures to set.
+ */
+const REACH = { group: 'probe.group.reach' };
+const MEASURE = { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] };
+const PROBE = { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] };
+const edgeLayout = (edge) => ({
+  sides: [edge],
+  from: 'outside',
+  start: setOn(EDGE_SIDES[edge].axis, [0, 0], EDGE_SIDES[edge].sign * (BOSS_R - INSIDE)),
+  reach: 'clear',
+  params: [{ id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'depth', 'maxZ'] }, MEASURE, PROBE],
+});
+const LAYOUTS = {
+  ...Object.fromEntries(Object.keys(EDGE_SIDES).map((edge) => [`edge-${edge}`, edgeLayout(edge)])),
+  'turned-outside': {
+    sides: FOUR,
+    from: 'outside',
+    start: [4, -3],
+    reach: 'part',
+    params: [
+      { id: 'part', key: 'probe.group.part', fields: ['bossSize'], names: { bossSize: 'probe.field.partSize' } },
+      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'depth', 'maxZ'] }, MEASURE, PROBE,
+    ],
+  },
+  'turned-inside': {
+    sides: FOUR,
+    from: 'inside',
+    start: [3, 2],
+    reach: 'holeSize',
+    params: [
+      { id: 'hole', key: 'probe.group.pocket', fields: ['holeSize'], names: { holeSize: 'probe.field.pocketSize' } },
+      { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
+    ],
+  },
+};
+export const layoutOf = (name) => LAYOUTS[name];
+
+// A point's steps, in order, from outside and from inside; from inside the way back to the middle at the end.
+const STEPS = {
+  outside: ['Along', 'Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'],
+  inside: ['In', 'Along', 'Fast', 'Back', 'Slow', 'Off'],
+};
+const HOME = ['retY', 'retX'];
+
+/** A side's two points, by the names its touches go by: `y1m`, `y2m` for the front. */
+const pointsOf = (side) => {
+  const { axis, sign } = EDGE_SIDES[side];
+  return [1, 2].map((point) => `${axis}${point}${sign > 0 ? 'p' : 'm'}`);
 };
 
-export const buildEdge = ({ edge, tilt = EDGE_TILT }) => {
-  const { axis, along, sign } = EDGE_SIDES[edge];
-  const i = AXES.indexOf(axis);
-  const j = AXES.indexOf(along);
-  const rimAt = rimOf(edge, tilt);
-  // The ball's centre touching the turned side is its radius off it, square to it.
+/** The points of the first side touched: from outside an edge's, the front's — the angle's two touches. */
+export const anglePoints = (name) => pointsOf(LAYOUTS[name].sides[0]);
+
+/**
+ * The moves of layout `name`, the part drawn turned `tilt` degrees. Each
+ * touch knows the point on the side it meets (`touchAt`) and which way the
+ * ball goes to it (`dir`); `rim`, where the side is along its axis there;
+ * an Along move, where its spacing's dimension stands (`spanAt`).
+ */
+export const buildSides = (name, tilt = EDGE_TILT) => {
+  const { sides, from, start: S } = LAYOUTS[name];
+  const inside = from === 'inside';
+  const level = inside ? 0 : ABOVE;
+  // The ball's centre touching a turned side is its radius off it, square to it.
   const reach = TOOL_R / Math.cos((tilt * Math.PI) / 180);
-  const S = edgeStart(edge);
-  const { moves, order } = topOf(S);
+  const { moves, order } = inside ? { moves: {}, order: [] } : topOf(S);
   let at = S;
-  [1, 2].forEach((point) => {
-    const spot = setOn(along, at, (point === 1 ? -1 : 1) * SPAN);
-    const out = setOn(axis, spot, sign * OUT);
-    const rim = rimAt(spot[j]);
-    const wall = setOn(axis, out, rim + sign * reach);
-    const off = setOn(axis, wall, wall[i] + sign * BACK);
-    const side = `${axis}${point}${sign > 0 ? 'p' : 'm'}`;
-    // Pass 1 for both: two points of one side, not two passes — so none is left out of the bar (`order(1)`).
-    const common = {
-      axis, sign, pass: 1, point, side, out, wall, off, guess: S[i], rim, way: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`,
-    };
-    moves[`${side}Along`] = {
-      ...common, axis: along, kind: 'centre', from: at, to: spot, frames: [[0, at, ABOVE], [0.1, at, ABOVE], [0.85, spot, ABOVE, true], [1, spot, ABOVE]], end: 0.85, titleKey: 'probe.edge.move.along', uses: ['spacing'],
-    };
-    moves[`${side}Out`] = {
-      ...common, kind: 'out', from: spot, frames: [[0, spot, ABOVE], [0.1, spot, ABOVE], [0.85, out, ABOVE, true], [1, out, ABOVE]], end: 0.85, titleKey: 'probe.edge.move.setOut', uses: ['clear'],
-    };
-    moves[`${side}Down`] = {
-      ...common, kind: 'down', from: out, frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]], end: 0.85, titleKey: 'probe.edge.move.setDown', uses: ['depth', 'retract'],
-    };
-    moves[`${side}Fast`] = {
-      ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.edge.move.fast', uses: ['fast', 'clear'],
-    };
-    moves[`${side}Back`] = {
-      ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.back', uses: ['retract'],
-    };
-    moves[`${side}Slow`] = {
-      ...common, kind: 'slow', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.7, wall, 0], [1, wall, 0]], end: 0.7, titleKey: 'probe.edge.move.slow', uses: ['slow', 'retract'],
-    };
-    moves[`${side}Off`] = {
-      ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.off', uses: ['retract'],
-    };
-    moves[`${side}Up`] = {
-      ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.edge.move.up', uses: ['depth', 'retract'],
-    };
-    order.push(...EDGE_STEPS.map((step) => `${side}${step}`));
-    at = off;
+  const leg = (from0, to, kind, titleKey, uses, low = level, extra = {}) => ({
+    kind, from: from0, to, frames: [[0, from0, low], [0.1, from0, low], [0.85, to, low, true], [1, to, low]], end: 0.85, titleKey, uses, ...extra,
   });
+  sides.forEach((edge) => {
+    const { axis, along, sign } = EDGE_SIDES[edge];
+    const [i, j] = [AXES.indexOf(axis), AXES.indexOf(along)];
+    const rimAt = rimOf(edge, tilt);
+    // Inside, the wall is the pocket's, and the ball goes out to it.
+    const dir = inside ? sign : -sign;
+    pointsOf(edge).forEach((side, k) => {
+      const point = k + 1;
+      // Named for the side, as the hole's and the part's are: Y− is the front, from outside or in.
+      const way = `${axis.toUpperCase()}${sign > 0 ? '+' : '−'}`;
+      // Pass 1 for all: points of sides, not passes — so none is left out of the bar (`order(1)`).
+      const common = {
+        axis, sign, dir, pass: 1, point, side, way,
+      };
+      if (inside) {
+        const home = setOn(axis, at, S[i]);
+        moves[`${side}In`] = { ...common, ...leg(at, home, 'centre', 'probe.edge.move.in', []), code: 'probe.edge.inCode' };
+        order.push(`${side}In`);
+        at = home;
+      }
+      const spot = setOn(along, at, S[j] + (point === 1 ? -1 : 1) * SPAN);
+      // The spacing's dimension outside the part — or inside the pocket — on the side away from this one.
+      const spanAt = (axis === 'y' ? sign : -sign) * (BOSS_R + (inside ? -10 : 10));
+      moves[`${side}Along`] = {
+        ...common, ...leg(at, spot, 'centre', 'probe.edge.move.along', ['spacing']), axis: along, spanAt, span: [S[j] - SPAN, S[j] + SPAN], code: 'probe.edge.alongCode',
+      };
+      const out = inside ? spot : setOn(axis, spot, sign * OUT);
+      const rim = rimAt(spot[j]);
+      const wall = setOn(axis, out, rim - dir * reach);
+      const off = setOn(axis, wall, wall[i] - dir * BACK);
+      const touchAt = setOn(axis, wall, rim);
+      // How far the search may go, as drawn: in to the start from outside, past the wall from inside.
+      const guess = inside ? rim + dir * PAST : S[i];
+      Object.assign(common, {
+        out, wall, off, rim, guess, touchAt,
+      });
+      if (!inside) {
+        moves[`${side}Out`] = { ...common, ...leg(spot, out, 'out', 'probe.edge.move.setOut', ['clear']) };
+        moves[`${side}Down`] = { ...common, ...leg(out, out, 'down', 'probe.edge.move.setDown', ['depth', 'retract']), frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]] };
+      }
+      moves[`${side}Fast`] = { ...common, ...leg(out, wall, 'fast', 'probe.edge.move.fast', ['fast', inside ? 'holeSize' : 'clear'], 0) };
+      moves[`${side}Back`] = { ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.back', uses: ['retract'] };
+      moves[`${side}Slow`] = { ...common, kind: 'slow', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.7, wall, 0], [1, wall, 0]], end: 0.7, titleKey: 'probe.edge.move.slow', uses: ['slow', 'retract'] };
+      moves[`${side}Off`] = { ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.off', uses: ['retract'] };
+      if (!inside) {
+        moves[`${side}Up`] = { ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.edge.move.up', uses: ['depth', 'retract'] };
+      }
+      order.push(...STEPS[from].filter((step) => step !== 'In').map((step) => `${side}${step}`));
+      at = off;
+    });
+  });
+  if (inside) {
+    // Back to the middle, one axis at a time, as the server goes.
+    const y = setOn('y', at, S[1]);
+    moves.retY = { ...leg(at, y, 'centre', 'probe.edge.move.home', []), axis: 'y', way: 'Y', code: 'probe.edge.homeCode' };
+    moves.retX = { ...leg(y, S, 'centre', 'probe.edge.move.home', []), axis: 'x', way: 'X', code: 'probe.edge.homeCode' };
+    order.push(...HOME);
+    at = S;
+  }
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at, ABOVE], [1, at, ABOVE]], titleKey: 'probe.size.move.edge', uses: ['ballDiameter'], end: 0.35,
+    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: name.startsWith('edge') ? 'probe.size.move.edge' : 'probe.size.move.size', uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };
 };
 
-// A point's steps, in order.
-const EDGE_STEPS = ['Along', 'Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
-
-/** An edge's two points, by the sides their touches are named by: `y1m`, `y2m` for the front. */
-export const edgePoints = (edge) => {
-  const { axis, sign } = EDGE_SIDES[edge];
-  return [1, 2].map((point) => `${axis}${point}${sign > 0 ? 'p' : 'm'}`);
-};
-
-/** An edge's bar after the top: each point — one side, so a search and a measuring (map §8) — then the angle. */
-export const edgeGroups = (edge) => {
-  const { axis, sign } = EDGE_SIDES[edge];
-  return edgePoints(edge).map((side, k) => {
-    const point = k + 1;
-    return {
-      id: side,
-      name: `${axis.toUpperCase()}${sign > 0 ? '+' : '−'} · ${point}`,
-      subs: [
-        { key: 'probe.stage.search', moves: EDGE_STEPS.slice(0, 4).map((step) => `${side}${step}`) },
-        { key: 'probe.bar.measure', moves: EDGE_STEPS.slice(4).map((step) => `${side}${step}`) },
-      ],
-    };
-  }).concat([{
-    id: 'zero', key: 'probe.bar.angle', folded: true, subs: [{ key: 'probe.stage.angle', moves: ['zero'] }],
+/** The bar after the top: each point — one side, so a search and a measuring (map §8) — then the result. */
+export const sideGroups = (name) => {
+  const { sides, from } = LAYOUTS[name];
+  const steps = STEPS[from];
+  const searching = from === 'inside' ? 3 : 4;
+  const edge = name.startsWith('edge');
+  return sides.flatMap((side) => pointsOf(side).map((point, k) => ({
+    id: point,
+    name: `${EDGE_SIDES[side].axis.toUpperCase()}${EDGE_SIDES[side].sign > 0 ? '+' : '−'} · ${k + 1}`,
+    subs: [
+      { key: 'probe.stage.search', moves: steps.slice(0, searching).map((step) => `${point}${step}`) },
+      { key: 'probe.bar.measure', moves: steps.slice(searching).map((step) => `${point}${step}`) },
+    ],
+  }))).concat([{
+    id: 'zero',
+    key: edge ? 'probe.bar.angle' : 'probe.bar.size',
+    folded: true,
+    subs: [{ key: edge ? 'probe.stage.angle' : 'probe.stage.size', moves: [...(from === 'inside' ? HOME : []), 'zero'] }],
   }]);
 };
-
-// An edge's figures: where the points are and how it gets there, how it touches — two points once, no passes.
-export const EDGE_PARAMS = [
-  { id: 'reach', key: 'probe.group.reach', fields: ['spacing', 'clear', 'depth', 'maxZ'] },
-  { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'] },
-  { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
-];
