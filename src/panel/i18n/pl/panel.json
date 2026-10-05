@@ -474,7 +474,9 @@
     "unknownPosition": "Łuk z nieznanego miejsca (linia {{line}}).",
     "g92": "Program przesuwa zero przez G92 (linia {{line}}).",
     "arcPlane": "Łuk poza płaszczyzną XY (linia {{line}}).",
-    "badArc": "Łuk, którego nie da się narysować (linia {{line}})."
+    "badArc": "Łuk, którego nie da się narysować (linia {{line}}).",
+    "spacingTooWide": "Odstęp punktów jest nie mniejszy niż przybliżony rozmiar: punkt trafiłby w sąsiednią ściankę albo dojazd do niego w nią wjechał. Zmniejsz odstęp.",
+    "badShape": "Nieznany kształt pomiaru."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -1530,7 +1532,8 @@
       "barSize": "Szerokość listwy (w przybliżeniu)",
       "spacing": "Odstęp punktów na krawędzi",
       "ovalStudSize": "Dłuższa oś czopu (w przybliżeniu)",
-      "ovalHoleSize": "Dłuższa oś otworu (w przybliżeniu)"
+      "ovalHoleSize": "Dłuższa oś otworu (w przybliżeniu)",
+      "overTop": "Przejazd nad wierzchem"
     },
     "step": {
       "method": "Metoda",
@@ -1779,14 +1782,14 @@
         "topFast": "Z · szybki zjazd do wierzchu",
         "topBack": "Z · cofnięcie przed pomiarem",
         "topSlow": "Z · wolny, dokładny pomiar",
-        "topOff": "Z · odsunięcie po pomiarze",
         "setOut": "{{pass}}. przejście · {{axis}}: ustawienie — za bok, nad wierzchem",
         "setDown": "{{pass}}. przejście · {{axis}}: ustawienie — w dół przy boku",
         "fast": "{{pass}}. przejście · {{axis}}: szybki dotyk boku",
         "back": "{{pass}}. przejście · {{axis}}: cofnięcie",
         "slow": "{{pass}}. przejście · {{axis}}: wolny pomiar",
         "off": "{{pass}}. przejście · {{axis}}: odsunięcie",
-        "up": "{{pass}}. przejście · {{axis}}: w górę nad detal"
+        "up": "{{pass}}. przejście · {{axis}}: w górę nad detal",
+        "topLift": "Z · odsunięcie i przejazd nad wierzchem"
       },
       "outCode": "G0 za bok, nad wierzchem",
       "reachWhy": "≤ {{reach}} = {{clear}} za bok + połowa z {{size}}",
@@ -1800,7 +1803,8 @@
     "sum": {
       "retractDepth": "{{sum}} = {{retract}} cofnięcia + {{depth}} zejścia",
       "depthLift": "{{sum}} = {{depth}} zejścia + {{lift}} odjazdu",
-      "slowReach": "≤ {{reach}} = {{retract}} do powierzchni + {{retract}} zapasu za nią"
+      "slowReach": "≤ {{reach}} = {{retract}} do powierzchni + {{retract}} zapasu za nią",
+      "overTopDepth": "{{sum}} = {{over}} przejazdu nad wierzchem + {{depth}} zejścia"
     },
     "map": {
       "area": "Obszar",

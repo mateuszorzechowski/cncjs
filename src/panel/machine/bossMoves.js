@@ -51,8 +51,10 @@ export const topOf = (S) => {
       kind: 'topSlow', frames: [[0, S, ABOVE], [0.1, S, ABOVE], [0.7, S, ON_TOP], [1, S, ON_TOP]], end: 0.7, titleKey: 'probe.boss.move.topSlow', uses: ['slow', 'retract'],
     },
     // Off the touch that counts, a move of its own (rule, Mateusz 2026-10-01).
+    // Off the top, on up to `overTop` over it in the same move: the server's runner joins the two ways up into
+    // one line (rule, 2026-10-02) — over the vice's jaws and the clamps before anything goes sideways.
     zOff: {
-      kind: 'topBack', frames: [[0, S, ON_TOP], [0.15, S, ON_TOP], [0.7, S, ABOVE, true], [1, S, ABOVE]], end: 0.7, titleKey: 'probe.boss.move.topOff', uses: ['retract'],
+      kind: 'topBack', lift: true, frames: [[0, S, ON_TOP], [0.15, S, ON_TOP], [0.7, S, ABOVE, true], [1, S, ABOVE]], end: 0.7, titleKey: 'probe.boss.move.topLift', uses: ['overTop'],
     },
   };
   return { moves, order: ['zFast', 'zBack', 'zSlow', 'zOff'] };
@@ -88,7 +90,7 @@ export const build = ({ axes = AXES } = {}) => {
           ...common, kind: 'out', from: at, frames: [[0, at, ABOVE], [0.1, at, ABOVE], [0.85, out, ABOVE, true], [1, out, ABOVE]], end: 0.85, titleKey: 'probe.boss.move.setOut', uses: ['bossSize', 'clear'],
         };
         moves[`${side}Down`] = {
-          ...common, kind: 'down', from: out, frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]], end: 0.85, titleKey: 'probe.boss.move.setDown', uses: ['depth', 'retract'],
+          ...common, kind: 'down', from: out, frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]], end: 0.85, titleKey: 'probe.boss.move.setDown', uses: ['depth', 'overTop'],
         };
         moves[`${side}Fast`] = {
           ...common, kind: 'fast', from: out, frames: [[0, out, 0], [0.1, out, 0], [0.85, wall, 0, true], [1, wall, 0]], end: 0.85, titleKey: 'probe.boss.move.fast', uses: ['fast', 'clear', 'bossSize'],
@@ -103,7 +105,7 @@ export const build = ({ axes = AXES } = {}) => {
           ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.boss.move.off', uses: ['retract'],
         };
         moves[`${side}Up`] = {
-          ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.boss.move.up', uses: ['depth', 'retract'],
+          ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.boss.move.up', uses: ['depth', 'overTop'],
         };
         order.push(`${side}Out`, `${side}Down`, `${side}Fast`, `${side}Back`, `${side}Slow`, `${side}Off`, `${side}Up`);
         walls.push(wall);
@@ -155,8 +157,8 @@ export const fmt = (v) => String(Math.round(v * 1000) / 1000);
 // How far a fast touch of a side searches: out past the side, and in to the middle thought.
 export const reachOf = (texts) => fmt(numberOf(texts.bossSize) / 2 + numberOf(texts.clear));
 
-// How far down beside a side and up again: the back-off over the top and the depth under it.
-export const downOf = (texts) => fmt(numberOf(texts.retract) + numberOf(texts.depth));
+// How far down beside a side and up again: from the way over the top to the depth under it.
+export const downOf = (texts) => fmt(numberOf(texts.overTop) + numberOf(texts.depth));
 
 /** Where a step's figure comes from, said under the drawing after its title — `[key, vars]`, or null. */
 export const explainOf = (move, texts, say = (field, text) => text) => {
@@ -170,7 +172,7 @@ export const explainOf = (move, texts, say = (field, text) => text) => {
     return slowReachWhy(texts, say);
   }
   if (move.kind === 'down' || move.kind === 'up') {
-    return ['probe.sum.retractDepth', { sum: say('depth', downOf(texts)), retract: say('retract', texts.retract), depth: say('depth', texts.depth) }];
+    return ['probe.sum.overTopDepth', { sum: say('depth', downOf(texts)), over: say('overTop', texts.overTop), depth: say('depth', texts.depth) }];
   }
   return null;
 };

@@ -75,7 +75,7 @@ describe('a size\'s drawing', () => {
 
     const pocket = sizeCycle('measure', 'rect-inside-turned');
     expect(pocket.order(1)[0]).toBe('y1mIn');
-    expect(pocket.order(1).slice(-3)).toEqual(['retY', 'retX', 'zero']);
+    expect(pocket.order(1).slice(-3)).toEqual(['retX', 'retY', 'zero']);
     expect(pocket.part).toMatchObject({ kind: 'hole', square: true });
     // From inside the ball goes out to the front's wall, −Y, as far as the pocket's rough size.
     expect(pocket.code('y1mFast', { holeSize: '40', fast: '300' })).toBe('G38.2 Y-40 F300');

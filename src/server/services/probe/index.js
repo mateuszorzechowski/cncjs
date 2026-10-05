@@ -28,6 +28,9 @@ export const FIELDS = {
   // The L plate: how far sideways from where it starts the tool goes before it comes down — out past
   // the wall only if it started near enough (Mateusz, 2026-10-02: a name says what happens).
   travel: { value: 20, min: 1, max: 100 },
+  // A part touched from outside: how high over its top the ball goes from side to side — above the vice's jaws and
+  // the clamps, which a few millimetres over the top would run into (Mateusz, 2026-10-05: *"czy ruchy są bezpieczne"*).
+  overTop: { value: 10, min: 1, max: 100 },
   // How far down beside the wall or the side.
   depth: { value: 5, min: 0.5, max: 50 },
   toolDiameter: { value: 6, min: 0.1, max: 50 },

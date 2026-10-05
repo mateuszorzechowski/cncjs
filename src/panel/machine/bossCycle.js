@@ -89,7 +89,7 @@ export const bossCycleOf = ({
 
   const BOSS_PARAMS = layout ? L.params : [
     { id: 'part', key: names.group, fields: ['bossSize'], names: { bossSize: names.size } },
-    { id: 'reach', key: 'probe.group.reach', fields: ['clear', 'depth', 'maxZ'] },
+    { id: 'reach', key: 'probe.group.reach', fields: ['clear', 'overTop', 'depth', 'maxZ'] },
     // How many passes, a switch at the group's head.
     { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: true },
     // Only for the size said back: the centre needs no radius.
@@ -100,6 +100,7 @@ export const bossCycleOf = ({
   const first = layout ? anglePoints(layout)[0] : `${axes[0]}1p`;
   const EDIT = {
     spacing: [`${first}Along`, 'spacing'],
+    overTop: ['zOff', 'overTop'],
     bossSize: [`${first}Out`, 'size'],
     clear: [`${first}Out`, 'clear'],
     depth: [`${first}Down`, 'depth'],
@@ -248,7 +249,7 @@ export const bossCycleOf = ({
     const outward = `${AXIS}${dir > 0 ? '-' : '+'}`;
     const CODES = {
       topFast: () => `G38.2 Z-${texts.maxZ} F${texts.fast}`,
-      topBack: () => `G0 Z+${texts.retract}`,
+      topBack: () => `G0 Z+${move.lift ? texts.overTop : texts.retract}`,
       // The slow touch goes twice the way back, as the server's `touch` does.
       topSlow: () => `G38.2 Z-${twice} F${texts.slow}`,
       out: () => ['probe.boss.outCode'],

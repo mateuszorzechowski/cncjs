@@ -474,7 +474,9 @@
     "unknownPosition": "An arc from an unknown place (line {{line}}).",
     "g92": "The program moves the zero by G92 (line {{line}}).",
     "arcPlane": "An arc outside the XY plane (line {{line}}).",
-    "badArc": "An arc that cannot be drawn (line {{line}})."
+    "badArc": "An arc that cannot be drawn (line {{line}}).",
+    "spacingTooWide": "The points' spacing is no less than the rough size: a point would meet the next wall, or the way to it run into one. Make the spacing smaller.",
+    "badShape": "Unknown shape to measure."
   },
   "notice": {
     "warning": "Warning",
@@ -1530,7 +1532,8 @@
       "barSize": "Bar width (roughly)",
       "spacing": "Spacing of the points on the edge",
       "ovalStudSize": "Stud's long axis (roughly)",
-      "ovalHoleSize": "Hole's long axis (roughly)"
+      "ovalHoleSize": "Hole's long axis (roughly)",
+      "overTop": "Travel over the top"
     },
     "step": {
       "method": "Method",
@@ -1779,14 +1782,14 @@
         "topFast": "Z · fast down to the top",
         "topBack": "Z · back off before measuring",
         "topSlow": "Z · slow, exact measure",
-        "topOff": "Z · off after measuring",
         "setOut": "Pass {{pass}} · {{axis}}: set up — past the side, over the top",
         "setDown": "Pass {{pass}} · {{axis}}: set up — down beside the side",
         "fast": "Pass {{pass}} · {{axis}}: fast touch of the side",
         "back": "Pass {{pass}} · {{axis}}: back off",
         "slow": "Pass {{pass}} · {{axis}}: slow measure",
         "off": "Pass {{pass}} · {{axis}}: move off",
-        "up": "Pass {{pass}} · {{axis}}: up over the part"
+        "up": "Pass {{pass}} · {{axis}}: up over the part",
+        "topLift": "Z · off, up to travel over the top"
       },
       "outCode": "G0 past the side, over the top",
       "reachWhy": "≤ {{reach}} = {{clear}} past the side + half of {{size}}",
@@ -1800,7 +1803,8 @@
     "sum": {
       "retractDepth": "{{sum}} = {{retract}} back-off + {{depth}} depth",
       "depthLift": "{{sum}} = {{depth}} depth + {{lift}} lift",
-      "slowReach": "≤ {{reach}} = {{retract}} to the surface + {{retract}} past it"
+      "slowReach": "≤ {{reach}} = {{retract}} to the surface + {{retract}} past it",
+      "overTopDepth": "{{sum}} = {{over}} travel over the top + {{depth}} down"
     },
     "map": {
       "area": "Area",

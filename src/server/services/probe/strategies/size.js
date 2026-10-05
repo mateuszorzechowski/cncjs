@@ -1,5 +1,5 @@
 import { touch } from '../moves';
-import { across as bossAcross } from './boss';
+import { across as bossAcross, overTheTop } from './boss';
 import { EDGES, edgeOf, edgeSteps } from './edge';
 import { ovalOf } from './oval';
 import { turnedOf, turnedSteps } from './turned';
@@ -69,7 +69,7 @@ const passes = ({
     all.push(...axes.flatMap((axis) => across(axis, n, params)));
   }
   // From outside, the top first: the way down beside each side is measured from it.
-  return side === 'inside' ? all : [...touch('z', -1, params.maxZ, 'z', params), ...all];
+  return side === 'inside' ? all : [...touch('z', -1, params.maxZ, 'z', params), overTheTop(params), ...all];
 };
 
 // The ball's centre at each wall touch of pass `n`, `[x, y]`.
@@ -166,10 +166,22 @@ const sizeOf = (shape, params, seen) => {
 /** One method, `shape` one of `SHAPES`. */
 export default {
   // An inside shape's figures are a hole's, an outside one's a part's; the panel shows the ones for the shape chosen.
-  fields: ['holeSize', 'bossSize', 'spacing', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'depth', 'maxZ', 'retract', 'fast', 'slow'],
+  fields: ['holeSize', 'bossSize', 'spacing', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'overTop', 'depth', 'maxZ', 'retract', 'fast', 'slow'],
   options: { shape: Object.keys(SHAPES) },
   touches: true,
-  check: (options) => (SHAPES[options.shape] ? null : 'bad-shape'),
+  /*
+   * A shape touched at two points a side needs them on the side: further apart
+   * than the rough size, a point meets the next wall, or — inside — a way to it
+   * runs into one (Mateusz, 2026-10-05: *"czy ruchy są bezpieczne"*).
+   */
+  check: (options, params) => {
+    const shape = SHAPES[options.shape];
+    if (!shape) {
+      return 'bad-shape';
+    }
+    const rough = shape.side === 'inside' ? params?.holeSize : params?.bossSize;
+    return shape.turned && params && params.spacing >= rough ? 'spacing-too-wide' : null;
+  },
   steps: (params, options, where) => passes(SHAPES[options.shape], params, where),
   size: (params, options, seen) => sizeOf(options.shape, params, seen),
 };

@@ -81,6 +81,9 @@ const KEYS = {
   'bad-method': 'refusal.badMethod',
   'bad-corner': 'refusal.badCorner',
   'bad-edge': 'refusal.badEdge',
+  // Pomiar's points a side further apart than the rough size: one would meet the next wall.
+  'spacing-too-wide': 'refusal.spacingTooWide',
+  'bad-shape': 'refusal.badShape',
   // The height map: its grid, and a program it cannot bend — said with the file's line.
   'bad-area': 'refusal.badArea',
   'bad-grid': 'refusal.badGrid',

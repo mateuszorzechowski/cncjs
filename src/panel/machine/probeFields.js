@@ -25,6 +25,7 @@ export const FIELDS = {
   stockThickness: { key: 'probe.field.stockThickness', kind: 'length' },
   paperLift: { key: 'probe.field.paperLift', kind: 'length' },
   clear: { key: 'probe.field.clear', kind: 'length' },
+  overTop: { key: 'probe.field.overTop', kind: 'length' },
   travel: { key: 'probe.field.travel', kind: 'length' },
   depth: { key: 'probe.field.depth', kind: 'length' },
   maxZ: { key: 'probe.field.maxZ', kind: 'length' },

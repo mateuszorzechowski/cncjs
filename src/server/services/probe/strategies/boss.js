@@ -1,4 +1,6 @@
-import { clearDown, move, touch } from '../moves';
+import {
+  clearDown, liftOver, move, touch,
+} from '../moves';
 
 /**
  * A part's moves across one axis, from outside, for Pomiar (`size`;
@@ -11,6 +13,9 @@ import { clearDown, move, touch } from '../moves';
  * `bossSize` is the part's rough width: the ball goes out to half of it and
  * `clear` more, and searches no further in than to where it started.
  */
+/** Up from the top just touched to `overTop` over it, before anything goes sideways. */
+export const overTheTop = (params) => liftOver('z', params.overTop);
+
 const mid = (seen, axis, n) => (seen[`${axis}${n}a`][axis] + seen[`${axis}${n}b`][axis]) / 2;
 
 // Where the middle is thought to be on `axis` before pass `n`: where the ball started, or the last pass's.
@@ -22,9 +27,10 @@ const side = (axis, n, sign, params) => {
   const out = params.bossSize / 2 + params.clear;
   return [
     move(`${key}-out`, (here, seen) => ({ [axis]: guess(seen, axis, n) + sign * out })),
-    clearDown(`${key}-down`, params.retract + params.depth, params.fast),
+    // Down from `overTop` over the top to `depth` under it, and back up there.
+    clearDown(`${key}-down`, params.overTop + params.depth, params.fast),
     ...touch(axis, -sign, out, key, params),
-    move(`${key}-up`, (here, seen) => ({ z: seen.z.z + params.retract })),
+    move(`${key}-up`, (here, seen) => ({ z: seen.z.z + params.overTop })),
   ];
 };
 

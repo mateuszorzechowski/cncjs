@@ -3251,7 +3251,7 @@ class GrblController {
             }
             options = read.options;
           }
-          const wrong = strategy.check(options);
+          const wrong = strategy.check(options, probeSettings.params());
           if (wrong) {
             this.refuse(cmd, wrong);
             return;

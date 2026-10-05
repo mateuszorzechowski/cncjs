@@ -10,7 +10,7 @@ const {
 } = BOSS_CYCLE;
 
 const TEXTS = {
-  bossSize: '30', clear: '10', depth: '5', maxZ: '15', ballDiameter: '2', retract: '2', fast: '100', slow: '20',
+  bossSize: '30', clear: '10', overTop: '10', depth: '5', maxZ: '15', ballDiameter: '2', retract: '2', fast: '100', slow: '20',
 };
 
 const STEPS = ['Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
@@ -33,7 +33,7 @@ describe('a part measured from outside', () => {
     expect(segmentsOf(bossTimeline(1)).filter((one) => one.name === 'x1pOut')).toHaveLength(1);
     expect(segmentsOf(bossTimeline(1)).filter((one) => one.name === 'x1pDown')).toHaveLength(1);
     const grouped = BOSS_PARAMS.flatMap((group) => (group.passes ? [...group.fields, 'holePasses', 'repeats'] : group.fields)).sort();
-    expect(grouped).toEqual(['ballDiameter', 'bossSize', 'clear', 'depth', 'fast', 'holePasses', 'maxZ', 'repeats', 'retract', 'slow']);
+    expect(grouped).toEqual(['ballDiameter', 'bossSize', 'clear', 'depth', 'fast', 'holePasses', 'maxZ', 'overTop', 'repeats', 'retract', 'slow']);
   });
 
   test('a side: set up out over the top and down beside it, the touches, up again', () => {
@@ -71,9 +71,9 @@ describe('a part measured from outside', () => {
     // Where it comes from, said under the drawing (review note #9, 2026-10-02).
     expect(BOSS_CYCLE.explain('x1pFast', TEXTS)).toEqual(['probe.boss.reachWhy', { reach: '25', clear: '10', size: '30' }]);
     expect(BOSS_CYCLE.explain('x1pBack', TEXTS)).toBeNull();
-    // Down beside a side and up again: the back-off and the depth, said as their sum (rule 1, 2026-10-02).
-    expect(BOSS_CYCLE.explain('x1pDown', TEXTS)).toEqual(['probe.sum.retractDepth', expect.objectContaining({ retract: TEXTS.retract, depth: TEXTS.depth })]);
-    expect(BOSS_CYCLE.explain('x1pUp', TEXTS)[0]).toBe('probe.sum.retractDepth');
+    // Down beside a side and up again: the way over the top and the depth, said as their sum (rule 1, 2026-10-02).
+    expect(BOSS_CYCLE.explain('x1pDown', TEXTS)).toEqual(['probe.sum.overTopDepth', expect.objectContaining({ over: TEXTS.overTop, depth: TEXTS.depth })]);
+    expect(BOSS_CYCLE.explain('x1pUp', TEXTS)[0]).toBe('probe.sum.overTopDepth');
   });
 
   test('a segment\'s end frame is its own move\'s', () => {
@@ -99,14 +99,17 @@ describe('a part measured from outside', () => {
     expect(bossCode('zBack', TEXTS)).toBe('G0 Z+2');
     expect(bossCode('zSlow', TEXTS)).toBe('G38.2 Z-4 F20');
     expect(bossCode('x1pOut', TEXTS)).toEqual(['probe.boss.outCode']);
-    expect(bossCode('x1pDown', TEXTS)).toBe('G38.3 Z-7 F100');
+    expect(bossCode('x1pDown', TEXTS)).toBe('G38.3 Z-15 F100');
     expect(bossCode('x1pFast', TEXTS)).toBe('G38.2 X-25 F100');
     expect(bossCode('y1mFast', TEXTS)).toBe('G38.2 Y+25 F100');
     expect(bossCode('x1pBack', TEXTS)).toBe('G0 X+2');
     expect(bossCode('x1pSlow', TEXTS)).toBe('G38.2 X-4 F20');
-    expect(bossCode('x1pUp', TEXTS)).toBe('G0 Z+7');
+    expect(bossCode('x1pUp', TEXTS)).toBe('G0 Z+15');
+    // Off the top, on up over it in the one move the runner joins: over the vice's jaws before going sideways.
+    expect(bossCode('zOff', TEXTS)).toBe('G0 Z+10');
+    expect(bossCode('zBack', TEXTS)).toBe('G0 Z+2');
     expect(bossCode('zero', TEXTS)).toEqual(['probe.size.codeBoss']);
-    expect(usesAt('x1pDown')).toEqual(['depth', 'retract']);
+    expect(usesAt('x1pDown')).toEqual(['depth', 'overTop']);
     expect(usesAt('zFast', 0.5)).toEqual(['maxZ', 'fast']);
   });
 

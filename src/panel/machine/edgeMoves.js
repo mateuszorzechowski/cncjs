@@ -78,7 +78,7 @@ const edgeLayout = (edge) => ({
   from: 'outside',
   start: setOn(EDGE_SIDES[edge].axis, [0, 0], EDGE_SIDES[edge].sign * (BOSS_R - INSIDE)),
   reach: 'clear',
-  params: [{ id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'depth', 'maxZ'] }, MEASURE, PROBE],
+  params: [{ id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE],
 });
 const LAYOUTS = {
   ...Object.fromEntries(Object.keys(EDGE_SIDES).map((edge) => [`edge-${edge}`, edgeLayout(edge)])),
@@ -89,7 +89,7 @@ const LAYOUTS = {
     reach: 'part',
     params: [
       { id: 'part', key: 'probe.group.part', fields: ['bossSize'], names: { bossSize: 'probe.field.partSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'depth', 'maxZ'] }, MEASURE, PROBE,
+      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE,
     ],
   },
   'turned-inside': {
@@ -113,7 +113,7 @@ const LAYOUTS = {
     span: 9,
     params: [
       { id: 'part', key: 'probe.group.stud', fields: ['bossSize'], names: { bossSize: 'probe.field.ovalStudSize' } },
-      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'depth', 'maxZ'] }, MEASURE, PROBE,
+      { id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE,
     ],
   },
   'oval-inside': {
@@ -136,7 +136,8 @@ const STEPS = {
   outside: ['Along', 'Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'],
   inside: ['In', 'Along', 'Fast', 'Back', 'Slow', 'Off'],
 };
-const HOME = ['retY', 'retX'];
+// Away from the last side's wall first (X, the left's), then along it — as the server goes.
+const HOME = ['retX', 'retY'];
 
 /** A side's two points, by the names its touches go by: `y1m`, `y2m` for the front. */
 const pointsOf = (side) => {
@@ -207,24 +208,24 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
       });
       if (!inside) {
         moves[`${side}Out`] = { ...common, ...leg(spot, out, 'out', 'probe.edge.move.setOut', ['clear']) };
-        moves[`${side}Down`] = { ...common, ...leg(out, out, 'down', 'probe.edge.move.setDown', ['depth', 'retract']), frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]] };
+        moves[`${side}Down`] = { ...common, ...leg(out, out, 'down', 'probe.edge.move.setDown', ['depth', 'overTop']), frames: [[0, out, ABOVE], [0.1, out, ABOVE], [0.85, out, 0, true], [1, out, 0]] };
       }
       moves[`${side}Fast`] = { ...common, ...leg(out, wall, 'fast', 'probe.edge.move.fast', ['fast', inside ? 'holeSize' : 'clear'], 0) };
       moves[`${side}Back`] = { ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.back', uses: ['retract'] };
       moves[`${side}Slow`] = { ...common, kind: 'slow', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.7, wall, 0], [1, wall, 0]], end: 0.7, titleKey: 'probe.edge.move.slow', uses: ['slow', 'retract'] };
       moves[`${side}Off`] = { ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.off', uses: ['retract'] };
       if (!inside) {
-        moves[`${side}Up`] = { ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.edge.move.up', uses: ['depth', 'retract'] };
+        moves[`${side}Up`] = { ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.edge.move.up', uses: ['depth', 'overTop'] };
       }
       order.push(...STEPS[from].filter((step) => step !== 'In').map((step) => `${side}${step}`));
       at = off;
     });
   });
   if (inside) {
-    // Back to the middle, one axis at a time, as the server goes.
-    const y = setOn('y', at, S[1]);
-    moves.retY = { ...leg(at, y, 'centre', 'probe.edge.move.home', []), axis: 'y', way: 'Y', code: 'probe.edge.homeCode' };
-    moves.retX = { ...leg(y, S, 'centre', 'probe.edge.move.home', []), axis: 'x', way: 'X', code: 'probe.edge.homeCode' };
+    // Back to the middle, one axis at a time, as the server goes: away from the last wall first.
+    const x = setOn('x', at, S[0]);
+    moves.retX = { ...leg(at, x, 'centre', 'probe.edge.move.home', []), axis: 'x', way: 'X', code: 'probe.edge.homeCode' };
+    moves.retY = { ...leg(x, S, 'centre', 'probe.edge.move.home', []), axis: 'y', way: 'Y', code: 'probe.edge.homeCode' };
     order.push(...HOME);
     at = S;
   }

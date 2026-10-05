@@ -10,6 +10,7 @@ export const phasesOf = (MOVES) => {
     along: 'Along',
     out: 'Out', down: 'Down', fast: 'Fast', back: 'Back', settle: 'Back', off: 'Off', up: 'Up',
   };
+  // The way over the top after the touch is the off's own move: the runner joins the two (`zOff`).
   const TOP_OF = {
     fast: 'zFast', back: 'zBack', settle: 'zBack', off: 'zOff',
   };
@@ -27,6 +28,9 @@ export const phasesOf = (MOVES) => {
     }
     if (step === 'z') {
       return TOP_OF[part] || 'zSlow';
+    }
+    if (step === 'lift') {
+      return 'zOff';
     }
     // A size's passes past the second are drawn as the second: every one of them starts at the centre.
     const side = /^([xy])(\d+)([ab])$/.exec(step);

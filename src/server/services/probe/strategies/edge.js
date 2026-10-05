@@ -1,4 +1,5 @@
 import { clearDown, move, touch } from '../moves';
+import { overTheTop } from './boss';
 
 /**
  * Pomiar: an edge and its angle (Mateusz, 2026-10-03: *"krawędź i kąt"*,
@@ -38,14 +39,15 @@ export const edgeSteps = (edge, params) => {
       // Along the edge, then out past it: one axis a move, as every move of the probe's (rule, 2026-10-02).
       move(`${key}-along`, (here, seen) => ({ [along]: seen.z[along] + shift })),
       move(`${key}-out`, (here, seen) => ({ [axis]: seen.z[axis] + sign * params.clear })),
-      clearDown(`${key}-down`, params.retract + params.depth, params.fast),
+      clearDown(`${key}-down`, params.overTop + params.depth, params.fast),
       // In no further than back to where the ball started: the edge is between there and here.
       ...touch(axis, -sign, params.clear, key, params),
-      move(`${key}-up`, (here, seen) => ({ z: seen.z.z + params.retract })),
+      move(`${key}-up`, (here, seen) => ({ z: seen.z.z + params.overTop })),
     ];
   };
   return [
     ...touch('z', -1, params.maxZ, 'z', params),
+    overTheTop(params),
     ...point(1),
     ...point(2),
   ];

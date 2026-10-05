@@ -440,7 +440,7 @@ describe('Pomiar: the middle of a part, from outside', () => {
 
     expect(outcome.failure).toBeUndefined();
     close(STRATEGIES.measure.size(params, options, outcome.seen).centre, { x: hx, y: hy });
-    close(pos, { x: hx, y: hy, z: -50 + params.retract });
+    close(pos, { x: hx, y: hy, z: -50 + params.overTop });
   });
 
   test('goes down beside a side by the depth under the top it found, not under where it started', () => {
@@ -450,6 +450,21 @@ describe('Pomiar: the middle of a part, from outside', () => {
     // The first way down beside a side, in work coordinates: from the top plus the retract to the depth under it.
     const down = sent.find((line) => line.includes('G38.3'));
     expect(wordsOf(down).z + WCO.z).toBeCloseTo(-50 - params.depth, 6);
+  });
+
+  test('goes sideways only `overTop` over the top: over the vice jaws and the clamps, not a few millimetres', () => {
+    const own = { ...params, overTop: 12 };
+    const { sent } = measure({
+      method: 'measure', options, params: own, radius, boxes: partAt(24), start,
+    });
+    // Every way up is to 12 over the top — but the top's own back-off before its slow touch, the retract; every
+    // way down beside a side from there, to under it.
+    const ups = sent.filter((line) => line.includes('G53 G0') && wordsOf(line).z !== undefined).map((line) => wordsOf(line).z);
+    expect(ups[0]).toBe(-50 + own.retract);
+    expect(ups.slice(1).length).toBeGreaterThan(0);
+    expect(ups.slice(1).every((z) => z === -50 + 12)).toBe(true);
+    const downs = sent.filter((line) => line.includes('G38.3'));
+    expect(downs.every((line) => wordsOf(line).z + WCO.z === -50 - own.depth)).toBe(true);
   });
 
   test('a part wider than its rough size lands the ball on its top: a failure', () => {
@@ -596,6 +611,14 @@ describe('Pomiar: a size, not a zero', () => {
   ])('a shape that is not one is refused: %j', (options, code) => {
     expect(pomiar.check(options)).toBe(code);
   });
+
+  test('points a side further apart than the rough size are refused before anything moves', () => {
+    expect(pomiar.check({ shape: 'rect-inside-turned' }, { ...params, holeSize: 30, spacing: 30 })).toBe('spacing-too-wide');
+    expect(pomiar.check({ shape: 'oval-outside' }, { ...params, bossSize: 20, spacing: 25 })).toBe('spacing-too-wide');
+    expect(pomiar.check({ shape: 'rect-inside-turned' }, { ...params, holeSize: 30, spacing: 12 })).toBeNull();
+    // Shapes touched once a side have no spacing to check.
+    expect(pomiar.check({ shape: 'rect-inside' }, { ...params, holeSize: 5, spacing: 30 })).toBeNull();
+  });
 });
 
 describe('Pomiar: an edge and its angle', () => {
@@ -620,7 +643,7 @@ describe('Pomiar: an edge and its angle', () => {
     close(found.centre, { y: -60 });
     expect(Object.keys(found.centre)).toEqual(['y']);
     // Over the second point at the end, just above the top.
-    close(pos, { x: start.x + params.spacing / 2, z: -50 + params.retract });
+    close(pos, { x: start.x + params.spacing / 2, z: -50 + params.overTop });
   });
 
   test('two touches, spacing apart along the edge, each from out past it', () => {

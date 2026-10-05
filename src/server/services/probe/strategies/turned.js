@@ -1,4 +1,5 @@
 import { clearDown, move, touch } from '../moves';
+import { overTheTop } from './boss';
 import { EDGES } from './edge';
 
 /**
@@ -33,14 +34,15 @@ const outside = (params) => {
     return [
       move(`${key}-along`, (here, seen) => ({ [along]: seen.z[along] + shift })),
       move(`${key}-out`, (here, seen) => ({ [axis]: seen.z[axis] + sign * out })),
-      clearDown(`${key}-down`, params.retract + params.depth, params.fast),
+      clearDown(`${key}-down`, params.overTop + params.depth, params.fast),
       // In no further than the middle: the side is between there and here.
       ...touch(axis, -sign, out, key, params),
-      move(`${key}-up`, (here, seen) => ({ z: seen.z.z + params.retract })),
+      move(`${key}-up`, (here, seen) => ({ z: seen.z.z + params.overTop })),
     ];
   };
   return [
     ...touch('z', -1, params.maxZ, 'z', params),
+    overTheTop(params),
     ...SIDES.flatMap((side) => [...point(side, 1), ...point(side, 2)]),
   ];
 };
@@ -59,11 +61,12 @@ const inside = (params, start) => {
       ...touch(axis, sign, params.holeSize, key, params),
     ];
   };
-  // Back to the middle at the end, one axis at a time.
+  // Back to the middle at the end, one axis at a time: across the last side first — the left, so X — away from
+  // its wall, then along it; along it first would run beside the wall, nearer it the more the pocket is turned.
   return [
     ...SIDES.flatMap((side) => [...point(side, 1), ...point(side, 2)]),
-    move('return-y', () => ({ y: start.y })),
     move('return-x', () => ({ x: start.x })),
+    move('return-y', () => ({ y: start.y })),
   ];
 };
 
