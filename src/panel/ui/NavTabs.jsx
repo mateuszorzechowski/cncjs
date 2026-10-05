@@ -49,6 +49,8 @@ export const MARKS = {
   path: 'M3 17l4-8 4 5 3-8 3 6 4-4',
   // A tip coming down onto a surface until it touches.
   probe: 'M12 3v9M9 9l3 3 3-3M4 19h16',
+  // Sonda v2, beside the first until one of the two is kept (2026-10-06): the same tip, the label tells them apart.
+  probe2: 'M12 3v9M9 9l3 3 3-3M4 19h16',
   /*
    * A gauge with a needle, not a trace.
    *

@@ -330,7 +330,7 @@ export default [
   },
 
   {
-    files: ['src/panel/scene/**/*.jsx'],
+    files: ['src/panel/scene/**/*.jsx', 'src/panel/probe2/scene/**/*.jsx'],
     rules: {
       'react/no-unknown-property': 0,
     },
