@@ -189,6 +189,19 @@ describe('probe:start', () => {
     expect(controller.modesOwed).toBeNull();
   });
 
+  test('figures the operator confirmed and since changed on another device are refused, named; the same ones go (audit K8)', () => {
+    const { controller, sent, refusals } = setup();
+    probeSettings.set({ plateThickness: 5 });
+
+    controller.command('probe:start', { method: 'z', figures: { plateThickness: 10, maxZ: 15 } });
+    expect(refusals).toEqual([expect.objectContaining({ reason: 'figures-changed', name: 'plateThickness' })]);
+    expect(sent()).toEqual([]);
+
+    // Another method's figure is not this one's business.
+    controller.command('probe:start', { method: 'z', figures: { plateThickness: 5, maxZ: 15, wallX: 99 } });
+    expect(sent()).toEqual(['G90 G21 G94 G38.2 Z15 F100']);
+  });
+
   test('a plate not found is said, and the zero stays where it was', () => {
     const { controller, sent, probeStates } = setup();
     controller.command('probe:start', { method: 'z' });
@@ -562,6 +575,18 @@ describe('a distance', () => {
     controller.command('probe:apply');
     expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
     expect(sent().some((line) => line.includes('G10'))).toBe(false);
+  });
+
+  test('the second feature is measured with the figures the first was, whatever was changed between (audit K8)', () => {
+    const { controller, sent } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 1 });
+    controller.command('probe:start', { method: 'measure', options: { shape: 'distance', a: 'circle-inside', b: 'circle-inside' } });
+    const done = round(controller, sent, 9);
+
+    // Another device, between the two.
+    probeSettings.set({ fast: 300 });
+    controller.command('probe:next');
+    expect(sent()[done]).toMatch(/G38\.2 .* F100$/);
   });
 
   test('the Z of a surface is shown in the system measured in, with no zero to write', () => {

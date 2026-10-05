@@ -463,6 +463,7 @@
     "feedOverride": "Korekta posuwu jest powyżej 100 %, więc dotyk byłby szybszy niż ustawiony. Przywróć 100 % i spróbuj ponownie.",
     "resultWaiting": "Poprzedni pomiar czeka na Zapisz albo Odrzuć, więc nowy nie ruszył.",
     "busy": "Maszyna nie odpowiedziała jeszcze na poprzednią linię, więc pomiar nie ruszył. Poczekaj chwilę i spróbuj ponownie.",
+    "figuresChanged": "Ustawienia sondy zmieniono na innym urządzeniu, odkąd je zatwierdziłeś, więc pomiar nie ruszył. Wróć do Przygotowania i sprawdź je.",
     "noResult": "Nie ma pomiaru do zapisania.",
     "badMethod": "Serwer nie zna tej metody sondowania.",
     "badCorner": "Serwer nie zna takiego narożnika.",

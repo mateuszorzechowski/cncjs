@@ -84,6 +84,8 @@ const KEYS = {
   'result-waiting': 'refusal.resultWaiting',
   // A line still unanswered when a probe was to start: where the tool stands is not known yet.
   busy: 'refusal.busy',
+  // The probe's figures changed on another device since this one's operator confirmed them.
+  'figures-changed': 'refusal.figuresChanged',
   'no-result': 'refusal.noResult',
   'bad-method': 'refusal.badMethod',
   'bad-corner': 'refusal.badCorner',
