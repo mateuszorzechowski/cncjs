@@ -326,6 +326,61 @@ describe('a size', () => {
   });
 });
 
+describe('a distance', () => {
+  /** Answer every line until the run stops: a probe touches X and Y ±`half` from the machine's origin, anything else is ok. */
+  const round = (controller, sent, half, from = 0) => {
+    let answered = from;
+    while (answered < sent().length) {
+      const line = sent()[answered];
+      answered += 1;
+      const [, axis, value] = line.match(/G38\.2 ([XY])(-?[\d.]+)/) ?? [];
+      if (axis) {
+        const at = Number(value) > 0 ? half : -half;
+        controller.runner.parse(axis === 'X' ? `[PRB:${at},0.000,0.000:1]` : `[PRB:0.000,${at},0.000:1]`);
+      }
+      controller.runner.parse('ok');
+    }
+    return answered;
+  };
+
+  test('the first feature kept while the operator jogs, the second on probe:next; no zero to write', () => {
+    const {
+      controller, sent, refusals, probeStates,
+    } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 1 });
+    const recorded = jest.spyOn(controller, 'note');
+
+    controller.command('probe:next');
+    expect(refusals.pop()).toMatchObject({ reason: 'not-between' });
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'distance', a: 'circle-inside', b: 'circle-inside' } });
+    const done = round(controller, sent, 9);
+
+    expect(probeStates().pop()).toMatchObject({ state: 'between', part: 'b', first: { kind: 'circle', size: { d: 20 } } });
+    expect(recorded).toHaveBeenCalledWith(expect.objectContaining({ event: 'probe', code: 'first' }));
+    // Between the two the machine is the operator's: nothing runs.
+    expect(controller.probe.run).toBeNull();
+
+    controller.command('probe:next');
+    round(controller, sent, 11, done);
+
+    const last = probeStates().pop();
+    expect(last).toMatchObject({ state: 'measured', result: { size: { kind: 'distance', size: { dist: 0 }, parts: [{ size: { d: 20 } }, { size: { d: 24 } }] } } });
+    expect(last.result.offset).toBeUndefined();
+    controller.command('probe:apply');
+    expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
+    expect(sent().some((line) => line.includes('G10'))).toBe(false);
+  });
+
+  test('two edges square to each other are refused before anything moves', () => {
+    const { controller, sent, refusals } = setup();
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'distance', a: 'edge-front', b: 'edge-left' } });
+    expect(refusals.pop()).toMatchObject({ reason: 'edges-crossing' });
+    expect(sent()).toHaveLength(0);
+  });
+});
+
 describe('probe:stage', () => {
   const stages = (controller) => controller.__events.filter(({ event }) => event === 'probe:stage').map(({ args }) => args[0]);
 

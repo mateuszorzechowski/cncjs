@@ -1,5 +1,5 @@
 import {
-  METHODS, failureKey, mapAsk, methodOf, optionsFor, phaseWords, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
+  METHODS, choiceOf, failureKey, mapAsk, methodOf, optionsFor, pairOf, phaseWords, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -110,6 +110,23 @@ describe('Pomiar: what is measured, then how it lies', () => {
     expect(shapeOfKind('width', 'circle-outside')).toBe('bar-x');
     expect(shapeOfKind('circle', 'groove-y')).toBe('circle-inside');
     expect(shapeOfKind('width', 'groove-y')).toBe('groove-y');
+  });
+});
+
+describe('a distance', () => {
+  const measure = methodOf('measure');
+
+  test('its two ends in the one choice, asked for apart, and back again', () => {
+    const choice = shapeOfKind('distance', 'circle-inside');
+    expect(pairOf(choice)).toEqual({ a: 'circle-inside', b: 'circle-inside' });
+    const options = optionsFor(measure, 'distance:edge-front:circle-outside');
+    expect(options).toEqual({ shape: 'distance', a: 'edge-front', b: 'circle-outside' });
+    expect(choiceOf(measure, options)).toBe('distance:edge-front:circle-outside');
+    expect(pairOf('circle-inside')).toBeNull();
+  });
+
+  test('its first end measured, the wizard goes into place over the second', () => {
+    expect(wizardStep('result', { state: 'between' })).toBe('position');
   });
 });
 

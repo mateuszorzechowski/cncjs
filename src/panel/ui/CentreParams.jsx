@@ -25,10 +25,10 @@ const NBSP = ' ';
  * lit. A figure being set loops the move it changes.
  *
  * `split(left, right)`, wide: the screen lays the drawing and the figures out
- * as cards of their own.
+ * as cards of their own. `head`, above the drawing: what picks the cycle drawn.
  */
 const CentreParams = ({
-  cycle, fields, texts, onText, bad, intro = null, note = null, split = null,
+  cycle, fields, texts, onText, bad, intro = null, note = null, split = null, head = null,
 }) => {
   const {
     params: PARAMS, hold, order, groups: groupsOf, timeline, playAt, moveOf, titleOf, scene: sceneOf, code: codeOf, usesAt,
@@ -64,7 +64,7 @@ const CentreParams = ({
     }))
     .filter((one) => one.fields.length || one.head);
 
-  const left = (
+  const drawing = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
       <CentreViews
         cycle={cycle}
@@ -94,6 +94,8 @@ const CentreParams = ({
       </div>
     </div>
   );
+  // Above the drawing, what picks it: a distance's end (`DistanceSetup`).
+  const left = head ? <div className="flex min-w-0 flex-col gap-3">{head}{drawing}</div> : drawing;
   const { right, third } = figureColumns({
     wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField, lit: usesAt(name, p), intro, note,
   });

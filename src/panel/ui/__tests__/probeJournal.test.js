@@ -19,6 +19,16 @@ describe('a probe entry in words', () => {
     expect(probeLine(entry('measured', { method: 'z', z: -17.1 }), units)).toContain('"axes":"Z -17.100"');
   });
 
+  test('a distance: each figure with its own unit, the first end said as measured', () => {
+    const line = probeLine(entry('size', {
+      method: 'measure', shape: 'distance', a: 'circle-inside', b: 'circle-inside', size: { dist: 50, dx: 40, dy: 30, a: 36.87 }, spread: null, passes: 1, ball: 2,
+    }), units);
+    expect(line).toContain('probe.method.measure · probe.shape.distance');
+    expect(line).toContain('"sizes":"journal.detail.dist 50.000 mm · journal.detail.angle 36.870° · ΔX 40.000 mm · ΔY 30.000 mm"');
+    expect(line).toContain('"unit":""');
+    expect(probeLine(entry('first', { method: 'measure', shape: 'distance', size: { d: 20 } }), units)).toContain('journal.probe.first');
+  });
+
   test('a size with its spread and passes, and the ball', () => {
     const line = probeLine(entry('size', {
       method: 'measure', shape: 'rect-inside', size: { x: 24.012, y: 18.003 }, spread: { x: 0.004, y: 0.002 }, passes: 3, ball: 2,

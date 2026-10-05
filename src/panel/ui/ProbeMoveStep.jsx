@@ -14,6 +14,7 @@ import ZPlatePosition from './ZPlatePosition';
 import { HeightMapPosition } from './HeightMapSteps';
 import { Foot } from './ProbeSteps';
 import JogWidget from '../widgets/JogWidget';
+import { pairOf, partShape, shapeOf } from '../machine/probe';
 import { sizeCycle } from '../machine/sizeCycle';
 import { useIsPhone } from './shell';
 import { t } from '../i18n';
@@ -24,7 +25,7 @@ const MOVES = {
   corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
   paper: ({ choice }) => <PaperPosition edge={choice} />,
   'height-map': HeightMapPosition,
-  measure: ({ choice }) => <CentrePosition cycle={sizeCycle('measure', choice)} />,
+  measure: ({ choice, part }) => <CentrePosition cycle={sizeCycle('measure', partShape(choice, part))} />,
 };
 
 /**
@@ -36,7 +37,7 @@ const MOVES = {
  * another screen — with the button that goes on.
  */
 const ProbeMoveStep = ({
-  machine, method, choice, feeling, lit, jogging, onJogging, onBack, leaving = null, onNext, onMeasure, texts = {},
+  machine, method, choice, feeling, lit, jogging, onJogging, onBack, leaving = null, onNext, onMeasure, texts = {}, part = 'a',
 }) => {
   const phone = useIsPhone();
   // Joined, the way back is out of the wizard (`leaving`, whose it is) — on a phone asked first, in a sheet.
@@ -44,10 +45,12 @@ const ProbeMoveStep = ({
   const back = leaving && phone ? () => setAsking(true) : onBack;
   const Moving = MOVES[method.id];
   // Where the tool goes, as the choice says where it has its own — a groove's or a bar's.
-  const place = method.choice?.list.find((one) => one.id === choice)?.place ?? method.place;
+  // A distance's: the end the tool goes to now, first or second (Mateusz, 2026-10-05).
+  const pair = pairOf(choice);
+  const place = pair ? shapeOf(pair[part]).place : method.choice?.list.find((one) => one.id === choice)?.place ?? method.place;
   let onward = null;
   if (method.touches) {
-    onward = <Button tone="go" disabled={!machine.canProbe || lit !== false} onClick={onMeasure} className="h-ctl">{t(method.start)}</Button>;
+    onward = <Button tone="go" disabled={!machine.canProbe || lit !== false} onClick={onMeasure} className="h-ctl">{t(pair && part === 'b' ? 'probe.distance.startSecond' : method.start)}</Button>;
   } else if (!feeling) {
     // Into place, the paper goes on to be felt for.
     onward = <Button tone="primary" onClick={onNext} className="h-ctl">{t('probe.next')}</Button>;
@@ -59,7 +62,8 @@ const ProbeMoveStep = ({
   }
   const card = (
     <Card className={`min-w-0 @4xl/shell:flex-1 ${phone ? 'flex-1' : 'shrink-0'}`} bodyClassName="gap-3">
-      {feeling ? <PaperFeel edge={choice} /> : <Moving choice={choice} texts={texts} />}
+      {pair ? <p className="m-0 text-base font-semibold text-ink">{t(part === 'b' ? 'probe.distance.toSecond' : 'probe.distance.toFirst', { what: t(shapeOf(pair[part]).key) })}</p> : null}
+      {feeling ? <PaperFeel edge={choice} /> : <Moving choice={choice} texts={texts} part={part} />}
       {/* Where the plate goes, then where the tool goes: the plate laid here, not on the Setup (review note, 2026-09-30). */}
       {feeling ? <p className="m-0 text-base text-ink">{t('probe.paper.feelHow')}</p> : (
         <p className="m-0 text-base text-ink">{method.lay ? `${t(method.lay)} ${t(place)}` : t(place)}</p>

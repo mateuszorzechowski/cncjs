@@ -18,7 +18,7 @@ import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
+  applyProbe, choiceOf, discardProbe, fetchProbe, methodOf, nextProbe, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
@@ -104,7 +104,11 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       .catch((error) => setBad(error.name || fields[0]));
   };
 
-  const measure = () => startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name);
+  // A distance's first end measured, the second goes on from it (`between`).
+  const between = probe?.state === 'between';
+  // Back from over a distance's second end: the first measured again, from its own place (`again`, below).
+  const backFromPlace = () => (between ? again() : go(-1));
+  const measure = () => (between ? nextProbe() : startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name));
 
   const again = () => {
     if (machine.status?.word === 'Alarm') {
@@ -115,7 +119,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     setMode('own');
     setPicked(again?.id ?? null);
     if (again?.choice && probe?.options?.[again.choice.option]) {
-      setChosen((now) => ({ ...now, [again.id]: probe.options[again.choice.option] }));
+      setChosen((now) => ({ ...now, [again.id]: choiceOf(again, probe.options) }));
     }
     discardProbe();
     setLocal('position');
@@ -165,11 +169,12 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
             lit={lit}
             jogging={jogging}
             onJogging={setJogging}
-            onBack={mode === 'joined' ? leave : () => go(-1)}
+            onBack={mode === 'joined' ? leave : backFromPlace}
             leaving={mode === 'joined' ? shared?.owner?.name || t('probe.join.elsewhere') : null}
             onNext={() => go(1)}
             onMeasure={measure}
             texts={texts}
+            part={probe?.part}
           />
         )}
       </div>

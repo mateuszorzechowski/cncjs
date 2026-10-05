@@ -10,12 +10,17 @@ import { t } from '../i18n';
 
 const AXES = ['x', 'y', 'z'];
 // A size's figures: a circle's diameter, an edge's angle, or each axis.
-const SIZES = ['d', 'a', 'major', 'minor', 'length', 'width', ...AXES];
+// A distance's (`dist`, `dx`, `dy`, `par`) too.
+const SIZES = ['dist', 'd', 'a', 'major', 'minor', 'length', 'width', 'dx', 'dy', 'par', ...AXES];
 const sizeName = (key) => ({
   d: 'Ø', a: t('journal.detail.angle'), major: t('journal.detail.major'), minor: t('journal.detail.minor'), length: t('journal.detail.length'), width: t('journal.detail.across'),
+  dist: t('journal.detail.dist'), dx: 'ΔX', dy: 'ΔY', par: t('journal.detail.par'),
 }[key] ?? key.toUpperCase());
+const ANGLES = ['a', 'par'];
 // An angle in degrees, never converted; a length as `units` says it.
-const figureOf = (key, value, units) => (key === 'a' ? `${degrees(value)}°` : units.figure(value));
+const figureOf = (key, value, units) => (ANGLES.includes(key) ? `${degrees(value)}°` : units.figure(value));
+// A distance mixes lengths and angles: each said with its own unit.
+const unitOf = (key, value, units) => (ANGLES.includes(key) ? figureOf(key, value) : `${units.figure(value)} ${units.length}`);
 
 // The method by its name, and its one choice where it has one: "Szerokość · listwa X".
 const methodName = (data) => {
@@ -51,11 +56,13 @@ const SAID = {
   applied: (data) => (data.method === 'height-map'
     ? t('journal.probe.mapSaved')
     : t('journal.probe.applied', { method: methodName(data), wcs: data.wcs ?? '' })),
+  // A distance's first end measured, the operator jogging to the second.
+  first: (data, units) => t('journal.probe.first', { method: methodName(data), sizes: axesSaid(data.size, (axis) => unitOf(axis, data.size[axis], units)) }),
   size: (data, units) => t('journal.probe.size', {
     method: methodName(data),
-    sizes: axesSaid(data.size, (axis) => figureOf(axis, data.size[axis], units)),
-    // An angle carries its own degrees.
-    unit: Number.isFinite(data.size?.a) ? '' : units.length,
+    sizes: axesSaid(data.size, (axis) => (data.shape === 'distance' ? unitOf : figureOf)(axis, data.size[axis], units)),
+    // An angle carries its own degrees, and so does each of a distance's figures.
+    unit: Number.isFinite(data.size?.a) || data.shape === 'distance' ? '' : units.length,
     spread: data.spread ? t('journal.probe.spread', { list: axesSaid(data.spread, (axis) => units.figure(data.spread[axis])), n: data.passes ?? '' }) : '',
     ball: units.figure(data.ball),
   }),
@@ -85,7 +92,7 @@ export const probeDetails = (entry, units) => {
   const rows = [[t('journal.detail.method'), methodName(data)]];
   if (entry.code === 'size' && data.size) {
     const mm = (value) => `${units.figure(value)} ${units.length}`;
-    SIZES.filter((axis) => Number.isFinite(data.size[axis])).forEach((axis) => rows.push([sizeName(axis), axis === 'a' ? figureOf(axis, data.size.a) : mm(data.size[axis])]));
+    SIZES.filter((axis) => Number.isFinite(data.size[axis])).forEach((axis) => rows.push([sizeName(axis), ANGLES.includes(axis) ? figureOf(axis, data.size[axis]) : mm(data.size[axis])]));
     if (data.spread) {
       rows.push([t('journal.detail.spread'), `${axesSaid(data.spread, (axis) => units.figure(data.spread[axis]))} ${units.length}`]);
     }
@@ -98,7 +105,7 @@ export const probeDetails = (entry, units) => {
     if (Number.isFinite(data.turn?.square)) {
       rows.push([t('journal.detail.square'), `${degrees(data.turn.square)}°`]);
     }
-    if (data.centre) {
+    if (data.centre && Object.keys(data.centre).length) {
       rows.push([t('journal.detail.centre', { wcs: data.wcs ?? '' }), `${axesSaid(data.centre, (axis) => units.figure(data.centre[axis]))} ${units.length}`]);
     }
     if (data.passes) {

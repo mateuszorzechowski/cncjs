@@ -276,7 +276,7 @@ const slotContact = (slots, radius, from, to) => {
 /** Run one method on the bench to the end; the outcome and every line sent. */
 // `radius`: what touches — the tool, or a 3D probe's ball.
 const measure = ({
-  method, options = {}, params, boxes = [], rounds = [], slants = [], turned = [], ovals = [], slots = [], start, radius = params.toolDiameter / 2,
+  method, options = {}, params, boxes = [], rounds = [], slants = [], turned = [], ovals = [], slots = [], start, radius = params.toolDiameter / 2, part,
 }) => {
   const strategy = STRATEGIES[method];
   const queue = [];
@@ -284,7 +284,7 @@ const measure = ({
   let pos = { ...start };
   let outcome = null;
   const run = createProbeRun({
-    steps: strategy.steps(params, options, { start, wco: WCO }),
+    steps: strategy.steps(params, options, { start, wco: WCO, ...(part ? { part } : {}) }),
     start,
     wco: WCO,
     restore: 'G90 G21',
@@ -712,6 +712,101 @@ describe('Pomiar: an edge and its angle', () => {
     expect(ways.every((way) => Object.keys(way).length === 1)).toBe(true);
     expect(ways.filter((way) => way.x !== undefined).map((way) => way.x)).toEqual([-115, -85]);
     expect(ways.find((way) => way.y !== undefined).y).toBeCloseTo(-65, 6);
+  });
+});
+
+describe('Pomiar: a distance, one feature to another', () => {
+  const params = {
+    ...probeParams(), ballDiameter: 4, clear: 10, depth: 5, spacing: 20, holeSize: 30, holePasses: 1,
+  };
+  const radius = params.ballDiameter / 2;
+  const z = [-80, -50];
+
+  // The first feature, then the second from where the operator jogged to: what came out.
+  const between = (options, first, second) => {
+    const one = measure({
+      method: 'measure', options, params, radius, part: 'a', ...first,
+    });
+    const { half } = STRATEGIES.measure.size(params, options, one.outcome.seen, { part: 'a' });
+    const two = measure({
+      method: 'measure', options, params, radius, part: 'b', ...second,
+    });
+    expect(one.outcome.failure).toBeUndefined();
+    expect(two.outcome.failure).toBeUndefined();
+    return STRATEGIES.measure.size(params, options, two.outcome.seen, { part: 'b', first: half });
+  };
+
+  test('two holes, centre to centre: each way, straight and its angle', () => {
+    const rounds = [{
+      x: -150, y: -70, r: 10, z, inside: true,
+    }, {
+      x: -110, y: -40, r: 12, z, inside: true,
+    }];
+    const found = between(
+      { shape: 'distance', a: 'circle-inside', b: 'circle-inside' },
+      { rounds, start: { x: -148, y: -71, z: -60 } },
+      { rounds, start: { x: -111, y: -38, z: -60 } },
+    );
+
+    expect(found.kind).toBe('distance');
+    close(found.size, {
+      dist: 50, dx: 40, dy: 30, a: Math.atan2(30, 40) * 180 / Math.PI,
+    });
+    close(found.parts[0].size, { d: 20 });
+    close(found.parts[1].size, { d: 24 });
+    expect(found.centre).toEqual({});
+  });
+
+  test('a hole from an edge at an angle: square to the edge, whichever is first', () => {
+    const angle = 2;
+    const slants = [{
+      x: -150, y: -90, angle, z,
+    }];
+    const rounds = [{
+      x: -140, y: -60, r: 8, z, inside: true,
+    }];
+    const t = Math.tan(angle * Math.PI / 180);
+    const square = ((-60 - -90) - t * (-140 - -150)) * Math.cos(Math.atan(t));
+    const edge = { slants, start: { x: -150, y: -85, z: -45 } };
+    const hole = { rounds, start: { x: -139, y: -61, z: -60 } };
+
+    close(between({ shape: 'distance', a: 'edge-front', b: 'circle-inside' }, edge, hole).size, { dist: square });
+    close(between({ shape: 'distance', a: 'circle-inside', b: 'edge-front' }, hole, edge).size, { dist: square });
+  });
+
+  test('two edges facing apart: the width of the part, and how far off parallel', () => {
+    const boxes = [{ x: [-150, -90], y: [-70, -40], z }];
+    const found = between(
+      { shape: 'distance', a: 'edge-front', b: 'edge-back' },
+      { boxes, start: { x: -120, y: -65, z: -45 } },
+      { boxes, start: { x: -120, y: -45, z: -45 } },
+    );
+
+    close(found.size, { dist: 30, par: 0 });
+  });
+
+  test('two edges facing alike, one turned: the second against the first', () => {
+    const slants = [{
+      x: -150, y: -90, angle: 0, z,
+    }, {
+      x: -100, y: -80, angle: 1.5, z,
+    }];
+    const found = between(
+      { shape: 'distance', a: 'edge-front', b: 'edge-front' },
+      { slants: [slants[0]], start: { x: -150, y: -85, z: -45 } },
+      { slants: [slants[1]], start: { x: -100, y: -75, z: -45 } },
+    );
+
+    expect(found.size.par).toBeCloseTo(1.5, 6);
+    expect(found.size.dist).toBeGreaterThan(9);
+  });
+
+  test.each([
+    [{ a: 'edge-front', b: 'edge-left' }, 'edges-crossing'],
+    [{ a: 'edge-front', b: 'rect-inside' }, 'bad-part'],
+    [{ a: 'circle-inside' }, 'bad-part'],
+  ])('%j is refused: %s', (pair, reason) => {
+    expect(STRATEGIES.measure.check({ shape: 'distance', ...pair }, params)).toBe(reason);
   });
 });
 

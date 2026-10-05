@@ -14,6 +14,7 @@ import CornerChooser from './CornerChooser';
 import MapToolChooser from './MapToolChooser';
 import PaperChooser from './PaperChooser';
 import { KindChooser, LieChooser, SizeResult } from './SizeSteps';
+import { DistanceResult, DistanceSetup, PairChooser } from './DistanceSteps';
 import HeightMapSetup from './HeightMapSetup';
 import { HeightMapCycle, HeightMapResult } from './HeightMapSteps';
 import PaperParams from './PaperParams';
@@ -21,7 +22,9 @@ import PaperScene from './PaperScene';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
-import { METHODS, SURFACE, failureKey, phaseWords } from '../machine/probe';
+import {
+  METHODS, SURFACE, failureKey, pairOf, phaseWords,
+} from '../machine/probe';
 import { paperScene } from '../machine/paperCycle';
 import { drawnPasses, sizeCycle } from '../machine/sizeCycle';
 import { NO_READING } from '../machine/readings';
@@ -46,11 +49,13 @@ const EDITORS = {
   paper: PaperParams,
   'height-map': HeightMapSetup,
   // A size's, the centre's moves ending in the size, by the shape chosen.
-  measure: (props) => <CentreParams cycle={sizeCycle('measure', props.chosen)} {...props} />,
+  // A distance's: each end's, one at a time (`DistanceSetup`).
+  measure: (props) => <DistanceSetup chosen={props.chosen} render={(shape, head) => <CentreParams cycle={sizeCycle('measure', shape)} head={head} {...props} />} />,
 };
 // A size measured, as the centre's: its passes those it was asked for.
 const SizeCycle = ({ phase, probe }) => {
-  const cycle = sizeCycle(probe?.method, probe?.options?.shape);
+  // A distance's end being measured.
+  const cycle = sizeCycle(probe?.method, probe?.options?.shape === 'distance' ? probe.options[probe.part ?? 'a'] : probe?.options?.shape);
   return <CentreCycle cycle={cycle} phase={phase} passes={drawnPasses(probe?.params?.holePasses, probe?.params?.repeats)} />;
 };
 const CYCLES = {
@@ -94,11 +99,13 @@ export const AfterFoot = ({
   probe, connected, onClose, onAgain, onZero,
 }) => {
   const size = probe?.state !== 'failed' && probe?.result?.size;
+  // A distance has no middle to put a zero at.
+  const zero = size && Object.keys(size.centre).length > 0;
   return (
     <Foot>
       <Button tone="outline" onClick={onClose} className="h-ctl">{t('probe.result.close')}</Button>
-      <Button tone={size ? 'outline' : 'primary'} onClick={onAgain} className="h-ctl">{t(size ? 'probe.size.again' : 'probe.result.again')}</Button>
-      {size ? (
+      <Button tone={zero ? 'outline' : 'primary'} onClick={onAgain} className="h-ctl">{t(size ? 'probe.size.again' : 'probe.result.again')}</Button>
+      {zero ? (
         <Button tone="primary" disabled={!connected} onClick={onZero} className="h-ctl">
           {t('probe.size.zero', { axes: Object.keys(size.centre).map((axis) => `${axis.toUpperCase()}0`).join(' ') })}
         </Button>
@@ -137,7 +144,9 @@ export const ChoiceStep = ({
   if (step === 'areaWay') {
     return <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />;
   }
-  const Chooser = step === 'lie' ? LieChooser : CHOOSERS[method.id];
+  // A distance lies as its two ends: each picked on this step.
+  const lie = pairOf(value) ? PairChooser : LieChooser;
+  const Chooser = step === 'lie' ? lie : CHOOSERS[method.id];
   return <Chooser value={value} onChange={onChange} />;
 };
 
@@ -237,7 +246,7 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
   }
   // A size: what it came out at, nothing to write.
   if (probe?.state !== 'failed' && probe?.result?.size) {
-    return <SizeResult probe={probe} />;
+    return probe.result.size.kind === 'distance' ? <DistanceResult probe={probe} /> : <SizeResult probe={probe} />;
   }
   if (probe?.state === 'failed') {
     const { code, phase } = probe.failure || {};

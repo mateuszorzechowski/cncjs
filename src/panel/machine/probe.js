@@ -1,8 +1,12 @@
 import controller from './controller';
 import { currentToken } from './session';
+import { SHAPES, choiceOf as measureChoiceOf, pairOf } from './measureShapes';
 import { SURFACE } from './surface';
 
 export { SURFACE, surfaceShifts } from './surface';
+export {
+  KINDS, PARTS, SHAPES, pairChoice, pairCrosses, pairOf, partShape, shapeOf, shapeOfKind,
+} from './measureShapes';
 
 /**
  * The probe, from the panel — the server's half is `services/probe` and the
@@ -74,58 +78,6 @@ export const MAP_TOOLS = [
  * the measurement is asked with an area and grid as well as its choice, so a
  * device that joins it measures the same.
  */
-/*
- * Pomiar (Mateusz, 2026-10-03: *"odpada jeden przycisk na każdy z tych
- * elementów"*): one method, what is measured chosen first (`KINDS`), then
- * how it lies — from inside or outside, a width's axis too. Both steps set
- * one choice, the shape, the server's `size` strategy's `SHAPES`.
- */
-export const KINDS = [
-  { id: 'circle', key: 'probe.kind.circle', note: 'probe.kind.circleNote' },
-  { id: 'rect', key: 'probe.kind.rect', note: 'probe.kind.rectNote' },
-  { id: 'width', key: 'probe.kind.width', note: 'probe.kind.widthNote' },
-  { id: 'slot', key: 'probe.kind.slot', note: 'probe.kind.slotNote' },
-  { id: 'edge', key: 'probe.kind.edge', note: 'probe.kind.edgeNote' },
-];
-
-export const SHAPES = [
-  { id: 'circle-inside', kind: 'circle', key: 'probe.shape.circleInside', side: 'inside', place: 'probe.place.hole' },
-  { id: 'circle-outside', kind: 'circle', key: 'probe.shape.circleOutside', side: 'outside', place: 'probe.place.boss' },
-  { id: 'rect-inside', kind: 'rect', key: 'probe.shape.rectInside', side: 'inside', place: 'probe.place.pocket' },
-  { id: 'rect-outside', kind: 'rect', key: 'probe.shape.rectOutside', side: 'outside', place: 'probe.place.boss' },
-  // At an angle (the server's `strategies/turned`): four sides at two points each.
-  { id: 'rect-inside-turned', kind: 'rect', key: 'probe.shape.rectInsideTurned', side: 'inside', place: 'probe.place.pocket' },
-  { id: 'rect-outside-turned', kind: 'rect', key: 'probe.shape.rectOutsideTurned', side: 'outside', place: 'probe.place.boss' },
-  { id: 'groove-x', kind: 'width', key: 'probe.shape.grooveX', side: 'inside', axis: 'x', place: 'probe.place.groove' },
-  { id: 'groove-y', kind: 'width', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
-  { id: 'bar-x', kind: 'width', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
-  { id: 'bar-y', kind: 'width', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
-  // A circle's ovality (Mateusz, 2026-10-05: the oval is the circle's check, not a shape of its own): the ellipse
-  // through eight touches, its two axes and their angle (the server's `strategies/oval`).
-  { id: 'oval-inside', kind: 'circle', key: 'probe.shape.ovalInside', side: 'inside', place: 'probe.place.hole' },
-  { id: 'oval-outside', kind: 'circle', key: 'probe.shape.ovalOutside', side: 'outside', place: 'probe.place.boss' },
-  // A slot — a fasolka — cut or standing, along the axes or turned (`strategies/slot`).
-  { id: 'slot-inside', kind: 'slot', key: 'probe.shape.slotInside', side: 'inside', place: 'probe.place.slot' },
-  { id: 'slot-outside', kind: 'slot', key: 'probe.shape.slotOutside', side: 'outside', place: 'probe.place.boss' },
-  // An edge, by the way it faces: the front faces −Y (the server's `strategies/edge`).
-  { id: 'edge-front', kind: 'edge', key: 'probe.shape.edgeFront', side: 'outside', place: 'probe.place.edge' },
-  { id: 'edge-back', kind: 'edge', key: 'probe.shape.edgeBack', side: 'outside', place: 'probe.place.edge' },
-  { id: 'edge-left', kind: 'edge', key: 'probe.shape.edgeLeft', side: 'outside', place: 'probe.place.edge' },
-  { id: 'edge-right', kind: 'edge', key: 'probe.shape.edgeRight', side: 'outside', place: 'probe.place.edge' },
-];
-
-export const shapeOf = (id) => SHAPES.find((one) => one.id === id) ?? SHAPES[0];
-
-/** The shape a kind picked comes to: the one chosen if it is of that kind, else the kind's first — lying the same way where it can. */
-export const shapeOfKind = (kind, now) => {
-  const was = shapeOf(now);
-  if (was.kind === kind) {
-    return was.id;
-  }
-  const same = SHAPES.find((one) => one.kind === kind && one.side === was.side);
-  return (same ?? SHAPES.find((one) => one.kind === kind)).id;
-};
-
 // What is measured, then how it lies.
 const MEASURE_STEPS = ['method', 'choose', 'lie', 'prepare', 'wire', 'position', 'measure', 'result'];
 
@@ -192,11 +144,18 @@ export const optionsFor = (method, chosen, surface = SURFACE, area = null) => {
   if (method?.asks) {
     return { ...area, [method.choice.option]: chosen };
   }
+  const pair = pairOf(chosen);
+  if (pair) {
+    return { [method.choice.option]: 'distance', ...pair };
+  }
   return {
     ...(method?.choice ? { [method.choice.option]: chosen } : {}),
     ...(usesSurface(method, chosen) ? { on: surface.on, z0: surface.z0 } : {}),
   };
 };
+
+/** The wizard's choice back from what a measurement was asked with: a distance's two ends in one. */
+export const choiceOf = (method, options = {}) => measureChoiceOf(options?.[method?.choice?.option], options);
 
 /*
  * Where the wizard is. The first four are the operator's own, one after
@@ -239,6 +198,10 @@ export const stepBeside = (method, id, by) => {
 export const wizardStep = (local, probe) => {
   if (probe?.state === 'running') {
     return 'measure';
+  }
+  // A distance's first end measured: into place over the second.
+  if (probe?.state === 'between') {
+    return 'position';
   }
   if (probe?.state === 'measured' || probe?.state === 'failed') {
     return 'result';
@@ -369,6 +332,11 @@ export const fetchBentProgram = async (port, of) => {
 /** The loaded program bent to the height map, or as written. */
 export const bendProgram = (on) => {
   controller.command('height-map:use', Boolean(on));
+};
+
+/** A distance's second end: measured from where the tool was jogged to. */
+export const nextProbe = () => {
+  controller.command('probe:next');
 };
 
 /** The Z plate is under the tool: the measurement standing for it goes on. */

@@ -476,7 +476,10 @@
     "arcPlane": "Łuk poza płaszczyzną XY (linia {{line}}).",
     "badArc": "Łuk, którego nie da się narysować (linia {{line}}).",
     "spacingTooWide": "Odstęp punktów jest nie mniejszy niż przybliżony rozmiar: punkt trafiłby w sąsiednią ściankę albo dojazd do niego w nią wjechał. Zmniejsz odstęp.",
-    "badShape": "Nieznany kształt pomiaru."
+    "badShape": "Nieznany kształt pomiaru.",
+    "badPart": "Odległość mierzy się między otworami, czopami albo krawędziami.",
+    "edgesCrossing": "Te krawędzie są do siebie prostopadłe: spotykają się w narożniku, nie ma między nimi odległości.",
+    "notBetween": "Nie ma zmierzonego pierwszego elementu odległości."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -739,7 +742,9 @@
       "major": "Oś długa",
       "minor": "Oś krótka",
       "length": "Długość",
-      "across": "Szerokość"
+      "across": "Szerokość",
+      "dist": "odległość",
+      "par": "odchyłka od równoległości"
     },
     "range": {
       "m15": "15 min",
@@ -785,7 +790,8 @@
       "mapSaved": "Zapisano mapę wysokości",
       "size": "{{method}}: {{sizes}} {{unit}}{{spread}} · kulka {{ball}}",
       "spread": " · rozrzut {{list}} ({{n}}×)",
-      "failed": "Nieudane: {{method}} — {{why}}"
+      "failed": "Nieudane: {{method}} — {{why}}",
+      "first": "{{method}}: pierwszy zmierzony · {{sizes}}"
     }
   },
   "grbl": {
@@ -1911,7 +1917,8 @@
       "ovalInside": "Otwór — owalizacja",
       "ovalOutside": "Czop — owalizacja",
       "slotInside": "Fasolka wycięta",
-      "slotOutside": "Fasolka wystająca"
+      "slotOutside": "Fasolka wystająca",
+      "distance": "Odległość"
     },
     "shapeLabel": "Jak leży",
     "size": {
@@ -1969,7 +1976,27 @@
       "edge": "Krawędź i kąt",
       "edgeNote": "Bok detalu w dwóch punktach: kąt do osi i gdzie leży krawędź.",
       "slot": "Fasolka",
-      "slotNote": "Rowek z zaokrąglonymi końcami, wycięty albo wystający, w osiach albo obrócony: długość, szerokość, kąt i środek."
+      "slotNote": "Rowek z zaokrąglonymi końcami, wycięty albo wystający, w osiach albo obrócony: długość, szerokość, kąt i środek.",
+      "distance": "Odległość",
+      "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami: odległość, a dla dwóch środków też w X i Y oraz kąt."
+    },
+    "distance": {
+      "first": "Pierwszy",
+      "second": "Drugi",
+      "setupLabel": "Ruchy którego elementu",
+      "toFirst": "Pierwszy: {{what}}",
+      "toSecond": "Pierwszy zmierzony. Drugi: {{what}} — podjedź do niego jogiem.",
+      "startSecond": "Mierz drugi",
+      "centres": "Odległość środków",
+      "fromEdge": "Środek od krawędzi",
+      "edges": "Odległość krawędzi",
+      "par": "Odchyłka od równoległości",
+      "along": "Różnica {{axis}}",
+      "angle": "Kąt linii środków",
+      "centresWhy": "Od środka pierwszego do środka drugiego. Różnice X i Y: drugi minus pierwszy. Kąt linii środków od osi X, przeciwnie do ruchu wskazówek zegara.",
+      "fromEdgeWhy": "Od środka do krawędzi, prostopadle do niej — także gdy krawędź leży pod kątem.",
+      "edgesWhy": "Prostopadle do krawędzi, średnia z obu stron. Odchyłka od równoległości: o ile drugą krawędź obrócono względem pierwszej.",
+      "note": "Zero się nie zmienia. Wynik jest zapisany w Dzienniku."
     }
   }
 }

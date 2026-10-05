@@ -476,7 +476,10 @@
     "arcPlane": "An arc outside the XY plane (line {{line}}).",
     "badArc": "An arc that cannot be drawn (line {{line}}).",
     "spacingTooWide": "The points' spacing is no less than the rough size: a point would meet the next wall, or the way to it run into one. Make the spacing smaller.",
-    "badShape": "Unknown shape to measure."
+    "badShape": "Unknown shape to measure.",
+    "badPart": "A distance is measured between holes, studs or edges.",
+    "edgesCrossing": "These edges are square to each other: they meet in a corner, there is no distance between them.",
+    "notBetween": "No first feature of a distance has been measured."
   },
   "notice": {
     "warning": "Warning",
@@ -739,7 +742,9 @@
       "major": "Long axis",
       "minor": "Short axis",
       "length": "Length",
-      "across": "Width"
+      "across": "Width",
+      "dist": "distance",
+      "par": "off parallel"
     },
     "range": {
       "m15": "15 min",
@@ -785,7 +790,8 @@
       "mapSaved": "Height map saved",
       "size": "{{method}}: {{sizes}} {{unit}}{{spread}} · ball {{ball}}",
       "spread": " · spread {{list}} ({{n}}×)",
-      "failed": "Failed: {{method}} — {{why}}"
+      "failed": "Failed: {{method}} — {{why}}",
+      "first": "{{method}}: first measured · {{sizes}}"
     }
   },
   "grbl": {
@@ -1911,7 +1917,8 @@
       "ovalInside": "Hole — ovality",
       "ovalOutside": "Stud — ovality",
       "slotInside": "Slot cut",
-      "slotOutside": "Slot standing"
+      "slotOutside": "Slot standing",
+      "distance": "Distance"
     },
     "shapeLabel": "How it lies",
     "size": {
@@ -1969,7 +1976,27 @@
       "edge": "Edge and angle",
       "edgeNote": "A side of the part at two points: its angle to the axis and where the edge lies.",
       "slot": "Slot",
-      "slotNote": "A slot with round ends, cut or standing, along the axes or turned: length, width, angle and middle."
+      "slotNote": "A slot with round ends, cut or standing, along the axes or turned: length, width, angle and middle.",
+      "distance": "Distance",
+      "distanceNote": "Between two features — holes, studs or edges: the distance, and for two centres X, Y and the angle too."
+    },
+    "distance": {
+      "first": "First",
+      "second": "Second",
+      "setupLabel": "Moves of which feature",
+      "toFirst": "First: {{what}}",
+      "toSecond": "First measured. Second: {{what}} — jog over to it.",
+      "startSecond": "Measure second",
+      "centres": "Centre to centre",
+      "fromEdge": "Centre from the edge",
+      "edges": "Edge to edge",
+      "par": "Off parallel",
+      "along": "Difference {{axis}}",
+      "angle": "Angle of the line of centres",
+      "centresWhy": "From the first centre to the second. X and Y differences: the second less the first. The line of centres from the X axis, anticlockwise.",
+      "fromEdgeWhy": "From the centre to the edge, square to it — also when the edge lies at an angle.",
+      "edgesWhy": "Square to the edges, the mean from both sides. Off parallel: how far the second edge is turned against the first.",
+      "note": "The zero is not changed. The result is in the Journal."
     }
   }
 }

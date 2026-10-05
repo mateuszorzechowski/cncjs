@@ -2503,17 +2503,22 @@ class GrblController {
         return null;
       }
       const {
-        method, options, params, wcs, run, step, marks, partial, result, failure,
+        method, options, params, wcs, run, step, marks, partial, result, failure, part, first,
       } = this.probe;
       let state = 'measured';
       if (run) {
         state = 'running';
       } else if (failure) {
         state = 'failed';
+      } else if (first && !result) {
+        // A distance's first feature measured: the operator jogs to the second.
+        state = 'between';
       }
       // The figures it was measured with, so every device draws the cycle that runs.
       return {
         method, options, params, wcs, state, step, marks, partial: partial ?? null, result, failure,
+        // A distance's: which feature is measured, and the first's own figures once it is.
+        ...(part ? { part, first: first ? { kind: first.kind, size: first.size } : null } : {}),
       };
     }
 
@@ -2523,21 +2528,35 @@ class GrblController {
      * operator and had confirmed before asking.
      */
     startProbe(method, options) {
-      const strategy = STRATEGIES[method];
-      const params = probeSettings.params();
       const modal = this.runner.getModalGroup();
-      const mpos = this.reportedMm(this.runner.getMachinePosition());
-      const wpos = this.reportedMm(this.runner.getWorkPosition());
-
-      const wco = _.mapValues(mpos, (v, axis) => v - wpos[axis]);
-
       this.probe = {
-        method, options, params, wcs: modal.wcs, start: mpos, wco, run: null, step: null, marks: [], result: null, failure: null,
+        method, options, wcs: modal.wcs, marks: [], result: null, failure: null,
+        // A distance measures its two features one after the other (`size`).
+        ...(options?.shape === 'distance' ? { part: 'a', first: null } : {}),
       };
       this.note({ level: 'info', source: 'server', event: 'probe', code: 'start', data: { method, ...options } });
+      this.runProbe();
+    }
+
+    /**
+     * Run the measurement in `this.probe` from where the tool stands — a
+     * distance's second feature too, with the figures as they are now.
+     */
+    runProbe() {
+      const { method, options, part } = this.probe;
+      const strategy = STRATEGIES[method];
+      const params = probeSettings.params();
+      const mpos = this.reportedMm(this.runner.getMachinePosition());
+      const wpos = this.reportedMm(this.runner.getWorkPosition());
+      const modal = this.runner.getModalGroup();
+
+      const wco = _.mapValues(mpos, (v, axis) => v - wpos[axis]);
+      Object.assign(this.probe, {
+        params, start: mpos, wco, run: null, step: null,
+      });
 
       this.probe.run = createProbeRun({
-        steps: strategy.steps(params, options, { start: mpos, wco }),
+        steps: strategy.steps(params, options, { start: mpos, wco, ...(part ? { part } : {}) }),
         start: mpos,
         wco,
         restore: `${modal.distance || 'G90'} ${modal.units || 'G21'}`,
@@ -2582,16 +2601,28 @@ class GrblController {
         // A size: for the screen and the journal (Mateusz, 2026-10-03). Its middle in the system it was
         // measured in, as the operator reads positions — and, if asked with `probe:apply`, the zero put
         // there, X0 Y0 or the one axis a width has (Mateusz, 2026-10-05: the centres are Pomiar's now).
-        const found = strategy.size(params, options, outcome.seen);
+        const found = strategy.size(params, options, outcome.seen, { part: this.probe.part, first: this.probe.first });
+        if (found.half) {
+          // A distance's first feature: kept until the operator has jogged to the second (`probe:next`).
+          this.probe.first = found.half;
+          this.probe.part = 'b';
+          this.note({
+            level: 'info', source: 'server', event: 'probe', code: 'first', data: { method, ...options, size: found.half.size },
+          });
+          this.emit('probe:state', this.probeReport());
+          return;
+        }
         const size = { ...found, centre: _.mapValues(found.centre, (v, axis) => v - (wco[axis] || 0)) };
-        this.probe.result = { size, ...this.zeroAt(found.centre, wcs) };
+        // A distance is between two features: no middle to put a zero at.
+        const zero = _.isEmpty(found.centre) ? {} : this.zeroAt(found.centre, wcs);
+        this.probe.result = { size, ...zero };
         this.note({
           level: 'info',
           source: 'server',
           event: 'probe',
           code: 'size',
           data: {
-            method, ...options, wcs, size: size.size, spread: size.spread, centre: size.centre, off: size.off, turn: size.turn, passes: size.each.length, ball: params.ballDiameter,
+            method, ...options, wcs, size: size.size, spread: size.spread, centre: size.centre, off: size.off, turn: size.turn, parts: size.parts, passes: size.each.length, ball: params.ballDiameter,
           },
         });
       } else {
@@ -3283,6 +3314,36 @@ class GrblController {
 
           this.endProbeStage();
           this.startProbe(method, options);
+        },
+        /**
+         * A distance's second feature (`probe:next`), the tool jogged over it
+         * after the first was measured: refused as a start would be.
+         */
+        'probe:next': () => {
+          if (!this.probe || this.probe.run || !this.probe.first || this.probe.result) {
+            this.refuse(cmd, 'not-between');
+            return;
+          }
+          if (this.runner.isAlarm()) {
+            this.refuse(cmd, 'alarm');
+            return;
+          }
+          if (this.jogging.dir) {
+            this.refuse(cmd, 'jogging');
+            return;
+          }
+          if (!this.runner.isIdle()) {
+            this.refuse(cmd, 'not-idle');
+            return;
+          }
+          if (String(this.runner.state?.status?.pinState || '').includes('P')) {
+            this.refuse(cmd, 'probe-triggered');
+            return;
+          }
+          if (!this.claimMotion(cmd)) {
+            return;
+          }
+          this.runProbe();
         },
         /**
          * The operator's hands done — a height map's Z plate moved under the

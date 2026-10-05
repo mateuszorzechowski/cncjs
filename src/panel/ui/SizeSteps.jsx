@@ -87,6 +87,14 @@ const MARKS = {
     </>
   ),
   bar: outside('M15 8 H33 V40 H15 Z'),
+  // A distance: two holes in the work, the measure between their centres in the accent.
+  distance: (
+    <>
+      <path d={`${AROUND}M8 24 A5 5 0 1 0 18 24 A5 5 0 1 0 8 24 Z M30 24 A5 5 0 1 0 40 24 A5 5 0 1 0 30 24 Z`} fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+      <path d="M13 24 H35" className="stroke-acc" strokeWidth={1.6} />
+      <path d="M16 21.5 L13 24 L16 26.5 Z M32 21.5 L35 24 L32 26.5 Z" className="fill-acc" />
+    </>
+  ),
   // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it —
   // spaced as the others, a tip on the edge, the base 2 off the ball's row.
   edge: (
@@ -115,13 +123,14 @@ const ShapeMarks = ({ shape }) => {
   return <g transform={one.axis === 'y' ? 'rotate(90 24 24)' : undefined}>{one.side === 'inside' ? MARKS.groove : MARKS.bar}</g>;
 };
 
-const ShapePicture = ({ shape }) => (
+export const ShapePicture = ({ shape }) => (
   <svg viewBox="0 0 48 48" aria-hidden="true" className="h-20 w-24 overflow-visible">
     <ShapeMarks shape={shape} />
   </svg>
 );
 
-const Tiles = ({
+// `disabled` on an item: one that cannot go with what is chosen elsewhere — a distance's edge square to the other.
+export const Tiles = ({
   label, items, on, onPick, className,
 }) => (
   <div className={`grid gap-3 ${className}`} role="group" aria-label={label}>
@@ -130,8 +139,9 @@ const Tiles = ({
         key={item.id}
         type="button"
         aria-pressed={item.id === on}
+        disabled={item.disabled}
         onClick={() => onPick(item.id)}
-        className={`flex flex-col items-center gap-3 rounded-ctl border p-4 text-center ${item.id === on ? 'border-acc bg-accS' : 'border-line bg-field hover:border-acc'}`}
+        className={`flex flex-col items-center gap-3 rounded-ctl border p-4 text-center disabled:opacity-45 ${item.id === on ? 'border-acc bg-accS' : 'border-line bg-field enabled:hover:border-acc'}`}
       >
         <ShapePicture shape={item.shape} />
         <span className="text-base font-semibold text-ink">{t(item.key)}</span>
