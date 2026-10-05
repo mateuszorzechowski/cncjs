@@ -2039,5 +2039,21 @@
       "zWhy": "Z najniższego punktu kulki w układzie — prawdziwe, jeśli Z0 ustawiono tą samą sondą. Zera z tego nie zapisuję: dla narzędzia o innej długości byłoby złe.",
       "note": "Zero się nie zmienia. Wynik jest zapisany w Dzienniku."
     }
+  },
+  "probe2": {
+    "wire": {
+      "mustTest": "Dalej odblokuje się, gdy wejście sondy zaświeci i zgaśnie: dotknij płytką narzędzia albo wychyl trzpień sondy i puść. Bez tego, z odpiętym przewodem, maszyna dojedzie aż do limitu dojazdu.",
+      "testHere": "Przewód nie sprawdzony na tym urządzeniu: dotknij płytką narzędzia albo wychyl trzpień sondy i puść — wtedy Mierz się odblokuje."
+    },
+    "surface": {
+      "warn": "Mierzysz na: {{on}}, Z0 na: {{z0}} — zero trafi o grubość materiału dalej niż miejsce pomiaru. Po zapisie albo odrzuceniu wybór wraca do „tu, gdzie mierzysz”."
+    },
+    "result": {
+      "unlock": "Odblokuj ($X)"
+    },
+    "failure": {
+      "touchedCorner": "{{axis}}: frez zjechał na płytkę zamiast obok niej. Nic nie zapisano. Zwiększ „Przejazd w bok od startu” albo zacznij bliżej narożnika.",
+      "touchedProbe": "{{axis}}: sonda dotknęła materiału w ruchu, który miał przejść obok — ścianka na drodze albo zejście na detal. Nic nie zapisano. Zacznij bliżej środka albo krawędzi, zmniejsz „Odstęp punktów na krawędzi” albo zwiększ „Odsunięcie za bok”."
+    }
   }
 }

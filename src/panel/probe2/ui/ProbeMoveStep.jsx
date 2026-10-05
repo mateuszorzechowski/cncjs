@@ -37,7 +37,7 @@ const MOVES = {
  * another screen — with the button that goes on.
  */
 const ProbeMoveStep = ({
-  machine, method, choice, feeling, lit, jogging, onJogging, onBack, leaving = null, onNext, onMeasure, texts = {}, part = 'a',
+  machine, method, choice, feeling, lit, tested = true, warning = null, jogging, onJogging, onBack, leaving = null, onNext, onMeasure, texts = {}, part = 'a',
 }) => {
   const phone = useIsPhone();
   // Joined, the way back is out of the wizard (`leaving`, whose it is) — on a phone asked first, in a sheet.
@@ -50,7 +50,8 @@ const ProbeMoveStep = ({
   const place = pair ? shapeOf(pair[part]).place : method.choice?.list.find((one) => one.id === choice)?.place ?? method.place;
   let onward = null;
   if (method.touches) {
-    onward = <Button tone="go" disabled={!machine.canProbe || lit !== false} onClick={onMeasure} className="h-ctl">{t(pair && part === 'b' ? 'probe.distance.startSecond' : method.start)}</Button>;
+    // The wire seen lit and clear on this device first (audit K2): a device that joined tests it here.
+    onward = <Button tone="go" disabled={!machine.canProbe || lit !== false || !tested} onClick={onMeasure} className="h-ctl">{t(pair && part === 'b' ? 'probe.distance.startSecond' : method.start)}</Button>;
   } else if (!feeling) {
     // Into place, the paper goes on to be felt for.
     onward = <Button tone="primary" onClick={onNext} className="h-ctl">{t('probe.next')}</Button>;
@@ -70,6 +71,8 @@ const ProbeMoveStep = ({
       )}
       {phone ? paper : null}
       {method.touches && lit ? <Notice>{t('probe.position.clipOn')}</Notice> : null}
+      {method.touches && !lit && !tested ? <Notice>{t('probe2.wire.testHere')}</Notice> : null}
+      {warning}
       {!machine.canProbe ? <p className="m-0 text-note text-mut">{t('probe.position.notNow')}</p> : null}
       <Foot back={back} backLabel={leaving ? t('probe.join.leave') : null}>
         {phone ? <Button tone="outline" onClick={() => onJogging(true)} className="h-ctl">{t('nav.jog')}</Button> : null}

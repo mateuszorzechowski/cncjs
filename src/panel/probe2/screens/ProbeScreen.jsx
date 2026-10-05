@@ -9,16 +9,16 @@ import useHeightMapAsk from '../ui/useHeightMapAsk';
 import useProbeWizard from '../ui/useProbeWizard';
 import { useBackSteps } from '../../ui/backStack';
 import ProbeJoin from '../ui/ProbeJoin';
-import Notice from '../../ui/Notice';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
+import SurfaceWarning from '../ui/SurfaceWarning';
 import {
   AfterFoot, ChoiceStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
-import StepTrack from '../ui/StepTrack';
+import ProbeTrack from '../ui/ProbeTrack';
 import controller from '../../machine/controller';
 import { controlledStop } from '../../machine/commands';
 import {
-  applyProbe, choiceOf, discardProbe, fetchProbe, methodOf, nextProbe, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
+  SURFACE, applyProbe, choiceOf, discardProbe, fetchProbe, figuresOf, methodOf, nextProbe, optionsFor, saveProbe, startProbe, stepBeside, wireOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../../ui/shell';
@@ -75,11 +75,14 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     machine, method, choice, surface, area: heightMap.area, onArea: heightMap.join, step, feeling, ask, onAsked, setPicked, setChosen, setSurface, setLocal, setJogging,
   });
 
+  // The wire seen lit — the plate touched to the tool, the stylus pushed — on its step or into place (a device that joined).
   useEffect(() => {
-    if (step === 'wire' && lit) {
+    if ((step === 'wire' || step === 'position') && lit) {
       setTouched(true);
     }
   }, [step, lit]);
+  // Tested: seen lit, and clear again. A firmware that reports no pins cannot be tested, and is said so on the wire step.
+  const tested = lit === null || (touched && lit === false);
 
   const pick = (id) => {
     const uses = kept?.methods?.[id]?.fields ?? [];
@@ -108,12 +111,14 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const between = probe?.state === 'between';
   // Back from over a distance's second end: the first measured again, from its own place (`again`, below).
   const backFromPlace = () => (between ? again() : go(-1));
-  const measure = () => (between ? nextProbe() : startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name));
+  // With the figures the operator confirmed: refused if another device changed one since (audit K8).
+  const measure = () => (between ? nextProbe() : startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name, figuresOf(kept, fields)));
+
+  // In an alarm, unlocked only when asked (audit K10, I12): see `AfterFoot`.
+  const alarm = machine.status?.word === 'Alarm';
+  const unlock = () => controller.command('unlock');
 
   const again = () => {
-    if (machine.status?.word === 'Alarm') {
-      controller.command('unlock');
-    }
     // Tried again here even if it was started on another device: its method and choice, then.
     const again = methodOf(probe?.method ?? picked);
     setMode('own');
@@ -131,29 +136,16 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     } else {
       discardProbe();
     }
+    // Where Z0 goes, back to where it is measured: a choice for one measurement, not for the next (audit K9).
+    setSurface(SURFACE);
     setMode(null);
     setPicked(null);
     setLocal('method');
   };
 
-  const track = (
-    // The card's caption, the steps and the method in one row when wide
-    // (review note, 2026-09-30: *"dużo miejsca to zajmuje"*); on a phone the
-    // steps under the other two.
-    <Card>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <h2 className="m-0 text-cap font-semibold uppercase tracking-[0.1em] text-mut">{t('probe.title')}</h2>
-        <StepTrack
-          steps={stepsOf(method).map((s) => ({ ...s, name: t(s.key) }))}
-          current={step}
-          label={t('probe.steps')}
-          className="order-3 w-full @3xl/shell:order-none @3xl/shell:w-auto @3xl/shell:flex-1"
-        />
-        {method ? <span className="ml-auto font-num text-note text-mut @3xl/shell:ml-0">{t(method.key)}</span> : null}
-        {takenBy ? <div className="order-4 w-full"><Notice>{t('probe.join.taken', { where: takenBy })}</Notice></div> : null}
-      </div>
-    </Card>
-  );
+  const surfaceWarning = <SurfaceWarning method={method} choice={choice} surface={surface} />;
+
+  const track = <ProbeTrack method={method} step={step} takenBy={takenBy} />;
 
   // The steps with the jog beside them: the height map's area, and into place (or the paper felt for).
   if (step === 'area' || step === 'position' || feeling) {
@@ -175,6 +167,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
             onMeasure={measure}
             texts={texts}
             part={probe?.part}
+            tested={tested}
+            warning={surfaceWarning}
           />
         )}
       </div>
@@ -183,6 +177,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
 
   let body = null;
   let foot = null;
+  // The plate the measurement ran with, as the server says — not this device's copy, which another may have changed (K8).
+  const plate = fieldText(probe?.params?.plateThickness ?? kept?.params?.plateThickness, 'plateThickness', units.rule);
   /*
    * Wide, the figures are a card of their own beside the drawing's, standing
    * at the top and running out under a fade at the foot (review note,
@@ -246,7 +242,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     body = <WireStep lit={lit} touched={touched} plate={wire.plate} how={wire.how} stuck={wire.stuck} />;
     foot = (
       <Foot back={() => go(-1)}>
-        <Button tone="primary" onClick={() => go(1)} className="h-ctl">
+        <Button tone="primary" disabled={!tested} onClick={() => go(1)} className="h-ctl">
           {t('probe.next')}
         </Button>
       </Foot>
@@ -259,10 +255,15 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       </Foot>
     );
   } else if (probe?.state === 'failed' || probe?.result?.size) {
-    body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
-    foot = <AfterFoot probe={probe} connected={machine.connected} onClose={() => finish(false)} onAgain={again} onZero={() => finish(true)} />;
+    body = <ResultStep probe={probe} machine={machine} plate={plate} />;
+    foot = <AfterFoot probe={probe} connected={machine.connected} alarm={alarm} onClose={() => finish(false)} onAgain={again} onZero={() => finish(true)} onUnlock={unlock} />;
   } else {
-    body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
+    body = (
+      <>
+        {surfaceWarning}
+        <ResultStep probe={probe} machine={machine} plate={plate} />
+      </>
+    );
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.discard')}</Button>
@@ -297,7 +298,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
         // A new step starts at its top, not where the last one was scrolled to — a method low in the list on a phone.
         <FadeScroller key={step}>
           <div className="flex min-h-full flex-col">
-            <Card label={choosing ? t('probe.title') : null} className="flex-1" bodyClassName="gap-3">
+            <Card label={choosing ? t('nav.probe2') : null} className="flex-1" bodyClassName="gap-3">
               {body}
               {foot}
             </Card>

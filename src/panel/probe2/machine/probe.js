@@ -254,6 +254,26 @@ const FAILURES = {
 
 export const failureKey = (code) => FAILURES[code] || 'probe.failure.other';
 
+/*
+ * A touch where none was looked for, said for what was moving (audit
+ * 2026-10-05, I9): the L plate's tool coming down on the plate's top, or the
+ * 3D probe meeting the work on a way that was to pass it — not one sentence
+ * about a plate for both, naming a figure neither has.
+ */
+const TOUCHED = { corner: 'probe2.failure.touchedCorner', measure: 'probe2.failure.touchedProbe' };
+
+/** The failure's words for the method that failed — the server's name for it. */
+export const failureKeyOf = (method, code) => (code === 'touched' && TOUCHED[method]) || failureKey(code);
+
+/**
+ * The figures a start goes with, as the server keeps them (mm) and the
+ * operator confirmed them on Przygotowanie: the server refuses the start if
+ * one was changed since on another device (audit K8, `figures-changed`).
+ */
+export const figuresOf = (kept, fields) => (kept?.params
+  ? Object.fromEntries(fields.filter((name) => name in kept.params).map((name) => [name, kept.params[name]]))
+  : undefined);
+
 const headers = () => {
   const token = currentToken();
   return {

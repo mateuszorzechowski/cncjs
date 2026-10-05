@@ -2039,5 +2039,21 @@
       "zWhy": "The Z of the ball's lowest point in the system — true if Z0 was set with the same probe. No zero is written from it: for a tool of another length it would be wrong.",
       "note": "The zero is not changed. The result is in the Journal."
     }
+  },
+  "probe2": {
+    "wire": {
+      "mustTest": "Next unlocks once the probe input lights and goes out again: touch the plate to the tool, or push the probe's stylus aside and let go. Without that, with the lead off, the machine travels the whole limit.",
+      "testHere": "The lead is not tested on this device: touch the plate to the tool, or push the stylus aside and let go — Measure then unlocks."
+    },
+    "surface": {
+      "warn": "Measured on: {{on}}, Z0 on: {{z0}} — the zero goes the stock's thickness away from where it is measured. After Save or Discard the choice goes back to where it is measured."
+    },
+    "result": {
+      "unlock": "Unlock ($X)"
+    },
+    "failure": {
+      "touchedCorner": "{{axis}}: the tool came down onto the plate instead of beside it. Nothing was saved. Increase the side travel from the start, or start nearer the corner.",
+      "touchedProbe": "{{axis}}: the probe touched the work on a move meant to pass it — a wall in the way, or coming down onto the part. Nothing was saved. Start nearer the middle or the edge, reduce the point spacing, or increase the clearance past the side."
+    }
   }
 }

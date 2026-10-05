@@ -25,7 +25,7 @@ import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
 import {
-  METHODS, PAIRS, SURFACE, failureKey, pairOf, phaseWords,
+  METHODS, PAIRS, SURFACE, failureKeyOf, pairOf, phaseWords,
 } from '../machine/probe';
 import { paperScene } from '../machine/paperCycle';
 import { drawnPasses, sizeCycle } from '../machine/sizeCycle';
@@ -98,7 +98,7 @@ export const Foot = ({ back, backLabel = null, children }) => (
  * size's middle may become the zero, X0 Y0 or a width's one axis (2026-10-05: the centres are in Pomiar).
  */
 export const AfterFoot = ({
-  probe, connected, onClose, onAgain, onZero,
+  probe, connected, alarm = false, onClose, onAgain, onZero, onUnlock,
 }) => {
   const size = probe?.state !== 'failed' && probe?.result?.size;
   // Only where the server found a zero to put: a distance has no middle, a surface's Z is the probe's (`zero: false`).
@@ -106,7 +106,13 @@ export const AfterFoot = ({
   return (
     <Foot>
       <Button tone="outline" onClick={onClose} className="h-ctl">{t('probe.result.close')}</Button>
-      <Button tone={zero ? 'outline' : 'primary'} onClick={onAgain} className="h-ctl">{t(size ? 'probe.size.again' : 'probe.result.again')}</Button>
+      {/*
+        * In an alarm, unlocking is a button of its own, said: trying again no
+        * longer sends `$X` unasked — the alarm may be one that lost the
+        * position, not the probe's miss (audit 2026-10-05, K10, I12).
+        */}
+      {alarm ? <Button tone="primary" disabled={!connected} onClick={onUnlock} className="h-ctl">{t('probe2.result.unlock')}</Button> : null}
+      <Button tone={zero || alarm ? 'outline' : 'primary'} disabled={alarm} onClick={onAgain} className="h-ctl">{t(size ? 'probe.size.again' : 'probe.result.again')}</Button>
       {zero ? (
         <Button tone="primary" disabled={!connected} onClick={onZero} className="h-ctl">
           {t('probe.size.zero', { axes: Object.keys(size.centre).map((axis) => `${axis.toUpperCase()}0`).join(' ') })}
@@ -205,11 +211,14 @@ export const WireStep = ({
     <div className="flex flex-col gap-3">
       <p className="m-0 text-base text-ink">{t(how)}</p>
       <ProbeWire lit={lit} plate={plate} />
-      {/* Dalej is never held back (Mateusz, 2026-09-30); an untested wire is said
-        * instead, beside the pin when wide, so the step still needs no scroll. */}
+      {/*
+        * Dalej waits for the wire to be seen lit and clear again (audit
+        * 2026-10-05, K2: a sentence did not stop the tool going the whole
+        * limit into the work with the clip off) — said beside the pin when wide.
+        */}
       <div className="grid gap-3 @3xl/shell:grid-cols-2">
         <StatTile label={t('diag.pin.probe')} value={state} tone={lit ? 'warn' : undefined} />
-        {touched ? null : <Notice>{t('probe.wire.untested')}</Notice>}
+        {touched || lit === null ? null : <Notice>{t('probe2.wire.mustTest')}</Notice>}
       </div>
       {lit && stuck ? <Notice>{t(stuck)}</Notice> : null}
       {lit === null ? <p className="m-0 text-note text-mut">{t('probe.wire.unknown')}</p> : null}
@@ -259,7 +268,7 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
     const at = phaseWords(phase);
     return (
       <Notice>
-        <span>{t(failureKey(code), { code, axis: at.axis })}</span>
+        <span>{t(failureKeyOf(probe.method, code), { code, axis: at.axis })}</span>
       </Notice>
     );
   }
