@@ -2511,13 +2511,13 @@ class GrblController {
       } else if (failure) {
         state = 'failed';
       } else if (first && !result) {
-        // A distance's first feature measured: the operator jogs to the second.
+        // A pair's — a distance's, a corner's — first feature measured: the operator jogs to the second.
         state = 'between';
       }
       // The figures it was measured with, so every device draws the cycle that runs.
       return {
         method, options, params, wcs, state, step, marks, partial: partial ?? null, result, failure,
-        // A distance's: which feature is measured, and the first's own figures once it is.
+        // A pair's: which feature is measured, and the first's own figures once it is.
         ...(part ? { part, first: first ? { kind: first.kind, size: first.size } : null } : {}),
       };
     }
@@ -2531,8 +2531,8 @@ class GrblController {
       const modal = this.runner.getModalGroup();
       this.probe = {
         method, options, wcs: modal.wcs, marks: [], result: null, failure: null,
-        // A distance measures its two features one after the other (`size`).
-        ...(options?.shape === 'distance' ? { part: 'a', first: null } : {}),
+        // A distance or a corner measures its two features one after the other (`size`).
+        ...(STRATEGIES[method].paired?.(options) ? { part: 'a', first: null } : {}),
       };
       this.note({ level: 'info', source: 'server', event: 'probe', code: 'start', data: { method, ...options } });
       this.runProbe();
@@ -2540,7 +2540,7 @@ class GrblController {
 
     /**
      * Run the measurement in `this.probe` from where the tool stands — a
-     * distance's second feature too, with the figures as they are now.
+     * pair's second feature too, with the figures as they are now.
      */
     runProbe() {
       const { method, options, part } = this.probe;
@@ -2603,7 +2603,7 @@ class GrblController {
         // there, X0 Y0 or the one axis a width has (Mateusz, 2026-10-05: the centres are Pomiar's now).
         const found = strategy.size(params, options, outcome.seen, { part: this.probe.part, first: this.probe.first });
         if (found.half) {
-          // A distance's first feature: kept until the operator has jogged to the second (`probe:next`).
+          // A pair's first feature: kept until the operator has jogged to the second (`probe:next`).
           this.probe.first = found.half;
           this.probe.part = 'b';
           this.note({
@@ -3316,7 +3316,7 @@ class GrblController {
           this.startProbe(method, options);
         },
         /**
-         * A distance's second feature (`probe:next`), the tool jogged over it
+         * A pair's second feature (`probe:next`), the tool jogged over it
          * after the first was measured: refused as a start would be.
          */
         'probe:next': () => {

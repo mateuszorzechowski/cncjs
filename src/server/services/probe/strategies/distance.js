@@ -1,25 +1,38 @@
 import { EDGES } from './edge';
 
 /**
- * Pomiar: a distance, one feature to another (Mateusz, 2026-10-05: *"złożenie
- * A + B, wszystkie trzy pary"*) — two holes or studs centre to centre, a
- * hole's centre from an edge, or two edges facing apart or alike. Each
- * feature is measured as Pomiar measures it on its own; the operator jogs
- * from the first to the second between the two.
+ * Pomiar: one feature to another, measured one after the other, the operator
+ * jogging from the first to the second between the two. Each feature is
+ * measured as Pomiar measures it on its own.
  *
- * `PARTS` are the features one end may be. Two edges must run the same way:
- * edges square to each other meet in a corner, not at a distance.
+ * - A distance (Mateusz, 2026-10-05: *"złożenie A + B, wszystkie trzy
+ *   pary"*): two holes or studs centre to centre, a hole's centre from an
+ *   edge, or two edges facing apart or alike. Two edges must run the same
+ *   way: edges square to each other meet in a corner, not at a distance.
+ * - A corner's angle (*"zrób 2"*, the same day): two edges that meet, the
+ *   angle between them and where they meet.
+ *
+ * `PARTS` are the features one end may be, by what is measured.
  */
-export const PARTS = ['circle-inside', 'circle-outside', ...Object.keys(EDGES).map((edge) => `edge-${edge}`)];
+// Lower case: `react-refresh/babel` takes a capitalised name set by a call
+// for a component, and the server then dies on `$RefreshReg$` at start.
+const edgeParts = Object.keys(EDGES).map((edge) => `edge-${edge}`);
+export const PARTS = {
+  distance: ['circle-inside', 'circle-outside', ...edgeParts],
+  angle: edgeParts,
+};
 
 const edgeOf = (part) => EDGES[part.replace(/^edge-/, '')] ?? null;
 
-/** Why the pair `a`, `b` will not do, or null. */
-export const pairRefusal = (a, b) => {
-  if (!PARTS.includes(a) || !PARTS.includes(b)) {
+/** Why the pair `a`, `b` will not do for `shape` (`distance` or `angle`), or null. */
+export const pairRefusal = (shape, a, b) => {
+  if (!PARTS[shape].includes(a) || !PARTS[shape].includes(b)) {
     return 'bad-part';
   }
   const [ea, eb] = [edgeOf(a), edgeOf(b)];
+  if (shape === 'angle') {
+    return ea.axis === eb.axis ? 'edges-parallel' : null;
+  }
   return ea && eb && ea.axis !== eb.axis ? 'edges-crossing' : null;
 };
 
@@ -71,5 +84,36 @@ export const distanceOf = (first, second) => {
     centre: {},
     parts: ends.map(({ kind, size: own }) => ({ kind, size: own })),
     ...(beyond === null ? {} : { beyond }),
+  };
+};
+
+const dot = (u, v) => u.x * v.x + u.y * v.y;
+
+/**
+ * A corner from its two edges, `{ kind, size, centre, parts }`: `size.a`
+ * the angle inside the part between them, in degrees; `size.square` how
+ * far that is off a right angle; `centre` where the two lines meet, machine
+ * coordinates — the corner, for a zero. Each edge comes with its `line`.
+ */
+export const cornerOf = (first, second) => {
+  const [la, lb] = [first.line, second.line];
+  // Along each edge from the corner into the work: the way the other edge's part lies.
+  const into = (line, other) => {
+    const towards = dot(line.dir, other.out) < 0 ? 1 : -1;
+    return { x: line.dir.x * towards, y: line.dir.y * towards };
+  };
+  const [ra, rb] = [into(la, lb), into(lb, la)];
+  const a = Math.acos(Math.max(-1, Math.min(1, dot(ra, rb)))) * DEGREES;
+  // atA + t·dirA = atB + s·dirB, for t.
+  const cross = la.dir.x * lb.dir.y - la.dir.y * lb.dir.x;
+  const t = ((lb.at.x - la.at.x) * lb.dir.y - (lb.at.y - la.at.y) * lb.dir.x) / cross;
+  const size = { a, square: a - 90 };
+  return {
+    kind: 'angle',
+    size,
+    spread: null,
+    each: [size],
+    centre: { x: la.at.x + t * la.dir.x, y: la.at.y + t * la.dir.y },
+    parts: [first, second].map(({ kind, size: own }) => ({ kind, size: own })),
   };
 };

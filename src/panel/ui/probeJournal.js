@@ -11,12 +11,12 @@ import { t } from '../i18n';
 const AXES = ['x', 'y', 'z'];
 // A size's figures: a circle's diameter, an edge's angle, or each axis.
 // A distance's (`dist`, `dx`, `dy`, `par`) too.
-const SIZES = ['dist', 'd', 'a', 'major', 'minor', 'length', 'width', 'dx', 'dy', 'par', ...AXES];
+const SIZES = ['dist', 'd', 'a', 'square', 'major', 'minor', 'length', 'width', 'dx', 'dy', 'par', ...AXES];
 const sizeName = (key) => ({
   d: 'Ø', a: t('journal.detail.angle'), major: t('journal.detail.major'), minor: t('journal.detail.minor'), length: t('journal.detail.length'), width: t('journal.detail.across'),
-  dist: t('journal.detail.dist'), dx: 'ΔX', dy: 'ΔY', par: t('journal.detail.par'),
+  dist: t('journal.detail.dist'), dx: 'ΔX', dy: 'ΔY', par: t('journal.detail.par'), square: t('journal.detail.square'),
 }[key] ?? key.toUpperCase());
-const ANGLES = ['a', 'par'];
+const ANGLES = ['a', 'par', 'square'];
 // An angle in degrees, never converted; a length as `units` says it.
 const figureOf = (key, value, units) => (ANGLES.includes(key) ? `${degrees(value)}°` : units.figure(value));
 // A distance mixes lengths and angles: each said with its own unit.

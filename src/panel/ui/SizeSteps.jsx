@@ -95,6 +95,13 @@ const MARKS = {
       <path d="M16 21.5 L13 24 L16 26.5 Z M32 21.5 L35 24 L32 26.5 Z" className="fill-acc" />
     </>
   ),
+  // A corner: the part standing in it, the angle between its two sides in the accent.
+  angle: (
+    <>
+      <path d="M12 38 V10 H40 V38 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
+      <path d="M26 38 A14 14 0 0 0 12 24" fill="none" className="stroke-acc" strokeWidth={1.6} />
+    </>
+  ),
   // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it —
   // spaced as the others, a tip on the edge, the base 2 off the ball's row.
   edge: (

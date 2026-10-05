@@ -808,6 +808,27 @@ describe('Pomiar: a distance, one feature to another', () => {
     expect(found.size.dist).toBeGreaterThan(9);
   });
 
+  test.each([0, 2, -1.5])('a corner, its front at %s°: the angle inside the part, off square, and where the edges meet', (angle) => {
+    const front = { slants: [{ x: -150, y: -70, angle, z }], start: { x: -130, y: -65, z: -45 } };
+    const left = { boxes: [{ x: [-150, -90], y: [-200, 200], z }], start: { x: -145, y: -40, z: -45 } };
+    const found = between({ shape: 'angle', a: 'edge-front', b: 'edge-left' }, front, left);
+
+    expect(found.kind).toBe('angle');
+    close(found.size, { a: 90 - angle, square: -angle });
+    close(found.centre, { x: -150, y: -70 });
+    // Either way round, the same corner.
+    const back = between({ shape: 'angle', a: 'edge-left', b: 'edge-front' }, left, front);
+    close(back.size, { a: 90 - angle });
+    close(back.centre, { x: -150, y: -70 });
+  });
+
+  test.each([
+    [{ shape: 'angle', a: 'edge-front', b: 'edge-back' }, 'edges-parallel'],
+    [{ shape: 'angle', a: 'edge-front', b: 'circle-inside' }, 'bad-part'],
+  ])('a corner of %j is refused: %s', (options, reason) => {
+    expect(STRATEGIES.measure.check(options, params)).toBe(reason);
+  });
+
   test.each([
     [{ a: 'edge-front', b: 'edge-left' }, 'edges-crossing'],
     [{ a: 'edge-front', b: 'rect-inside' }, 'bad-part'],

@@ -479,7 +479,8 @@
     "badShape": "Unknown shape to measure.",
     "badPart": "A distance is measured between holes, studs or edges.",
     "edgesCrossing": "These edges are square to each other: they meet in a corner, there is no distance between them.",
-    "notBetween": "No first feature of a distance has been measured."
+    "notBetween": "No first feature of a distance has been measured.",
+    "edgesParallel": "These edges run the same way: they never meet in a corner."
   },
   "notice": {
     "warning": "Warning",
@@ -1918,7 +1919,8 @@
       "ovalOutside": "Stud — ovality",
       "slotInside": "Slot cut",
       "slotOutside": "Slot standing",
-      "distance": "Distance"
+      "distance": "Distance",
+      "angle": "Angle and corner"
     },
     "shapeLabel": "How it lies",
     "size": {
@@ -1978,7 +1980,9 @@
       "slot": "Slot",
       "slotNote": "A slot with round ends, cut or standing, along the axes or turned: length, width, angle and middle.",
       "distance": "Distance",
-      "distanceNote": "Between two features — holes, studs or edges: the distance, and for two centres X, Y and the angle too."
+      "distanceNote": "Between two features — holes, studs or edges: the distance, and for two centres X, Y and the angle too.",
+      "angle": "Angle and corner",
+      "angleNote": "Two edges that meet: the angle between them, how far off square, and where the corner is."
     },
     "distance": {
       "first": "First",
@@ -1997,6 +2001,12 @@
       "fromEdgeWhy": "From the centre to the edge, square to it — also when the edge lies at an angle.",
       "edgesWhy": "Square to the edges, the mean from both sides. Off parallel: how far the second edge is turned against the first.",
       "note": "The zero is not changed. The result is in the Journal."
+    },
+    "meet": {
+      "angle": "Corner angle",
+      "angleWhy": "The angle inside the part between the edges. 90° — a square corner; off square is the difference from 90°.",
+      "at": "Corner in",
+      "axis": "Corner {{axis}}"
     }
   }
 }

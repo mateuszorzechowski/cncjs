@@ -118,11 +118,17 @@ describe('a distance', () => {
 
   test('its two ends in the one choice, asked for apart, and back again', () => {
     const choice = shapeOfKind('distance', 'circle-inside');
-    expect(pairOf(choice)).toEqual({ a: 'circle-inside', b: 'circle-inside' });
+    expect(pairOf(choice)).toEqual({ shape: 'distance', a: 'circle-inside', b: 'circle-inside' });
     const options = optionsFor(measure, 'distance:edge-front:circle-outside');
     expect(options).toEqual({ shape: 'distance', a: 'edge-front', b: 'circle-outside' });
     expect(choiceOf(measure, options)).toBe('distance:edge-front:circle-outside');
     expect(pairOf('circle-inside')).toBeNull();
+  });
+
+  test('a corner: two edges that meet, first the front and the left', () => {
+    expect(pairOf(shapeOfKind('angle', 'circle-inside'))).toEqual({ shape: 'angle', a: 'edge-front', b: 'edge-left' });
+    expect(optionsFor(measure, 'angle:edge-back:edge-right')).toEqual({ shape: 'angle', a: 'edge-back', b: 'edge-right' });
+    expect(choiceOf(measure, { shape: 'angle', a: 'edge-back', b: 'edge-right' })).toBe('angle:edge-back:edge-right');
   });
 
   test('its first end measured, the wizard goes into place over the second', () => {

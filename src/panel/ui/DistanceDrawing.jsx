@@ -152,6 +152,52 @@ const FromEdge = ({
   );
 };
 
+/*
+ * A corner (2026-10-05): its two edges from where they meet, the part
+ * between them, the angle's arc and its figure. Off square it is drawn
+ * turned at least `SEEN` degrees, at most `STEEP`, so it can be seen and
+ * still reads as a corner — as an edge's angle is drawn (`sizeCycle`).
+ */
+const SEEN = 8;
+const STEEP = 20;
+const ARM = 90;
+// The way an edge faces, off its part, the drawing's Y up.
+const OUT = {
+  'edge-front': [0, -1], 'edge-back': [0, 1], 'edge-left': [-1, 0], 'edge-right': [1, 0],
+};
+
+const Corner = ({
+  size, pair, said, hatch, k,
+}) => {
+  const [oa, ob] = [OUT[pair.a], OUT[pair.b]];
+  // Along the first edge, into the second's part; the second turned off that by the angle drawn.
+  const ra = [-ob[0], -ob[1]];
+  const towards = Math.sign(ra[0] * -oa[1] - ra[1] * -oa[0]);
+  const off = Math.abs(size.square) < LEVEL ? 0 : Math.sign(size.square) * Math.min(STEEP, Math.max(SEEN, Math.abs(size.square)));
+  const turn = ((90 + off) * Math.PI / 180) * towards;
+  const rb = [ra[0] * Math.cos(turn) - ra[1] * Math.sin(turn), ra[0] * Math.sin(turn) + ra[1] * Math.cos(turn)];
+  // The corner where the drawing's middle leaves the part's middle.
+  const c = [W / 2 - (ra[0] + rb[0]) * ARM * 0.7, H / 2 + (ra[1] + rb[1]) * ARM * 0.7];
+  const at = ([x, y], r) => [c[0] + x * r, c[1] - y * r];
+  const [ea, eb, far] = [at(ra, ARM * 1.4), at(rb, ARM * 1.4), at([ra[0] + rb[0], ra[1] + rb[1]], ARM * 1.4)];
+  const middle = [ra[0] + rb[0], ra[1] + rb[1]];
+  const length = Math.hypot(...middle) || 1;
+  // Further out than a distance's: its figure stands on the middle of the arc, not off its end.
+  const tag = at([middle[0] / length, middle[1] / length], BISECT + 16);
+  const arc = {
+    at: [c[0], -c[1]], base: ra, to: [eb[0], -eb[1]], lit: true,
+  };
+  return (
+    <>
+      <path d={`M${c[0]} ${c[1]} L${ea[0]} ${ea[1]} L${far[0]} ${far[1]} L${eb[0]} ${eb[1]} Z`} fill={`url(#${hatch})`} />
+      <path d={`M${ea[0]} ${ea[1]} L${c[0]} ${c[1]} L${eb[0]} ${eb[1]}`} fill="none" className="stroke-ink" strokeWidth={2} strokeLinejoin="round" vectorEffect={NS} />
+      <AngleMark angle={arc} />
+      <circle cx={c[0]} cy={c[1]} r={3} className="fill-acc" />
+      <Centred x={tag[0]} y={tag[1]} text={said(size.a)} size={kit(k)} />
+    </>
+  );
+};
+
 const DistanceDrawing = ({ probe, label, className = '' }) => {
   const units = useUnits();
   const hatch = useId().replace(/:/g, '');
@@ -159,13 +205,16 @@ const DistanceDrawing = ({ probe, label, className = '' }) => {
   const { size, parts, beyond } = probe.result.size;
   const pair = { a: probe.options.a, b: probe.options.b };
   const said = (mm) => `${decimal(units.figure(mm))} ${units.length}`;
+  const angled = (deg) => `${decimal(degrees(deg))}°`;
   const props = {
     size, pair, ends: parts, beyond, said, hatch, k,
   };
   return (
     <svg ref={measure} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className={`block h-auto w-full ${className}`}>
       <WorkHatch id={hatch} />
-      {parts.some((one) => one.kind === 'edge') ? <FromEdge {...props} /> : <Centres {...props} />}
+      {probe.result.size.kind === 'angle' ? <Corner {...props} said={angled} /> : null}
+      {probe.result.size.kind === 'distance' && parts.some((one) => one.kind === 'edge') ? <FromEdge {...props} /> : null}
+      {probe.result.size.kind === 'distance' && parts.every((one) => one.kind !== 'edge') ? <Centres {...props} /> : null}
     </svg>
   );
 };

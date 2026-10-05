@@ -2,33 +2,41 @@ import { useState } from 'react';
 import DistanceDrawing from './DistanceDrawing';
 import SegmentedChoice from './SegmentedChoice';
 import StatTile from './StatTile';
+import WcsBadge from './WcsBadge';
 import { Tiles } from './SizeSteps';
 import {
-  PARTS, pairChoice, pairCrosses, pairOf, shapeOf,
+  PAIRS, pairChoice, pairFits, pairOf, shapeOf,
 } from '../machine/probe';
 import { degrees } from '../machine/units';
 import { useUnits } from './units';
 import { t } from '../i18n';
 
 /**
- * Pomiar's distance (Mateusz, 2026-10-05: *"złożenie A + B, wszystkie trzy
- * pary"*): two features, each a hole, a stud or an edge, measured one after
- * the other with the jog between — the server's `strategies/distance`.
+ * Pomiar's pairs, two features measured one after the other with the jog
+ * between — the server's `strategies/distance`: a distance (Mateusz,
+ * 2026-10-05: *"złożenie A + B, wszystkie trzy pary"*), each end a hole, a
+ * stud or an edge; and a corner, two edges that meet (*"zrób 2"*).
  */
 
 const ENDS = ['a', 'b'];
 const END_KEYS = { a: 'probe.distance.first', b: 'probe.distance.second' };
 
 /**
- * The two ends, each a row of tiles. An edge square to the other end's
- * cannot be picked; picking one that would be makes the other the same.
+ * The two ends, each a row of tiles. A second that does not go with the
+ * first — an edge square to it for a distance, one running the same way for
+ * a corner — cannot be picked; a first that would leave none moves the
+ * second to the first that goes with it.
  */
 export const PairChooser = ({ value, onChange }) => {
   const pair = pairOf(value);
+  const { parts } = PAIRS[pair.shape];
+  const fits = (a, b) => pairFits(pair.shape, a, b);
   const pick = (end, part) => {
-    const other = end === 'a' ? 'b' : 'a';
     const next = { ...pair, [end]: part };
-    onChange(pairChoice(pairCrosses(next.a, next.b) ? { ...next, [other]: part } : next));
+    if (!fits(next.a, next.b)) {
+      next.b = parts.find((one) => fits(next.a, one));
+    }
+    onChange(pairChoice(next));
   };
   return (
     <div className="flex flex-col gap-4">
@@ -37,12 +45,12 @@ export const PairChooser = ({ value, onChange }) => {
           <h3 className="m-0 text-cap font-semibold uppercase tracking-[0.1em] text-mut">{t(END_KEYS[end])}</h3>
           <Tiles
             label={t(END_KEYS[end])}
-            items={PARTS.map((part) => ({
-              id: part, shape: part, key: shapeOf(part).key, disabled: end === 'b' && pairCrosses(pair.a, part),
+            items={parts.map((part) => ({
+              id: part, shape: part, key: shapeOf(part).key, disabled: end === 'b' && !fits(pair.a, part),
             }))}
             on={pair[end]}
             onPick={(part) => pick(end, part)}
-            className="grid-cols-2 @3xl/shell:grid-cols-6"
+            className={`grid-cols-2 ${parts.length > 4 ? '@3xl/shell:grid-cols-6' : '@3xl/shell:grid-cols-4'}`}
           />
         </div>
       ))}
@@ -125,6 +133,49 @@ export const DistanceResult = ({ probe }) => {
       <p className="m-0 text-note text-mut">{t('probe.size.ball', { ball: units.figure(probe.params?.ballDiameter), unit: units.length })}</p>
       <p className="m-0 text-note text-mut">{t('probe.distance.note')}</p>
     </div>
+    </div>
+  );
+};
+
+/**
+ * What a corner came out at: the angle inside the part between its two
+ * edges and how far off square; where they meet, in the system measured in
+ * — a zero there if asked (`AfterFoot`); each edge's own angle.
+ */
+export const CornerResult = ({ probe }) => {
+  const units = useUnits();
+  const {
+    size, parts, centre,
+  } = probe.result.size;
+  const pair = probe.options;
+  return (
+    <div className="grid items-start gap-4 @3xl/shell:grid-cols-2">
+      <div className="mx-auto w-full max-w-xl overflow-hidden rounded-ctl border border-line bg-panel">
+        <DistanceDrawing probe={probe} label={t('probe.meet.angle')} className="max-h-80 @[1800px]/shell:max-h-[28rem]" />
+      </div>
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="grid gap-2 @3xl/shell:grid-cols-2">
+          <StatTile label={t('probe.meet.angle')} value={degrees(size.a)} unit="°" />
+          <StatTile label={t('probe.size.square')} value={degrees(size.square)} unit="°" />
+        </div>
+        <p className="m-0 text-note text-mut">{t('probe.meet.angleWhy')}</p>
+        <div className="flex items-center gap-3">
+          <span className="text-base text-ink">{t('probe.meet.at')}</span>
+          <WcsBadge wcs={probe.wcs} />
+        </div>
+        <div className="grid gap-2 @3xl/shell:grid-cols-2">
+          {['x', 'y'].map((axis) => (
+            <StatTile key={axis} label={t('probe.meet.axis', { axis: axis.toUpperCase() })} value={units.figure(centre[axis])} unit={units.length} />
+          ))}
+        </div>
+        <div className="grid gap-2 @3xl/shell:grid-cols-2">
+          {parts.map((one, n) => (
+            <StatTile key={ENDS[n]} label={`${t(END_KEYS[ENDS[n]])} · ${t(shapeOf(pair[ENDS[n]]).key)} · ${t('probe.size.angle')}`} value={degrees(one.size.a)} unit="°" />
+          ))}
+        </div>
+        <p className="m-0 text-note text-mut">{t('probe.size.angleWhy')}</p>
+        <p className="m-0 text-note text-mut">{t('probe.size.note')}</p>
+      </div>
     </div>
   );
 };

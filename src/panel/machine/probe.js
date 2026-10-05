@@ -5,7 +5,7 @@ import { SURFACE } from './surface';
 
 export { SURFACE, surfaceShifts } from './surface';
 export {
-  KINDS, PARTS, SHAPES, pairChoice, pairCrosses, pairOf, partShape, shapeOf, shapeOfKind,
+  KINDS, PAIRS, SHAPES, pairChoice, pairFits, pairOf, partShape, shapeOf, shapeOfKind,
 } from './measureShapes';
 
 /**
@@ -146,7 +146,7 @@ export const optionsFor = (method, chosen, surface = SURFACE, area = null) => {
   }
   const pair = pairOf(chosen);
   if (pair) {
-    return { [method.choice.option]: 'distance', ...pair };
+    return { [method.choice.option]: pair.shape, a: pair.a, b: pair.b };
   }
   return {
     ...(method?.choice ? { [method.choice.option]: chosen } : {}),

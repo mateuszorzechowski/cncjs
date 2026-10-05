@@ -14,7 +14,9 @@ import CornerChooser from './CornerChooser';
 import MapToolChooser from './MapToolChooser';
 import PaperChooser from './PaperChooser';
 import { KindChooser, LieChooser, SizeResult } from './SizeSteps';
-import { DistanceResult, DistanceSetup, PairChooser } from './DistanceSteps';
+import {
+  CornerResult, DistanceResult, DistanceSetup, PairChooser,
+} from './DistanceSteps';
 import HeightMapSetup from './HeightMapSetup';
 import { HeightMapCycle, HeightMapResult } from './HeightMapSteps';
 import PaperParams from './PaperParams';
@@ -54,8 +56,8 @@ const EDITORS = {
 };
 // A size measured, as the centre's: its passes those it was asked for.
 const SizeCycle = ({ phase, probe }) => {
-  // A distance's end being measured.
-  const cycle = sizeCycle(probe?.method, probe?.options?.shape === 'distance' ? probe.options[probe.part ?? 'a'] : probe?.options?.shape);
+  // A pair's feature being measured.
+  const cycle = sizeCycle(probe?.method, probe?.part ? probe.options[probe.part] : probe?.options?.shape);
   return <CentreCycle cycle={cycle} phase={phase} passes={drawnPasses(probe?.params?.holePasses, probe?.params?.repeats)} />;
 };
 const CYCLES = {
@@ -246,7 +248,8 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
   }
   // A size: what it came out at, nothing to write.
   if (probe?.state !== 'failed' && probe?.result?.size) {
-    return probe.result.size.kind === 'distance' ? <DistanceResult probe={probe} /> : <SizeResult probe={probe} />;
+    const Result = { distance: DistanceResult, angle: CornerResult }[probe.result.size.kind] ?? SizeResult;
+    return <Result probe={probe} />;
   }
   if (probe?.state === 'failed') {
     const { code, phase } = probe.failure || {};

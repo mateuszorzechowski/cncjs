@@ -479,7 +479,8 @@
     "badShape": "Nieznany kształt pomiaru.",
     "badPart": "Odległość mierzy się między otworami, czopami albo krawędziami.",
     "edgesCrossing": "Te krawędzie są do siebie prostopadłe: spotykają się w narożniku, nie ma między nimi odległości.",
-    "notBetween": "Nie ma zmierzonego pierwszego elementu odległości."
+    "notBetween": "Nie ma zmierzonego pierwszego elementu odległości.",
+    "edgesParallel": "Te krawędzie biegną w tę samą stronę: nie spotykają się w narożniku."
   },
   "notice": {
     "warning": "Ostrzeżenie",
@@ -1918,7 +1919,8 @@
       "ovalOutside": "Czop — owalizacja",
       "slotInside": "Fasolka wycięta",
       "slotOutside": "Fasolka wystająca",
-      "distance": "Odległość"
+      "distance": "Odległość",
+      "angle": "Kąt i narożnik"
     },
     "shapeLabel": "Jak leży",
     "size": {
@@ -1978,7 +1980,9 @@
       "slot": "Fasolka",
       "slotNote": "Rowek z zaokrąglonymi końcami, wycięty albo wystający, w osiach albo obrócony: długość, szerokość, kąt i środek.",
       "distance": "Odległość",
-      "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami: odległość, a dla dwóch środków też w X i Y oraz kąt."
+      "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami: odległość, a dla dwóch środków też w X i Y oraz kąt.",
+      "angle": "Kąt i narożnik",
+      "angleNote": "Dwie krawędzie, które się spotykają: kąt między nimi, odchyłka od kąta prostego i gdzie jest narożnik."
     },
     "distance": {
       "first": "Pierwszy",
@@ -1997,6 +2001,12 @@
       "fromEdgeWhy": "Od środka do krawędzi, prostopadle do niej — także gdy krawędź leży pod kątem.",
       "edgesWhy": "Prostopadle do krawędzi, średnia z obu stron. Odchyłka od równoległości: o ile drugą krawędź obrócono względem pierwszej.",
       "note": "Zero się nie zmienia. Wynik jest zapisany w Dzienniku."
+    },
+    "meet": {
+      "angle": "Kąt narożnika",
+      "angleWhy": "Kąt wewnątrz detalu między krawędziami. 90° — narożnik prosty; odchyłka od kąta prostego to różnica od 90°.",
+      "at": "Narożnik w układzie",
+      "axis": "Narożnik {{axis}}"
     }
   }
 }

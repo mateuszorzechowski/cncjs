@@ -1,6 +1,8 @@
 import { touch } from '../moves';
 import { across as bossAcross, overTheTop } from './boss';
-import { PARTS, distanceOf, pairRefusal } from './distance';
+import {
+  PARTS, cornerOf, distanceOf, pairRefusal,
+} from './distance';
 import { EDGES, edgeLine, edgeOf, edgeSteps } from './edge';
 import { ovalOf } from './oval';
 import { slotOf } from './slot';
@@ -54,7 +56,9 @@ export const SHAPES = {
   'bar-y': { kind: 'width', axes: ['y'], side: 'outside' },
   ...Object.fromEntries(Object.keys(EDGES).map((edge) => [`edge-${edge}`, { kind: 'edge', edge }])),
   // One feature to another, each one of `distance`'s `PARTS`, options `a` and `b`, measured one after the other.
-  distance: { kind: 'distance' },
+  distance: { kind: 'distance', pair: distanceOf },
+  // Two edges that meet: the angle between them, and the corner (`distance`).
+  angle: { kind: 'angle', pair: cornerOf },
 };
 
 // Every pass, the ones that count last.
@@ -172,7 +176,7 @@ const sizeOf = (shape, params, seen) => {
 };
 
 /*
- * A distance's feature `part` (`a`, then `b`): measured as on its own, an
+ * A pair's feature `part` (`a`, then `b`): measured as on its own, an
  * edge with its line. The first is kept by the controller as `half`, until
  * the operator has jogged to the second.
  */
@@ -185,37 +189,40 @@ const partOf = (shape, params, seen) => {
 export default {
   // An inside shape's figures are a hole's, an outside one's a part's; the panel shows the ones for the shape chosen.
   fields: ['holeSize', 'bossSize', 'spacing', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'overTop', 'depth', 'maxZ', 'retract', 'fast', 'slow'],
-  options: { shape: Object.keys(SHAPES), a: PARTS, b: PARTS },
+  options: { shape: Object.keys(SHAPES), a: PARTS.distance, b: PARTS.distance },
   touches: true,
   /*
    * A shape touched at two points a side needs them on the side: further apart
    * than the rough size, a point meets the next wall, or — inside — a way to it
    * runs into one (Mateusz, 2026-10-05: *"czy ruchy są bezpieczne"*).
    */
+  // Whether these options measure two features, one after the other.
+  paired: (options) => Boolean(SHAPES[options?.shape]?.pair),
   check: (options, params) => {
     const shape = SHAPES[options.shape];
     if (!shape) {
       return 'bad-shape';
     }
-    if (shape.kind === 'distance') {
-      return pairRefusal(options.a, options.b);
+    if (shape.pair) {
+      return pairRefusal(options.shape, options.a, options.b);
     }
     const rough = shape.side === 'inside' ? params?.holeSize : params?.bossSize;
     return shape.turned && params && params.spacing >= rough ? 'spacing-too-wide' : null;
   },
-  // A distance's steps are its feature's: `part`, `a` or `b`.
+  // A pair's steps are its feature's: `part`, `a` or `b`.
   steps: (params, options, { part = 'a', ...where } = {}) => (
-    options.shape === 'distance' ? passes(SHAPES[options[part]], params, where) : passes(SHAPES[options.shape], params, where)
+    SHAPES[options.shape].pair ? passes(SHAPES[options[part]], params, where) : passes(SHAPES[options.shape], params, where)
   ),
   /*
-   * A distance measures in two halves (`part`): the first comes back as
+   * A pair — a distance, a corner — measures in two halves (`part`): the first comes back as
    * `half`, to be kept until the second, given back as `first`.
    */
   size: (params, options, seen, { part = 'a', first = null } = {}) => {
-    if (options.shape !== 'distance') {
+    const { pair } = SHAPES[options.shape];
+    if (!pair) {
       return sizeOf(options.shape, params, seen);
     }
     const found = partOf(options[part], params, seen);
-    return part === 'a' ? { half: found } : distanceOf(first, found);
+    return part === 'a' ? { half: found } : pair(first, found);
   },
 };
