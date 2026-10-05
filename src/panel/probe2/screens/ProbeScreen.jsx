@@ -18,7 +18,7 @@ import ProbeTrack from '../ui/ProbeTrack';
 import controller from '../../machine/controller';
 import { controlledStop } from '../../machine/commands';
 import {
-  SURFACE, applyProbe, choiceOf, discardProbe, fetchProbe, figuresOf, methodOf, nextProbe, optionsFor, saveProbe, startProbe, stepBeside, wireOf, wizardStep,
+  SURFACE, applyProbe, choiceOf, discardProbe, fetchProbe, figuresOf, methodOf, methodOfRun, nextProbe, optionsFor, saveProbe, serverOf, startProbe, stepBeside, wireOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../../ui/shell';
@@ -55,10 +55,10 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   }, []);
 
   // A measurement another device started is shown with its own method.
-  const method = methodOf(probe?.method || picked);
+  const method = probe ? methodOfRun(probe.method, probe.options) : methodOf(picked);
   // With no method in hand — a page opened afresh — the wizard starts at the start.
   const step = wizardStep(method ? local : 'method', probe);
-  const fields = kept?.methods?.[method?.id]?.fields ?? [];
+  const fields = kept?.methods?.[serverOf(method)]?.fields ?? [];
   const choice = chosen[method?.id] ?? method?.choice?.first;
   const go = (by) => setLocal(stepBeside(method, step, by));
   // Each step on into history, back by the gesture; none while the server's measurement is on the screen.
@@ -85,7 +85,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const tested = lit === null || (touched && lit === false);
 
   const pick = (id) => {
-    const uses = kept?.methods?.[id]?.fields ?? [];
+    const uses = kept?.methods?.[serverOf(methodOf(id))]?.fields ?? [];
     setMode('own');
     setTakenBy(null);
     setPicked(id);
@@ -112,7 +112,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   // Back from over a distance's second end: the first measured again, from its own place (`again`, below).
   const backFromPlace = () => (between ? again() : go(-1));
   // With the figures the operator confirmed: refused if another device changed one since (audit K8).
-  const measure = () => (between ? nextProbe() : startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name, figuresOf(kept, fields)));
+  const measure = () => (between ? nextProbe() : startProbe(serverOf(method), optionsFor(method, choice, surface, heightMap.area), units.rule?.name, figuresOf(kept, fields)));
 
   // In an alarm, unlocked only when asked (audit K10, I12): see `AfterFoot`.
   const alarm = machine.status?.word === 'Alarm';
@@ -120,7 +120,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
 
   const again = () => {
     // Tried again here even if it was started on another device: its method and choice, then.
-    const again = methodOf(probe?.method ?? picked);
+    const again = probe ? methodOfRun(probe.method, probe.options) : methodOf(picked);
     setMode('own');
     setPicked(again?.id ?? null);
     if (again?.choice && probe?.options?.[again.choice.option]) {

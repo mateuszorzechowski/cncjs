@@ -129,6 +129,8 @@ const PICTOGRAMS = {
   paper: PaperPictogram,
   'height-map': HeightMapPictogram,
   measure: MeasurePictogram,
+  // Sonda 3D's zero: the hole's middle, the first of what it finds.
+  probe3d: HolePictogram,
 };
 
 const ProbePicture = ({ method, label, className = '' }) => {

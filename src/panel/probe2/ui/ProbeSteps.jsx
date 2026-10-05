@@ -54,6 +54,8 @@ const EDITORS = {
   // A distance's: each end's, one at a time (`DistanceSetup`).
   measure: (props) => <DistanceSetup chosen={props.chosen} render={(shape, head) => <CentreParams cycle={sizeCycle('measure', shape)} head={head} {...props} />} />,
 };
+// Sonda 3D's tile is the server's same method: its Setup the same.
+EDITORS.probe3d = EDITORS.measure;
 // A size measured, as the centre's: its passes those it was asked for.
 const SizeCycle = ({ phase, probe }) => {
   // A pair's feature being measured.
@@ -137,7 +139,7 @@ const MethodTile = ({ method, onPick }) => (
 // The methods that find a zero; under them, in a row of their own, the height map (Mateusz, 2026-10-02).
 // The methods whose one choice is a step of its own, and what it is picked on.
 const CHOOSERS = {
-  corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser, measure: KindChooser,
+  corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser, measure: KindChooser, probe3d: KindChooser,
 };
 
 /**
@@ -156,16 +158,17 @@ export const ChoiceStep = ({
   const pair = pairOf(value);
   const lie = pair && !PAIRS[pair.shape].fixed ? PairChooser : LieChooser;
   const Chooser = step === 'lie' ? lie : CHOOSERS[method.id];
-  return <Chooser value={value} onChange={onChange} />;
+  return <Chooser value={value} onChange={onChange} method={method} />;
 };
 
+// Four methods that find a zero in the first row — the plates, the paper and Sonda 3D — and the second on the same grid.
 export const MethodStep = ({ onPick }) => (
   <div className="flex flex-col gap-3">
-    <div className="grid gap-3 @3xl/shell:grid-cols-3">
+    <div className="grid gap-3 @3xl/shell:grid-cols-2 @6xl/shell:grid-cols-4">
       {METHODS.filter((method) => !method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
     {/* The height map and Pomiar, in a row of their own: no zero. */}
-    <div className="grid gap-3 @3xl/shell:grid-cols-3">
+    <div className="grid gap-3 @3xl/shell:grid-cols-2 @6xl/shell:grid-cols-4">
       {METHODS.filter((method) => method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
   </div>

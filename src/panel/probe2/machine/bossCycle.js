@@ -35,7 +35,7 @@ import { frameAt, layOut, totalOf } from './timeline';
 const PART_NAMES = { group: 'probe.group.part', size: 'probe.field.bossSize' };
 
 // What the last step's line says it is worked out from, where a layout finds an angle or a surface's Z.
-const ZERO_CODES = { angle: 'probe.size.codeEdge', surface: 'probe.size.codeSurface' };
+const ZERO_CODES = { angle: 'probe.size.codeEdge', surface: 'probe.size.codeSurface', corner: 'probe2.size.codeCorner' };
 
 /**
  * The part cycle for `axes` — one for a bar's width — ending in the size

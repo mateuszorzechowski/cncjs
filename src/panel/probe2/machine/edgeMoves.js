@@ -100,19 +100,26 @@ const STEPS = {
 };
 // Away from the last side's wall first (X, the left's), then along it — as the server goes; one wall's, across it first.
 const homeOf = (name) => (EDGE_SIDES[LAYOUTS[name].sides.at(-1)].axis === 'y' ? ['retY', 'retX'] : ['retX', 'retY']);
-// One line along an angle's two touches: an edge's from outside, a wall's from inside.
-const angled = (name) => /^(edge|wall)-/.test(name);
+// One line along an angle's two touches: an edge's from outside, a wall's from inside — or two, a corner's.
+const angled = (name) => /^(edge|wall|corner)-/.test(name);
 /** What a layout's last stage finds: an angle, a surface's Z, or a size. */
 export const foundOf = (name) => {
+  if (LAYOUTS[name]?.corner) {
+    return 'corner';
+  }
   if (angled(name)) {
     return 'angle';
   }
   return name === 'surface' ? 'surface' : 'size';
 };
-const ZERO_TITLES = { angle: 'probe.size.move.edge', surface: 'probe.size.move.surface' };
+const ZERO_TITLES = { angle: 'probe.size.move.edge', surface: 'probe.size.move.surface', corner: 'probe2.size.move.corner' };
 // The last stage on the bar, named for what it finds.
-const BAR_KEYS = { angle: 'probe.bar.angle', surface: 'probe.bar.surface', size: 'probe.bar.size' };
-const STAGE_KEYS = { angle: 'probe.stage.angle', surface: 'probe.stage.surface', size: 'probe.stage.size' };
+const BAR_KEYS = {
+  angle: 'probe.bar.angle', surface: 'probe.bar.surface', size: 'probe.bar.size', corner: 'probe2.bar.corner',
+};
+const STAGE_KEYS = {
+  angle: 'probe.stage.angle', surface: 'probe.stage.surface', size: 'probe.stage.size', corner: 'probe2.stage.corner',
+};
 
 /** A side's two points, by the names its touches go by: `y1m`, `y2m` for the front. */
 const pointsOf = (side) => {
@@ -132,8 +139,21 @@ export const anglePoints = (name) => (LAYOUTS[name].sides.length ? pointsOf(LAYO
  */
 export const buildSides = (name, tilt = EDGE_TILT) => {
   const {
-    sides, from, start: S, outline, span = SPAN,
+    sides, from, start: S, outline, span = SPAN, corner,
   } = LAYOUTS[name];
+  /*
+   * Where along a side its two points are from the start: half the spacing
+   * each way — or, at a corner, the first square across from the start and
+   * the second the whole spacing on, away from the corner, in rising order
+   * as the server goes (`corner3d`).
+   */
+  const shiftsOf = (along) => {
+    if (!corner) {
+      return [-span, span];
+    }
+    const to = corner[along] * 2 * span;
+    return [Math.min(0, to), Math.max(0, to)];
+  };
   const inside = from === 'inside';
   const level = inside ? 0 : ABOVE;
   // The ball's centre touching a turned side is its radius off it, square to it.
@@ -163,13 +183,20 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
         order.push(`${side}In`);
         at = home;
       }
-      const spot = setOn(along, at, S[j] + (point === 1 ? -1 : 1) * span);
+      const shifts = shiftsOf(along);
+      const spot = setOn(along, at, S[j] + shifts[point - 1]);
       // The spacing's dimension outside the part — or inside the pocket — on the side away from this one.
       // Outside the part on its far side; inside, within the hole near its far wall.
       const extent = { oval: OVAL[axis === 'y' ? 1 : 0], slot: axis === 'y' ? SLOT[1] : SLOT[0] + SLOT[1] }[outline] ?? BOSS_R;
       const spanAt = (axis === 'y' ? sign : -sign) * (extent + (inside ? -8 : 10));
       moves[`${side}Along`] = {
-        ...common, ...leg(at, spot, 'centre', inside ? 'probe.edge.move.alongIn' : 'probe.edge.move.along', ['spacing']), axis: along, spanAt, span: [S[j] - span, S[j] + span], code: 'probe.edge.alongCode',
+        ...common,
+        ...leg(at, spot, 'centre', inside ? 'probe2.edge.move.alongGuarded' : 'probe.edge.move.along', ['spacing']),
+        axis: along,
+        spanAt,
+        span: [S[j] + shifts[0], S[j] + shifts[1]],
+        // Inside, the way along is guarded — `G38.3`, stopped by a wall in it (audit K4).
+        code: inside ? 'probe2.edge.alongGuardedCode' : 'probe.edge.alongCode',
       };
       const out = inside ? spot : setOn(axis, spot, sign * OUT);
       // A square's side is straight; an oval's or a slot's is crossed where the line through the point meets it,
@@ -181,7 +208,9 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
       }[outline];
       const rim = CROSS ? CROSS(0) : rimAt(spot[j]);
       const wall = setOn(axis, out, CROSS ? CROSS(grown) : rim - dir * reach);
-      const off = setOn(axis, wall, wall[i] - dir * BACK);
+      // Inside, off the wall straight back to the middle line, as the server goes since the audit's K4: the back-off
+      // and that way out are two rapids the same way, one line. From outside, the back-off alone.
+      const off = setOn(axis, wall, inside ? S[i] : wall[i] - dir * BACK);
       const touchAt = setOn(axis, wall, rim);
       // How far the search may go, as drawn: in to the start from outside, past the wall from inside.
       const guess = inside ? rim + dir * PAST : S[i];

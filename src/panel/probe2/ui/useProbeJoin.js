@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import useKept from '../../ui/useKept';
 import useProbeStage from './useProbeStage';
-import { SURFACE, choiceOf, methodOf } from '../machine/probe';
+import { SURFACE, choiceOf, methodOfRun } from '../machine/probe';
 import { t } from '../../i18n/index';
 
 /**
@@ -40,12 +40,13 @@ const useProbeJoin = ({
   });
 
   const join = () => {
-    const joined = methodOf(shared.method);
+    // The tile, from the server's method and what it measures: Sonda 3D's or Pomiar's for `measure`.
+    const joined = methodOfRun(shared.method, shared.options);
     setMode('joined');
     setTakenBy(null);
-    setPicked(shared.method);
+    setPicked(joined?.id ?? null);
     if (joined?.choice) {
-      setChosen((now) => ({ ...now, [shared.method]: choiceOf(joined, shared.options) }));
+      setChosen((now) => ({ ...now, [joined.id]: choiceOf(joined, shared.options) }));
     }
     // The height map's area and grid, as the device it was begun on asked for them.
     if (joined?.asks) {

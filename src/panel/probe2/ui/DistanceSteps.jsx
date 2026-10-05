@@ -6,7 +6,7 @@ import StatTile from '../../ui/StatTile';
 import WcsBadge from '../../ui/WcsBadge';
 import { Tiles } from './SizeSteps';
 import {
-  PAIRS, pairChoice, pairFits, pairOf, shapeOf,
+  PAIRS, pairChoice, pairEnds, pairFits, pairOf, shapeOf,
 } from '../machine/probe';
 import { degrees } from '../../machine/units';
 import { useUnits } from '../../ui/units';
@@ -148,7 +148,8 @@ export const CornerResult = ({ probe }) => {
   const {
     size, parts, centre,
   } = probe.result.size;
-  const pair = probe.options;
+  // A pair's two ends — or a corner's two edges, from one cycle (`pairEnds`).
+  const pair = pairEnds(probe.options);
   return (
     <div className="grid items-start gap-4 @3xl/shell:grid-cols-2">
       <div className="mx-auto w-full max-w-xl overflow-hidden rounded-ctl border border-line bg-panel">

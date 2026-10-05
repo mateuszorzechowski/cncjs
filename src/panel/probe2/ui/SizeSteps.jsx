@@ -1,8 +1,9 @@
 import CentreViews from './CentreViews';
+import CornerMarks from './cornerMarks';
 import StatTile from '../../ui/StatTile';
 import WcsBadge from '../../ui/WcsBadge';
 import {
-  KINDS, SHAPES, methodOf, shapeOf, shapeOfKind,
+  SHAPES, kindsOf, methodOfRun, shapeOf, shapeOfKind,
 } from '../machine/probe';
 import { decimal, figureSaid } from '../machine/probeFields';
 import { sizeCycle } from '../machine/sizeCycle';
@@ -133,7 +134,11 @@ const ShapeMarks = ({ shape }) => {
   if (one.kind === 'edge' || one.kind === 'wall') {
     return <g transform={EDGE_TURN[one.id]}>{MARKS[one.kind]}</g>;
   }
-  if (one.kind !== 'width') {
+  if (one.kind === 'corner') {
+    return <CornerMarks one={one} />;
+  }
+  // A groove or a bar — one axis of a rectangle's kind in v2 — by its axis.
+  if (!one.axis) {
     return MARKS[one.id];
   }
   return <g transform={one.axis === 'y' ? 'rotate(90 24 24)' : undefined}>{one.side === 'inside' ? MARKS.groove : MARKS.bar}</g>;
@@ -161,17 +166,19 @@ export const Tiles = ({
       >
         <ShapePicture shape={item.shape} />
         <span className="text-base font-semibold text-ink">{t(item.key)}</span>
+        {/* A corner's tiles share a name: which corner, under it. */}
+        {item.cornerKey ? <span className="text-note text-mut">{t(item.cornerKey)}</span> : null}
         {item.note ? <span className="text-note text-mut">{t(item.note)}</span> : null}
       </button>
     ))}
   </div>
 );
 
-/** What is measured: a circle, a rectangle or one width — each drawn as its first shape, from inside. */
-export const KindChooser = ({ value, onChange }) => (
+/** What is measured, among the kinds of the tile picked — each drawn as its first shape. */
+export const KindChooser = ({ value, onChange, method }) => (
   <Tiles
     label={t('probe.kindLabel')}
-    items={KINDS.map((kind) => ({ ...kind, shape: SHAPES.find((one) => one.kind === kind.id).id }))}
+    items={kindsOf(method?.id).map((kind) => ({ ...kind, shape: SHAPES.find((one) => one.kind === kind.id).id }))}
     on={shapeOf(value).kind}
     onPick={(kind) => onChange(shapeOfKind(kind, value))}
     className="@3xl/shell:grid-cols-3"
@@ -237,7 +244,7 @@ export const SizeResult = ({ probe }) => {
             top={{ ...cycle.scene('zero', 1, how), limit: null }}
             side={cycle.side ? cycle.side('zero', 1) : null}
             name="zero"
-            label={`${t(methodOf(probe.method)?.key)} · ${t(shapeOf(shape).key)}`}
+            label={`${t(methodOfRun(probe.method, probe.options)?.key)} · ${t(shapeOf(shape).key)}`}
             className={RESULT_FIT}
           />
         </div>

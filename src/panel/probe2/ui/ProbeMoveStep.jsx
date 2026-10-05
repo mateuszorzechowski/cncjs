@@ -27,6 +27,7 @@ const MOVES = {
   'height-map': HeightMapPosition,
   measure: ({ choice, part }) => <CentrePosition cycle={sizeCycle('measure', partShape(choice, part))} />,
 };
+MOVES.probe3d = MOVES.measure;
 
 /**
  * The steps the operator moves the machine at: into place, and for the

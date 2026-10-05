@@ -6,6 +6,7 @@ import {
 import { tagWidth } from './probeLabels';
 import useViewScale from './useViewScale';
 import { decimal } from '../machine/probeFields';
+import { pairEnds } from '../machine/probe';
 import { degrees } from '../../machine/units';
 import { useUnits } from '../../ui/units';
 
@@ -212,7 +213,8 @@ const DistanceDrawing = ({ probe, label, className = '' }) => {
   const hatch = useId().replace(/:/g, '');
   const [measure, k] = useViewScale(W, H);
   const { size, parts, beyond } = probe.result.size;
-  const pair = { a: probe.options.a, b: probe.options.b };
+  // A pair's two ends — or a corner's two edges, from one cycle (`pairEnds`).
+  const pair = pairEnds(probe.options);
   const said = (mm) => `${decimal(units.figure(mm))} ${units.length}`;
   const angled = (deg) => `${decimal(degrees(deg))}°`;
   const props = {

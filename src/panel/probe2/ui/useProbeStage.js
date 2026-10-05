@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { deviceId } from '../../machine/device';
-import { optionsFor, sayProbeStage } from '../machine/probe';
+import { optionsFor, sayProbeStage, serverOf } from '../machine/probe';
 
 /**
  * Where a probe wizard waits on the operator's hands — the position step, or
@@ -23,7 +23,8 @@ const useProbeStage = ({
   const shared = machine.probeStage;
   const mine = Boolean(shared?.owner && shared.owner.device === deviceId());
   const waiting = mode && (step === 'position' || feeling) ? step : null;
-  const stage = waiting ? JSON.stringify({ method: method.id, options: optionsFor(method, choice, surface, area), step: waiting }) : null;
+  // The server's name for the method: it knows `measure`, not the tile.
+  const stage = waiting ? JSON.stringify({ method: serverOf(method), options: optionsFor(method, choice, surface, area), step: waiting }) : null;
   const said = ({ owner, ...rest } = {}) => JSON.stringify(rest);
   const owned = useRef(false);
   owned.current = mine;
@@ -55,7 +56,7 @@ const useProbeStage = ({
     if (!shared || !waiting) {
       return;
     }
-    const another = shared.owner && !mine && (had.current || (mode === 'joined' && shared.method !== method?.id));
+    const another = shared.owner && !mine && (had.current || (mode === 'joined' && shared.method !== serverOf(method)));
     if (another) {
       had.current = false;
       onTakenOver(shared.owner.name);
@@ -65,7 +66,7 @@ const useProbeStage = ({
       sayProbeStage(JSON.parse(stage), true);
       return;
     }
-    if (shared.method === method?.id && shared.step !== waiting) {
+    if (shared.method === serverOf(method) && shared.step !== waiting) {
       onFollow(shared.step);
     }
   }, [shared?.step, shared?.method, shared?.owner?.device]);

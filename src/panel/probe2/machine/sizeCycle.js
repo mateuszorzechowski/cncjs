@@ -40,6 +40,11 @@ const CYCLES = {
   'oval-inside': bossCycleOf({ layout: 'oval-inside' }),
   'slot-outside': bossCycleOf({ layout: 'slot-outside' }),
   'slot-inside': bossCycleOf({ layout: 'slot-inside' }),
+  // A corner in one cycle, a part's or a pocket's (`edgeLayouts`).
+  ...Object.fromEntries(['front-left', 'front-right', 'back-left', 'back-right'].flatMap((corner) => [
+    [`corner-out-${corner}`, bossCycleOf({ layout: `corner-out-${corner}` })],
+    [`corner-in-${corner}`, bossCycleOf({ layout: `corner-in-${corner}` })],
+  ])),
 };
 // The shapes drawn turned, by the layout that draws them.
 const TURNED = {

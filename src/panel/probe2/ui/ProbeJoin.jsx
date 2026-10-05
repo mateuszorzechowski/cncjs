@@ -1,7 +1,7 @@
 import Button from '../../ui/Button';
 import ConfirmSheet from '../../ui/ConfirmSheet';
 import { useIsPhone } from '../../ui/shell';
-import { methodOf } from '../machine/probe';
+import { methodOfRun } from '../machine/probe';
 import { t } from '../../i18n/index';
 
 /**
@@ -14,7 +14,7 @@ import { t } from '../../i18n/index';
  */
 const ProbeJoin = ({ stage, onJoin, onOwn }) => {
   const phone = useIsPhone();
-  const method = methodOf(stage.method);
+  const method = methodOfRun(stage.method, stage.options);
   const where = stage.owner?.name || t('probe.join.elsewhere');
   const waiting = t('probe.join.waiting', { method: method ? t(method.key) : '', where, step: t(`probe.step.${stage.step}`) });
   if (phone) {

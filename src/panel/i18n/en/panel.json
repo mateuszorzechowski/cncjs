@@ -2054,6 +2054,52 @@
     "failure": {
       "touchedCorner": "{{axis}}: the tool came down onto the plate instead of beside it. Nothing was saved. Increase the side travel from the start, or start nearer the corner.",
       "touchedProbe": "{{axis}}: the probe touched the work on a move meant to pass it — a wall in the way, or coming down onto the part. Nothing was saved. Start nearer the middle or the edge, reduce the point spacing, or increase the clearance past the side."
+    },
+    "method": {
+      "probe3d": "3D probe",
+      "probe3dNote": "A zero with the 3D probe: the middle of a hole, a stud, a pocket or a part, an edge, a corner.",
+      "measure": "Measure",
+      "measureNote": "Sizes with the 3D probe: ovality, a rectangle at an angle, a slot, a distance, a height."
+    },
+    "kind": {
+      "circle": "Hole or stud",
+      "circleNote": "The middle and diameter of a round hole or stud.",
+      "rect": "Pocket, part, groove, bar",
+      "rectNote": "Sides along X and Y: the middle and size on both axes — or on one (a groove, a bar).",
+      "edgeNote": "A side of the part at two points: where the edge is, and its angle to the axis.",
+      "corner": "Corner",
+      "cornerNote": "A part's or a pocket's, from one start: both edges, where they meet and the angle between them.",
+      "oval": "Ovality",
+      "ovalNote": "A hole or a stud at 8 points: both axes of the ellipse and their angle — it shows the machine's backlash and squareness too.",
+      "turned": "Rectangle at an angle",
+      "turnedNote": "A pocket or a part turned: its sides, the angle it is turned by, how far off square, the middle.",
+      "distanceNote": "Between two features — holes, studs or edges — jogged between."
+    },
+    "shape": {
+      "cornerOut": "Part's corner",
+      "cornerIn": "Pocket's corner"
+    },
+    "place": {
+      "cornerOut": "Bring the probe's ball over the part, a few millimetres in from both edges of the corner and over the top — less than the clearance past the side and the Z travel limit.",
+      "cornerIn": "Lower the probe's ball into the pocket, a few millimetres under its edge and a few from both walls of the corner — not touching them."
+    },
+    "edge": {
+      "move": {
+        "alongGuarded": "Point {{pass}} · along the side, inside — guarded"
+      },
+      "alongGuardedCode": "G38.3 along the side — a wall in the way stops it"
+    },
+    "size": {
+      "move": {
+        "corner": "Corner: where the two edges meet"
+      },
+      "codeCorner": "corner = where the lines through each edge's touches cross"
+    },
+    "bar": {
+      "corner": "corner"
+    },
+    "stage": {
+      "corner": "corner"
     }
   }
 }

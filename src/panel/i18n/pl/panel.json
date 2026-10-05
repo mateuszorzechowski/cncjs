@@ -2054,6 +2054,52 @@
     "failure": {
       "touchedCorner": "{{axis}}: frez zjechał na płytkę zamiast obok niej. Nic nie zapisano. Zwiększ „Przejazd w bok od startu” albo zacznij bliżej narożnika.",
       "touchedProbe": "{{axis}}: sonda dotknęła materiału w ruchu, który miał przejść obok — ścianka na drodze albo zejście na detal. Nic nie zapisano. Zacznij bliżej środka albo krawędzi, zmniejsz „Odstęp punktów na krawędzi” albo zwiększ „Odsunięcie za bok”."
+    },
+    "method": {
+      "probe3d": "Sonda 3D",
+      "probe3dNote": "Zero sondą 3D: środek otworu, czopu, kieszeni albo detalu, krawędź, narożnik.",
+      "measure": "Pomiar",
+      "measureNote": "Wymiary sondą 3D: owalizacja, prostokąt pod kątem, fasolka, odległość, wysokość."
+    },
+    "kind": {
+      "circle": "Otwór albo czop",
+      "circleNote": "Środek i średnica okrągłego otworu albo czopu.",
+      "rect": "Kieszeń, detal, rowek, listwa",
+      "rectNote": "Boki wzdłuż X i Y: środek i wymiar w obu osiach — albo w jednej (rowek, listwa).",
+      "edgeNote": "Bok detalu w dwóch punktach: gdzie leży krawędź i jej kąt do osi.",
+      "corner": "Narożnik",
+      "cornerNote": "Detalu albo kieszeni, z jednego ustawienia: obie krawędzie, gdzie się spotykają i kąt między nimi.",
+      "oval": "Owalizacja",
+      "ovalNote": "Otwór albo czop w 8 punktach: obie osie elipsy i ich kąt — sprawdza też luz i prostopadłość maszyny.",
+      "turned": "Prostokąt pod kątem",
+      "turnedNote": "Kieszeń albo detal obrócony: boki, kąt obrotu, odchyłka od kąta prostego, środek.",
+      "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami — z jogiem między nimi."
+    },
+    "shape": {
+      "cornerOut": "Narożnik detalu",
+      "cornerIn": "Narożnik kieszeni"
+    },
+    "place": {
+      "cornerOut": "Ustaw kulkę sondy nad detalem, kilka milimetrów w głąb od obu krawędzi narożnika i nad wierzchem — mniej niż odsunięcie za bok i limit dojazdu Z.",
+      "cornerIn": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, kilka milimetrów od obu ścianek narożnika — nie dotykając ich."
+    },
+    "edge": {
+      "move": {
+        "alongGuarded": "{{pass}}. punkt · wzdłuż boku, w środku — strzeżony"
+      },
+      "alongGuardedCode": "G38.3 wzdłuż boku — ścianka na drodze go zatrzyma"
+    },
+    "size": {
+      "move": {
+        "corner": "Narożnik: gdzie spotykają się dwie krawędzie"
+      },
+      "codeCorner": "narożnik = przecięcie prostych przez dotyki każdej krawędzi"
+    },
+    "bar": {
+      "corner": "narożnik"
+    },
+    "stage": {
+      "corner": "narożnik"
     }
   }
 }

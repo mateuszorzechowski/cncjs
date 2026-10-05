@@ -1,5 +1,5 @@
 import {
-  METHODS, choiceOf, failureKey, mapAsk, methodOf, optionsFor, pairOf, phaseWords, saveProbe, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
+  METHODS, choiceOf, failureKey, kindsOf, mapAsk, methodOf, methodOfRun, optionsFor, pairEnds, pairOf, phaseWords, saveProbe, serverOf, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -93,7 +93,10 @@ describe('a kept figure in a field', () => {
   });
 
   test('every method the server may name has words, and every figure a kind', () => {
-    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'paper', 'height-map', 'measure']);
+    // Sonda 3D's zero in the first row; the height map and Pomiar in the second (the sense report, 2026-10-05).
+    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'paper', 'probe3d', 'height-map', 'measure']);
+    expect(METHODS.filter((m) => m.apart).map((m) => m.id)).toEqual(['height-map', 'measure']);
+    expect(serverOf(methodOf('probe3d'))).toBe('measure');
     expect(Object.values(FIELDS).every((f) => ['length', 'feed', 'count'].includes(f.kind))).toBe(true);
   });
 });
@@ -107,9 +110,14 @@ describe('Pomiar: what is measured, then how it lies', () => {
 
   test('a kind picked keeps how it lay where it can', () => {
     expect(shapeOfKind('rect', 'circle-outside')).toBe('rect-outside');
-    expect(shapeOfKind('width', 'circle-outside')).toBe('bar-x');
+    // A groove and a bar are a rectangle's one axis: the same kind.
+    expect(shapeOfKind('rect', 'groove-y')).toBe('groove-y');
     expect(shapeOfKind('circle', 'groove-y')).toBe('circle-inside');
-    expect(shapeOfKind('width', 'groove-y')).toBe('groove-y');
+  });
+
+  test('each tile offers its own kinds: the zeros, or the measurements', () => {
+    expect(kindsOf('probe3d').map((kind) => kind.id)).toEqual(['circle', 'rect', 'edge', 'corner']);
+    expect(kindsOf('measure').map((kind) => kind.id)).toEqual(['oval', 'turned', 'slot', 'distance', 'height']);
   });
 });
 
@@ -125,14 +133,25 @@ describe('a distance', () => {
     expect(pairOf('circle-inside')).toBeNull();
   });
 
-  test('a corner: two edges that meet, first the front and the left', () => {
-    expect(pairOf(shapeOfKind('angle', 'circle-inside'))).toEqual({ shape: 'angle', a: 'edge-front', b: 'edge-left' });
-    expect(optionsFor(measure, 'angle:edge-back:edge-right')).toEqual({ shape: 'angle', a: 'edge-back', b: 'edge-right' });
-    expect(choiceOf(measure, { shape: 'angle', a: 'edge-back', b: 'edge-right' })).toBe('angle:edge-back:edge-right');
+  test('a corner is one cycle of Sonda 3D: its two edges named as the ends of a pair for the result', () => {
+    expect(optionsFor(methodOf('probe3d'), 'corner-out-front-left')).toEqual({ shape: 'corner-out-front-left' });
+    expect(pairOf('corner-out-front-left')).toBeNull();
+    expect(pairEnds({ shape: 'corner-out-front-left' })).toEqual({ a: 'edge-left', b: 'edge-front' });
+    expect(pairEnds({ shape: 'corner-in-back-right' })).toEqual({ a: 'wall-right', b: 'wall-back' });
+    expect(pairEnds({ shape: 'distance', a: 'edge-front', b: 'circle-inside' })).toEqual({ a: 'edge-front', b: 'circle-inside' });
   });
 
-  test('a height: one surface first; two, a pair with nothing to pick', () => {
-    expect(shapeOfKind('height', 'circle-inside')).toBe('surface');
+  test('a measurement the server runs is shown with the tile it belongs to', () => {
+    expect(methodOfRun('measure', { shape: 'corner-in-front-left' }).id).toBe('probe3d');
+    expect(methodOfRun('measure', { shape: 'circle-inside' }).id).toBe('probe3d');
+    expect(methodOfRun('measure', { shape: 'oval-inside' }).id).toBe('measure');
+    expect(methodOfRun('measure', { shape: 'height', a: 'surface', b: 'surface' }).id).toBe('measure');
+    expect(methodOfRun('z', {}).id).toBe('z');
+  });
+
+  test('a height: two surfaces first, a pair with nothing to pick; one surface after it', () => {
+    // Two surfaces first: the difference is what Pomiar is for, one surface's Z only as the probe sees it.
+    expect(shapeOfKind('height', 'circle-inside')).toBe('height');
     expect(optionsFor(measure, 'height')).toEqual({ shape: 'height', a: 'surface', b: 'surface' });
     expect(optionsFor(measure, 'surface')).toEqual({ shape: 'surface' });
   });

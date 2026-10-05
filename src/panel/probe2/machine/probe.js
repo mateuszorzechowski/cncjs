@@ -1,12 +1,17 @@
 import controller from '../../machine/controller';
 import { currentToken } from '../../machine/session';
-import { SHAPES, choiceOf as measureChoiceOf, pairOf } from './measureShapes';
+import {
+  SHAPES, choiceOf as measureChoiceOf, kindsOf, pairOf, shapeOf,
+} from './measureShapes';
 import { SURFACE } from '../../machine/surface';
 
 export { SURFACE, surfaceShifts } from '../../machine/surface';
 export {
-  KINDS, PAIRS, SHAPES, pairChoice, pairFits, pairOf, partShape, shapeOf, shapeOfKind,
+  KINDS, PAIRS, SHAPES, kindsOf, pairChoice, pairEnds, pairFits, pairOf, partShape, shapeOf, shapeOfKind,
 } from './measureShapes';
+
+// The shapes of a tile's kinds: what its choice may be.
+const shapesOf = (of) => SHAPES.filter((shape) => kindsOf(of).some((kind) => kind.id === shape.kind));
 
 /**
  * The probe, from the panel — the server's half is `services/probe` and the
@@ -96,20 +101,48 @@ export const METHODS = [
     start: 'probe.position.here', steps: BY_HAND, touches: false,
     choice: { option: 'edge', key: 'probe.edgeLabel', list: EDGES, first: 'z', step: 'probe.step.surface' },
   },
+  // Sonda 3D's tile: after the paper, the first row's fourth.
+  {
+    id: 'probe3d', server: 'measure', key: 'probe2.method.probe3d', note: 'probe2.method.probe3dNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: MEASURE_STEPS, touches: true, plate: 'probe', size: true,
+    choice: { option: 'shape', key: 'probe.shapeLabel', list: shapesOf('probe3d'), first: 'circle-inside', step: 'probe.step.kind' },
+  },
   {
     id: 'height-map', key: 'probe.method.map', note: 'probe.method.mapNote', place: 'probe.place.map', position: 'probe.step.startHeight',
     start: 'probe.position.start', steps: MAP_STEPS, touches: true, apart: true, asks: true,
     choice: { option: 'tool', key: 'probe.map.toolLabel', list: MAP_TOOLS, first: 'board', step: 'probe.step.tool' },
   },
-  // A size, not a zero (Mateusz, 2026-10-03): in the height map's row, the zero left as it is. `size` says so.
+  /*
+   * The 3D probe, two tiles on the server's one method (the sense report of
+   * 2026-10-05, #16): Sonda 3D for a zero — in the first row, beside the
+   * plates and the paper, because finding a middle, an edge or a corner is
+   * what the probe is used for most — and Pomiar for a measurement, in the
+   * height map's row. `server`, the method a start asks for.
+   */
   {
-    id: 'measure', key: 'probe.method.measure', note: 'probe.method.measureNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
+    id: 'measure', key: 'probe2.method.measure', note: 'probe2.method.measureNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
     wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: MEASURE_STEPS, touches: true, plate: 'probe', apart: true, size: true,
-    choice: { option: 'shape', key: 'probe.shapeLabel', list: SHAPES, first: 'circle-inside', step: 'probe.step.kind' },
+    choice: { option: 'shape', key: 'probe.shapeLabel', list: shapesOf('measure'), first: 'oval-inside', step: 'probe.step.kind' },
   },
 ];
 
+/** The server's name for a method — a start's, a stage's, the figures' it keeps. */
+export const serverOf = (method) => method?.server ?? method?.id ?? null;
+
 export const methodOf = (id) => METHODS.find((method) => method.id === id) || null;
+
+/**
+ * The tile a measurement belongs to, from what the server says of it — its
+ * method and options: the server's `measure` is Sonda 3D's or Pomiar's by
+ * the kind of shape it measures.
+ */
+export const methodOfRun = (server, options = {}) => {
+  if (server !== 'measure') {
+    return methodOf(server);
+  }
+  const zero = kindsOf('probe3d').some((kind) => kind.id === shapeOf(options?.shape).kind);
+  return methodOf(zero ? 'probe3d' : 'measure');
+};
 
 /** How a method's wire is tested: the height map's by what touches, the others' as the method says. */
 export const wireOf = (method, chosen) => method?.choice?.list.find((one) => one.id === chosen)?.wire || { plate: method?.plate, how: method?.wire, stuck: method?.stuck };

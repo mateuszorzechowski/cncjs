@@ -51,8 +51,38 @@ const surfaceLayout = {
   reach: 'clear',
   params: [{ id: 'reach', key: REACH.group, fields: ['maxZ'] }, MEASURE, PROBE],
 };
+/*
+ * A corner in one cycle (the server's `strategies/corner3d`): the part's —
+ * the ball over its top a little in from both edges — or a pocket's, the
+ * ball down in it near the corner. `toward`, the way the part (or the
+ * pocket) lies from the corner, each axis: there each edge's second point
+ * goes, the first square across from the start (`shifts` in `edgeMoves`).
+ */
+const CORNER_WAYS = {
+  'front-left': [1, 1], 'front-right': [-1, 1], 'back-left': [1, -1], 'back-right': [-1, -1],
+};
+const cornerLayout = (corner, from) => {
+  const [dx, dy] = CORNER_WAYS[corner];
+  const inside = from === 'inside';
+  return {
+    sides: [dx > 0 ? 'left' : 'right', dy > 0 ? 'front' : 'back'],
+    from,
+    corner: { x: dx, y: dy },
+    start: [dx * (INSIDE - BOSS_R), dy * (INSIDE - BOSS_R)],
+    reach: inside ? 'holeSize' : 'clear',
+    params: inside ? [
+      { id: 'hole', key: 'probe.group.pocket', fields: ['holeSize'], names: { holeSize: 'probe.field.pocketSize' } },
+      { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
+    ] : [{ id: 'reach', key: REACH.group, fields: ['spacing', 'clear', 'overTop', 'depth', 'maxZ'] }, MEASURE, PROBE],
+  };
+};
+
 export const LAYOUTS = {
   surface: surfaceLayout,
+  ...Object.fromEntries(Object.keys(CORNER_WAYS).flatMap((corner) => [
+    [`corner-out-${corner}`, cornerLayout(corner, 'outside')],
+    [`corner-in-${corner}`, cornerLayout(corner, 'inside')],
+  ])),
   ...Object.fromEntries(Object.keys(EDGE_SIDES).map((edge) => [`edge-${edge}`, edgeLayout(edge)])),
   ...Object.fromEntries(Object.keys(EDGE_SIDES).map((wall) => [`wall-${wall}`, wallLayout(wall)])),
   'turned-outside': {
