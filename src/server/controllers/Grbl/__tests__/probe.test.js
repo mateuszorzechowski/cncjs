@@ -25,7 +25,11 @@ const setup = () => {
   state.status.activeState = GRBL_ACTIVE_STATE_IDLE;
   state.status.mpos = { x: '0.000', y: '0.000', z: '0.000' };
   state.status.wpos = { x: '0.000', y: '0.000', z: '30.000' };
-  state.parserstate.modal = { ...state.parserstate.modal, wcs: 'G54', distance: 'G91', units: 'G21' };
+  // The operator's own modes before a measurement: relative feeds at 500 — put back after it.
+  state.parserstate.modal = {
+    ...state.parserstate.modal, motion: 'G1', feedrate: 'G94', wcs: 'G54', distance: 'G91', units: 'G21',
+  };
+  state.parserstate.feedrate = '500';
   controller.runner.settings.parameters = {
     G54: { x: '0.000', y: '0.000', z: '-30.000' },
     G92: { x: '0.000', y: '0.000', z: '0.000' },
@@ -76,8 +80,8 @@ describe('probe:start', () => {
       // Off the touch and up clear of the plate, so it can come out from under the tool: two rapids the same
       // way, one move.
       'G90 G21 G53 G0 Z2.9',
-      // The modes it found, put back.
-      'G91 G21',
+      // The modes it found, put back: the motion mode, the feed's and its rate too (audit I2).
+      'G1 G94 G91 G21 F500',
     ]);
     controller.runner.parse('ok');
 
@@ -157,6 +161,32 @@ describe('probe:start', () => {
     controller.command('probe:apply');
     expect(refusals.map(({ reason }) => reason)).toContain('no-result');
     expect(sent()).toHaveLength(before);
+  });
+
+  test('a probe that ended in an alarm puts the modes back once the alarm is cleared, not before (audit K10)', () => {
+    const { controller, sent } = setup();
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.command('probe:start', { method: 'z' });
+    controller.runner.parse('ALARM:5');
+    controller.runner.parse('[PRB:0.000,0.000,-3.000:0]');
+    controller.runner.parse('ok');
+    controller.runner.parse('<Alarm|MPos:0.000,0.000,-15.000|FS:0,0|WCO:0.000,0.000,-30.000>');
+    // In alarm nothing more goes: the G90 the probe's lines set stands for now.
+    expect(sent()).toEqual(['G90 G21 G94 G38.2 Z15 F100']);
+
+    // `$X` from anywhere — the wizard's Spróbuj ponownie, the alarm's own button, a console.
+    controller.runner.parse('<Idle|MPos:0.000,0.000,-15.000|FS:0,0|WCO:0.000,0.000,-30.000>');
+    expect(sent().pop()).toBe('G1 G94 G91 G21 F500');
+    expect(controller.modesOwed).toBeNull();
+  });
+
+  test('a reset owes nothing: Grbl puts its own defaults back', () => {
+    const { controller } = setup();
+    controller.command('probe:start', { method: 'z' });
+    controller.runner.parse('ALARM:5');
+    expect(controller.modesOwed).toBe('G1 G94 G91 G21 F500');
+    controller.runner.parse(BANNER);
+    expect(controller.modesOwed).toBeNull();
   });
 
   test('a plate not found is said, and the zero stays where it was', () => {
@@ -284,7 +314,7 @@ describe('probe:start', () => {
 
     expect(refusals).toEqual([]);
     // Off the top by the paper's lift, then the modes put back.
-    expect(sent()).toEqual(['G90 G21 G53 G0 Z2', 'G91 G21']);
+    expect(sent()).toEqual(['G90 G21 G53 G0 Z2', 'G1 G94 G91 G21 F500']);
     // Machine Z0 less a tenth of paper, against G54's -30: the zero moves up 29.9.
     expect(probeStates().pop().result.shift.z).toBeCloseTo(29.9, 6);
   });

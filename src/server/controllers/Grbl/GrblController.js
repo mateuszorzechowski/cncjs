@@ -57,7 +57,9 @@ import { isHomingLine, losesPosition } from './homing';
 import { JOURNALED, changesWorkOffsets, offsetChange } from './offsets';
 import { machineEnvelope, programOverrun } from './envelope';
 import { checkLines, createCheckRun } from './check-run';
-import { createProbeRun, offsetFor, offsetLine } from './probe-run';
+import {
+  createProbeRun, offsetFor, offsetLine, restoreLine,
+} from './probe-run';
 import { probeMachineRefusal } from './probe-guard';
 import probeSettings from '../../services/probe';
 import { STRATEGIES } from '../../services/probe/strategies';
@@ -286,6 +288,9 @@ class GrblController {
     answerHeard = -1;
 
     probeDeferred = null;
+
+    // The modes a probe that ended in an alarm could not put back, sent once it is cleared (`payModesOwed`).
+    modesOwed = null;
 
     // Message Slot
     messageSlot = null;
@@ -846,6 +851,7 @@ class GrblController {
         if (this.alarmCode !== null && res.activeState && res.activeState !== GRBL_ACTIVE_STATE_ALARM) {
           this.setAlarm(null);
         }
+        this.payModesOwed(res.activeState);
         // An alarm with no number is the homing lock of a hard reset: the
         // position is gone with it.
         if (res.activeState === GRBL_ACTIVE_STATE_ALARM && this.alarmCode === null) {
@@ -1436,6 +1442,8 @@ class GrblController {
         this.fileCheck?.run?.startup();
         this.probe?.run?.startup();
         this.fedAt = null;
+        // A reset sets Grbl's own defaults: what a probe's alarm left owing is nobody's now.
+        this.modesOwed = null;
         this.settingWrite = null;
         // A reset ends a homing cycle too, with no `ok` and no alarm to say so.
         this.setHoming(false);
@@ -2613,15 +2621,16 @@ class GrblController {
       const modal = this.runner.getModalGroup();
 
       const wco = _.mapValues(mpos, (v, axis) => v - wpos[axis]);
+      const restore = restoreLine(modal, this.runner.state?.parserstate?.feedrate);
       Object.assign(this.probe, {
-        params, start: mpos, wco, run: null, step: null,
+        params, start: mpos, wco, run: null, step: null, restore,
       });
 
       this.probe.run = createProbeRun({
         steps: strategy.steps(params, options, { start: mpos, wco, ...(part ? { part } : {}) }),
         start: mpos,
         wco,
-        restore: `${modal.distance || 'G90'} ${modal.units || 'G21'}`,
+        restore,
         write: (line) => this.writeln(line),
         progress: ({ seen, ...step }) => {
           this.probe.step = step;
@@ -2652,6 +2661,10 @@ class GrblController {
 
       if (outcome.failure) {
         this.probe.failure = { code: outcome.failure, phase: outcome.phase };
+        // An alarm let nothing more be sent, the modes included: they are owed once it is cleared (audit K10).
+        if (String(outcome.failure).startsWith('ALARM')) {
+          this.modesOwed = this.probe.restore;
+        }
         this.note({ level: 'warn', source: 'server', event: 'probe', code: outcome.failure, data: { method, ...options, phase: outcome.phase } });
       } else if (strategy.map) {
         // A surface to keep, not a zero: it waits for `probe:apply` the same way.
@@ -2705,6 +2718,21 @@ class GrblController {
         });
       }
       this.emit('probe:state', this.probeReport());
+    }
+
+    /**
+     * The modes a probe's alarm left owing (`modesOwed`), sent once the alarm
+     * is cleared — `$X`, `$H` — and the machine stands Idle. The operator who
+     * was in `G91` before a probe that missed is in `G91` again after the
+     * unlock, not in the `G90` its lines set (audit 2026-10-05, K10).
+     */
+    payModesOwed(activeState) {
+      if (!this.modesOwed || activeState !== GRBL_ACTIVE_STATE_IDLE || this.probe?.run) {
+        return;
+      }
+      const line = this.modesOwed;
+      this.modesOwed = null;
+      this.command('gcode', line);
     }
 
     /** Grbl answered the line the feeder sent — an `ok` or an `error` that fell through to it, or a jog segment's. */

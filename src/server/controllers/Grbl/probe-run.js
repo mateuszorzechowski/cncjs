@@ -21,7 +21,9 @@
  *
  * Every line is `G90 G21`: targets are absolute, so a failure that ends in an
  * alarm leaves the parser absolute rather than relative for whatever is typed
- * after the unlock. The modes the machine was in are put back at the end.
+ * after the unlock. The modes the machine was in are put back at the end
+ * (`restoreLine`) — after an alarm, when nothing more can be sent, once it is
+ * cleared, which is the controller's to see.
  */
 
 const AXES = ['x', 'y', 'z'];
@@ -214,6 +216,24 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
       return phase === 'waiting';
     },
   };
+};
+
+/**
+ * The line that puts the parser back as the measurement found it, from `$G`:
+ * the motion mode, the feed mode, absolute or relative, the units and the
+ * feed rate (audit 2026-10-05, I2). A probe's lines leave `G38.2` or `G0` as
+ * the motion mode and its own `F` behind, so an `X10` typed next would have
+ * gone as a probing move at the probe's feed. An arc mode is not put back:
+ * `G2` with no axis words is no line Grbl takes, and the next arc names its
+ * own. The feed rate is in the units this same line sets.
+ */
+export const restoreLine = (modal = {}, feedrate = '') => {
+  const motion = ['G0', 'G1', 'G80'].includes(modal.motion) ? modal.motion : null;
+  const feedMode = ['G93', 'G94'].includes(modal.feedrate) ? modal.feedrate : null;
+  const f = Number(feedrate);
+  return [
+    motion, feedMode, modal.distance || 'G90', modal.units || 'G21', f > 0 ? `F${fmt(f)}` : null,
+  ].filter(Boolean).join(' ');
 };
 
 /**
