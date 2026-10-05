@@ -23,115 +23,91 @@ const RESULT_FIT = 'max-h-80 @[1800px]/shell:max-h-[28rem]';
  * probe's ball and the accent heads at the walls it touches — out from
  * inside a hole, a pocket or a groove, in from outside a stud, a part or a
  * bar, as the hole's and the part's pictograms point. Along Y the same, turned.
+ *
+ * Spaced as those pictograms are (review note, 2026-10-05: *"między
+ * narzędziem, strzałką a materiałem jednakowa odległość"*): on the measuring
+ * line the walls stand at x 15 and 33, a head's tip on the wall's edge, its
+ * base 2 off the ball — the ball in the middle from inside, at x 6 from
+ * outside. A shape at an angle is drawn turned so it still crosses the line
+ * there (scratchpad marks.py worked the points out).
  */
 const BALL = <circle cx={24} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
-const OUT_HEADS = <path d="M20.2 21 L17.4 24 L20.2 27 Z M27.8 21 L30.6 24 L27.8 27 Z" className="fill-acc" />;
-const IN_HEADS = <path d="M13.8 21 L16.6 24 L13.8 27 Z M34.2 21 L31.4 24 L34.2 27 Z" className="fill-acc" />;
-const OUT_BALL = <circle cx={8} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
+const OUT_BALL = <circle cx={6} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
+// From inside, out to the walls; from outside, in to the part.
+const OUT_HEADS = <path d="M18.6 21 L15.8 24 L18.6 27 Z M29.4 21 L32.2 24 L29.4 27 Z" className="fill-acc" />;
+const IN_HEADS = <path d="M11.4 21 L14.2 24 L11.4 27 Z M36.6 21 L33.8 24 L36.6 27 Z" className="fill-acc" />;
 const WORK = 'fill-mutS stroke-line';
 // A part standing alone, with nothing round it to show its edge: outlined darker.
 const PART = 'fill-mutS stroke-mut';
 // SVG's word for a shape with a hole cut in it.
 const EVEN_ODD = 'evenodd';
+// The work round a hole: the hole's own outline is cut out of it.
+const AROUND = 'M4 6 H44 V42 H4 Z ';
+
+// The outlines, crossing the measuring line at x 15 and 33: as they stand, and turned (12°, the oval 20°, the slot 15°).
+const OUTLINE = {
+  circle: 'M15 24 A9 9 0 1 0 33 24 A9 9 0 1 0 15 24 Z',
+  square: 'M15 15 H33 V33 H15 Z',
+  turned: 'M13.56 17.22 L30.78 13.56 L34.44 30.78 L17.22 34.44 Z',
+  oval: 'M33.87 20.41 A10.5 5.19 -20 1 0 14.13 27.59 A10.5 5.19 -20 1 0 33.87 20.41 Z',
+  slot: 'M21.84 30.27 L29.01 28.35 A5.5 5.5 0 0 0 26.16 17.73 L18.99 19.65 A5.5 5.5 0 0 0 21.84 30.27 Z',
+};
+
+const inside = (outline) => (
+  <>
+    <path d={AROUND + outline} fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+    {BALL}
+    {OUT_HEADS}
+  </>
+);
+const outside = (outline) => (
+  <>
+    <path d={outline} className={PART} strokeWidth={1.6} strokeLinejoin="round" />
+    {OUT_BALL}
+    {IN_HEADS}
+  </>
+);
 
 const MARKS = {
-  'circle-inside': (
-    <>
-      <path d="M4 6 H44 V42 H4 Z M24 10 A14 14 0 1 0 24 38 A14 14 0 1 0 24 10 Z" fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} />
-      {BALL}
-      <path d="M13.2 21 L10.4 24 L13.2 27 Z M34.8 21 L37.6 24 L34.8 27 Z" className="fill-acc" />
-    </>
-  ),
-  'circle-outside': (
-    <>
-      <circle cx={26} cy={24} r={12} className={PART} strokeWidth={1.6} />
-      {OUT_BALL}
-      <path d="M10.8 21 L13.6 24 L10.8 27 Z M40.8 21 L38 24 L40.8 27 Z" className="fill-acc" />
-    </>
-  ),
-  'rect-inside': (
-    <>
-      <path d="M4 6 H44 V42 H4 Z M11 11 V37 H37 V11 Z" fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
-      {BALL}
-      <path d="M14.2 21 L11.4 24 L14.2 27 Z M33.8 21 L36.6 24 L33.8 27 Z" className="fill-acc" />
-    </>
-  ),
-  'oval-inside': (
-    <>
-      <path d="M4 6 H44 V42 H4 Z M38.1 18.87 A15 10 -20 1 0 9.9 29.13 A15 10 -20 1 0 38.1 18.87 Z" fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} />
-      {BALL}
-      <path d="M13.2 21 L10.4 24 L13.2 27 Z M34.8 21 L37.6 24 L34.8 27 Z" className="fill-acc" />
-    </>
-  ),
-  'oval-outside': (
-    <>
-      <ellipse cx={26} cy={24} rx={12} ry={8} transform="rotate(-20 26 24)" className={PART} strokeWidth={1.6} />
-      {OUT_BALL}
-      <path d="M10.8 21 L13.6 24 L10.8 27 Z M40.8 21 L38 24 L40.8 27 Z" className="fill-acc" />
-    </>
-  ),
-  'slot-inside': (
-    <>
-      {/* The slot turned by its own points, not the work round it: two straight sides, two half circles. */}
-      <path d="M4 6 H44 V42 H4 Z M17.64 35.02 L35.02 30.36 A9 9 0 0 0 30.36 12.98 L12.98 17.64 A9 9 0 0 0 17.64 35.02 Z" fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} />
-      {BALL}
-      <path d="M12.2 21 L9.4 24 L12.2 27 Z M35.8 21 L38.6 24 L35.8 27 Z" className="fill-acc" />
-    </>
-  ),
-  'slot-outside': (
-    <>
-      <path d="M21 18 H33 A6 6 0 0 1 33 30 H21 A6 6 0 0 1 21 18 Z" className={PART} strokeWidth={1.6} transform="rotate(-15 27 24)" />
-      {OUT_BALL}
-      <path d="M10.8 21 L13.6 24 L10.8 27 Z M41.8 21 L39 24 L41.8 27 Z" className="fill-acc" />
-    </>
-  ),
-  'rect-outside': (
-    <>
-      <path d="M15 13 H37 V35 H15 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
-      {OUT_BALL}
-      <path d="M10.8 21 L13.6 24 L10.8 27 Z M40.8 21 L38 24 L40.8 27 Z" className="fill-acc" />
-    </>
-  ),
+  'circle-inside': inside(OUTLINE.circle),
+  'circle-outside': outside(OUTLINE.circle),
+  'oval-inside': inside(OUTLINE.oval),
+  'oval-outside': outside(OUTLINE.oval),
+  'rect-inside': inside(OUTLINE.square),
+  'rect-outside': outside(OUTLINE.square),
+  'rect-inside-turned': inside(OUTLINE.turned),
+  'rect-outside-turned': outside(OUTLINE.turned),
+  'slot-inside': inside(OUTLINE.slot),
+  'slot-outside': outside(OUTLINE.slot),
   groove: (
     <>
-      <path d="M4 8 H17 V40 H4 Z M31 8 H44 V40 H31 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+      <path d="M4 8 H15 V40 H4 Z M33 8 H44 V40 H33 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
       {BALL}
       {OUT_HEADS}
     </>
   ),
-  // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it.
+  bar: outside('M15 8 H33 V40 H15 Z'),
+  // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it —
+  // spaced as the others, a tip on the edge, the base 2 off the ball's row.
   edge: (
     <>
       <path d="M8 8 H40 V30 H8 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
       <circle cx={24} cy={39} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
-      <path d="M13.2 35.6 L16 32.8 L18.8 35.6 Z M29.2 35.6 L32 32.8 L34.8 35.6 Z" className="fill-acc" />
-    </>
-  ),
-  bar: (
-    <>
-      <path d="M17 8 H31 V40 H17 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
-      {OUT_BALL}
-      {IN_HEADS}
+      <path d="M13 33.6 L16 30.8 L19 33.6 Z M29 33.6 L32 30.8 L35 33.6 Z" className="fill-acc" />
     </>
   ),
 };
-
-/** A shape's marks in a 48-unit box. */
-// A rectangle at an angle: the axis-aligned one's marks, turned.
-const TURNED = { 'rect-inside-turned': 'rect-inside', 'rect-outside-turned': 'rect-outside' };
 
 // An edge's marks turned from the front's to face its own way.
 const EDGE_TURN = {
   'edge-front': undefined, 'edge-back': 'rotate(180 24 24)', 'edge-left': 'rotate(90 24 24)', 'edge-right': 'rotate(-90 24 24)',
 };
 
+/** A shape's marks in a 48-unit box. */
 const ShapeMarks = ({ shape }) => {
   const one = shapeOf(shape);
   if (one.kind === 'edge') {
     return <g transform={EDGE_TURN[one.id]}>{MARKS.edge}</g>;
-  }
-  if (TURNED[one.id]) {
-    return <g transform="rotate(-12 24 24)">{MARKS[TURNED[one.id]]}</g>;
   }
   if (one.kind !== 'width') {
     return MARKS[one.id];

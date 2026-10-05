@@ -44,7 +44,9 @@ export const rimOf = (edge, tilt) => {
 
 // An oval as drawn: its halves, the long along its own X; a slot: its straight sides' half length and its ends' radius.
 export const OVAL = [BOSS_R, Math.round(BOSS_R * 0.68)];
-export const SLOT = [BOSS_R - 14, 14];
+// Half as wide as long, and wide enough that the ball drawn, backed off a wall, keeps clear of the other (review
+// note, 2026-10-05: drawn narrower it looked as if a way went into the far wall).
+export const SLOT = [20, 20];
 
 /** How far `p` is from the wall of the slot drawn, turned `tilt` degrees — negative inside. */
 const slotGap = ([px, py], tilt) => {
@@ -246,9 +248,11 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
       }
       const spot = setOn(along, at, S[j] + (point === 1 ? -1 : 1) * span);
       // The spacing's dimension outside the part — or inside the pocket — on the side away from this one.
-      const spanAt = (axis === 'y' ? sign : -sign) * (BOSS_R + (inside ? -10 : 10));
+      // Outside the part on its far side; inside, within the hole near its far wall.
+      const extent = { oval: OVAL[axis === 'y' ? 1 : 0], slot: axis === 'y' ? SLOT[1] : SLOT[0] + SLOT[1] }[outline] ?? BOSS_R;
+      const spanAt = (axis === 'y' ? sign : -sign) * (extent + (inside ? -8 : 10));
       moves[`${side}Along`] = {
-        ...common, ...leg(at, spot, 'centre', 'probe.edge.move.along', ['spacing']), axis: along, spanAt, span: [S[j] - span, S[j] + span], code: 'probe.edge.alongCode',
+        ...common, ...leg(at, spot, 'centre', inside ? 'probe.edge.move.alongIn' : 'probe.edge.move.along', ['spacing']), axis: along, spanAt, span: [S[j] - span, S[j] + span], code: 'probe.edge.alongCode',
       };
       const out = inside ? spot : setOn(axis, spot, sign * OUT);
       // A square's side is straight; an oval's or a slot's is crossed where the line through the point meets it,

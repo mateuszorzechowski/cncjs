@@ -59,7 +59,8 @@ export const bossCycleOf = ({
   /** A move's spoken name: `t(key, vars)`. */
   const titleOf = (name) => {
     const move = MOVES[name];
-    return [move.titleKey, { pass: move.pass, axis: move.way }];
+    // A side's point is numbered as such, not by its pass (every point is pass 1).
+    return [move.titleKey, { pass: move.point ?? move.pass, axis: move.way }];
   };
 
   const STEPS = ['Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'];

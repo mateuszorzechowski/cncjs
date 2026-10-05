@@ -1635,7 +1635,8 @@
         "off": "Point {{pass}} · {{axis}}: off",
         "up": "Point {{pass}} · {{axis}}: up over the part",
         "in": "Point {{pass}} · {{axis}}: to the middle, across the side",
-        "home": "Back to the middle · {{axis}}"
+        "home": "Back to the middle · {{axis}}",
+        "alongIn": "Point {{pass}} · along the side, inside"
       },
       "alongCode": "G0 along the side to the point",
       "phase": {

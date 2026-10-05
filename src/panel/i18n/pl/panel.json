@@ -1635,7 +1635,8 @@
         "off": "{{pass}}. punkt · {{axis}}: odsunięcie",
         "up": "{{pass}}. punkt · {{axis}}: w górę nad detal",
         "in": "{{pass}}. punkt · {{axis}}: na środek, w poprzek boku",
-        "home": "Powrót na środek · {{axis}}"
+        "home": "Powrót na środek · {{axis}}",
+        "alongIn": "{{pass}}. punkt · wzdłuż boku, w środku"
       },
       "alongCode": "G0 wzdłuż boku do punktu",
       "phase": {
