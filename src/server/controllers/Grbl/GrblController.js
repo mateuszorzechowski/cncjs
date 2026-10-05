@@ -272,17 +272,23 @@ class GrblController {
 
     /*
      * Whether the machine has settled since the last line went out, for a
-     * probe's start (audit 2026-10-05, K11). `fedAt` is when the feeder's last
-     * line went out, null once Grbl has answered it: a jog step tapped just
-     * before "Mierz" is still waiting for its `ok`, and that `ok` would be
-     * taken for the measurement's first answer. `heard` counts status reports
-     * and answers in the order they arrive, so `reportHeard > answerHeard` is
-     * "a report came after the last answer" — Grbl sends in order, so that
-     * report saw whatever the answered line set going. Until both hold, a
-     * start waits (`probeDeferred`) rather than reading a position the
-     * machine has already left.
+     * probe's start (audit 2026-10-05, K11). `unanswered` is how many lines
+     * have gone on the wire without Grbl's `ok` or `error` for them yet —
+     * counted where every line leaves (`wire`), whoever sent it: a jog step
+     * tapped just before "Mierz" is still waiting for its `ok`, and that `ok`
+     * would be taken for the measurement's first answer. `heard` counts status
+     * reports and answers in the order they arrive, so `reportHeard >
+     * answerHeard` is "a report came after the last answer" — Grbl sends in
+     * order, so that report saw whatever the answered line set going. Until
+     * both hold, a start waits (`probeDeferred`) rather than reading a
+     * position the machine has already left.
+     *
+     * Counted on the wire, not at the feeder: a console's `$G` has its `ok`
+     * taken by the parser-state branch before the feeder ever sees it, and a
+     * count kept by the feeder waited for an answer that had already come
+     * (the simulator, 2026-10-06).
      */
-    fedAt = null;
+    unanswered = 0;
 
     heard = 0;
 
@@ -535,8 +541,7 @@ class GrblController {
         });
 
         this.noteOffsetChange(line);
-        this.fedAt = Date.now();
-        this.connection.write(line + '\n');
+        this.wire(line + '\n');
         log.silly(`> ${line}`);
       });
       this.feeder.on('hold', noop);
@@ -672,7 +677,7 @@ class GrblController {
         }
 
         this.noteOffsetChange(line);
-        this.connection.write(line + '\n');
+        this.wire(line + '\n');
         log.silly(`> ${line}`);
         this.note({ level: 'debug', source: 'controller', event: 'sent', data: { line } });
       });
@@ -950,6 +955,7 @@ class GrblController {
       });
 
       this.runner.on('ok', (res) => {
+        this.answered();
         if (this.homing.pending) {
           this.setHoming(false);
           this.setHomed(Date.now());
@@ -1037,7 +1043,6 @@ class GrblController {
          */
         if (this.jogging.inFlight > 0) {
           this.jogging.inFlight -= 1;
-          this.answered();
           this.noteJogAnswer(res.raw);
 
           /*
@@ -1063,13 +1068,13 @@ class GrblController {
         }
 
         this.emit('serialport:read', res.raw);
-        this.answered();
 
         // Feeder
         this.feeder.next();
       });
 
       this.runner.on('error', (res) => {
+        this.answered();
         const code = Number(res.message) || undefined;
         const error = _.find(GRBL_ERRORS, { code: code });
         // `$H` refused — `error:5`, homing not enabled — homed nothing.
@@ -1178,7 +1183,6 @@ class GrblController {
          */
         if (this.jogging.inFlight > 0) {
           this.jogging.inFlight -= 1;
-          this.answered();
           log.debug(`Jog segment refused: ${res.raw}`);
           this.noteJogAnswer(res.raw);
 
@@ -1200,7 +1204,6 @@ class GrblController {
           // Grbl v0.9
           this.emit('serialport:read', res.raw);
         }
-        this.answered();
         // A line from the console or a macro: the one the feeder sent last.
         const fed = this.fedLine;
         this.noteError({
@@ -1448,7 +1451,8 @@ class GrblController {
       this.runner.on('startup', (res) => {
         this.fileCheck?.run?.startup();
         this.probe?.run?.startup();
-        this.fedAt = null;
+        // A reset empties Grbl's buffer: whatever was in it is never answered.
+        this.unanswered = 0;
         // A reset sets Grbl's own defaults: what a probe's alarm left owing is nobody's now.
         this.modesOwed = null;
         this.settingWrite = null;
@@ -1569,7 +1573,7 @@ class GrblController {
           this.actionMask.queryParserState.state = true;
           this.actionMask.queryParserState.reply = false;
           this.actionTime.queryParserState = now;
-          this.connection.write('$G\n');
+          this.wire('$G\n');
         }
       }, 500);
 
@@ -1605,7 +1609,7 @@ class GrblController {
         this.offsetsStale = false;
         this.actionMask.queryParameters.state = true;
         this.actionTime.queryParameters = new Date().getTime();
-        this.connection.write('$#\n');
+        this.wire('$#\n');
       };
 
       this.queryTimer = setInterval(() => {
@@ -2510,7 +2514,7 @@ class GrblController {
         total,
         // Straight to the port: a file of forty thousand lines is not
         // something to echo to every console.
-        write: (line) => this.connection.write(`${line}\n`),
+        write: (line) => this.wire(`${line}\n`),
         progress: say,
         firstError,
         done: (result) => this.endFileCheck(name, stamp, result),
@@ -2766,19 +2770,25 @@ class GrblController {
       }
     }
 
-    /** Grbl answered the line the feeder sent — an `ok` or an `error` that fell through to it, or a jog segment's. */
+    /** On the wire, a line counted until Grbl answers it (`unanswered`); a realtime byte gets no answer. */
+    wire(data) {
+      this.unanswered += (String(data).match(/\n/g) || []).length;
+      this.connection.write(data);
+    }
+
+    /** Grbl answered a line — an `ok` or an `error`, whoever it is for. */
     answered() {
-      this.fedAt = null;
+      this.unanswered = Math.max(0, this.unanswered - 1);
       this.answerHeard = ++this.heard;
     }
 
     /**
      * Whether a probe may read where the machine is and start from there: no
      * line of the feeder's is still waiting for its answer, and a status
-     * report has come since the last answer (see `fedAt`).
+     * report has come since the last answer (see `unanswered`).
      */
     probeSettled() {
-      return this.fedAt === null && this.reportHeard > this.answerHeard && !this.offsetsAwaited();
+      return this.unanswered === 0 && this.reportHeard > this.answerHeard && !this.offsetsAwaited();
     }
 
     /**
@@ -3668,7 +3678,7 @@ class GrblController {
             return;
           }
           // The offset from G92 and the tool length offset as they are now: asked again first if out of date.
-          if (result.offset && !this.probeSettled()) {
+          if (result.offset && this.offsetsAwaited()) {
             this.deferProbe(cmd, args);
             return;
           }
@@ -5109,7 +5119,7 @@ class GrblController {
         source: WRITE_SOURCE_CLIENT
       });
       this.noteOffsetChange(cmd);
-      this.connection.write(data);
+      this.wire(data);
       log.silly(`> ${data}`);
     }
 

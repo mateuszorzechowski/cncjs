@@ -383,6 +383,19 @@ describe('probe:start', () => {
     expect(controller.probe.start.z).toBeCloseTo(-0.1, 6);
   });
 
+  test('a console\'s $G, its ok taken by the parser state, is answered all the same (the simulator, 2026-10-06)', () => {
+    const { controller, sent, refusals } = setup();
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.command('gcode', '$G');
+    controller.runner.parse('[GC:G1 G54 G17 G21 G91 G94 M5 M9 T0 F500 S0]');
+    controller.runner.parse('ok');
+    controller.runner.parse('<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>');
+
+    controller.command('probe:start', { method: 'z' });
+    expect(refusals).toEqual([]);
+    expect(sent().pop()).toBe('G90 G21 G94 G38.2 Z15 F100');
+  });
+
   test('a second start while one waits is refused, and one never answered is said to be busy', () => {
     const { controller, sent, refusals } = setup();
     Object.assign(controller, { ready: true, initialized: true });
@@ -411,8 +424,10 @@ describe('probe:start', () => {
     expect(refusals.map(({ reason }) => reason)).toEqual(['result-waiting']);
     expect(sent()).toHaveLength(2);
 
-    // Put away, a new one goes.
+    // Put away, a new one goes — once a report has come after the last answer.
     controller.command('probe:discard');
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.runner.parse('<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>');
     controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
     expect(sent()).toHaveLength(3);
   });
@@ -595,6 +610,9 @@ describe('a distance', () => {
     // Between the two the machine is the operator's: nothing runs.
     expect(controller.probe.run).toBeNull();
 
+    // Jogged over the second, and a report after.
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.runner.parse('<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>');
     controller.command('probe:next');
     round(controller, sent, 11, done);
 
@@ -614,6 +632,8 @@ describe('a distance', () => {
 
     // Another device, between the two.
     probeSettings.set({ fast: 300 });
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.runner.parse('<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>');
     controller.command('probe:next');
     expect(sent()[done]).toMatch(/G38\.2 .* F100$/);
   });
