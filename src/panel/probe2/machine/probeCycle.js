@@ -13,6 +13,15 @@
 import { slowReach, slowReachWhy } from './probeFields';
 import { SURFACE, surfaceShifts } from '../../machine/surface';
 import { frameAt, layOut, totalOf } from './timeline';
+import { t } from '../../i18n/index';
+
+/*
+ * The zero's step, as the server writes it (audit 2026-10-05, B1): not a
+ * `G10 L20` in the middle of the cycle — nothing is written until Zapisz
+ * zero, and then `G10 L2` into the system measured in. What the caption
+ * still says is where the touch lands in that system once written.
+ */
+export const onSave = (wcs) => t('probe2.cycle.onSave', { wcs: `G${53 + Number(wcs || 1)}` });
 
 // The plate's top, where the tip touches, in the drawing's units.
 export const TOP = 156;
@@ -109,7 +118,7 @@ const MOVES = {
     from: 0, to: 0, kind: null, feed: null, zeroAt: [0.25, 0.45],
     dim: { top: TOP, bottom: TOP + 14, field: 'plateThickness' },
     titleKey: 'probe.plate.zero',
-    code: (v, wcs, surface) => [`G10 L20 P${wcs} Z${fmt(number(v.plateThickness) + overSurface(surface, number(v.stockThickness)))}`],
+    code: (v, wcs, surface) => [`${onSave(wcs)} Z${fmt(number(v.plateThickness) + overSurface(surface, number(v.stockThickness)))}`],
     uses: ['plateThickness'],
     after: true,
   },

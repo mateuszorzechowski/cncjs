@@ -16,7 +16,7 @@
 
 import { sheetAt, sheetShape } from './paperSheet';
 import { frameAt, layOut, totalOf } from './timeline';
-import { overSurface } from './probeCycle';
+import { onSave, overSurface } from './probeCycle';
 import { SURFACE } from '../../machine/surface';
 
 // The work's face, and the sheet's top on it — drawn thick, not to scale.
@@ -321,7 +321,7 @@ export const paperCode = (name, edge, texts, wcs = 1, surface = SURFACE, mm = {
     return `G0 ${A}${sign > 0 ? '-' : '+'}${fmt(number(texts.paperLift))}`;
   }
   const over = edge === 'z' ? overSurface(surface, mm.stockThickness) : 0;
-  return `G10 L20 P${wcs} ${A}${fmt(-sign * offsetOf(edge, mm) + over)}`;
+  return `${onSave(wcs)} ${A}${fmt(-sign * offsetOf(edge, mm) + over)}`;
 };
 
 // An example of where the tool stood against the old zero, before it is written.

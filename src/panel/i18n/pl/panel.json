@@ -2049,7 +2049,8 @@
       "warn": "Mierzysz na: {{on}}, Z0 na: {{z0}} — zero trafi o grubość materiału dalej niż miejsce pomiaru. Po zapisie albo odrzuceniu wybór wraca do „tu, gdzie mierzysz”."
     },
     "result": {
-      "unlock": "Odblokuj ($X)"
+      "unlock": "Odblokuj ($X)",
+      "saveNext": "Zapisz i zmierz następne"
     },
     "failure": {
       "touchedCorner": "{{axis}}: frez zjechał na płytkę zamiast obok niej. Nic nie zapisano. Zwiększ „Przejazd w bok od startu” albo zacznij bliżej narożnika.",
@@ -2100,6 +2101,9 @@
     },
     "stage": {
       "corner": "narożnik"
+    },
+    "cycle": {
+      "onSave": "po „Zapisz zero” w {{wcs}} tu:"
     }
   }
 }

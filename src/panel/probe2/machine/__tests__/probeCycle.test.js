@@ -96,7 +96,7 @@ describe('the Z plate cycle (probe proposal)', () => {
   test('says each move in G-code with the figures typed', () => {
     expect(plateCode('fast', TEXTS)).toBe('G38.2 Z-20 F50');
     expect(plateCode('slow', TEXTS)).toBe('G38.2 Z-10 F15');
-    expect(plateCode('zero', TEXTS, 2)).toBe('G10 L20 P2 Z20');
+    expect(plateCode('zero', TEXTS, 2)).toBe('po „Zapisz zero” w G55 tu: Z20');
     // Off the touch and up to the lift, one rapid the same way: the lift whole.
     expect(plateCode('lift', TEXTS)).toBe('G0 Z+20');
   });
@@ -118,9 +118,9 @@ describe('the Z plate cycle (probe proposal)', () => {
 
   test('Z0 on the table: the zero written over the surface by the work, and read so', () => {
     const texts = { ...TEXTS, stockThickness: '18' };
-    expect(plateCode('zero', texts, 1, { on: 'work', z0: 'table' })).toBe('G10 L20 P1 Z38');
-    expect(plateCode('zero', texts, 1, { on: 'table', z0: 'top' })).toBe('G10 L20 P1 Z2');
-    expect(plateCode('zero', texts, 1, { on: 'table', z0: 'table' })).toBe('G10 L20 P1 Z20');
+    expect(plateCode('zero', texts, 1, { on: 'work', z0: 'table' })).toBe('po „Zapisz zero” w G54 tu: Z38');
+    expect(plateCode('zero', texts, 1, { on: 'table', z0: 'top' })).toBe('po „Zapisz zero” w G54 tu: Z2');
+    expect(plateCode('zero', texts, 1, { on: 'table', z0: 'table' })).toBe('po „Zapisz zero” w G54 tu: Z20');
     expect(plateReadout('zero', { plateThickness: 20, stockThickness: 18 }, { on: 'work', z0: 'table' }).z).toBe(38);
     expect(plateScene('zero', 1, { texts, say, surface: { on: 'work', z0: 'table' } }).stock).toMatchObject({ text: '18 mm' });
   });

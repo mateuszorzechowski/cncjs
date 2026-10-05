@@ -150,16 +150,17 @@ describe('the paper cycle', () => {
     expect(paperCode('fine', 'x-left', texts)).toBe('$J=G91 X0.1');
     expect(paperCode('back', 'x-left', texts)).toBe('$J=G91 X-0.1');
     expect(paperCode('here', 'z', texts)).toBe('$J=G91 Z0.1');
-    expect(paperCode('zero', 'z', texts, 2)).toBe('G10 L20 P2 Z0.1');
-    expect(paperCode('zero', 'x-left', texts)).toBe('G10 L20 P1 X-3.1');
-    expect(paperCode('zero', 'y-back', texts)).toBe('G10 L20 P1 Y3.1');
+    // Where the touch lands once Zapisz zero writes it, in the system measured in.
+    expect(paperCode('zero', 'z', texts, 2)).toBe('po „Zapisz zero” w G55 tu: Z0.1');
+    expect(paperCode('zero', 'x-left', texts)).toBe('po „Zapisz zero” w G54 tu: X-3.1');
+    expect(paperCode('zero', 'y-back', texts)).toBe('po „Zapisz zero” w G54 tu: Y3.1');
   });
 
   test('on the top, Z0 on the table: the work over it; a side keeps no surface', () => {
     const texts = { paperThickness: '0.1', toolDiameter: '6', stockThickness: '18' };
     const table = { on: 'work', z0: 'table' };
-    expect(paperCode('zero', 'z', texts, 1, table)).toBe('G10 L20 P1 Z18.1');
-    expect(paperCode('zero', 'x-left', texts, 1, table)).toBe('G10 L20 P1 X-3.1');
+    expect(paperCode('zero', 'z', texts, 1, table)).toBe('po „Zapisz zero” w G54 tu: Z18.1');
+    expect(paperCode('zero', 'x-left', texts, 1, table)).toBe('po „Zapisz zero” w G54 tu: X-3.1');
     expect(paperReadout('zero', 'z', { paperThickness: 0.1, toolDiameter: 6, stockThickness: 18 }, table).value).toBeCloseTo(18.1, 6);
     expect(paperScene('zero', 1, { edge: 'x-left', surface: table }).surface).toEqual({ on: 'work', z0: 'top' });
   });

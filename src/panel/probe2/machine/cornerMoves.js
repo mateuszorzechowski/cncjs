@@ -7,6 +7,7 @@
  */
 
 import { slowReachWhy } from './probeFields';
+import { onSave } from './probeCycle';
 
 const number = (text) => Number(String(text ?? '').replace(',', '.')) || 0;
 const sum = (...texts) => String(texts.reduce((all, text) => all + number(text), 0));
@@ -199,7 +200,7 @@ export const MOVES = {
     group: 'zero', view: 'both', frames: [[0, YB, 0], [1, YB, 0]], zero: true,
     walls: true, touch: [154, 164],
     titleKey: 'probe.corner.move.zero',
-    code: (v, wcs) => [`G10 L20 P${wcs}`],
+    code: (v, wcs) => [onSave(wcs)],
     uses: ['cornerThickness', 'wallX', 'wallY', 'toolDiameter'],
     after: true,
   },

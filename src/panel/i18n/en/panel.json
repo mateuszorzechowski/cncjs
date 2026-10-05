@@ -2049,7 +2049,8 @@
       "warn": "Measured on: {{on}}, Z0 on: {{z0}} — the zero goes the stock's thickness away from where it is measured. After Save or Discard the choice goes back to where it is measured."
     },
     "result": {
-      "unlock": "Unlock ($X)"
+      "unlock": "Unlock ($X)",
+      "saveNext": "Save and measure the next"
     },
     "failure": {
       "touchedCorner": "{{axis}}: the tool came down onto the plate instead of beside it. Nothing was saved. Increase the side travel from the start, or start nearer the corner.",
@@ -2100,6 +2101,9 @@
     },
     "stage": {
       "corner": "corner"
+    },
+    "cycle": {
+      "onSave": "after Save zero, in {{wcs}} here:"
     }
   }
 }

@@ -130,7 +130,13 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     setLocal('position');
   };
 
-  const finish = (write) => {
+  /*
+   * Written or put away. `next`: written, and straight back into place for
+   * the next one — the next tool of a program — with the same method,
+   * figures and tested wire (audit 2026-10-05, M3: four tools were four
+   * times five taps and four wire steps learnt to be tapped through).
+   */
+  const finish = (write, next = false) => {
     if (write) {
       applyProbe();
     } else {
@@ -138,6 +144,10 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     }
     // Where Z0 goes, back to where it is measured: a choice for one measurement, not for the next (audit K9).
     setSurface(SURFACE);
+    if (next) {
+      setLocal('position');
+      return;
+    }
     setMode(null);
     setPicked(null);
     setLocal('method');
@@ -267,6 +277,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     foot = (
       <Foot>
         <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.discard')}</Button>
+        {probe?.result?.map ? null : <Button tone="outline" disabled={!machine.connected} onClick={() => finish(true, true)} className="h-ctl">{t('probe2.result.saveNext')}</Button>}
         <Button tone="primary" disabled={!machine.connected} onClick={() => finish(true)} className="h-ctl">{t(probe?.result?.map ? 'probe.map.save' : 'probe.result.save')}</Button>
       </Foot>
     );
