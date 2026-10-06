@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import CentreViews from './CentreViews';
 import MoveBar, { namedGroups } from './MoveBar';
 import useTicker from './useTicker';
@@ -15,7 +16,12 @@ import { DRAWING_FIT_MEASURING } from './probeDraw';
 const CentreCycle = ({
   cycle, phase = null, passes = 2, className = '',
 }) => {
-  const name = cycle.moveOfPhase(phase);
+  // The step before this one: a server's step name that stands for two moves is told apart by it (`moveOfPhase`).
+  const seen = useRef({ phase: null, before: null });
+  if (seen.current.phase !== phase) {
+    seen.current = { phase, before: seen.current.phase };
+  }
+  const name = cycle.moveOfPhase(phase, seen.current.before);
   const ms = useTicker(phase || name);
   const { p } = cycle.playAt(ms, { pinned: name });
   const items = cycle.timeline(passes);

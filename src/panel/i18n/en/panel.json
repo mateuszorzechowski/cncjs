@@ -2045,6 +2045,7 @@
     "height": {
       "move": {
         "jog": "Over the lower surface — by the jog",
+        "off": "Z · off the surface",
         "dz": "Difference in Z"
       },
       "jogCode": "operator: jog, then \"Measure second\"",
@@ -2105,7 +2106,9 @@
       "cornerIn": "Lower the probe's ball into the pocket, a few millimetres under its edge and a few from both walls of the corner — not touching them."
     },
     "edge": {
+      "offHomeCode": "G0 off the wall back to the start's line",
       "move": {
+        "offHome": "{{pass}}. point · {{axis}}: off, back to the start's line",
         "alongGuarded": "Point {{pass}} · along the side, inside — guarded"
       },
       "alongGuardedCode": "G38.3 along the side — a wall in the way stops it"

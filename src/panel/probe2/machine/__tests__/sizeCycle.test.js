@@ -98,6 +98,16 @@ describe('a size\'s drawing', () => {
     expect(side('zSlow', 0.7).contact[1]).toBe(0);
     expect(side('z2Slow', 0.7).contact[1]).toBe(-step.part.drop);
     expect(side('zero', 1).vdims).toMatchObject([{ id: 'dz', from: 0, to: -step.part.drop }]);
+    // The lower's arrows and figures from the lower, as the upper's are from the upper (review note, 2026-10-06).
+    const heights = (one) => ({ from: one.from, to: one.to });
+    const drop = (one) => ({ from: one.from - step.part.drop, to: one.to - step.part.drop });
+    ['zFast', 'zBack', 'zSlow', 'zOff'].forEach((name) => {
+      const [upper, lower] = [side(name, 0.5), side(`z2${name.slice(1)}`, 0.5)];
+      expect(heights(lower.way)).toEqual(drop(upper.way));
+      expect(lower.vdims.map(heights)).toEqual(upper.vdims.map(drop));
+    });
+    // Off a surface by the back-off alone: no way over the top, which the server does not make there.
+    expect(step.code('zOff', { retract: '3', overTop: '11' })).toBe('G0 Z+3');
     // The last frame and a figure set do not fall over for want of a side.
     expect(() => step.scene('zero', 1, {})).not.toThrow();
     expect(step.playAt(0, { field: 'fast' }).name).toBe('zFast');

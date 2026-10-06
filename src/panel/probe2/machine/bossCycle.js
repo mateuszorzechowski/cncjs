@@ -264,7 +264,8 @@ export const bossCycleOf = ({
       out: () => ['probe.boss.outCode'],
       down: () => `G38.3 Z-${down} F${texts.fast}`,
       fast: () => `G38.2 ${inward}${reachText(texts)} F${texts.fast}`,
-      back: () => `G0 ${outward}${texts.retract}`,
+      // A back-off, or — inside, off the wall — on back to the middle line, said in words.
+      back: () => (move.code ? [move.code] : `G0 ${outward}${texts.retract}`),
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
       zero: () => [{ true: 'probe2.height.dzCode', false: layout ? ZERO_CODES[foundOf(layout)] : 'probe.size.codeBoss' }[Boolean(L?.step)]],
@@ -295,9 +296,18 @@ export const bossCycleOf = ({
   };
 
   const { moveOfPhase: phaseMove, words: bossWords } = phasesOf(MOVES);
-  // The lower of two surfaces: the server's steps are the top's again, drawn as the second's.
-  const moveOfPhase = (phase) => {
-    const name = phaseMove(phase);
+  /*
+   * The server's step as the move drawn. Inside, off the wall and back to
+   * the middle go as one line named for the way back (`x1a-back`, after the
+   * slow touch `x1a`, `before`): the off, not the back-off before the slow
+   * touch. The lower of two surfaces: the top's steps again, drawn as the
+   * second's.
+   */
+  const moveOfPhase = (phase, before = null) => {
+    let name = phaseMove(phase);
+    if (before && before === String(phase).replace(/-back$/, '') && MOVES[name.replace(/Back$/, 'Off')]) {
+      name = name.replace(/Back$/, 'Off');
+    }
     return second && MOVES[name.replace(/^z/, 'z2')] ? name.replace(/^z/, 'z2') : name;
   };
 

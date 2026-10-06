@@ -112,17 +112,27 @@ export const bossSide = (move, p, {
   const hidden = y > 0 && h < 0 && Math.abs(x) < BOSS_R + r;
   // The step's arrow over its whole run, drawn only while it goes: labels keep off it all along, so they
   // stand still through the move (L16).
-  const way = move.kind !== 'place' ? arrowOf(move, p, x, said, lit) : null;
+  // Over the lower of two surfaces, every height the step says is from it: the drawing's, under the upper's by the step.
+  const base = move.low ? DROP : 0;
+  const lowered = (one) => one && {
+    ...one,
+    from: one.from - base,
+    to: one.to - base,
+    ...(one.mid === undefined ? {} : { mid: one.mid - base }),
+    ...(one.split === undefined ? {} : { split: one.split - base }),
+  };
+  const way = move.kind !== 'place' ? lowered(arrowOf(move, p, x, said, lit)) : null;
   const motion = way && isGoing(move, p) ? way : null;
-  const vdims = move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit, say('depth', downOf(texts)), upTo(say('retract', slowReach(texts))));
+  const vdims = (move.kind === 'place' ? [] : distancesOf(move, p, x + r + 14, said, upTo, lit, say('depth', downOf(texts)), upTo(say('retract', slowReach(texts)))))
+    .map((dim) => (dim.id === 'dz' ? dim : lowered(dim)));
   let gap = null;
   let contact = null;
   if (move.kind === 'place') {
     // Into place: a few millimetres over the top, said as the Z plate says it.
     // Once the ball is in place, not growing as it comes down.
-    gap = level <= 1.001 ? {
+    gap = level <= 1.001 ? lowered({
       at: x + r + 12, from: 0, to: heightOf(1), key: 'probe.position.few',
-    } : null;
+    }) : null;
   }
   if ((move.kind === 'fast' || move.kind === 'slow') && level < 0.01 && Math.hypot(x - move.wall[0], y - move.wall[1]) < 0.5) {
     // Across X the touch is at the ball's side; along Y it faces into the drawing, at its middle.

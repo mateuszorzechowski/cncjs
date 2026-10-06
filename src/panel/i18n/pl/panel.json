@@ -2045,6 +2045,7 @@
     "height": {
       "move": {
         "jog": "Nad niższą powierzchnię — jogiem",
+        "off": "Z · odsunięcie od powierzchni",
         "dz": "Różnica Z"
       },
       "jogCode": "operator: jog, potem „Mierz drugi”",
@@ -2105,7 +2106,9 @@
       "cornerIn": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, kilka milimetrów od obu ścianek narożnika — nie dotykając ich."
     },
     "edge": {
+      "offHomeCode": "G0 od ścianki z powrotem na linię startu",
       "move": {
+        "offHome": "{{pass}}. punkt · {{axis}}: odsunięcie, z powrotem na linię startu",
         "alongGuarded": "{{pass}}. punkt · wzdłuż boku, w środku — strzeżony"
       },
       "alongGuardedCode": "G38.3 wzdłuż boku — ścianka na drodze go zatrzyma"

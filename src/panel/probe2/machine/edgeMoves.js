@@ -122,17 +122,19 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
       }
       const shifts = shiftsOf(along);
       const spot = setOn(along, at, S[j] + shifts[point - 1]);
+      const guarded = inside && shifts[point - 1] !== 0;
       // The spacing's dimension outside the part — or inside the pocket — on the side away from this one.
       // Outside the part on its far side; inside, within the hole near its far wall.
       const spanAt = (axis === 'y' ? sign : -sign) * (BOSS_R + (inside ? -8 : 10));
       moves[`${side}Along`] = {
         ...common,
-        ...leg(at, spot, 'centre', inside ? 'probe2.edge.move.alongGuarded' : 'probe.edge.move.along', ['spacing']),
+        ...leg(at, spot, 'centre', { true: 'probe2.edge.move.alongGuarded', false: inside ? 'probe.edge.move.alongIn' : 'probe.edge.move.along' }[guarded], ['spacing']),
         axis: along,
         spanAt,
         span: [S[j] + shifts[0], S[j] + shifts[1]],
-        // Inside, the way along is guarded — `G38.3`, stopped by a wall in it (audit K4).
-        code: inside ? 'probe2.edge.alongGuardedCode' : 'probe.edge.alongCode',
+        // Inside, the way along is guarded — `G38.3`, stopped by a wall in it (audit K4) — unless it goes back to
+        // the start's line, the way the ball came: a corner's point square across from it (`wallSteps`).
+        code: guarded ? 'probe2.edge.alongGuardedCode' : 'probe.edge.alongCode',
       };
       const out = inside ? spot : setOn(axis, spot, sign * OUT);
       const rim = rimAt(spot[j]);
@@ -153,7 +155,10 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
       moves[`${side}Fast`] = { ...common, ...leg(out, wall, 'fast', 'probe.edge.move.fast', ['fast', inside ? 'holeSize' : 'clear'], 0) };
       moves[`${side}Back`] = { ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.back', uses: ['retract'] };
       moves[`${side}Slow`] = { ...common, kind: 'slow', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.7, wall, 0], [1, wall, 0]], end: 0.7, titleKey: 'probe.edge.move.slow', uses: ['slow', 'retract'] };
-      moves[`${side}Off`] = { ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: 'probe.edge.move.off', uses: ['retract'] };
+      // Inside, off the wall and on back to the middle line, one line as the server sends it (`wallSteps`).
+      moves[`${side}Off`] = {
+        ...common, kind: 'back', from: wall, frames: [[0, wall, 0], [0.15, wall, 0], [0.7, off, 0, true], [1, off, 0]], end: 0.7, titleKey: inside ? 'probe2.edge.move.offHome' : 'probe.edge.move.off', uses: ['retract'], ...(inside ? { code: 'probe2.edge.offHomeCode' } : {}),
+      };
       if (!inside) {
         moves[`${side}Up`] = { ...common, kind: 'up', from: off, frames: [[0, off, 0], [0.1, off, 0], [0.8, off, ABOVE, true], [1, off, ABOVE]], end: 0.8, titleKey: 'probe.edge.move.up', uses: ['depth', 'overTop'] };
       }
@@ -173,6 +178,11 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
     at = S;
   }
   if (step) {
+    // Off each surface by the back-off alone: the server goes no way over the top there, the operator jogs.
+    const backOff = (move) => ({
+      ...move, lift: false, titleKey: 'probe2.height.move.off', uses: ['retract'],
+    });
+    moves.zOff = backOff(moves.zOff);
     // Over to the lower surface — the operator's way, by the jog — and its top touched as the upper's was (`low`).
     moves.jog = {
       ...leg(at, second, 'centre', 'probe2.height.move.jog', []), axis: 'x', way: 'X', code: 'probe2.height.jogCode',
@@ -180,7 +190,7 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
     const lower = topOf(second);
     const low = (key) => key.replace(/^z/, 'z2');
     Object.entries(lower.moves).forEach(([key, move]) => {
-      moves[low(key)] = { ...move, low: true };
+      moves[low(key)] = { ...(key === 'zOff' ? backOff(move) : move), low: true };
     });
     order.push('jog', ...lower.order.map(low));
     at = second;
