@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { advancedSection, passesSection } from './HolePasses';
 import CentreViews from './CentreViews';
+import PairOverview from './PairOverview';
 import MoveBar, { namedGroups } from './MoveBar';
 import PlayControls from './PlayControls';
 import { figureColumns } from './ProbeSections';
@@ -67,15 +68,18 @@ const CentreParams = ({
 
   const drawing = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
-      <CentreViews
-        cycle={cycle}
-        top={sceneOf(name, p, how)}
-        side={cycle.side ? cycle.side(name, p, how) : null}
-        name={name}
-        auto={cycle.viewOf?.(name, p, focus)}
-        label={title}
-        className={DRAWING_FIT}
-      />
+      {/* A film of two features: their scenes together drawn apart from each one's own views (`pairCycle`). */}
+      {cycle.overview?.(name) ? <PairOverview name={name} p={p} label={title} className={DRAWING_FIT} /> : (
+        <CentreViews
+          cycle={cycle}
+          top={sceneOf(name, p, how)}
+          side={cycle.side ? cycle.side(name, p, how) : null}
+          name={name}
+          auto={cycle.viewOf?.(name, p, focus)}
+          label={title}
+          className={DRAWING_FIT}
+        />
+      )}
       <MoveBar
         groups={groups}
         active={name}

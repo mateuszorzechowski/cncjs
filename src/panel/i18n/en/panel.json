@@ -2073,6 +2073,19 @@
     },
     "cycle": {
       "onSave": "after Save zero, in {{wcs}} here:"
+    },
+    "pair": {
+      "move": {
+        "start": "Two holes: the first one first",
+        "jog": "To the second — by the jog",
+        "end": "The distance between the middles"
+      },
+      "startCode": "ball over the first, \"Measure\"",
+      "endCode": "distance = from the first's middle to the second's",
+      "bar": {
+        "start": "start",
+        "end": "result"
+      }
     }
   }
 }

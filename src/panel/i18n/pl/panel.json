@@ -2073,6 +2073,19 @@
     },
     "cycle": {
       "onSave": "po „Zapisz zero” w {{wcs}} tu:"
+    },
+    "pair": {
+      "move": {
+        "start": "Dwa otwory: najpierw pierwszy",
+        "jog": "Do drugiego — jogiem",
+        "end": "Odległość między środkami"
+      },
+      "startCode": "kulka nad pierwszym, „Mierz”",
+      "endCode": "odległość = od środka pierwszego do środka drugiego",
+      "bar": {
+        "start": "start",
+        "end": "wynik"
+      }
     }
   }
 }

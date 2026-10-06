@@ -1,5 +1,7 @@
 import { bossCycleOf } from './bossCycle';
 import { holeCycleOf } from './holeCycle';
+import { pairCycleOf } from './pairCycle';
+import { pairOf } from './measureShapes';
 
 /**
  * The drawings of a size measured (Pomiar, Mateusz 2026-10-03; the server's
@@ -41,6 +43,13 @@ const CYCLES = {
     [`corner-in-${corner}`, bossCycleOf({ layout: `corner-in-${corner}` })],
   ])),
 };
+/*
+ * A pair played as one film, both features in the scenes between their own
+ * cycles (`pairCycle`) — for now two holes, the example Mateusz asked for
+ * first (2026-10-06: *"zrób na jednym przykładzie, a potem zobaczymy"*).
+ */
+export const filmed = (pair) => pair.shape === 'distance' && pair.a === 'circle-inside' && pair.b === 'circle-inside';
+
 // Two surfaces with the lower being measured: into place over it, the server's steps its.
 const LOWER = bossCycleOf({ layout: 'surface', second: true });
 
@@ -58,6 +67,10 @@ const STEEP = 20;
 export const sizeCycle = (method, shape, angle = null, part = 'a') => {
   if (method !== 'measure') {
     return null;
+  }
+  const pair = pairOf(shape);
+  if (pair && filmed(pair)) {
+    return pairCycleOf(pair, CYCLES[pair.a], CYCLES[pair.b]);
   }
   if (shape === 'surface' && part === 'b') {
     return LOWER;

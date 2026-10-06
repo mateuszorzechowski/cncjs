@@ -5,6 +5,7 @@ import SegmentedChoice from '../../ui/SegmentedChoice';
 import StatTile from '../../ui/StatTile';
 import WcsBadge from '../../ui/WcsBadge';
 import { Tiles } from './SizeSteps';
+import { filmed } from '../machine/sizeCycle';
 import {
   PAIRS, pairChoice, pairEnds, pairFits, pairOf, shapeOf,
 } from '../machine/probe';
@@ -67,9 +68,12 @@ export const PairChooser = ({ value, onChange }) => {
 export const DistanceSetup = ({ chosen, render }) => {
   const pair = pairOf(chosen);
   const [end, setEnd] = useState('a');
-  // Two surfaces are one drawing, a step with both touches on it: nothing to pick.
+  // Two surfaces are one drawing, a step with both touches on it: nothing to pick; a pair played as one film neither.
   if (!pair || PAIRS[pair.shape].fixed) {
     return render(pair ? pair.a : chosen, null);
+  }
+  if (filmed(pair)) {
+    return render(chosen, null);
   }
   return render(pair[end], (
     <SegmentedChoice
