@@ -9,27 +9,26 @@ import { EDGES } from './edge';
  *   pary"*): two holes or studs centre to centre, a hole's centre from an
  *   edge, or two edges facing apart or alike. Two edges must run the same
  *   way: edges square to each other meet in a corner, not at a distance.
- * - A corner's angle (*"zrób 2"*, the same day): two edges that meet, the
- *   angle between them and where they meet.
  * - A height (*"działaj"*, the same day): two surfaces touched from above,
  *   how far the second stands over the first — a step's height, a pocket's
  *   depth, negative.
  *
- * `PARTS` are the features one end may be, by what is measured.
+ * `PARTS` are the features one end may be, by what is measured. A corner's
+ * angle is the 3D probe's corner cycle (`corner3d`), which reads it with
+ * `cornerOf`.
  */
 // Lower case: `react-refresh/babel` takes a capitalised name set by a call
 // for a component, and the server then dies on `$RefreshReg$` at start.
-// An edge of a part from outside, or a pocket's wall from inside (`wall-…`).
-const edgeParts = ['edge', 'wall'].flatMap((from) => Object.keys(EDGES).map((edge) => `${from}-${edge}`));
+// An edge of a part from outside.
+const edgeParts = Object.keys(EDGES).map((edge) => `edge-${edge}`);
 export const PARTS = {
   distance: ['circle-inside', 'circle-outside', ...edgeParts],
-  angle: edgeParts,
   height: ['surface'],
 };
 
-const edgeOf = (part) => EDGES[part.replace(/^(edge|wall)-/, '')] ?? null;
+const edgeOf = (part) => EDGES[part.replace(/^edge-/, '')] ?? null;
 
-/** Why the pair `a`, `b` will not do for `shape` (`distance` or `angle`), or null. */
+/** Why the pair `a`, `b` will not do for `shape` (`distance` or `height`), or null. */
 export const pairRefusal = (shape, a, b) => {
   if (!PARTS[shape].includes(a) || !PARTS[shape].includes(b)) {
     return 'bad-part';
@@ -37,9 +36,6 @@ export const pairRefusal = (shape, a, b) => {
   const [ea, eb] = [edgeOf(a), edgeOf(b)];
   if (shape === 'height') {
     return null;
-  }
-  if (shape === 'angle') {
-    return ea.axis === eb.axis ? 'edges-parallel' : null;
   }
   return ea && eb && ea.axis !== eb.axis ? 'edges-crossing' : null;
 };

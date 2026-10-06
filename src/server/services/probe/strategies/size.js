@@ -1,16 +1,13 @@
 import { touch } from '../moves';
 import { across as bossAcross, overTheTop } from './boss';
 import {
-  PARTS, cornerOf, distanceOf, heightOf, pairRefusal,
+  PARTS, distanceOf, heightOf, pairRefusal,
 } from './distance';
 import {
-  EDGES, edgeLine, edgeOf, edgeSteps, wallSteps,
+  EDGES, edgeLine, edgeOf, edgeSteps,
 } from './edge';
-import { ovalOf } from './oval';
 import { CORNERS } from './corner';
 import { CORNER_SIDES, cornerSize, cornerSteps } from './corner3d';
-import { slotOf } from './slot';
-import { turnedOf, turnedSteps } from './turned';
 import { across as holeAcross } from './hole';
 
 /**
@@ -45,26 +42,13 @@ export const SHAPES = {
   'circle-outside': { kind: 'circle', axes: ['x', 'y'], side: 'outside' },
   'rect-inside': { kind: 'rect', axes: ['x', 'y'], side: 'inside' },
   'rect-outside': { kind: 'rect', axes: ['x', 'y'], side: 'outside' },
-  // At an angle: four sides at two points each, every move along one axis (`turned`).
-  'rect-inside-turned': { kind: 'rect', side: 'inside', turned: true },
-  'rect-outside-turned': { kind: 'rect', side: 'outside', turned: true },
-  // An oval, along the axes or turned: touched as the rectangle at an angle is, the ellipse fitted (`oval`).
-  'oval-inside': { kind: 'oval', side: 'inside', turned: true },
-  'oval-outside': { kind: 'oval', side: 'outside', turned: true },
-  // A slot — a fasolka — cut or standing, along the axes or turned (`slot`).
-  'slot-inside': { kind: 'slot', side: 'inside', turned: true },
-  'slot-outside': { kind: 'slot', side: 'outside', turned: true },
   'groove-x': { kind: 'width', axes: ['x'], side: 'inside' },
   'groove-y': { kind: 'width', axes: ['y'], side: 'inside' },
   'bar-x': { kind: 'width', axes: ['x'], side: 'outside' },
   'bar-y': { kind: 'width', axes: ['y'], side: 'outside' },
   ...Object.fromEntries(Object.keys(EDGES).map((edge) => [`edge-${edge}`, { kind: 'edge', edge }])),
-  // A pocket's wall from inside, one end of a pair (`edge`'s `wallSteps`).
-  ...Object.fromEntries(Object.keys(EDGES).map((wall) => [`wall-${wall}`, { kind: 'edge', wall }])),
   // One feature to another, each one of `distance`'s `PARTS`, options `a` and `b`, measured one after the other.
   distance: { kind: 'distance', pair: distanceOf },
-  // Two edges that meet: the angle between them, and the corner (`distance`).
-  angle: { kind: 'angle', pair: cornerOf },
   // A corner, both its edges from one start (`corner3d`): a part's from outside, a pocket's from inside.
   ...Object.fromEntries(Object.entries(CORNER_SIDES).flatMap(([short, side]) => Object.keys(CORNERS).map((corner) => [
     `corner-${short}-${corner}`, { kind: 'angle', corner, side },
@@ -82,7 +66,7 @@ const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
 
 const passes = ({
-  axes, side, edge, wall, turned, surface, corner,
+  axes, side, edge, surface, corner,
 }, params, { start } = {}) => {
   if (corner) {
     return cornerSteps(corner, side, params, start);
@@ -92,12 +76,6 @@ const passes = ({
   }
   if (edge) {
     return edgeSteps(edge, params);
-  }
-  if (wall) {
-    return wallSteps(wall, params, start);
-  }
-  if (turned) {
-    return turnedSteps(side, params, start);
   }
   const across = side === 'inside' ? holeAcross : bossAcross;
   const all = [];
@@ -162,7 +140,7 @@ const spreadOf = (values) => Math.max(...values) - Math.min(...values);
  */
 const sizeOf = (shape, params, seen) => {
   const {
-    kind, axes, side, edge, wall, turned, surface, corner,
+    kind, axes, side, edge, surface, corner,
   } = SHAPES[shape];
   if (corner) {
     return cornerSize(corner, side, params, seen);
@@ -177,12 +155,8 @@ const sizeOf = (shape, params, seen) => {
       kind, size: {}, spread: null, each: [{}], centre: { z: seen.z.z }, zero: false,
     };
   }
-  if (edge || wall) {
-    return edgeOf(edge || wall, params, seen, Boolean(wall));
-  }
-  if (turned) {
-    const fit = { oval: ovalOf, slot: slotOf }[kind] ?? turnedOf;
-    return fit(side, params, seen);
+  if (edge) {
+    return edgeOf(edge, params, seen);
   }
   const ball = side === 'inside' ? params.ballDiameter : -params.ballDiameter;
   const last = params.holePasses - 1 + params.repeats;
@@ -220,8 +194,8 @@ const sizeOf = (shape, params, seen) => {
  */
 const partOf = (shape, params, seen) => {
   const found = sizeOf(shape, params, seen);
-  const { edge, wall } = SHAPES[shape];
-  return edge || wall ? { ...found, line: edgeLine(edge || wall, params, seen, Boolean(wall)) } : found;
+  const { edge } = SHAPES[shape];
+  return edge ? { ...found, line: edgeLine(edge, params, seen) } : found;
 };
 
 /** One method, `shape` one of `SHAPES`. */
@@ -239,14 +213,9 @@ export default {
    * leaves the figure kept, shared by every method, as it is.
    */
   runParams: (params, options) => (options?.holePasses ? { ...params, holePasses: options.holePasses } : params),
-  /*
-   * A shape touched at two points a side needs them on the side: further apart
-   * than the rough size, a point meets the next wall, or — inside — a way to it
-   * runs into one (Mateusz, 2026-10-05: *"czy ruchy są bezpieczne"*).
-   */
   // Whether these options measure two features, one after the other.
   paired: (options) => Boolean(SHAPES[options?.shape]?.pair),
-  check: (options, params) => {
+  check: (options) => {
     const shape = SHAPES[options.shape];
     if (!shape) {
       return 'bad-shape';
@@ -254,11 +223,7 @@ export default {
     if (options.holePasses !== undefined && !PASSES.includes(options.holePasses)) {
       return 'bad-passes';
     }
-    if (shape.pair) {
-      return pairRefusal(options.shape, options.a, options.b);
-    }
-    const rough = shape.side === 'inside' ? params?.holeSize : params?.bossSize;
-    return shape.turned && params && params.spacing >= rough ? 'spacing-too-wide' : null;
+    return shape.pair ? pairRefusal(options.shape, options.a, options.b) : null;
   },
   // A pair's steps are its feature's: `part`, `a` or `b`.
   steps: (params, options, { part = 'a', ...where } = {}) => (
