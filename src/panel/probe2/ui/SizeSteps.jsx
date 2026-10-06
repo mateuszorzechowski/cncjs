@@ -90,16 +90,19 @@ const MARKS = {
     </>
   ),
   /*
-   * A height, from the side: a step, the ball on its upper face, and the
-   * measure from it down to the lower in the accent, as a distance's is.
+   * A height, from the side: an even step — two faces as wide, the upper
+   * as far over the lower as the lower over the foot — the probe come down
+   * from above onto the upper face, and the measure from it down to the
+   * lower in the accent, as a distance's is.
    */
   height: (
     <>
-      <Work d="M4 44 V18 H24 V30 H44 V44 Z" />
-      {BALL_AT(14, 13.8)}
-      <path d="M24 18 H38" className="stroke-line" strokeWidth={1} />
-      <path d="M34 21.3 V26.4" className="stroke-acc" strokeWidth={1.6} />
-      <Heads d="M31 21.3 L34 18.5 L37 21.3 Z M31 26.4 L34 29.2 L37 26.4 Z" />
+      <Work d="M4 44 V20 H24 V32 H44 V44 Z" />
+      <path d="M14 4 V12.4" className="stroke-ink" strokeWidth={1.6} />
+      {BALL_AT(14, 15.8)}
+      <path d="M24 20 H38" className="stroke-line" strokeWidth={1} />
+      <path d="M34 23.3 V28.4" className="stroke-acc" strokeWidth={1.6} />
+      <Heads d="M31 23.3 L34 20.5 L37 23.3 Z M31 28.4 L34 31.2 L37 28.4 Z" />
     </>
   ),
   // A corner: the part standing in it, the angle between its two sides in the accent.
