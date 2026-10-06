@@ -94,7 +94,8 @@ const CentreSide = ({
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />
       {boss ? (
-        <path d={`M${-half} ${FOOT} V0 H${half} V${FOOT}`} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+        // Two surfaces: a step down at the middle, the lower `drop` under the upper.
+        <path d={`M${-half} ${FOOT} V0 ${part.drop ? `H0 V${part.drop} ` : ''}H${half} V${FOOT}`} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0] - 2} y={0} width={VIEW[2] + 4} height={FOOT + 2} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />

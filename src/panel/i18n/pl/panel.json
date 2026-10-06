@@ -2042,6 +2042,18 @@
     }
   },
   "probe2": {
+    "height": {
+      "move": {
+        "jog": "Nad niższą powierzchnię — jogiem",
+        "dz": "Różnica Z"
+      },
+      "jogCode": "operator: jog, potem „Mierz drugi”",
+      "dzCode": "ΔZ = Z drugiego − Z pierwszego",
+      "bar": {
+        "jog": "jog",
+        "dz": "ΔZ"
+      }
+    },
     "group": {
       "advanced": "Zaawansowane"
     },
@@ -2080,7 +2092,13 @@
     "shape": {
       "cornerOut": "Narożnik detalu",
       "cornerIn": "Narożnik kieszeni",
-      "surface": "Powierzchnia"
+      "surface": "Powierzchnia",
+      "pocketX": "Kieszeń — tylko X",
+      "pocketY": "Kieszeń — tylko Y",
+      "grooveNote": "np. rowek",
+      "partX": "Detal — tylko X",
+      "partY": "Detal — tylko Y",
+      "barNote": "np. listwa"
     },
     "place": {
       "cornerOut": "Ustaw kulkę sondy nad detalem, kilka milimetrów w głąb od obu krawędzi narożnika i nad wierzchem — mniej niż odsunięcie za bok i limit dojazdu Z.",

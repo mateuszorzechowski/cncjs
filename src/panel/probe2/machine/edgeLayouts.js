@@ -41,11 +41,18 @@ const wallLayout = (wall) => ({
     { id: 'reach', key: REACH.group, fields: ['spacing'] }, MEASURE, PROBE,
   ],
 });
-// A surface from above: the top's touch alone (Wysokość, 2026-10-05).
+/*
+ * Two surfaces from above with a step between them (Wysokość, Mateusz
+ * 2026-10-06: *"schodek i pomiar na nim"*): the upper's top touched, the way
+ * over to the lower — the operator's, by the jog — and its top touched.
+ * `step`, how the part is drawn; `second`, over the lower.
+ */
 const surfaceLayout = {
   sides: [],
   from: 'outside',
-  start: [0, 0],
+  start: [-BOSS_R / 2, 0],
+  second: [BOSS_R / 2, 0],
+  step: true,
   reach: 'clear',
   params: [{ id: 'reach', key: REACH.group, fields: ['maxZ'] }, MEASURE, PROBE],
 };

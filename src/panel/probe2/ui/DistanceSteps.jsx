@@ -67,8 +67,9 @@ export const PairChooser = ({ value, onChange }) => {
 export const DistanceSetup = ({ chosen, render }) => {
   const pair = pairOf(chosen);
   const [end, setEnd] = useState('a');
-  if (!pair) {
-    return render(chosen, null);
+  // Two surfaces are one drawing, a step with both touches on it: nothing to pick.
+  if (!pair || PAIRS[pair.shape].fixed) {
+    return render(pair ? pair.a : chosen, null);
   }
   return render(pair[end], (
     <SegmentedChoice

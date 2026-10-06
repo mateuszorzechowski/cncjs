@@ -36,6 +36,11 @@ export const heightOf = (level) => {
   return HEIGHTS[HEIGHTS.length - 1][1];
 };
 
+// How far the lower of two surfaces is drawn under the upper (`step`): the start's height over the one is the way over the other.
+export const DROP = heightOf(1) - heightOf(ABOVE);
+// What that measure is called on the drawing: the difference in Z, the same in every language.
+const DZ = 'ΔZ';
+
 /** How large the ball is drawn at `y`: the front (−Y) nearer, larger. */
 export const scaleAt = (y) => 1 - NEARER * Math.max(-1, Math.min(1, y / REACH));
 
@@ -81,6 +86,8 @@ const distancesOf = (move, p, beside, said, upTo, lit, down, slow) => {
     }];
     case 'down': return sum();
     case 'up': return sum();
+    // Two surfaces: how far the lower stands under the upper, the measure itself.
+    case 'zero': return move.dz ? [one('dz', 0, -DROP, DZ, false)] : [];
     default: return [];
   }
 };
@@ -95,7 +102,8 @@ export const bossSide = (move, p, {
 } = {}) => {
   const { at, level } = toolAt(move, p);
   const [x, y] = at;
-  const h = heightOf(level);
+  // Over the lower of two surfaces, its levels are its own: drawn under the upper's by the step.
+  const h = heightOf(level) - (move.low ? DROP : 0);
   const r = TOOL_R * scaleAt(y);
   const flat = move.axis === 'x';
   const said = (field) => say(field, texts[field] ?? '');
@@ -120,7 +128,7 @@ export const bossSide = (move, p, {
     // Across X the touch is at the ball's side; along Y it faces into the drawing, at its middle.
     contact = [flat ? x - move.sign * r : x, h + r];
   } else if ((move.kind === 'topFast' || move.kind === 'topSlow') && Math.abs(level - ON_TOP) < 0.01) {
-    contact = [x, 0];
+    contact = [x, move.low ? -DROP : 0];
   }
   return {
     along: x,

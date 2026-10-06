@@ -59,7 +59,7 @@ EDITORS.probe3d = EDITORS.measure;
 // A size measured, as the centre's: its passes those it was asked for.
 const SizeCycle = ({ phase, probe }) => {
   // A pair's feature being measured.
-  const cycle = sizeCycle(probe?.method, probe?.part ? probe.options[probe.part] : probe?.options?.shape);
+  const cycle = sizeCycle(probe?.method, probe?.part ? probe.options[probe.part] : probe?.options?.shape, null, probe?.part);
   return <CentreCycle cycle={cycle} phase={phase} passes={drawnPasses(probe?.params?.holePasses, probe?.params?.repeats)} />;
 };
 const CYCLES = {

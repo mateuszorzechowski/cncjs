@@ -20,14 +20,14 @@
  */
 
 import {
-  AXES, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, above, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
+  ABOVE, AXES, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, above, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
 import {
   EDGE_TILT, anglePoints, buildSides, foundOf, layoutOf, sideGroups,
 } from './edgeMoves';
 import { holeSide } from './holeSide';
 import { phasesOf } from './bossPhases';
-import { bossSide } from './bossSide';
+import { DROP, bossSide } from './bossSide';
 import { slowReach } from './probeFields';
 import { frameAt, layOut, totalOf } from './timeline';
 
@@ -43,9 +43,11 @@ const ZERO_CODES = { angle: 'probe.size.codeEdge', surface: 'probe.size.codeSurf
  * `layout`, one of `edgeMoves`' — an edge, a pocket's wall, a corner, a
  * surface: sides touched at two points each instead, the part drawn square
  * and turned `tilt` degrees — the angle measured, made large enough to see.
+ * Two surfaces' (`surface`) drawn as a step; `second`, the lower being
+ * measured — where the ball goes into place, and what the server's steps are.
  */
 export const bossCycleOf = ({
-  axes = AXES, square = false, names = PART_NAMES, layout = null, tilt = EDGE_TILT,
+  axes = AXES, square = false, names = PART_NAMES, layout = null, tilt = EDGE_TILT, second = false,
 } = {}) => {
   const { moves: MOVES, order: ORDER } = layout ? buildSides(layout, tilt) : build({ axes });
   const L = layout && layoutOf(layout);
@@ -73,7 +75,7 @@ export const bossCycleOf = ({
    * sub-stage there is a wall, as the hole's (rule, Mateusz 2026-10-01).
    */
   const TOP = {
-    id: 'z', name: 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow', 'zOff'] }],
+    id: 'z', name: L?.step ? 'Z · 1' : 'Z', subs: [{ key: 'probe.stage.search', moves: ['zFast'] }, { key: 'probe.bar.measure', moves: ['zBack', 'zSlow', 'zOff'] }],
   };
   const bossGroups = (passes = 2) => (layout ? [...(inside ? [] : [TOP]), ...sideGroups(layout)] : [TOP].concat([1, 2].slice(0, passes).flatMap((pass) => axes.map((axis) => {
     const AXIS = axis.toUpperCase();
@@ -101,16 +103,18 @@ export const bossCycleOf = ({
   ];
 
   // A figure being set loops the step it changes, its part lit.
+  // A layout with no side — two surfaces — sets its feeds and back-off on the top's touch.
   const first = layout ? anglePoints(layout)[0] : `${axes[0]}1p`;
+  const touchOf = (step, top) => (first ? `${first}${step}` : top);
   const EDIT = {
     spacing: [`${first}Along`, 'spacing'],
     overTop: ['zOff', 'overTop'],
     bossSize: [`${first}Out`, 'size'],
     clear: [`${first}Out`, 'clear'],
     depth: [`${first}Down`, 'depth'],
-    fast: [`${first}Fast`, 'feed'],
-    slow: [`${first}Slow`, 'feed'],
-    retract: [`${first}Back`, 'retract'],
+    fast: [touchOf('Fast', 'zFast'), 'feed'],
+    slow: [touchOf('Slow', 'zSlow'), 'feed'],
+    retract: [touchOf('Back', 'zBack'), 'retract'],
     maxZ: ['zFast', 'dim'],
     ballDiameter: ['zero', 'dim'],
   };
@@ -171,7 +175,9 @@ export const bossCycleOf = ({
     texts = {}, say = (field, text) => text, upTo = (v) => v, focus = null, sizes = {},
   } = {}) => {
     const move = MOVES[name];
-    const { at: tool, level } = toolAt(move, p);
+    const { at: tool, level: own } = toolAt(move, p);
+    // Over the lower of two surfaces its levels are its own: drawn from above as on with the way over.
+    const level = move.low ? own - (1 - ABOVE) : own;
     const said = (field) => say(field, texts[field] ?? '');
     const lit = (part) => focus === part;
     // Each side this pass touched before this step, once its fast touch is done — this one's too.
@@ -211,7 +217,7 @@ export const bossCycleOf = ({
     let contact = null;
     if ((move.kind === 'fast' || move.kind === 'slow') && near(tool, move.wall)) {
       contact = onSide(move);
-    } else if ((move.kind === 'topFast' || move.kind === 'topSlow') && Math.abs(level - ON_TOP) < 0.01) {
+    } else if ((move.kind === 'topFast' || move.kind === 'topSlow') && Math.abs(own - ON_TOP) < 0.01) {
       contact = tool;
     }
     return {
@@ -226,7 +232,7 @@ export const bossCycleOf = ({
       touched: (layout && move.kind === 'zero' ? ORDER.filter((one) => MOVES[one].kind === 'fast' && MOVES[one].point).map((one) => MOVES[one].side) : sides)
         .map((side) => onSide(MOVES[`${side}Fast`])),
       // And the angle itself: from the axis the side runs along, at the first touch, to the line through both.
-      angle: layout && move.kind === 'zero' ? {
+      angle: layout && move.kind === 'zero' && ANGLE.length ? {
         ...Object.fromEntries(['at', 'to'].map((end, k) => [end, onSide(MOVES[`${ANGLE[k]}Fast`])])),
         base: setOn(MOVES[`${ANGLE[0]}Along`].axis, [0, 0], 1),
         text: sizes.a ?? '∠',
@@ -261,7 +267,7 @@ export const bossCycleOf = ({
       back: () => `G0 ${outward}${texts.retract}`,
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
-      zero: () => [layout ? ZERO_CODES[foundOf(layout)] : 'probe.size.codeBoss'],
+      zero: () => [{ true: 'probe2.height.dzCode', false: layout ? ZERO_CODES[foundOf(layout)] : 'probe.size.codeBoss' }[Boolean(L?.step)]],
       centre: () => [move.code ?? 'probe.hole.centreCode'],
     };
     return CODES[move.kind]();
@@ -280,7 +286,7 @@ export const bossCycleOf = ({
     const p = (ms % POSITION_MS) / POSITION_MS;
     const k = ease(clamp((p - 0.1) / 0.45));
     const from = [-150, 58];
-    const to = layout ? L.start : START;
+    const to = layout ? L[second ? 'second' : 'start'] : START;
     return {
       tool: [from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k],
       // Down into a pocket as into a hole; over a part, to just above its top.
@@ -288,16 +294,23 @@ export const bossCycleOf = ({
     };
   };
 
-  const { moveOfPhase, words: bossWords } = phasesOf(MOVES);
+  const { moveOfPhase: phaseMove, words: bossWords } = phasesOf(MOVES);
+  // The lower of two surfaces: the server's steps are the top's again, drawn as the second's.
+  const moveOfPhase = (phase) => {
+    const name = phaseMove(phase);
+    return second && MOVES[name.replace(/^z/, 'z2')] ? name.replace(/^z/, 'z2') : name;
+  };
 
   const part = {
     // A pocket is drawn as a hole is: the work round it, the ball in it.
     kind: inside ? 'hole' : 'boss', r: BOSS_R, toolR: TOOL_R, grow: inside ? 1.2 : 0.6, view: [-101, -94, 202, 188],
     // One axis: a bar, drawn as a strip that wide (`CentreScene`).
     strip: axes.length === 1 ? axes[0] : null,
-    // A rectangle measured, or an edge's part: drawn square, not round — an edge's turned by its angle.
+    // A rectangle measured, or an edge's part: drawn square, not round — an edge's turned by its angle, a step not.
     square: square || Boolean(layout),
-    turn: layout ? tilt : 0,
+    turn: layout && !L.step ? tilt : 0,
+    // Two surfaces: the lower drawn this far under the upper, right of the middle.
+    drop: L?.step ? DROP : 0,
   };
 
   /** The part as the centre screens take it — `CentreParams`, `CentreCycle`, `CentrePosition`. */
@@ -305,7 +318,7 @@ export const bossCycleOf = ({
     part,
     // From the front too (review note, 2026-10-01): the move under way, or the ball on its way into place; a pocket's as a hole's.
     side: inside ? (name, p, how) => holeSide({ ...MOVES[name], ...toolAt(MOVES[name], p) }, p, how, part) : (name, p, how) => bossSide(MOVES[name], p, how),
-    sidePlace: ({ tool, level }) => (inside ? holeSide({ kind: 'place', at: tool, level }, 0, {}, part) : bossSide({ kind: 'place', frames: [[0, tool, level], [1, tool, level]] }, 0)),
+    sidePlace: ({ tool, level }) => (inside ? holeSide({ kind: 'place', at: tool, level }, 0, {}, part) : bossSide({ kind: 'place', low: second, frames: [[0, tool, level], [1, tool, level]] }, 0)),
     // Which view a phone shows by itself: the side for what goes up and down.
     viewOf: (name, p, focus) => {
       const move = MOVES[name];

@@ -25,7 +25,7 @@ const MOVES = {
   corner: ({ choice }) => <CornerPosition corner={choice} className="w-full max-w-md self-center" />,
   paper: ({ choice }) => <PaperPosition edge={choice} />,
   'height-map': HeightMapPosition,
-  measure: ({ choice, part }) => <CentrePosition cycle={sizeCycle('measure', partShape(choice, part))} />,
+  measure: ({ choice, part }) => <CentrePosition cycle={sizeCycle('measure', partShape(choice, part), null, part)} />,
 };
 MOVES.probe3d = MOVES.measure;
 

@@ -76,7 +76,7 @@ export const anglePoints = (name) => (LAYOUTS[name].sides.length ? pointsOf(LAYO
  */
 export const buildSides = (name, tilt = EDGE_TILT) => {
   const {
-    sides, from, start: S, corner,
+    sides, from, start: S, corner, step, second,
   } = LAYOUTS[name];
   /*
    * Where along a side its two points are from the start: half the spacing
@@ -172,8 +172,21 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
     order.push(...home);
     at = S;
   }
+  if (step) {
+    // Over to the lower surface — the operator's way, by the jog — and its top touched as the upper's was (`low`).
+    moves.jog = {
+      ...leg(at, second, 'centre', 'probe2.height.move.jog', []), axis: 'x', way: 'X', code: 'probe2.height.jogCode',
+    };
+    const lower = topOf(second);
+    const low = (key) => key.replace(/^z/, 'z2');
+    Object.entries(lower.moves).forEach(([key, move]) => {
+      moves[low(key)] = { ...move, low: true };
+    });
+    order.push('jog', ...lower.order.map(low));
+    at = second;
+  }
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: ZERO_TITLES[foundOf(name)], uses: ['ballDiameter'], end: 0.35,
+    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: step ? 'probe2.height.move.dz' : ZERO_TITLES[foundOf(name)], uses: step ? [] : ['ballDiameter'], end: 0.35, low: Boolean(step), dz: Boolean(step),
   };
   order.push('zero');
   return { moves, order };
@@ -181,7 +194,12 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
 
 /** The bar after the top: each point — one side, so a search and a measuring (map §8) — then the result. */
 export const sideGroups = (name) => {
-  const { sides, from } = LAYOUTS[name];
+  const { sides, from, step } = LAYOUTS[name];
+  // Two surfaces: the way over by the jog, and the lower's top as the upper's.
+  const lower = [
+    { id: 'jog', key: 'probe2.height.bar.jog', subs: [{ key: 'probe2.height.bar.jog', moves: ['jog'] }] },
+    { id: 'z2', name: 'Z · 2', subs: [{ key: 'probe.stage.search', moves: ['z2Fast'] }, { key: 'probe.bar.measure', moves: ['z2Back', 'z2Slow', 'z2Off'] }] },
+  ].filter(() => step);
   const steps = STEPS[from];
   const searching = from === 'inside' ? 3 : 4;
   const found = foundOf(name);
@@ -192,10 +210,10 @@ export const sideGroups = (name) => {
       { key: 'probe.stage.search', moves: steps.slice(0, searching).map((step) => `${point}${step}`) },
       { key: 'probe.bar.measure', moves: steps.slice(searching).map((step) => `${point}${step}`) },
     ],
-  }))).concat([{
+  }))).concat(lower, [{
     id: 'zero',
-    key: BAR_KEYS[found],
+    key: step ? 'probe2.height.bar.dz' : BAR_KEYS[found],
     folded: true,
-    subs: [{ key: STAGE_KEYS[found], moves: [...(from === 'inside' ? homeOf(name) : []), 'zero'] }],
+    subs: [{ key: step ? 'probe2.height.bar.dz' : STAGE_KEYS[found], moves: [...(from === 'inside' ? homeOf(name) : []), 'zero'] }],
   }]);
 };

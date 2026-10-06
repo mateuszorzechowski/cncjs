@@ -3,29 +3,27 @@
  * the 48-unit box the other shapes' marks use (`SizeSteps`), drawn for the
  * front-left corner and mirrored for the others. A part's: the part standing
  * up and to the right of its corner, the ball off the corner, two heads in to
- * each edge; a pocket's: the work round it, the ball in the pocket by its
- * corner, two heads out to each wall. Spaced as the edge's marks are — a
- * head's tip on the edge, its base 2.8 off.
+ * each edge; a pocket's: its corner alone, an L of the work's two walls
+ * (Mateusz, 2026-10-06), the ball in it, two heads out to each wall. Each
+ * head halfway between the ball and the work, as `SizeSteps` spaces them.
  */
 const WORK = 'fill-mutS stroke-line';
-const PART = 'fill-mutS stroke-mut';
-const EVEN_ODD = 'evenodd';
 
 const OUT_CORNER = (
   <>
-    <path d="M16 6 H44 V32 H16 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
-    <circle cx={8} cy={40} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
-    {/* In to the left edge at two heights, and up to the front edge at two places along it. */}
-    <path d="M13.2 23 L16 26 L13.2 29 Z M13.2 11 L16 14 L13.2 17 Z M19 34.8 L22 32 L25 34.8 Z M31 34.8 L34 32 L37 34.8 Z" className="fill-acc" />
+    <path d="M17 4 H44 V31 H17 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+    <circle cx={6} cy={42} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
+    {/* In to the left edge at two places along it, and up to the front edge at two. */}
+    <path d="M11.4 10 L14.2 13 L11.4 16 Z M11.4 22 L14.2 25 L11.4 28 Z M23 36.6 L26 33.8 L29 36.6 Z M35 36.6 L38 33.8 L41 36.6 Z" className="fill-acc" />
   </>
 );
 
 const IN_CORNER = (
   <>
-    <path d="M4 4 H44 V44 H4 Z M12 6 H42 V36 H12 Z" fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
-    <circle cx={19} cy={29} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
-    {/* Out to the left wall at two heights, and down to the front wall at two places along it. */}
-    <path d="M14.8 26 L12 29 L14.8 32 Z M14.8 14 L12 17 L14.8 20 Z M16 33.2 L19 36 L22 33.2 Z M28 33.2 L31 36 L34 33.2 Z" className="fill-acc" />
+    <path d="M4 4 H13 V35 H44 V44 H4 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+    <circle cx={24} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
+    {/* Out to the left wall square across and further back, and down to the front wall square across and further right. */}
+    <path d="M18.6 9 L15.8 12 L18.6 15 Z M18.6 21 L15.8 24 L18.6 27 Z M21 29.4 L24 32.2 L27 29.4 Z M33 29.4 L36 32.2 L39 29.4 Z" className="fill-acc" />
   </>
 );
 

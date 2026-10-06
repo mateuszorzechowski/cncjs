@@ -34,13 +34,26 @@ const CORNER_KEYS = {
 export const SHAPES = [
   { id: 'circle-inside', kind: 'circle', key: 'probe.shape.circleInside', side: 'inside', place: 'probe.place.hole' },
   { id: 'circle-outside', kind: 'circle', key: 'probe.shape.circleOutside', side: 'outside', place: 'probe.place.boss' },
-  // A rectangle's middle on both axes, or on one — a groove from inside, a bar from outside (report #22: one kind).
+  /*
+   * A rectangle's middle on both axes, or on one (report #22: one kind): a
+   * pocket's or a part's, named for the axis measured — the moves are the
+   * same whether the other axis has walls or not (Mateusz, 2026-10-06), a
+   * groove and a bar only its likely use.
+   */
   { id: 'rect-inside', kind: 'rect', key: 'probe.shape.rectInside', side: 'inside', place: 'probe.place.pocket' },
+  {
+    id: 'groove-x', kind: 'rect', key: 'probe2.shape.pocketX', note: 'probe2.shape.grooveNote', side: 'inside', axis: 'x', place: 'probe.place.groove',
+  },
+  {
+    id: 'groove-y', kind: 'rect', key: 'probe2.shape.pocketY', note: 'probe2.shape.grooveNote', side: 'inside', axis: 'y', place: 'probe.place.groove',
+  },
   { id: 'rect-outside', kind: 'rect', key: 'probe.shape.rectOutside', side: 'outside', place: 'probe.place.boss' },
-  { id: 'groove-x', kind: 'rect', key: 'probe.shape.grooveX', side: 'inside', axis: 'x', place: 'probe.place.groove' },
-  { id: 'groove-y', kind: 'rect', key: 'probe.shape.grooveY', side: 'inside', axis: 'y', place: 'probe.place.groove' },
-  { id: 'bar-x', kind: 'rect', key: 'probe.shape.barX', side: 'outside', axis: 'x', place: 'probe.place.bar' },
-  { id: 'bar-y', kind: 'rect', key: 'probe.shape.barY', side: 'outside', axis: 'y', place: 'probe.place.bar' },
+  {
+    id: 'bar-x', kind: 'rect', key: 'probe2.shape.partX', note: 'probe2.shape.barNote', side: 'outside', axis: 'x', place: 'probe.place.bar',
+  },
+  {
+    id: 'bar-y', kind: 'rect', key: 'probe2.shape.partY', note: 'probe2.shape.barNote', side: 'outside', axis: 'y', place: 'probe.place.bar',
+  },
   // An edge, by the way it faces: the front faces −Y (the server's `strategies/edge`).
   { id: 'edge-front', kind: 'edge', key: 'probe.shape.edgeFront', side: 'outside', place: 'probe.place.edge' },
   { id: 'edge-back', kind: 'edge', key: 'probe.shape.edgeBack', side: 'outside', place: 'probe.place.edge' },

@@ -2042,6 +2042,18 @@
     }
   },
   "probe2": {
+    "height": {
+      "move": {
+        "jog": "Over the lower surface — by the jog",
+        "dz": "Difference in Z"
+      },
+      "jogCode": "operator: jog, then \"Measure second\"",
+      "dzCode": "ΔZ = Z of the second − Z of the first",
+      "bar": {
+        "jog": "jog",
+        "dz": "ΔZ"
+      }
+    },
     "group": {
       "advanced": "Advanced"
     },
@@ -2080,7 +2092,13 @@
     "shape": {
       "cornerOut": "Part's corner",
       "cornerIn": "Pocket's corner",
-      "surface": "Surface"
+      "surface": "Surface",
+      "pocketX": "Pocket — X only",
+      "pocketY": "Pocket — Y only",
+      "grooveNote": "e.g. a groove",
+      "partX": "Part — X only",
+      "partY": "Part — Y only",
+      "barNote": "e.g. a bar"
     },
     "place": {
       "cornerOut": "Bring the probe's ball over the part, a few millimetres in from both edges of the corner and over the top — less than the clearance past the side and the Z travel limit.",

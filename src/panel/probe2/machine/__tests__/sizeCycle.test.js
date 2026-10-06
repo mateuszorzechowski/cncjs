@@ -87,6 +87,33 @@ describe('a size\'s drawing', () => {
     expect(['circle-inside', 'rect-outside', 'groove-x'].map((shape) => sizeCycle('measure', shape).params.some((group) => group.repeats))).toEqual([true, true, true]);
   });
 
+  test('two surfaces: a step, the upper touched, over to the lower by the jog, the lower touched, the difference', () => {
+    const step = sizeCycle('measure', 'surface');
+    expect(step.order(1)).toEqual(['zFast', 'zBack', 'zSlow', 'zOff', 'jog', 'z2Fast', 'z2Back', 'z2Slow', 'z2Off', 'zero']);
+    expect(step.groups(1).flatMap((group) => group.subs.flatMap((sub) => sub.moves))).toEqual(step.order(1));
+    expect(step.part.drop).toBeGreaterThan(0);
+    // The way over keeps its height: the lower's search starts where the jog left the ball.
+    const side = (name, p) => step.side(name, p, {});
+    expect(side('z2Fast', 0).h).toBeCloseTo(side('jog', 1).h, 9);
+    expect(side('zSlow', 0.7).contact[1]).toBe(0);
+    expect(side('z2Slow', 0.7).contact[1]).toBe(-step.part.drop);
+    expect(side('zero', 1).vdims).toMatchObject([{ id: 'dz', from: 0, to: -step.part.drop }]);
+    // The last frame and a figure set do not fall over for want of a side.
+    expect(() => step.scene('zero', 1, {})).not.toThrow();
+    expect(step.playAt(0, { field: 'fast' }).name).toBe('zFast');
+    expect(step.code('zero', {})).toEqual(['probe2.height.dzCode']);
+  });
+
+  test('two surfaces, the lower measured: into place over it, the server\'s top steps drawn as its', () => {
+    const upper = sizeCycle('measure', 'surface');
+    const lower = sizeCycle('measure', 'surface', null, 'b');
+    expect(upper.moveOfPhase('z-fast')).toBe('zFast');
+    expect(lower.moveOfPhase('z-fast')).toBe('z2Fast');
+    expect(lower.moveOfPhase('lift')).toBe('z2Off');
+    expect(upper.positionAt(5999).tool[0]).toBeLessThan(0);
+    expect(lower.positionAt(5999).tool[0]).toBeGreaterThan(0);
+  });
+
   test('a pass past the second is drawn as the second', () => {
     expect(sizeCycle('measure', 'circle-inside').moveOfPhase('x4a-fast')).toBe('x2pFast');
     expect(sizeCycle('measure', 'circle-outside').moveOfPhase('y3-centre')).toBe('y2c');

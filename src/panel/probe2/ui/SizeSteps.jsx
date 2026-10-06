@@ -20,94 +20,109 @@ const RESULT_FIT = 'max-h-80 @[1800px]/shell:max-h-[28rem]';
  */
 
 /*
- * Each shape from above, small: the work hatched where it stands, the 3D
- * probe's ball and the accent heads at the walls it touches — out from
- * inside a hole, a pocket or a groove, in from outside a stud, a part or a
- * bar, as the hole's and the part's pictograms point. Along Y the same, turned.
+ * Each shape from above, small: the work where it stands, the 3D probe's
+ * ball and the accent heads at the walls it touches — out from inside a
+ * hole or a pocket, in from outside a stud or a part; four heads where both
+ * axes are measured, two where one is. Along Y the same, turned.
  *
- * Spaced as those pictograms are (review note, 2026-10-05: *"między
- * narzędziem, strzałką a materiałem jednakowa odległość"*): on the measuring
- * line the walls stand at x 15 and 33, a head's tip on the wall's edge, its
- * base 2 off the ball — the ball in the middle from inside, at x 6 from
- * outside.
+ * One rule for every head (Mateusz, 2026-10-06: *"mają być równe
+ * odległości"*): it stands halfway between the ball and the work — `GAP`
+ * from the ball's edge to its base, `GAP` from its tip to the work's edge,
+ * the strokes counted; a head on a side the ball is not at stands `GAP` off
+ * the work all the same. The work's outline is the same light line
+ * everywhere, whether it stands alone or round a hole (*"te same kolory
+ * materiału"*). The figures below are worked out from it: the ball's edge
+ * 3.4 from its centre, the work's 0.8 past its line, a head 2.8 deep.
  */
-const BALL = <circle cx={24} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
-const OUT_BALL = <circle cx={6} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
-// From inside, out to the walls; from outside, in to the part.
-const OUT_HEADS = <path d="M18.6 21 L15.8 24 L18.6 27 Z M29.4 21 L32.2 24 L29.4 27 Z" className="fill-acc" />;
-const IN_HEADS = <path d="M11.4 21 L14.2 24 L11.4 27 Z M36.6 21 L33.8 24 L36.6 27 Z" className="fill-acc" />;
+const BALL_AT = (x, y) => <circle cx={x} cy={y} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
 const WORK = 'fill-mutS stroke-line';
-// A part standing alone, with nothing round it to show its edge: outlined darker.
-const PART = 'fill-mutS stroke-mut';
 // SVG's word for a shape with a hole cut in it.
 const EVEN_ODD = 'evenodd';
-// The work round a hole: the hole's own outline is cut out of it.
-const AROUND = 'M4 6 H44 V42 H4 Z ';
+// The work round a hole or a pocket, its walls as thick all round: the hole's own outline is cut out of it.
+const AROUND = 'M4 4 H44 V44 H4 Z ';
+const Work = ({ d, cut = false }) => <path d={d} fillRule={cut ? EVEN_ODD : undefined} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />;
+const Heads = ({ d }) => <path d={d} className="fill-acc" />;
 
-// The outlines, crossing the measuring line at x 15 and 33.
-const OUTLINE = {
-  circle: 'M15 24 A9 9 0 1 0 33 24 A9 9 0 1 0 15 24 Z',
-  square: 'M15 15 H33 V33 H15 Z',
+// Inside: the hole or the pocket 22 across about the middle, the ball in it; each head out to its wall.
+const HOLE = {
+  circle: 'M13 24 A11 11 0 1 0 35 24 A11 11 0 1 0 13 24 Z',
+  square: 'M13 13 H35 V35 H13 Z',
 };
+const OUT_X = 'M18.6 21 L15.8 24 L18.6 27 Z M29.4 21 L32.2 24 L29.4 27 Z';
+const OUT_Y = 'M21 18.6 L24 15.8 L27 18.6 Z M21 29.4 L24 32.2 L27 29.4 Z';
+// Outside: the part 22 across about (28, 24), the ball off its left side; each head in to its side.
+const PART = {
+  circle: 'M17 24 A11 11 0 1 0 39 24 A11 11 0 1 0 17 24 Z',
+  square: 'M17 13 H39 V35 H17 Z',
+};
+const IN_X = 'M11.4 21 L14.2 24 L11.4 27 Z M44.6 21 L41.8 24 L44.6 27 Z';
+const IN_Y = 'M25 7.4 L28 10.2 L31 7.4 Z M25 40.6 L28 37.8 L31 40.6 Z';
 
-const inside = (outline) => (
+const inside = (outline, heads) => (
   <>
-    <path d={AROUND + outline} fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
-    {BALL}
-    {OUT_HEADS}
+    <Work d={AROUND + outline} cut />
+    {BALL_AT(24, 24)}
+    <Heads d={heads} />
   </>
 );
-const outside = (outline) => (
+const outside = (outline, heads) => (
   <>
-    <path d={outline} className={PART} strokeWidth={1.6} strokeLinejoin="round" />
-    {OUT_BALL}
-    {IN_HEADS}
+    <Work d={outline} />
+    {BALL_AT(6, 24)}
+    <Heads d={heads} />
   </>
 );
 
 const MARKS = {
-  'circle-inside': inside(OUTLINE.circle),
-  'circle-outside': outside(OUTLINE.circle),
-  'rect-inside': inside(OUTLINE.square),
-  'rect-outside': outside(OUTLINE.square),
-  groove: (
-    <>
-      <path d="M4 8 H15 V40 H4 Z M33 8 H44 V40 H33 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
-      {BALL}
-      {OUT_HEADS}
-    </>
-  ),
-  bar: outside('M15 8 H33 V40 H15 Z'),
+  'circle-inside': inside(HOLE.circle, `${OUT_X} ${OUT_Y}`),
+  'circle-outside': outside(PART.circle, `${IN_X} ${IN_Y}`),
+  'rect-inside': inside(HOLE.square, `${OUT_X} ${OUT_Y}`),
+  'rect-outside': outside(PART.square, `${IN_X} ${IN_Y}`),
+  // One axis of the same pocket or part: two heads, the other axis left alone.
+  pocketAxis: inside(HOLE.square, OUT_X),
+  partAxis: outside(PART.square, IN_X),
   // A distance: two holes in the work, the measure between their centres in the accent.
   distance: (
     <>
-      <path d={`${AROUND}M8 24 A5 5 0 1 0 18 24 A5 5 0 1 0 8 24 Z M30 24 A5 5 0 1 0 40 24 A5 5 0 1 0 30 24 Z`} fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
+      <Work d={`${AROUND}M8 24 A5 5 0 1 0 18 24 A5 5 0 1 0 8 24 Z M30 24 A5 5 0 1 0 40 24 A5 5 0 1 0 30 24 Z`} cut />
       <path d="M13 24 H35" className="stroke-acc" strokeWidth={1.6} />
-      <path d="M16 21.5 L13 24 L16 26.5 Z M32 21.5 L35 24 L32 26.5 Z" className="fill-acc" />
+      <Heads d="M16 21.5 L13 24 L16 26.5 Z M32 21.5 L35 24 L32 26.5 Z" />
+    </>
+  ),
+  /*
+   * A height, from the side: a step, the ball on its upper face, and the
+   * measure from it down to the lower in the accent, as a distance's is.
+   */
+  height: (
+    <>
+      <Work d="M4 44 V18 H24 V30 H44 V44 Z" />
+      {BALL_AT(14, 13.8)}
+      <path d="M24 18 H38" className="stroke-line" strokeWidth={1} />
+      <path d="M34 21.3 V26.4" className="stroke-acc" strokeWidth={1.6} />
+      <Heads d="M31 21.3 L34 18.5 L37 21.3 Z M31 26.4 L34 29.2 L37 26.4 Z" />
     </>
   ),
   // A corner: the part standing in it, the angle between its two sides in the accent.
   angle: (
     <>
-      <path d="M12 38 V10 H40 V38 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
+      <Work d="M12 38 V10 H40 V38 Z" />
       <path d="M26 38 A14 14 0 0 0 12 24" fill="none" className="stroke-acc" strokeWidth={1.6} />
     </>
   ),
-  // A pocket's front wall from inside: the work round the pocket, the ball in it, the two heads out to the wall.
+  // A pocket's front wall from inside: the pocket, the ball in it, the two heads out to the wall either side of it.
   wall: (
     <>
-      <path d={`${AROUND}M10 10 H38 V36 H10 Z`} fillRule={EVEN_ODD} className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
-      <circle cx={24} cy={27} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
-      <path d="M15 33.2 L18 36 L21 33.2 Z M27 33.2 L30 36 L33 33.2 Z" className="fill-acc" />
+      <Work d={AROUND + HOLE.square} cut />
+      {BALL_AT(24, 24)}
+      <Heads d="M15 29.4 L18 32.2 L21 29.4 Z M27 29.4 L30 32.2 L33 29.4 Z" />
     </>
   ),
-  // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it —
-  // spaced as the others, a tip on the edge, the base 2 off the ball's row.
+  // An edge facing −Y, the part above it: the ball in front, the two heads where it touches, either side of it.
   edge: (
     <>
-      <path d="M8 8 H40 V30 H8 Z" className={PART} strokeWidth={1.6} strokeLinejoin="round" />
-      <circle cx={24} cy={39} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />
-      <path d="M13 33.6 L16 30.8 L19 33.6 Z M29 33.6 L32 30.8 L35 33.6 Z" className="fill-acc" />
+      <Work d="M8 8 H40 V30 H8 Z" />
+      {BALL_AT(24, 41)}
+      <Heads d="M13 35.6 L16 32.8 L19 35.6 Z M29 35.6 L32 32.8 L35 35.6 Z" />
     </>
   ),
 };
@@ -127,11 +142,11 @@ const ShapeMarks = ({ shape }) => {
   if (one.kind === 'corner') {
     return <CornerMarks one={one} />;
   }
-  // A groove or a bar — one axis of a rectangle's kind in v2 — by its axis.
+  // One axis of a pocket or a part, by its axis.
   if (!one.axis) {
     return MARKS[one.id];
   }
-  return <g transform={one.axis === 'y' ? 'rotate(90 24 24)' : undefined}>{one.side === 'inside' ? MARKS.groove : MARKS.bar}</g>;
+  return <g transform={one.axis === 'y' ? 'rotate(90 24 24)' : undefined}>{one.side === 'inside' ? MARKS.pocketAxis : MARKS.partAxis}</g>;
 };
 
 export const ShapePicture = ({ shape }) => (
@@ -183,6 +198,10 @@ export const LieChooser = ({ value, onChange }) => {
   let columns = items.length > 2 ? '@3xl/shell:grid-cols-4' : '@3xl/shell:grid-cols-2';
   if (kind === 'corner') {
     columns = 'grid-cols-2 @3xl/shell:grid-cols-4';
+  }
+  // A pocket's three and a part's three, a row each: both axes, X alone, Y alone.
+  if (kind === 'rect') {
+    columns = '@3xl/shell:grid-cols-3';
   }
   return <Tiles label={t('probe.shapeLabel')} items={items} on={shapeOf(value).id} onPick={onChange} className={columns} />;
 };

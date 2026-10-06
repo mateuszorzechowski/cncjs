@@ -162,7 +162,11 @@ const CentreScene = ({
       {/* The work round the hole, or the part alone — no table under it, as no other drawing has (review note, 2026-10-01). */}
       {boss ? (
         // An edge's part turned by its angle, anticlockwise: Y is up, so against the SVG's turn.
-        <Outline {...outline} transform={part.turn ? `rotate(${-part.turn})` : undefined} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+        <>
+          <Outline {...outline} transform={part.turn ? `rotate(${-part.turn})` : undefined} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+          {/* Two surfaces: the lower, right of the step, paler as further away. */}
+          {part.drop ? <rect x={0} y={-part.r} width={part.r} height={2 * part.r} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} /> : null}
+        </>
       ) : (
         <>
           <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} fill={`url(#${id})`} />

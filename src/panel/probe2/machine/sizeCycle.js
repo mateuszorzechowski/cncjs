@@ -28,6 +28,7 @@ const CYCLES = {
   'edge-back': bossCycleOf({ layout: 'edge-back' }),
   'edge-left': bossCycleOf({ layout: 'edge-left' }),
   'edge-right': bossCycleOf({ layout: 'edge-right' }),
+  // Two surfaces, a step: one drawing for both, the upper measured first.
   surface: bossCycleOf({ layout: 'surface' }),
   // A pocket's wall from inside, one end of a pair.
   'wall-front': bossCycleOf({ layout: 'wall-front' }),
@@ -40,6 +41,9 @@ const CYCLES = {
     [`corner-in-${corner}`, bossCycleOf({ layout: `corner-in-${corner}` })],
   ])),
 };
+// Two surfaces with the lower being measured: into place over it, the server's steps its.
+const LOWER = bossCycleOf({ layout: 'surface', second: true });
+
 // The shapes drawn turned: an edge, by its own layout.
 const TURNED = ['edge-front', 'edge-back', 'edge-left', 'edge-right'];
 
@@ -51,9 +55,12 @@ const TURNED = ['edge-front', 'edge-back', 'edge-left', 'edge-right'];
  */
 const SEEN = 8;
 const STEEP = 20;
-export const sizeCycle = (method, shape, angle = null) => {
+export const sizeCycle = (method, shape, angle = null, part = 'a') => {
   if (method !== 'measure') {
     return null;
+  }
+  if (shape === 'surface' && part === 'b') {
+    return LOWER;
   }
   if (TURNED.includes(shape) && Number.isFinite(angle)) {
     const size = Math.abs(angle) < 0.0005 ? 0 : Math.min(STEEP, Math.max(SEEN, Math.abs(angle)));
