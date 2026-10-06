@@ -2078,14 +2078,18 @@
       "move": {
         "start": "Dwa otwory: najpierw pierwszy",
         "jog": "Do drugiego — jogiem",
-        "end": "Odległość między środkami"
+        "end": "Odległość między środkami",
+        "centreA": "Środek pierwszego",
+        "centreB": "Środek drugiego"
       },
       "startCode": "kulka nad pierwszym, „Mierz”",
       "endCode": "odległość = od środka pierwszego do środka drugiego",
       "bar": {
         "start": "start",
-        "end": "wynik"
-      }
+        "end": "wynik",
+        "centre": "środek"
+      },
+      "centreCode": "środek = środek okręgu przez dotyki"
     }
   }
 }

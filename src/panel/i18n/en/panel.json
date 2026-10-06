@@ -2078,14 +2078,18 @@
       "move": {
         "start": "Two holes: the first one first",
         "jog": "To the second — by the jog",
-        "end": "The distance between the middles"
+        "end": "The distance between the middles",
+        "centreA": "The first one's middle",
+        "centreB": "The second one's middle"
       },
       "startCode": "ball over the first, \"Measure\"",
       "endCode": "distance = from the first's middle to the second's",
       "bar": {
         "start": "start",
-        "end": "result"
-      }
+        "end": "result",
+        "centre": "middle"
+      },
+      "centreCode": "middle = the circle through the touches"
     }
   }
 }
