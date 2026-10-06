@@ -10,7 +10,7 @@ const entry = (code, data) => ({ event: 'probe', code, data });
 describe('a probe entry in words', () => {
   test('a start names the method and its choice', () => {
     expect(probeLine(entry('start', { method: 'measure', shape: 'bar-x' }), units))
-      .toBe('journal.probe.start{"method":"probe.method.measure · probe.shape.barX"}');
+      .toBe('journal.probe.start{"method":"probe2.method.probe3d · probe2.shape.partX"}');
   });
 
   test('a zero measured: each axis where it goes and by how much; an older entry without the shift too', () => {
@@ -23,7 +23,7 @@ describe('a probe entry in words', () => {
     const line = probeLine(entry('size', {
       method: 'measure', shape: 'distance', a: 'circle-inside', b: 'circle-inside', size: { dist: 50, dx: 40, dy: 30, a: 36.87 }, spread: null, passes: 1, ball: 2,
     }), units);
-    expect(line).toContain('probe.method.measure · probe.shape.distance');
+    expect(line).toContain('probe2.method.measure · probe.shape.distance');
     expect(line).toContain('"sizes":"journal.detail.dist 50.000 mm · journal.detail.angle 36.870° · ΔX 40.000 mm · ΔY 30.000 mm"');
     expect(line).toContain('"unit":""');
     expect(probeLine(entry('first', { method: 'measure', shape: 'distance', size: { d: 20 } }), units)).toContain('journal.probe.first');
@@ -70,7 +70,7 @@ describe('a probe entry in words', () => {
     expect(probeDetails(entry('size', {
       method: 'measure', shape: 'circle-inside', wcs: 'G55', size: { d: 24 }, spread: null, off: 0.01, centre: { x: 1, y: 2 }, passes: 1, ball: 2,
     }), units).map(([label, value]) => `${label} ${value}`)).toEqual([
-      'journal.detail.method probe.method.measure · probe.shape.circleInside',
+      'journal.detail.method probe2.method.probe3d · probe.shape.circleInside',
       'Ø 24.000 mm',
       'journal.detail.off 0.010 mm',
       'journal.detail.centre{"wcs":"G55"} X 1.000 · Y 2.000 mm',

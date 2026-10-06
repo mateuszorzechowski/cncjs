@@ -9,7 +9,6 @@
     "files": "Files",
     "path": "Path",
     "probe": "Probe",
-    "probe2": "Probe v2",
     "diagShort": "Diag",
     "diag": "Diagnostics",
     "settings": "Settings",
@@ -1456,9 +1455,7 @@
       "paper": "Paper",
       "paperNote": "By hand with a sheet of paper: the top or any side, no probe.",
       "map": "Height map",
-      "mapNote": "A grid of points by probe: the program follows a warped board. The zero stays as it is.",
-      "measure": "Measure",
-      "measureNote": "A circle, a rectangle or a width, with the probe: its size and middle — and, if you want, the zero there."
+      "mapNote": "A grid of points by probe: the program follows a warped board. The zero stays as it is."
     },
     "how": {
       "paper": "Hold a sheet of paper between the tool and the surface you chose. Nothing needs clipping — the machine moves only when you jog."
@@ -1479,7 +1476,6 @@
       "bar": "Set the probe's ball over the middle of the bar, a few millimetres above its top — less than the Z travel limit.",
       "pocket": "Lower the probe's ball into the pocket, a few millimetres below its edge, roughly in the middle — without touching the walls.",
       "edge": "Put the probe's ball over the part, a few millimetres in from the edge chosen and above the top — less than the clearance past the side and the Z travel limit.",
-      "slot": "Lower the probe's ball into the slot, a few millimetres below its edge, roughly in the middle. The points' spacing must be well under the slot's width.",
       "wall": "Lower the probe ball into the pocket, a few millimetres under its edge, clear of the walls — it touches the chosen wall from inside at two points.",
       "surface": "Set the probe ball over the surface, a few millimetres above it — less than the Z travel limit."
     },
@@ -1550,11 +1546,7 @@
       "grooveSize": "Groove width (roughly)",
       "barSize": "Bar width (roughly)",
       "spacing": "Spacing of the points on the edge",
-      "ovalStudSize": "Stud's long axis (roughly)",
-      "ovalHoleSize": "Hole's long axis (roughly)",
-      "overTop": "Travel over the top",
-      "slotHoleSize": "Slot length (roughly)",
-      "slotStudSize": "Slot length (roughly)"
+      "overTop": "Travel over the top"
     },
     "step": {
       "method": "Method",
@@ -1578,7 +1570,6 @@
       "touching": "Touching",
       "ok": "Works",
       "unknown": "The controller does not report its inputs, so the wire cannot be checked here.",
-      "untested": "The wire is untested. If the plate or the probe is not plugged in, the machine will travel all the way to the travel limit while measuring and only then stop with ALARM:5.",
       "picture": "The clip on the tool, and the plate apart from it and touching it",
       "open": "PROBE · open",
       "closed": "PROBE · closed",
@@ -1740,8 +1731,7 @@
       "stud": "Stud",
       "pocket": "Pocket",
       "groove": "Groove",
-      "bar": "Bar",
-      "slot": "Slot"
+      "bar": "Bar"
     },
     "play": {
       "pause": "Pause",
@@ -1918,27 +1908,15 @@
       "circleOutside": "Stud",
       "rectInside": "Pocket",
       "rectOutside": "Part",
-      "grooveX": "Groove X",
-      "grooveY": "Groove Y",
-      "barX": "Bar X",
-      "barY": "Bar Y",
       "edgeFront": "Front",
       "edgeBack": "Back",
       "edgeLeft": "Left side",
       "edgeRight": "Right side",
-      "rectInsideTurned": "Pocket at an angle",
-      "rectOutsideTurned": "Part at an angle",
-      "ovalInside": "Hole — ovality",
-      "ovalOutside": "Stud — ovality",
-      "slotInside": "Slot cut",
-      "slotOutside": "Slot standing",
       "distance": "Distance",
-      "angle": "Angle and corner",
       "wallFront": "Front wall",
       "wallBack": "Back wall",
       "wallLeft": "Left wall",
       "wallRight": "Right wall",
-      "surface": "One surface",
       "height": "Two surfaces"
     },
     "shapeLabel": "How it lies",
@@ -1946,8 +1924,6 @@
       "move": {
         "size": "Size: the touches apart, and the ball",
         "edge": "Angle: from the two touches and their spacing",
-        "oval": "Oval: the ellipse through eight touches",
-        "slot": "Slot: the shape through eight touches",
         "surface": "Z: touched by the ball's lowest point"
       },
       "codeHole": "size = touches apart + ball Ø",
@@ -1971,41 +1947,14 @@
       "angleWhy": "The angle from the axis, anticlockwise. Grbl does not rotate coordinates (no G68): square the part, or allow for the angle in the program.",
       "edgeIn": "Edge in",
       "edgeAt": "Edge {{axis}}",
-      "codeTurned": "sides and angle = from the lines through each side's touches",
       "square": "Off square",
-      "squareWhy": "How far the sides across differ in angle from those along. Near zero, the corners are square; more, a rhombus, or a touch that met the next wall (make the spacing smaller).",
-      "turnAngle": "Turn",
-      "codeOval": "axes, angle and middle = the ellipse fitted to the touches, the ball taken off",
-      "major": "Long axis",
-      "minor": "Short axis",
-      "majorAngle": "Long axis angle",
-      "offOval": "Off the ellipse",
-      "offOvalWhy": "Ovality: axes along X and Y — backlash, or one axis's steps per mm; axes near 45° — X and Y not square. How far off: the touches from the ellipse.",
-      "codeSlot": "length, width, angle and middle = the slot fitted to the touches, the ball taken off",
-      "length": "Length",
-      "across": "Width",
-      "offSlot": "Off the slot",
-      "offSlotWhy": "Off the slot: the touch farthest from the fitted slot less the nearest. Near zero, it is a slot; more, another shape, a flaw or a point too near an end.",
       "codeSurface": "Z = the top touched"
     },
     "kindLabel": "What you measure",
     "kind": {
-      "circle": "Circle",
-      "circleNote": "A hole or a stud: diameter, middle and how far from round — or its ovality: the ellipse's two axes and their angle.",
-      "rect": "Rectangle",
-      "rectNote": "A pocket or a part, its sides along X and Y: sizes and middle.",
-      "width": "Width",
-      "widthNote": "A groove or a bar, along one axis: width and middle.",
       "edge": "Edge and angle",
-      "edgeNote": "A side of the part at two points: its angle to the axis and where the edge lies.",
-      "slot": "Slot",
-      "slotNote": "A slot with round ends, cut or standing, along the axes or turned: length, width, angle and middle.",
       "distance": "Distance",
-      "distanceNote": "Between two features — holes, studs or edges: the distance, and for two centres X, Y and the angle too.",
-      "angle": "Angle and corner",
-      "angleNote": "Two edges that meet: the angle between them, how far off square, and where the corner is.",
-      "height": "Height and depth",
-      "heightNote": "A surface touched from above: its Z — or two: how far the second is higher or lower, e.g. a step's height, a pocket's depth."
+      "height": "Height and depth"
     },
     "distance": {
       "first": "First",
@@ -2035,7 +1984,6 @@
       "dz": "Second against first",
       "dzWhy": "The difference in machine Z between the touches: it does not depend on the tool's length or the ball. Negative — the second surface lower (a pocket's depth), positive — higher (a step's height).",
       "at": "Z in",
-      "z": "Surface Z",
       "zOf": "{{end}} · Z",
       "zWhy": "The Z of the ball's lowest point in the system — true if Z0 was set with the same probe. No zero is written from it: for a tool of another length it would be wrong.",
       "note": "The zero is not changed. The result is in the Journal."

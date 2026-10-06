@@ -5,17 +5,15 @@ import { stepsOf } from '../machine/probe';
 import { t } from '../../i18n/index';
 
 /**
- * The card over the wizard: its caption, the steps and the method in one row
- * when wide (review note, 2026-09-30: *"dużo miejsca to zajmuje"*); on a
- * phone the steps under the other two. Captioned Sonda v2, so a screenshot
- * says which of the two wizards it is.
+ * The card over the wizard: the steps and the method in one row when wide
+ * (review note, 2026-09-30: *"dużo miejsca to zajmuje"*); on a phone the
+ * steps under it.
  */
 const ProbeTrack = ({
   method, choice, step, takenBy,
 }) => (
   <Card>
     <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <h2 className="m-0 text-cap font-semibold uppercase tracking-[0.1em] text-mut">{t('nav.probe2')}</h2>
       <StepTrack
         steps={stepsOf(method, choice).map((s) => ({ ...s, name: t(s.key) }))}
         current={step}

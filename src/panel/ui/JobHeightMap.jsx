@@ -1,5 +1,5 @@
 import SegmentedChoice from './SegmentedChoice';
-import { bendProgram } from '../machine/probe';
+import { bendProgram } from '../probe/machine/probe';
 import { when } from './dates';
 import { t } from '../i18n';
 
