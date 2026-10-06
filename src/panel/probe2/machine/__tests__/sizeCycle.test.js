@@ -64,52 +64,27 @@ describe('a size\'s drawing', () => {
     expect(sizeCycle('measure', 'edge-right').order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast')).toEqual(['x1pFast', 'x2pFast']);
   });
 
-  test('a rectangle at an angle: four sides, two points each — a part from over the top, a pocket from its middle', () => {
-    const part = sizeCycle('measure', 'rect-outside-turned');
-    const fasts = (cycle) => cycle.order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast');
-    expect(fasts(part)).toEqual(['y1mFast', 'y2mFast', 'x1pFast', 'x2pFast', 'y1pFast', 'y2pFast', 'x1mFast', 'x2mFast']);
-    expect(part.order(1)[0]).toBe('zFast');
-    expect(part.part).toMatchObject({ kind: 'boss', square: true, turn: 8 });
-    // From outside the front is touched moving +Y; its search goes in by half the part and the clearance.
-    expect(part.code('y1mFast', { bossSize: '40', clear: '20', fast: '300' })).toBe('G38.2 Y+40 F300');
-
-    const pocket = sizeCycle('measure', 'rect-inside-turned');
-    expect(pocket.order(1)[0]).toBe('y1mIn');
-    expect(pocket.order(1).slice(-3)).toEqual(['retX', 'retY', 'zero']);
-    expect(pocket.part).toMatchObject({ kind: 'hole', square: true });
+  test("a pocket's wall from inside: from its middle, out to the wall at two points, back to the middle", () => {
+    const wall = sizeCycle('measure', 'wall-front');
+    expect(wall.order(1)[0]).toBe('y1mIn');
+    expect(wall.order(1).slice(-3)).toEqual(['retY', 'retX', 'zero']);
+    expect(wall.part).toMatchObject({ kind: 'hole', square: true });
     // From inside the ball goes out to the front's wall, −Y, as far as the pocket's rough size.
-    expect(pocket.code('y1mFast', { holeSize: '40', fast: '300' })).toBe('G38.2 Y-40 F300');
-    expect(pocket.code('y1mBack', { retract: '3' })).toBe('G0 Y+3');
-    expect(pocket.moveOfPhase('return-x')).toBe('retX');
-    expect(pocket.moveOfPhase('x2a-in')).toBe('x2pIn');
-    expect(pocket.groups(1).flatMap((group) => group.subs.flatMap((sub) => sub.moves))).toEqual(pocket.order(1));
-    // The result: every touch, the angle through the front's two.
-    const result = pocket.scene('zero', 1, { sizes: { a: '2,000°' } });
-    expect(result.touched).toHaveLength(8);
+    expect(wall.code('y1mFast', { holeSize: '40', fast: '300' })).toBe('G38.2 Y-40 F300');
+    expect(wall.code('y1mBack', { retract: '3' })).toBe('G0 Y+3');
+    expect(wall.groups(1).flatMap((group) => group.subs.flatMap((sub) => sub.moves))).toEqual(wall.order(1));
+    // The result: both touches, the angle through them.
+    const result = wall.scene('zero', 1, { sizes: { a: '2,000°' } });
+    expect(result.touched).toHaveLength(2);
     expect(result.angle).toMatchObject({ base: [1, 0], text: '2,000°' });
   });
 
-  test('an oval: touched as the rectangle at an angle, drawn as an ellipse; its angle along the long axis', () => {
-    const stud = sizeCycle('measure', 'oval-outside', 20);
-    expect(stud.part).toMatchObject({ kind: 'boss', square: false, turn: 20 });
-    expect(stud.part.oval).toHaveLength(2);
-    expect(stud.order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast')).toHaveLength(8);
-    // Every touch on the wall of the oval grown by the ball, inside the bounds of its long half.
-    expect(stud.order(1).filter((name) => name.endsWith('Fast') && name !== 'zFast').every((name) => Math.hypot(...stud.moveOf(name).touchAt) <= stud.part.oval[0] + 1e-9)).toBe(true);
-    const angle = stud.scene('zero', 1, { sizes: { a: '20,000°' } }).angle;
-    expect(angle.at).toEqual([0, 0]);
-    expect(angle.to[1] / angle.to[0]).toBeCloseTo(Math.tan((20 * Math.PI) / 180), 9);
-    expect(sizeCycle('measure', 'oval-inside').part).toMatchObject({ kind: 'hole' });
-  });
-
-  test('a slot: two half circles and straight sides, drawn so; the oval now one of the circle shapes', () => {
-    const cut = sizeCycle('measure', 'slot-inside', 15);
-    expect(cut.part).toMatchObject({ kind: 'hole', square: false, turn: 15 });
-    expect(cut.part.slot).toHaveLength(2);
-    expect(cut.order(1).filter((name) => name.endsWith('Fast'))).toHaveLength(8);
-    expect(cut.scene('zero', 1).angle.at).toEqual([0, 0]);
-    expect(cut.code('zero', {})).toEqual(['probe.size.codeSlot']);
-    expect(sizeCycle('measure', 'oval-outside').part.oval).toHaveLength(2);
+  test("passes chosen for a circle alone: a rectangle's second pass finds what the first did (report #29)", () => {
+    const chooses = (shape) => sizeCycle('measure', shape).params.some((group) => group.passes);
+    expect(['circle-inside', 'circle-outside'].map(chooses)).toEqual([true, true]);
+    expect(['rect-inside', 'rect-outside', 'groove-x', 'bar-y', 'edge-front'].map(chooses)).toEqual([false, false, false, false, false]);
+    // The repeats wherever the passes are: for the advanced group.
+    expect(['circle-inside', 'rect-outside', 'groove-x'].map((shape) => sizeCycle('measure', shape).params.some((group) => group.repeats))).toEqual([true, true, true]);
   });
 
   test('a pass past the second is drawn as the second', () => {

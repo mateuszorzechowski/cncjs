@@ -8,9 +8,9 @@ import { useUnits } from '../../ui/units';
 
 /*
  * A height measured, from the side (Wysokość, 2026-10-05): the work's
- * profile with each surface touched — one, or two side by side, the second
- * drawn as far over or under the first as it is, to scale where it reads —
- * the ball on each, and between two the measure. Z up.
+ * profile with the two surfaces touched side by side, the second drawn as
+ * far over or under the first as it is, to scale where it reads — the ball
+ * on each, and between them the measure. Z up.
  */
 const W = 400;
 const H = 240;
@@ -31,19 +31,16 @@ const HeightDrawing = ({ probe, label, className = '' }) => {
   const hatch = useId().replace(/:/g, '');
   const [measure, k] = useViewScale(W, H);
   const tags = kit(k);
-  const { kind, size, parts } = probe.result.size;
-  const dz = kind === 'height' ? size.dz : 0;
+  const { size, parts } = probe.result.size;
+  const { dz } = size;
   const s = dz ? Math.min(MOST, ROOM / Math.abs(dz)) : 0;
   // The higher of the two at the same place whichever is first.
   const yA = GROUND - 60 - Math.max(0, -dz * s);
   const yB = yA - dz * s;
   const said = (mm) => `${decimal(units.figure(mm))} ${units.length}`;
-  const two = kind === 'height';
-  const outline = two
-    ? `M${LEFT} ${GROUND} L${LEFT} ${yA} L${STEP} ${yA} L${STEP} ${yB} L${RIGHT} ${yB} L${RIGHT} ${GROUND} Z`
-    : `M${LEFT} ${GROUND} L${LEFT} ${yA} L${RIGHT} ${yA} L${RIGHT} ${GROUND} Z`;
-  const balls = two ? [[(LEFT + STEP) / 2, yA], [(STEP + RIGHT) / 2, yB]] : [[W / 2, yA]];
-  const zs = two ? parts.map((one) => one.centre.z) : [probe.result.size.centre.z];
+  const outline = `M${LEFT} ${GROUND} L${LEFT} ${yA} L${STEP} ${yA} L${STEP} ${yB} L${RIGHT} ${yB} L${RIGHT} ${GROUND} Z`;
+  const balls = [[(LEFT + STEP) / 2, yA], [(STEP + RIGHT) / 2, yB]];
+  const zs = parts.map((one) => one.centre.z);
   return (
     <svg ref={measure} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className={`block h-auto w-full ${className}`}>
       <WorkHatch id={hatch} />
@@ -57,7 +54,7 @@ const HeightDrawing = ({ probe, label, className = '' }) => {
         </g>
       ))}
       {/* Over the lower surface, by the step: the free side of it. */}
-      {two && Math.abs(dz * s) > 6 ? (
+      {Math.abs(dz * s) > 6 ? (
         <>
           <Dimension axis={ALONG} at={STEP + (dz > 0 ? -16 : 16)} from={yA} to={yB} size={tags} />
           <Tag x={STEP + (dz > 0 ? -28 : 28)} right={dz > 0} y={(yA + yB) / 2} text={said(dz)} size={tags} face={FACE.hot} />

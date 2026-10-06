@@ -23,7 +23,7 @@ import {
   AXES, BOSS_R, HOLD_MS, LOOP_HOLD_MS, ON_TOP, RUNS, START, TOOL_R, above, build, clamp, downOf, ease, explainOf, fmt, isGoing, numberOf, reachOf, setOn, toolAt,
 } from './bossMoves';
 import {
-  EDGE_TILT, OVAL, SLOT, anglePoints, buildSides, foundOf, layoutOf, sideGroups,
+  EDGE_TILT, anglePoints, buildSides, foundOf, layoutOf, sideGroups,
 } from './edgeMoves';
 import { holeSide } from './holeSide';
 import { phasesOf } from './bossPhases';
@@ -40,10 +40,9 @@ const ZERO_CODES = { angle: 'probe.size.codeEdge', surface: 'probe.size.codeSurf
 /**
  * The part cycle for `axes` — one for a bar's width — ending in the size
  * measured (Mateusz, 2026-10-03); `square`, a rectangular part's, drawn so.
- * `layout`, one of `edgeMoves`' — an edge, a rectangle at an angle from
- * outside or inside: sides touched at two points each instead, the part
- * drawn square and turned `tilt` degrees — the angle measured, made large
- * enough to see.
+ * `layout`, one of `edgeMoves`' — an edge, a pocket's wall, a corner, a
+ * surface: sides touched at two points each instead, the part drawn square
+ * and turned `tilt` degrees — the angle measured, made large enough to see.
  */
 export const bossCycleOf = ({
   axes = AXES, square = false, names = PART_NAMES, layout = null, tilt = EDGE_TILT,
@@ -94,8 +93,9 @@ export const bossCycleOf = ({
   const BOSS_PARAMS = layout ? L.params : [
     { id: 'part', key: names.group, fields: ['bossSize'], names: { bossSize: names.size } },
     { id: 'reach', key: 'probe.group.reach', fields: ['clear', 'overTop', 'depth', 'maxZ'] },
-    // How many passes, a switch at the group's head.
-    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: true },
+    // How many passes, a switch at the group's head — a circle's alone: a rectangle's walls are square to the
+    // axes, a second pass finds what the first did (report #29). How many counted, among the advanced.
+    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: round, repeats: true },
     // Only for the size said back: the centre needs no radius.
     { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
   ];
@@ -150,7 +150,7 @@ export const bossCycleOf = ({
   // How far outside the part a set-up's dimensions stand, in the drawing's units.
   const ASIDE_PART = 10;
 
-  // Where the ball meets the side: a turned side's point, as the move knows it, or on the round part's rim.
+  // Where the ball meets the side: an edge's point, as the move knows it, or on the round part's rim.
   const onSide = (move) => move.touchAt ?? [move.wall[0] * (BOSS_R / (BOSS_R + TOOL_R)), move.wall[1] * (BOSS_R / (BOSS_R + TOOL_R))];
 
   // The two touches the angle is drawn through, and how far a side's search goes, as the layout says it.
@@ -200,7 +200,7 @@ export const bossCycleOf = ({
         id: 'spacing', axis: move.axis, at: move.spanAt, from: setOn(move.axis, [0, 0], move.span[0]), to: setOn(move.axis, [0, 0], move.span[1]), text: said('spacing'), lit: lit('spacing'),
       }];
     } else if (layout && move.kind === 'zero') {
-      // A turned part's result is its angle, drawn, and its figures beside the drawing, not sizes across it.
+      // An edge's result is its angle, drawn, and its figures beside the drawing, not sizes across it.
       dims = [];
     } else if (move.kind === 'zero') {
       // The part's size, side to side, each axis measured — under it and beside it; a round one's one diameter.
@@ -226,9 +226,8 @@ export const bossCycleOf = ({
       touched: (layout && move.kind === 'zero' ? ORDER.filter((one) => MOVES[one].kind === 'fast' && MOVES[one].point).map((one) => MOVES[one].side) : sides)
         .map((side) => onSide(MOVES[`${side}Fast`])),
       // And the angle itself: from the axis the side runs along, at the first touch, to the line through both.
-      // An oval's from its middle along its long axis; a side's through its first two touches.
       angle: layout && move.kind === 'zero' ? {
-        ...(L.outline ? { at: [0, 0], to: [Math.cos((tilt * Math.PI) / 180), Math.sin((tilt * Math.PI) / 180)] } : Object.fromEntries(['at', 'to'].map((end, k) => [end, onSide(MOVES[`${ANGLE[k]}Fast`])]))),
+        ...Object.fromEntries(['at', 'to'].map((end, k) => [end, onSide(MOVES[`${ANGLE[k]}Fast`])])),
         base: setOn(MOVES[`${ANGLE[0]}Along`].axis, [0, 0], 1),
         text: sizes.a ?? '∠',
         lit: lit('dim'),
@@ -262,7 +261,7 @@ export const bossCycleOf = ({
       back: () => `G0 ${outward}${texts.retract}`,
       slow: () => `G38.2 ${inward}${twice} F${texts.slow}`,
       up: () => `G0 Z+${down}`,
-      zero: () => [ZERO_CODES[layout ? foundOf(layout) : 'size'] ?? ({ oval: 'probe.size.codeOval', slot: 'probe.size.codeSlot' }[L?.outline] ?? (layout ? 'probe.size.codeTurned' : 'probe.size.codeBoss'))],
+      zero: () => [layout ? ZERO_CODES[foundOf(layout)] : 'probe.size.codeBoss'],
       centre: () => [move.code ?? 'probe.hole.centreCode'],
     };
     return CODES[move.kind]();
@@ -296,10 +295,8 @@ export const bossCycleOf = ({
     kind: inside ? 'hole' : 'boss', r: BOSS_R, toolR: TOOL_R, grow: inside ? 1.2 : 0.6, view: [-101, -94, 202, 188],
     // One axis: a bar, drawn as a strip that wide (`CentreScene`).
     strip: axes.length === 1 ? axes[0] : null,
-    // A rectangle measured (Pomiar), or a turned part's: drawn square, not round — an oval as one — turned by its angle.
-    square: square || (Boolean(layout) && !L.outline),
-    oval: L?.outline === 'oval' ? OVAL : null,
-    slot: L?.outline === 'slot' ? SLOT : null,
+    // A rectangle measured, or an edge's part: drawn square, not round — an edge's turned by its angle.
+    square: square || Boolean(layout),
     turn: layout ? tilt : 0,
   };
 
@@ -327,7 +324,7 @@ export const bossCycleOf = ({
     scene: bossScene,
     code: bossCode,
     // An edge's search is the clearance alone, a pocket's its rough size: no sum to explain.
-    explain: (name, texts, say) => (layout && L.reach !== 'part' && ['out', 'fast'].includes(MOVES[name].kind) ? null : explainOf(MOVES[name], texts, say)),
+    explain: (name, texts, say) => (layout && ['out', 'fast'].includes(MOVES[name].kind) ? null : explainOf(MOVES[name], texts, say)),
     usesAt,
     positionAt,
     moveOfPhase,

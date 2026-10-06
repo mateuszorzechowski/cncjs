@@ -1,7 +1,7 @@
 import controller from '../../machine/controller';
 import { currentToken } from '../../machine/session';
 import {
-  SHAPES, choiceOf as measureChoiceOf, kindsOf, pairOf, shapeOf,
+  SHAPES, choiceOf as measureChoiceOf, kindsOf, liesManyWays, pairOf, shapeOf,
 } from './measureShapes';
 import { SURFACE } from '../../machine/surface';
 
@@ -122,7 +122,7 @@ export const METHODS = [
   {
     id: 'measure', key: 'probe2.method.measure', note: 'probe2.method.measureNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
     wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: MEASURE_STEPS, touches: true, plate: 'probe', apart: true, size: true,
-    choice: { option: 'shape', key: 'probe.shapeLabel', list: shapesOf('measure'), first: 'oval-inside', step: 'probe.step.kind' },
+    choice: { option: 'shape', key: 'probe.shapeLabel', list: shapesOf('measure'), first: 'distance:circle-inside:circle-inside', step: 'probe.step.kind' },
   },
 ];
 
@@ -184,6 +184,8 @@ export const optionsFor = (method, chosen, surface = SURFACE, area = null) => {
   return {
     ...(method?.choice ? { [method.choice.option]: chosen } : {}),
     ...(usesSurface(method, chosen) ? { on: surface.on, z0: surface.z0 } : {}),
+    // A rectangle's walls are square to the axes: one pass finds its size and middle, whatever the figure kept (report #29).
+    ...(method?.size && shapeOf(chosen).kind === 'rect' ? { holePasses: 1 } : {}),
   };
 };
 
@@ -207,9 +209,16 @@ const STEPS = [
   { id: 'result', key: 'probe.step.result' },
 ];
 
-/** The steps a method goes through, named — every step until one is picked. */
-export const stepsOf = (method) => {
-  const ids = method?.steps ?? THROUGH_PROBE;
+/**
+ * The steps' ids a method goes through with `choice` — every step until one
+ * is picked; how it lies only where there is something to pick there (a
+ * height is two surfaces, nothing to pick).
+ */
+export const stepIdsOf = (method, choice) => (method?.steps ?? THROUGH_PROBE).filter((id) => id !== 'lie' || liesManyWays(choice));
+
+/** The steps a method goes through with `choice`, named. */
+export const stepsOf = (method, choice) => {
+  const ids = stepIdsOf(method, choice);
   // A choice with a step of its own is named for what it chooses; into place, for what it sets where a method says (`position`).
   return ids.map((id) => {
     if (id === 'choose') {
@@ -222,9 +231,9 @@ export const stepsOf = (method) => {
   });
 };
 
-/** The step before or after `id` for this method (`by` -1 or 1). */
-export const stepBeside = (method, id, by) => {
-  const ids = method?.steps ?? THROUGH_PROBE;
+/** The step before or after `id` for this method and choice (`by` -1 or 1). */
+export const stepBeside = (method, id, by, choice) => {
+  const ids = stepIdsOf(method, choice);
   return ids[ids.indexOf(id) + by] ?? id;
 };
 

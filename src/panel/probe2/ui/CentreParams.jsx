@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { passesSection } from './HolePasses';
+import { advancedSection, passesSection } from './HolePasses';
 import CentreViews from './CentreViews';
 import MoveBar, { namedGroups } from './MoveBar';
 import PlayControls from './PlayControls';
@@ -38,8 +38,8 @@ const CentreParams = ({
   const [open, setOpen] = useState(null);
   const still = useReducedMotion();
   const group = PARAMS.find((one) => one.id === open);
-  // Once or twice across, and a size's repeats: the cycle drawn is the one that will run.
-  const passes = drawnPasses(texts.holePasses, texts.repeats);
+  // Once or twice across — once where there is no choice — and a size's repeats: the cycle drawn is the one that will run.
+  const passes = drawnPasses(PARAMS.some((one) => one.passes) ? texts.holePasses : 1, texts.repeats);
   const items = useMemo(() => timeline(passes), [timeline, passes]);
   const {
     player, picked, loop, frame, p, onField, pick,
@@ -62,6 +62,7 @@ const CentreParams = ({
     : {
       id: one.id, title: t(one.key), fields: one.fields.filter((field) => fields.includes(field)), names: one.names,
     }))
+    .concat(PARAMS.some((one) => one.repeats) && fields.includes('repeats') ? [advancedSection(texts, onText)] : [])
     .filter((one) => one.fields.length || one.head);
 
   const drawing = (

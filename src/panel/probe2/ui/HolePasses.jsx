@@ -35,24 +35,26 @@ const Repeats = ({ value, onChange }) => (
   </>
 );
 
-/** The measuring group with the switch at its head — and a size's repeats — and the passes said in its box. */
-export const passesSection = (one, fields, texts, onText) => {
-  const repeats = one.repeats && fields.includes('repeats');
-  return {
-    id: one.id,
-    title: t(one.key),
-    fields: one.fields.filter((field) => fields.includes(field)),
-    head: (
-      <>
-        <HolePasses value={texts.holePasses || '2'} onChange={(text) => onText('holePasses', text)} />
-        {repeats ? <Repeats value={texts.repeats || '1'} onChange={(text) => onText('repeats', text)} /> : null}
-      </>
-    ),
-    summary: [
-      [t('probe.field.holePasses'), texts.holePasses || '2'],
-      ...(repeats ? [[t('probe.field.repeats'), texts.repeats || '1']] : []),
-    ],
-  };
-};
+/** The measuring group with the switch at its head, and the passes said in its box. */
+export const passesSection = (one, fields, texts, onText) => ({
+  id: one.id,
+  title: t(one.key),
+  fields: one.fields.filter((field) => fields.includes(field)),
+  head: <HolePasses value={texts.holePasses || '2'} onChange={(text) => onText('holePasses', text)} />,
+  summary: [[t('probe.field.holePasses'), texts.holePasses || '2']],
+});
+
+/*
+ * The repeats, last, in a group of their own (the sense report of
+ * 2026-10-05, #30): how far a size repeats is seldom asked, so it stays out
+ * of the way of the figures every measurement needs.
+ */
+export const advancedSection = (texts, onText) => ({
+  id: 'advanced',
+  title: t('probe2.group.advanced'),
+  fields: [],
+  head: <Repeats value={texts.repeats || '1'} onChange={(text) => onText('repeats', text)} />,
+  summary: [[t('probe.field.repeats'), texts.repeats || '1']],
+});
 
 export default HolePasses;

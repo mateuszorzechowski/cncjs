@@ -154,16 +154,8 @@ const CentreScene = ({
     outline = {
       x: -part.r, y: -part.r, width: 2 * part.r, height: 2 * part.r,
     };
-  } else if (part.oval) {
-    outline = { rx: part.oval[0], ry: part.oval[1] };
-  } else if (part.slot) {
-    // A slot: a rectangle whose ends are its width round.
-    const [half, r] = part.slot;
-    outline = {
-      x: -half - r, y: -r, width: 2 * (half + r), height: 2 * r, rx: r,
-    };
   }
-  const Outline = { true: 'rect', false: part.oval ? 'ellipse' : 'circle' }[Boolean(part.strip || part.square || part.slot)];
+  const Outline = part.strip || part.square ? 'rect' : 'circle';
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />

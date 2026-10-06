@@ -25,7 +25,7 @@ import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
 import {
-  METHODS, PAIRS, SURFACE, failureKeyOf, pairOf, phaseWords,
+  METHODS, SURFACE, failureKeyOf, pairOf, phaseWords,
 } from '../machine/probe';
 import { paperScene } from '../machine/paperCycle';
 import { drawnPasses, sizeCycle } from '../machine/sizeCycle';
@@ -154,9 +154,8 @@ export const ChoiceStep = ({
   if (step === 'areaWay') {
     return <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />;
   }
-  // A distance lies as its two ends: each picked on this step — unless there is nothing to pick (a height's).
-  const pair = pairOf(value);
-  const lie = pair && !PAIRS[pair.shape].fixed ? PairChooser : LieChooser;
+  // A distance lies as its two ends: each picked on this step (a height's, nothing to pick, has none — `stepIdsOf`).
+  const lie = pairOf(value) ? PairChooser : LieChooser;
   const Chooser = step === 'lie' ? lie : CHOOSERS[method.id];
   return <Chooser value={value} onChange={onChange} method={method} />;
 };
@@ -262,7 +261,7 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
   // A size: what it came out at, nothing to write.
   if (probe?.state !== 'failed' && probe?.result?.size) {
     const Result = {
-      distance: DistanceResult, angle: CornerResult, height: HeightResult, surface: HeightResult,
+      distance: DistanceResult, angle: CornerResult, height: HeightResult,
     }[probe.result.size.kind] ?? SizeResult;
     return <Result probe={probe} />;
   }

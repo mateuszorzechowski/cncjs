@@ -72,8 +72,9 @@ export const holeCycleOf = ({ axes = AXES, square = false, names = HOLE_NAMES } 
 
   const HOLE_PARAMS = [
     { id: 'hole', key: names.group, fields: ['holeSize'], names: { holeSize: names.size } },
-    // How many passes, a switch at the group's head.
-    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: true, repeats: true },
+    // How many passes, a switch at the group's head — a circle's alone: a rectangle's walls are square to the
+    // axes, a second pass finds what the first did (report #29). How many counted, among the advanced.
+    { id: 'measure', key: 'probe.group.measure', fields: ['fast', 'slow', 'retract'], passes: round, repeats: true },
     // Only for the size said back: the centre needs no radius.
     { id: 'probe', key: 'probe.group.probe', fields: ['ballDiameter'] },
   ];

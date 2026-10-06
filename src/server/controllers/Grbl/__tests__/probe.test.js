@@ -566,6 +566,27 @@ describe('a size', () => {
     expect(controller.probe).toBeNull();
   });
 
+  test('one pass asked with it runs once, the figure kept left at two (Sonda v2, 2026-10-06)', () => {
+    const { controller, sent, probeStates } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 2 });
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'groove-x', holePasses: 1 } });
+    across(controller, sent, 9);
+
+    expect(probeStates().pop()).toMatchObject({ state: 'measured', params: { holePasses: 1 }, result: { size: { size: { x: 20 } } } });
+    // One pass across X: two walls, each a fast and a slow touch.
+    expect(sent().filter((line) => line.includes('G38.2 X'))).toHaveLength(4);
+    expect(probeSettings.params().holePasses).toBe(2);
+  });
+
+  test('passes other than one or two are refused before anything moves', () => {
+    const { controller, sent, refusals } = setup();
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'groove-x', holePasses: 3 } });
+    expect(refusals.pop()).toMatchObject({ reason: 'bad-passes' });
+    expect(sent()).toHaveLength(0);
+  });
+
   test('no shape is refused before anything moves', () => {
     const { controller, sent, refusals } = setup();
 

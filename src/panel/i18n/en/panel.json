@@ -483,6 +483,7 @@
     "badArc": "An arc that cannot be drawn (line {{line}}).",
     "spacingTooWide": "The points' spacing is no less than the rough size: a point would meet the next wall, or the way to it run into one. Make the spacing smaller.",
     "badShape": "Unknown shape to measure.",
+    "badPasses": "Measuring passes: 1 or 2.",
     "badPart": "A distance is measured between holes, studs or edges.",
     "edgesCrossing": "These edges are square to each other: they meet in a corner, there is no distance between them.",
     "notBetween": "No first feature of a distance has been measured.",
@@ -2041,6 +2042,9 @@
     }
   },
   "probe2": {
+    "group": {
+      "advanced": "Advanced"
+    },
     "wire": {
       "mustTest": "Next unlocks once the probe input lights and goes out again: touch the plate to the tool, or push the probe's stylus aside and let go. Without that, with the lead off, the machine travels the whole limit.",
       "testHere": "The lead is not tested on this device: touch the plate to the tool, or push the stylus aside and let go — Measure then unlocks."
@@ -2060,7 +2064,7 @@
       "probe3d": "3D probe",
       "probe3dNote": "A zero with the 3D probe: the middle of a hole, a stud, a pocket or a part, an edge, a corner.",
       "measure": "Measure",
-      "measureNote": "Sizes with the 3D probe: ovality, a rectangle at an angle, a slot, a distance, a height."
+      "measureNote": "Sizes with the 3D probe: a distance between features, a step's height or a pocket's depth."
     },
     "kind": {
       "circle": "Hole or stud",
@@ -2070,15 +2074,13 @@
       "edgeNote": "A side of the part at two points: where the edge is, and its angle to the axis.",
       "corner": "Corner",
       "cornerNote": "A part's or a pocket's, from one start: both edges, where they meet and the angle between them.",
-      "oval": "Ovality",
-      "ovalNote": "A hole or a stud at 8 points: both axes of the ellipse and their angle — it shows the machine's backlash and squareness too.",
-      "turned": "Rectangle at an angle",
-      "turnedNote": "A pocket or a part turned: its sides, the angle it is turned by, how far off square, the middle.",
-      "distanceNote": "Between two features — holes, studs or edges — jogged between."
+      "distanceNote": "Between two features — holes, studs or edges — jogged between.",
+      "heightNote": "Two surfaces touched from above: how far the second is higher or lower, e.g. a step's height, a pocket's depth."
     },
     "shape": {
       "cornerOut": "Part's corner",
-      "cornerIn": "Pocket's corner"
+      "cornerIn": "Pocket's corner",
+      "surface": "Surface"
     },
     "place": {
       "cornerOut": "Bring the probe's ball over the part, a few millimetres in from both edges of the corner and over the top — less than the clearance past the side and the Z travel limit.",

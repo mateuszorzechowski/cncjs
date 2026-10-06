@@ -6,10 +6,10 @@ import { EDGE_SIDES, LAYOUTS } from './edgeLayouts';
 export { EDGE_SIDES, layoutOf } from './edgeLayouts';
 
 /*
- * Sides touched at two points each (Pomiar, the server's `strategies/edge`
- * and `strategies/turned`): an edge alone, for its angle, or the four sides
- * of a rectangle at an angle — a part from outside, a pocket from inside.
- * Every move along one axis. Each point is a pass of its own on the bar, and
+ * Sides touched at two points each (the server's `strategies/edge` and
+ * `strategies/corner3d`): an edge alone, for its angle, a pocket's wall from
+ * inside, or a corner's two sides — a part's from outside, a pocket's from
+ * inside. Every move along one axis. Each point is a pass of its own on the bar, and
  * the server's step names (`y1b`, `y2b`) say which.
  *
  * From outside the ball starts over the part; the top as for the part; then
@@ -37,62 +37,6 @@ export const rimOf = (edge, tilt) => {
   return (u) => (sign * BOSS_R) / Math.cos(a) + slope * u;
 };
 
-// An oval as drawn: its halves, the long along its own X; a slot: its straight sides' half length and its ends' radius.
-export const OVAL = [BOSS_R, Math.round(BOSS_R * 0.68)];
-// Half as wide as long, and wide enough that the ball drawn, backed off a wall, keeps clear of the other (review
-// note, 2026-10-05: drawn narrower it looked as if a way went into the far wall).
-export const SLOT = [20, 20];
-
-/** How far `p` is from the wall of the slot drawn, turned `tilt` degrees — negative inside. */
-const slotGap = ([px, py], tilt) => {
-  const g = (tilt * Math.PI) / 180;
-  const u = px * Math.cos(g) + py * Math.sin(g);
-  const v = -px * Math.sin(g) + py * Math.cos(g);
-  const over = Math.abs(u) - SLOT[0];
-  return over <= 0 ? Math.abs(v) - SLOT[1] : Math.hypot(over, v) - SLOT[1];
-};
-
-/**
- * Where the line along `axis` through `spot` meets the line `level` off the
- * slot's wall (0 the wall, the ball's radius out or in for its centre), on
- * its `sign` side: out from the line's middle, halving.
- */
-const slotCross = (axis, spot, sign, level, tilt) => {
-  const at = (t) => (axis === 'x' ? [t, spot[1]] : [spot[0], t]);
-  let [lo, hi] = [0, sign * 3 * BOSS_R];
-  if (slotGap(at(lo), tilt) >= level) {
-    return sign * BOSS_R;
-  }
-  for (let k = 0; k < 60; k++) {
-    const mid = (lo + hi) / 2;
-    if (slotGap(at(mid), tilt) < level) {
-      lo = mid;
-    } else {
-      hi = mid;
-    }
-  }
-  return (lo + hi) / 2;
-};
-
-/**
- * Where the line along `axis` through `spot` crosses the oval — halves
- * `[ea, eb]`, turned `tilt` degrees — on its `sign` side, along that axis.
- */
-const ovalCross = (axis, spot, sign, [ea, eb], tilt) => {
-  const g = (tilt * Math.PI) / 180;
-  const [c, s] = [Math.cos(g), Math.sin(g)];
-  // The point is spot + t·w, w the axis's way; into the oval's own frame, a quadratic in t.
-  const w = axis === 'x' ? [1, 0] : [0, 1];
-  const base = axis === 'x' ? [0, spot[1]] : [spot[0], 0];
-  const local = (p) => [p[0] * c + p[1] * s, -p[0] * s + p[1] * c];
-  const [p0, d] = [local(base), local(w)];
-  const qa = (d[0] / ea) ** 2 + (d[1] / eb) ** 2;
-  const qb = 2 * ((p0[0] * d[0]) / ea ** 2 + (p0[1] * d[1]) / eb ** 2);
-  const qc = (p0[0] / ea) ** 2 + (p0[1] / eb) ** 2 - 1;
-  const root = Math.sqrt(Math.max(0, qb * qb - 4 * qa * qc));
-  return sign > 0 ? (-qb + root) / (2 * qa) : (-qb - root) / (2 * qa);
-};
-
 // A point's steps, in order, from outside and from inside; from inside the way back to the middle at the end.
 const STEPS = {
   outside: ['Along', 'Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'],
@@ -102,24 +46,17 @@ const STEPS = {
 const homeOf = (name) => (EDGE_SIDES[LAYOUTS[name].sides.at(-1)].axis === 'y' ? ['retY', 'retX'] : ['retX', 'retY']);
 // One line along an angle's two touches: an edge's from outside, a wall's from inside — or two, a corner's.
 const angled = (name) => /^(edge|wall|corner)-/.test(name);
-/** What a layout's last stage finds: an angle, a surface's Z, or a size. */
+/** What a layout's last stage finds: a corner, an angle, or a surface's Z. */
 export const foundOf = (name) => {
   if (LAYOUTS[name]?.corner) {
     return 'corner';
   }
-  if (angled(name)) {
-    return 'angle';
-  }
-  return name === 'surface' ? 'surface' : 'size';
+  return angled(name) ? 'angle' : 'surface';
 };
 const ZERO_TITLES = { angle: 'probe.size.move.edge', surface: 'probe.size.move.surface', corner: 'probe2.size.move.corner' };
 // The last stage on the bar, named for what it finds.
-const BAR_KEYS = {
-  angle: 'probe.bar.angle', surface: 'probe.bar.surface', size: 'probe.bar.size', corner: 'probe2.bar.corner',
-};
-const STAGE_KEYS = {
-  angle: 'probe.stage.angle', surface: 'probe.stage.surface', size: 'probe.stage.size', corner: 'probe2.stage.corner',
-};
+const BAR_KEYS = { angle: 'probe.bar.angle', surface: 'probe.bar.surface', corner: 'probe2.bar.corner' };
+const STAGE_KEYS = { angle: 'probe.stage.angle', surface: 'probe.stage.surface', corner: 'probe2.stage.corner' };
 
 /** A side's two points, by the names its touches go by: `y1m`, `y2m` for the front. */
 const pointsOf = (side) => {
@@ -139,7 +76,7 @@ export const anglePoints = (name) => (LAYOUTS[name].sides.length ? pointsOf(LAYO
  */
 export const buildSides = (name, tilt = EDGE_TILT) => {
   const {
-    sides, from, start: S, outline, span = SPAN, corner,
+    sides, from, start: S, corner,
   } = LAYOUTS[name];
   /*
    * Where along a side its two points are from the start: half the spacing
@@ -149,9 +86,9 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
    */
   const shiftsOf = (along) => {
     if (!corner) {
-      return [-span, span];
+      return [-SPAN, SPAN];
     }
-    const to = corner[along] * 2 * span;
+    const to = corner[along] * 2 * SPAN;
     return [Math.min(0, to), Math.max(0, to)];
   };
   const inside = from === 'inside';
@@ -187,8 +124,7 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
       const spot = setOn(along, at, S[j] + shifts[point - 1]);
       // The spacing's dimension outside the part — or inside the pocket — on the side away from this one.
       // Outside the part on its far side; inside, within the hole near its far wall.
-      const extent = { oval: OVAL[axis === 'y' ? 1 : 0], slot: axis === 'y' ? SLOT[1] : SLOT[0] + SLOT[1] }[outline] ?? BOSS_R;
-      const spanAt = (axis === 'y' ? sign : -sign) * (extent + (inside ? -8 : 10));
+      const spanAt = (axis === 'y' ? sign : -sign) * (BOSS_R + (inside ? -8 : 10));
       moves[`${side}Along`] = {
         ...common,
         ...leg(at, spot, 'centre', inside ? 'probe2.edge.move.alongGuarded' : 'probe.edge.move.along', ['spacing']),
@@ -199,15 +135,8 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
         code: inside ? 'probe2.edge.alongGuardedCode' : 'probe.edge.alongCode',
       };
       const out = inside ? spot : setOn(axis, spot, sign * OUT);
-      // A square's side is straight; an oval's or a slot's is crossed where the line through the point meets it,
-      // the ball's centre where it meets the outline grown — or, inside, shrunk — by the ball's radius.
-      const grown = inside ? -TOOL_R : TOOL_R;
-      const CROSS = {
-        oval: (level) => ovalCross(axis, spot, sign, OVAL.map((half) => half + level), tilt),
-        slot: (level) => slotCross(axis, spot, sign, level, tilt),
-      }[outline];
-      const rim = CROSS ? CROSS(0) : rimAt(spot[j]);
-      const wall = setOn(axis, out, CROSS ? CROSS(grown) : rim - dir * reach);
+      const rim = rimAt(spot[j]);
+      const wall = setOn(axis, out, rim - dir * reach);
       // Inside, off the wall straight back to the middle line, as the server goes since the audit's K4: the back-off
       // and that way out are two rapids the same way, one line. From outside, the back-off alone.
       const off = setOn(axis, wall, inside ? S[i] : wall[i] - dir * BACK);
@@ -244,7 +173,7 @@ export const buildSides = (name, tilt = EDGE_TILT) => {
     at = S;
   }
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: ZERO_TITLES[foundOf(name)] ?? ({ oval: 'probe.size.move.oval', slot: 'probe.size.move.slot' }[outline] ?? 'probe.size.move.size'), uses: ['ballDiameter'], end: 0.35,
+    kind: 'zero', from: at, frames: [[0, at, level], [1, at, level]], titleKey: ZERO_TITLES[foundOf(name)], uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };

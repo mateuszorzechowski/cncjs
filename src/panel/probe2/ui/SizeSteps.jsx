@@ -29,8 +29,7 @@ const RESULT_FIT = 'max-h-80 @[1800px]/shell:max-h-[28rem]';
  * narzędziem, strzałką a materiałem jednakowa odległość"*): on the measuring
  * line the walls stand at x 15 and 33, a head's tip on the wall's edge, its
  * base 2 off the ball — the ball in the middle from inside, at x 6 from
- * outside. A shape at an angle is drawn turned so it still crosses the line
- * there (scratchpad marks.py worked the points out).
+ * outside.
  */
 const BALL = <circle cx={24} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
 const OUT_BALL = <circle cx={6} cy={24} r={2.6} className="fill-field stroke-ink" strokeWidth={1.6} />;
@@ -45,13 +44,10 @@ const EVEN_ODD = 'evenodd';
 // The work round a hole: the hole's own outline is cut out of it.
 const AROUND = 'M4 6 H44 V42 H4 Z ';
 
-// The outlines, crossing the measuring line at x 15 and 33: as they stand, and turned (12°, the oval 20°, the slot 15°).
+// The outlines, crossing the measuring line at x 15 and 33.
 const OUTLINE = {
   circle: 'M15 24 A9 9 0 1 0 33 24 A9 9 0 1 0 15 24 Z',
   square: 'M15 15 H33 V33 H15 Z',
-  turned: 'M13.56 17.22 L30.78 13.56 L34.44 30.78 L17.22 34.44 Z',
-  oval: 'M33.87 20.41 A10.5 5.19 -20 1 0 14.13 27.59 A10.5 5.19 -20 1 0 33.87 20.41 Z',
-  slot: 'M21.84 30.27 L29.01 28.35 A5.5 5.5 0 0 0 26.16 17.73 L18.99 19.65 A5.5 5.5 0 0 0 21.84 30.27 Z',
 };
 
 const inside = (outline) => (
@@ -72,14 +68,8 @@ const outside = (outline) => (
 const MARKS = {
   'circle-inside': inside(OUTLINE.circle),
   'circle-outside': outside(OUTLINE.circle),
-  'oval-inside': inside(OUTLINE.oval),
-  'oval-outside': outside(OUTLINE.oval),
   'rect-inside': inside(OUTLINE.square),
   'rect-outside': outside(OUTLINE.square),
-  'rect-inside-turned': inside(OUTLINE.turned),
-  'rect-outside-turned': outside(OUTLINE.turned),
-  'slot-inside': inside(OUTLINE.slot),
-  'slot-outside': outside(OUTLINE.slot),
   groove: (
     <>
       <path d="M4 8 H15 V40 H4 Z M33 8 H44 V40 H33 Z" className={WORK} strokeWidth={1.6} strokeLinejoin="round" />
@@ -209,30 +199,25 @@ export const SizeResult = ({ probe }) => {
   const units = useUnits();
   const shape = probe.options?.shape;
   const {
-    size, spread, each, centre = {}, off, turn,
+    size, spread, each, centre = {}, off,
   } = probe.result.size;
-  // An edge or a rectangle at an angle: drawn turned the way it was found.
-  const cycle = sizeCycle(probe.method, shape, size.a ?? turn?.a);
-  // A circle's one diameter, an edge's angle, an oval's two axes, or each axis measured.
-  const keys = ['d', 'a', 'major', 'length'].find((key) => key in size) ? ['d', 'a', 'major', 'minor', 'length', 'width'].filter((key) => key in size) : AXES.filter((axis) => axis in size);
+  // An edge: drawn turned the way it was found.
+  const cycle = sizeCycle(probe.method, shape, size.a);
+  // A circle's one diameter, an edge's angle, or each axis measured.
+  const keys = ['d', 'a'].find((key) => key in size) ? ['d', 'a'].filter((key) => key in size) : AXES.filter((axis) => axis in size);
   const edge = 'a' in size;
-  const oval = 'major' in size;
-  const slot = 'length' in size;
   const name = (key) => (key === 'd' ? 'Ø' : key.toUpperCase());
   // An angle in degrees, never converted; a length in the panel's units.
   const figureOf = (key, value) => (key === 'a' ? degrees(value) : units.figure(value));
   const unitOf = (key) => (key === 'a' ? '°' : units.length);
-  const LABELS = {
-    d: 'probe.size.diameter', a: 'probe.size.angle', major: 'probe.size.major', minor: 'probe.size.minor', length: 'probe.size.length', width: 'probe.size.across',
-  };
+  const LABELS = { d: 'probe.size.diameter', a: 'probe.size.angle' };
   // On the drawing as its other labels: the language's decimal sign (Mateusz, 2026-10-02).
   const said = (mm) => `${decimal(units.figure(mm))} ${units.length}`;
   const ball = units.figure(probe.params?.ballDiameter);
   const how = {
-    texts: { ballDiameter: ball }, say: (field, text) => figureSaid(field, text, units.rule), sizes: {
-      ...Object.fromEntries(keys.map((key) => [key, key === 'a' ? `${decimal(degrees(size.a))}°` : `${key === 'd' ? 'Ø' : ''}${said(size[key])}`])),
-      ...(turn ? { a: `${decimal(degrees(turn.a))}°` } : {}),
-    },
+    texts: { ballDiameter: ball },
+    say: (field, text) => figureSaid(field, text, units.rule),
+    sizes: Object.fromEntries(keys.map((key) => [key, key === 'a' ? `${decimal(degrees(size.a))}°` : `${key === 'd' ? 'Ø' : ''}${said(size[key])}`])),
   };
   /*
    * Wide, the drawing a column of its own beside the figures, as the height
@@ -262,18 +247,15 @@ export const SizeResult = ({ probe }) => {
         {spread ? keys.map((key) => (
           <StatTile key={`spread${key}`} label={t('probe.size.spread', { axis: name(key) })} value={units.figure(spread[key])} unit={units.length} />
         )) : null}
-        {Number.isFinite(off) ? <StatTile label={t({ true: 'probe.size.offSlot', false: oval ? 'probe.size.offOval' : 'probe.size.off' }[slot])} value={units.figure(off)} unit={units.length} /> : null}
-        {turn ? <StatTile label={t(oval || slot ? 'probe.size.majorAngle' : 'probe.size.turnAngle')} value={degrees(turn.a)} unit="°" /> : null}
-        {Number.isFinite(turn?.square) ? <StatTile label={t('probe.size.square')} value={degrees(turn.square)} unit="°" /> : null}
+        {Number.isFinite(off) ? <StatTile label={t('probe.size.off')} value={units.figure(off)} unit={units.length} /> : null}
       </div>
       {each.length > 1 ? keys.map((key) => (
         <p key={`each${key}`} className="m-0 font-num text-note text-mut">
           {t('probe.size.each', { axis: name(key), list: each.map((one) => units.figure(one[key])).join(' · '), unit: units.length })}
         </p>
       )) : null}
-      {Number.isFinite(off) ? <p className="m-0 text-note text-mut">{t({ true: 'probe.size.offSlotWhy', false: oval ? 'probe.size.offOvalWhy' : 'probe.size.offWhy' }[slot])}</p> : null}
-      {edge || turn ? <p className="m-0 text-note text-mut">{t('probe.size.angleWhy')}</p> : null}
-      {Number.isFinite(turn?.square) ? <p className="m-0 text-note text-mut">{t('probe.size.squareWhy')}</p> : null}
+      {Number.isFinite(off) ? <p className="m-0 text-note text-mut">{t('probe.size.offWhy')}</p> : null}
+      {edge ? <p className="m-0 text-note text-mut">{t('probe.size.angleWhy')}</p> : null}
       <div className="flex items-center gap-3">
         <span className="text-base text-ink">{t(edge ? 'probe.size.edgeIn' : 'probe.size.centreIn')}</span>
         <WcsBadge wcs={probe.wcs} />

@@ -34,26 +34,18 @@ const CYCLES = {
   'wall-back': bossCycleOf({ layout: 'wall-back' }),
   'wall-left': bossCycleOf({ layout: 'wall-left' }),
   'wall-right': bossCycleOf({ layout: 'wall-right' }),
-  'rect-outside-turned': bossCycleOf({ layout: 'turned-outside' }),
-  'rect-inside-turned': bossCycleOf({ layout: 'turned-inside' }),
-  'oval-outside': bossCycleOf({ layout: 'oval-outside' }),
-  'oval-inside': bossCycleOf({ layout: 'oval-inside' }),
-  'slot-outside': bossCycleOf({ layout: 'slot-outside' }),
-  'slot-inside': bossCycleOf({ layout: 'slot-inside' }),
   // A corner in one cycle, a part's or a pocket's (`edgeLayouts`).
   ...Object.fromEntries(['front-left', 'front-right', 'back-left', 'back-right'].flatMap((corner) => [
     [`corner-out-${corner}`, bossCycleOf({ layout: `corner-out-${corner}` })],
     [`corner-in-${corner}`, bossCycleOf({ layout: `corner-in-${corner}` })],
   ])),
 };
-// The shapes drawn turned, by the layout that draws them.
-const TURNED = {
-  'edge-front': 'edge-front', 'edge-back': 'edge-back', 'edge-left': 'edge-left', 'edge-right': 'edge-right', 'rect-outside-turned': 'turned-outside', 'rect-inside-turned': 'turned-inside', 'oval-outside': 'oval-outside', 'oval-inside': 'oval-inside', 'slot-outside': 'slot-outside', 'slot-inside': 'slot-inside',
-};
+// The shapes drawn turned: an edge, by its own layout.
+const TURNED = ['edge-front', 'edge-back', 'edge-left', 'edge-right'];
 
 /**
  * The cycle of a size, by its shape; null for any other method. `angle`, an
- * edge or a turned rectangle measured: its part drawn turned that way — at least `SEEN` degrees, at
+ * edge measured: its part drawn turned that way — at least `SEEN` degrees, at
  * most `STEEP`, so a small angle can be seen and a large one still reads as
  * an edge; level when it is.
  */
@@ -63,9 +55,9 @@ export const sizeCycle = (method, shape, angle = null) => {
   if (method !== 'measure') {
     return null;
   }
-  if (TURNED[shape] && Number.isFinite(angle)) {
+  if (TURNED.includes(shape) && Number.isFinite(angle)) {
     const size = Math.abs(angle) < 0.0005 ? 0 : Math.min(STEEP, Math.max(SEEN, Math.abs(angle)));
-    return bossCycleOf({ layout: TURNED[shape], tilt: Math.sign(angle) * size });
+    return bossCycleOf({ layout: shape, tilt: Math.sign(angle) * size });
   }
   return CYCLES[shape] ?? CYCLES['circle-inside'];
 };

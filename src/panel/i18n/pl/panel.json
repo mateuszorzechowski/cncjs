@@ -483,6 +483,7 @@
     "badArc": "Łuk, którego nie da się narysować (linia {{line}}).",
     "spacingTooWide": "Odstęp punktów jest nie mniejszy niż przybliżony rozmiar: punkt trafiłby w sąsiednią ściankę albo dojazd do niego w nią wjechał. Zmniejsz odstęp.",
     "badShape": "Nieznany kształt pomiaru.",
+    "badPasses": "Liczba przejść pomiaru: 1 albo 2.",
     "badPart": "Odległość mierzy się między otworami, czopami albo krawędziami.",
     "edgesCrossing": "Te krawędzie są do siebie prostopadłe: spotykają się w narożniku, nie ma między nimi odległości.",
     "notBetween": "Nie ma zmierzonego pierwszego elementu odległości.",
@@ -2041,6 +2042,9 @@
     }
   },
   "probe2": {
+    "group": {
+      "advanced": "Zaawansowane"
+    },
     "wire": {
       "mustTest": "Dalej odblokuje się, gdy wejście sondy zaświeci i zgaśnie: dotknij płytką narzędzia albo wychyl trzpień sondy i puść. Bez tego, z odpiętym przewodem, maszyna dojedzie aż do limitu dojazdu.",
       "testHere": "Przewód nie sprawdzony na tym urządzeniu: dotknij płytką narzędzia albo wychyl trzpień sondy i puść — wtedy Mierz się odblokuje."
@@ -2060,7 +2064,7 @@
       "probe3d": "Sonda 3D",
       "probe3dNote": "Zero sondą 3D: środek otworu, czopu, kieszeni albo detalu, krawędź, narożnik.",
       "measure": "Pomiar",
-      "measureNote": "Wymiary sondą 3D: owalizacja, prostokąt pod kątem, fasolka, odległość, wysokość."
+      "measureNote": "Wymiary sondą 3D: odległość między elementami, wysokość stopnia albo głębokość kieszeni."
     },
     "kind": {
       "circle": "Otwór albo czop",
@@ -2070,15 +2074,13 @@
       "edgeNote": "Bok detalu w dwóch punktach: gdzie leży krawędź i jej kąt do osi.",
       "corner": "Narożnik",
       "cornerNote": "Detalu albo kieszeni, z jednego ustawienia: obie krawędzie, gdzie się spotykają i kąt między nimi.",
-      "oval": "Owalizacja",
-      "ovalNote": "Otwór albo czop w 8 punktach: obie osie elipsy i ich kąt — sprawdza też luz i prostopadłość maszyny.",
-      "turned": "Prostokąt pod kątem",
-      "turnedNote": "Kieszeń albo detal obrócony: boki, kąt obrotu, odchyłka od kąta prostego, środek.",
-      "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami — z jogiem między nimi."
+      "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami — z jogiem między nimi.",
+      "heightNote": "Dwie powierzchnie dotykane z góry: o ile druga jest wyżej lub niżej, np. wysokość stopnia, głębokość kieszeni."
     },
     "shape": {
       "cornerOut": "Narożnik detalu",
-      "cornerIn": "Narożnik kieszeni"
+      "cornerIn": "Narożnik kieszeni",
+      "surface": "Powierzchnia"
     },
     "place": {
       "cornerOut": "Ustaw kulkę sondy nad detalem, kilka milimetrów w głąb od obu krawędzi narożnika i nad wierzchem — mniej niż odsunięcie za bok i limit dojazdu Z.",

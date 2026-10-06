@@ -3,26 +3,23 @@
  * report of 2026-10-05, §5): **Sonda 3D — zero** (`probe3d`), the everyday
  * zeros — a hole's or a stud's middle, a pocket's or a part's (both axes or
  * one: a groove, a bar), an edge, a corner in one cycle — and **Pomiar**
- * (`measure`), the measurements — a circle's ovality, a rectangle at an
- * angle, a slot, a distance, a height. Each tile picks a kind first
- * (`KINDS`, its `of` the tile), then how it lies; both steps set one choice,
- * the shape, the server's `size` strategy's `SHAPES`.
+ * (`measure`), the measurements — a distance, a height. Each tile picks a
+ * kind first (`KINDS`, its `of` the tile), then how it lies; both steps set
+ * one choice, the shape, the server's `size` strategy's `SHAPES`.
  *
  * Mateusz's *"odpada jeden przycisk na każdy z tych elementów"* still holds:
- * two tiles, not one a shape. His *"teoretycznie wszystko"* keeps the
- * measurements the report would drop (the slot, the rectangle at an angle,
- * the one surface's Z): they are in Pomiar, off the way to a zero.
+ * two tiles, not one a shape. The set is the report's, trimmed to what an
+ * operator needs (Mateusz, 2026-10-06: his asks were to find out the need):
+ * no slot, no rectangle at an angle, no one surface's Z, no ovality — a
+ * machine's own ovality is measured by the axes that made it.
  */
 export const KINDS = [
   { id: 'circle', of: 'probe3d', key: 'probe2.kind.circle', note: 'probe2.kind.circleNote' },
   { id: 'rect', of: 'probe3d', key: 'probe2.kind.rect', note: 'probe2.kind.rectNote' },
   { id: 'edge', of: 'probe3d', key: 'probe.kind.edge', note: 'probe2.kind.edgeNote' },
   { id: 'corner', of: 'probe3d', key: 'probe2.kind.corner', note: 'probe2.kind.cornerNote' },
-  { id: 'oval', of: 'measure', key: 'probe2.kind.oval', note: 'probe2.kind.ovalNote' },
-  { id: 'turned', of: 'measure', key: 'probe2.kind.turned', note: 'probe2.kind.turnedNote' },
-  { id: 'slot', of: 'measure', key: 'probe.kind.slot', note: 'probe.kind.slotNote' },
   { id: 'distance', of: 'measure', key: 'probe.kind.distance', note: 'probe2.kind.distanceNote' },
-  { id: 'height', of: 'measure', key: 'probe.kind.height', note: 'probe.kind.heightNote' },
+  { id: 'height', of: 'measure', key: 'probe.kind.height', note: 'probe2.kind.heightNote' },
 ];
 
 /** The kinds a tile offers. */
@@ -56,15 +53,6 @@ export const SHAPES = [
   ...CORNER_IDS.map((corner) => ({
     id: `corner-in-${corner}`, kind: 'corner', key: 'probe2.shape.cornerIn', corner, cornerKey: CORNER_KEYS[corner], side: 'inside', place: 'probe2.place.cornerIn',
   })),
-  // A circle's ovality: the ellipse through eight touches (the server's `strategies/oval`).
-  { id: 'oval-inside', kind: 'oval', key: 'probe.shape.ovalInside', side: 'inside', place: 'probe.place.hole' },
-  { id: 'oval-outside', kind: 'oval', key: 'probe.shape.ovalOutside', side: 'outside', place: 'probe.place.boss' },
-  // At an angle (the server's `strategies/turned`): four sides at two points each.
-  { id: 'rect-inside-turned', kind: 'turned', key: 'probe.shape.rectInsideTurned', side: 'inside', place: 'probe.place.pocket' },
-  { id: 'rect-outside-turned', kind: 'turned', key: 'probe.shape.rectOutsideTurned', side: 'outside', place: 'probe.place.boss' },
-  // A slot — a fasolka — cut or standing, along the axes or turned (`strategies/slot`).
-  { id: 'slot-inside', kind: 'slot', key: 'probe.shape.slotInside', side: 'inside', place: 'probe.place.slot' },
-  { id: 'slot-outside', kind: 'slot', key: 'probe.shape.slotOutside', side: 'outside', place: 'probe.place.boss' },
   // A pocket's wall from inside: no kind of its own here — the pocket corner's two walls, named for its result.
   { id: 'wall-front', kind: 'wall', key: 'probe.shape.wallFront', side: 'inside', place: 'probe.place.wall' },
   { id: 'wall-back', kind: 'wall', key: 'probe.shape.wallBack', side: 'inside', place: 'probe.place.wall' },
@@ -72,9 +60,9 @@ export const SHAPES = [
   { id: 'wall-right', kind: 'wall', key: 'probe.shape.wallRight', side: 'inside', place: 'probe.place.wall' },
   // One feature to another: the two picked on the step that says how the others lie.
   { id: 'distance', kind: 'distance', key: 'probe.shape.distance', side: 'inside', place: 'probe.place.hole' },
-  // Two surfaces, how far one stands over the other — first, the one Pomiar is for; one surface's Z after it.
+  // Two surfaces, how far one stands over the other; a surface, no kind of its own here — a height's two ends.
   { id: 'height', kind: 'height', key: 'probe.shape.height', side: 'outside', place: 'probe.place.surface' },
-  { id: 'surface', kind: 'height', key: 'probe.shape.surface', side: 'outside', place: 'probe.place.surface' },
+  { id: 'surface', kind: 'surface', key: 'probe2.shape.surface', side: 'outside', place: 'probe.place.surface' },
 ];
 
 /*
@@ -134,6 +122,12 @@ export const pairEnds = (options = {}) => {
   }
   const from = side === 'inside' ? 'wall' : 'edge';
   return { a: `${from}-${X_SIDE[corner]}`, b: `${from}-${Y_SIDE[corner]}` };
+};
+
+/** Whether how `choice` lies is a pick: its kind's shapes more than one, or a pair's two ends. */
+export const liesManyWays = (choice) => {
+  const { kind } = shapeOf(choice);
+  return SHAPES.filter((one) => one.kind === kind).length > 1 || Boolean(PAIRS[kind] && !PAIRS[kind].fixed);
 };
 
 /** The shape a kind picked comes to: the one chosen if it is of that kind, else the kind's first — lying the same way where it can. */

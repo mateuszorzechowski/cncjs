@@ -1,5 +1,5 @@
 import {
-  METHODS, choiceOf, failureKey, kindsOf, mapAsk, methodOf, methodOfRun, optionsFor, pairEnds, pairOf, phaseWords, saveProbe, serverOf, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
+  METHODS, choiceOf, failureKey, kindsOf, mapAsk, methodOf, methodOfRun, optionsFor, pairEnds, pairOf, phaseWords, saveProbe, serverOf, shapeOfKind, stepBeside, stepIdsOf, stepsOf, surfaceShifts, wireOf, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -103,9 +103,27 @@ describe('a kept figure in a field', () => {
 
 describe('Pomiar: what is measured, then how it lies', () => {
   test('two steps of one choice, the shape', () => {
+    const probe3d = methodOf('probe3d');
+    expect(stepsOf(probe3d, 'rect-outside').map((step) => step.id)).toEqual(['method', 'choose', 'lie', 'prepare', 'wire', 'position', 'measure', 'result']);
+    expect(optionsFor(probe3d, 'circle-outside')).toEqual({ shape: 'circle-outside' });
+  });
+
+  test("how it lies, only where there is something to pick: a height's two surfaces skip it, a distance's ends do not", () => {
     const measure = methodOf('measure');
-    expect(stepsOf(measure).map((step) => step.id)).toEqual(['method', 'choose', 'lie', 'prepare', 'wire', 'position', 'measure', 'result']);
-    expect(optionsFor(measure, 'rect-outside')).toEqual({ shape: 'rect-outside' });
+    const ids = (choice) => stepIdsOf(measure, choice);
+    expect(ids('height')).toEqual(['method', 'choose', 'prepare', 'wire', 'position', 'measure', 'result']);
+    expect(ids('distance:circle-inside:edge-front')).toContain('lie');
+    expect(stepBeside(measure, 'choose', 1, 'height')).toBe('prepare');
+    expect(stepBeside(measure, 'prepare', -1, 'height')).toBe('choose');
+    expect(stepBeside(measure, 'choose', 1, 'distance:circle-inside:circle-inside')).toBe('lie');
+  });
+
+  test('a rectangle asks for one pass, whatever the figure kept: its walls are square to the axes (report #29)', () => {
+    const probe3d = methodOf('probe3d');
+    expect(optionsFor(probe3d, 'rect-inside')).toEqual({ shape: 'rect-inside', holePasses: 1 });
+    expect(optionsFor(probe3d, 'bar-y')).toEqual({ shape: 'bar-y', holePasses: 1 });
+    expect(optionsFor(probe3d, 'circle-inside')).toEqual({ shape: 'circle-inside' });
+    expect(optionsFor(probe3d, 'edge-front')).toEqual({ shape: 'edge-front' });
   });
 
   test('a kind picked keeps how it lay where it can', () => {
@@ -117,7 +135,9 @@ describe('Pomiar: what is measured, then how it lies', () => {
 
   test('each tile offers its own kinds: the zeros, or the measurements', () => {
     expect(kindsOf('probe3d').map((kind) => kind.id)).toEqual(['circle', 'rect', 'edge', 'corner']);
-    expect(kindsOf('measure').map((kind) => kind.id)).toEqual(['oval', 'turned', 'slot', 'distance', 'height']);
+    // Trimmed to what an operator needs (Mateusz, 2026-10-06): no ovality, no rectangle at an angle, no slot.
+    expect(kindsOf('measure').map((kind) => kind.id)).toEqual(['distance', 'height']);
+    expect(methodOf('measure').choice.list.map((shape) => shape.id)).toEqual(['distance', 'height']);
   });
 });
 
@@ -144,16 +164,14 @@ describe('a distance', () => {
   test('a measurement the server runs is shown with the tile it belongs to', () => {
     expect(methodOfRun('measure', { shape: 'corner-in-front-left' }).id).toBe('probe3d');
     expect(methodOfRun('measure', { shape: 'circle-inside' }).id).toBe('probe3d');
-    expect(methodOfRun('measure', { shape: 'oval-inside' }).id).toBe('measure');
+    expect(methodOfRun('measure', { shape: 'distance', a: 'circle-inside', b: 'edge-front' }).id).toBe('measure');
     expect(methodOfRun('measure', { shape: 'height', a: 'surface', b: 'surface' }).id).toBe('measure');
     expect(methodOfRun('z', {}).id).toBe('z');
   });
 
-  test('a height: two surfaces first, a pair with nothing to pick; one surface after it', () => {
-    // Two surfaces first: the difference is what Pomiar is for, one surface's Z only as the probe sees it.
+  test('a height: two surfaces, a pair with nothing to pick — no one surface of its own (report #27)', () => {
     expect(shapeOfKind('height', 'circle-inside')).toBe('height');
     expect(optionsFor(measure, 'height')).toEqual({ shape: 'height', a: 'surface', b: 'surface' });
-    expect(optionsFor(measure, 'surface')).toEqual({ shape: 'surface' });
   });
 
   test('its first end measured, the wizard goes into place over the second', () => {

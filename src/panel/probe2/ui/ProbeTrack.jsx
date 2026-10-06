@@ -10,12 +10,14 @@ import { t } from '../../i18n/index';
  * phone the steps under the other two. Captioned Sonda v2, so a screenshot
  * says which of the two wizards it is.
  */
-const ProbeTrack = ({ method, step, takenBy }) => (
+const ProbeTrack = ({
+  method, choice, step, takenBy,
+}) => (
   <Card>
     <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
       <h2 className="m-0 text-cap font-semibold uppercase tracking-[0.1em] text-mut">{t('nav.probe2')}</h2>
       <StepTrack
-        steps={stepsOf(method).map((s) => ({ ...s, name: t(s.key) }))}
+        steps={stepsOf(method, choice).map((s) => ({ ...s, name: t(s.key) }))}
         current={step}
         label={t('probe.steps')}
         className="order-3 w-full @3xl/shell:order-none @3xl/shell:w-auto @3xl/shell:flex-1"

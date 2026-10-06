@@ -18,7 +18,7 @@ import ProbeTrack from '../ui/ProbeTrack';
 import controller from '../../machine/controller';
 import { controlledStop } from '../../machine/commands';
 import {
-  SURFACE, applyProbe, choiceOf, discardProbe, fetchProbe, figuresOf, methodOf, methodOfRun, nextProbe, optionsFor, saveProbe, serverOf, startProbe, stepBeside, wireOf, wizardStep,
+  SURFACE, applyProbe, choiceOf, discardProbe, fetchProbe, figuresOf, methodOf, methodOfRun, nextProbe, optionsFor, saveProbe, serverOf, startProbe, stepBeside, stepIdsOf, wireOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../../ui/shell';
@@ -60,9 +60,9 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
   const step = wizardStep(method ? local : 'method', probe);
   const fields = kept?.methods?.[serverOf(method)]?.fields ?? [];
   const choice = chosen[method?.id] ?? method?.choice?.first;
-  const go = (by) => setLocal(stepBeside(method, step, by));
+  const go = (by) => setLocal(stepBeside(method, step, by, choice));
   // Each step on into history, back by the gesture; none while the server's measurement is on the screen.
-  useBackSteps(probe ? 0 : Math.max(0, (method?.steps ?? []).indexOf(step)), () => go(-1));
+  useBackSteps(probe ? 0 : Math.max(0, (method ? stepIdsOf(method, choice) : []).indexOf(step)), () => go(-1));
   const lit = typeof machine.inputs?.pins === 'string' ? machine.inputs.pins.includes('P') : null;
   // The paper is felt for by hand: its measuring is this device's, a step of jog buttons, until "here".
   const feeling = step === 'measure' && method && !method.touches && probe?.state !== 'running';
@@ -155,7 +155,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
 
   const surfaceWarning = <SurfaceWarning method={method} choice={choice} surface={surface} />;
 
-  const track = <ProbeTrack method={method} step={step} takenBy={takenBy} />;
+  const track = <ProbeTrack method={method} choice={choice} step={step} takenBy={takenBy} />;
 
   // The steps with the jog beside them: the height map's area, and into place (or the paper felt for).
   if (step === 'area' || step === 'position' || feeling) {
