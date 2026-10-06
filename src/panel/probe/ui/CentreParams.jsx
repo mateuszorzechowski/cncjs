@@ -26,10 +26,10 @@ const NBSP = ' ';
  * lit. A figure being set loops the move it changes.
  *
  * `split(left, right)`, wide: the screen lays the drawing and the figures out
- * as cards of their own. `head`, above the drawing: what picks the cycle drawn.
+ * as cards of their own.
  */
 const CentreParams = ({
-  cycle, fields, texts, onText, bad, intro = null, note = null, split = null, head = null,
+  cycle, fields, texts, onText, bad, intro = null, note = null, split = null,
 }) => {
   const {
     params: PARAMS, hold, order, groups: groupsOf, timeline, playAt, moveOf, titleOf, scene: sceneOf, code: codeOf, usesAt,
@@ -69,7 +69,7 @@ const CentreParams = ({
   const drawing = (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-ctl border border-line bg-panel">
       {/* A film of two features: their scenes together drawn apart from each one's own views (`pairCycle`). */}
-      {cycle.overview?.(name) ? <PairOverview name={name} p={p} label={title} className={DRAWING_FIT} /> : (
+      {cycle.overview?.(name) ? <PairOverview pair={cycle.pair} name={name} p={p} label={title} className={DRAWING_FIT} /> : (
         <CentreViews
           cycle={cycle}
           top={sceneOf(name, p, how)}
@@ -99,17 +99,15 @@ const CentreParams = ({
       </div>
     </div>
   );
-  // Above the drawing, what picks it: a distance's end (`DistanceSetup`).
-  const left = head ? <div className="flex min-w-0 flex-col gap-3">{head}{drawing}</div> : drawing;
   const { right, third } = figureColumns({
     wide: wide && Boolean(split), sections, open, onOpen: setOpen, texts, onText, bad, onField, lit: usesAt(name, p), intro, note,
   });
   if (split) {
-    return split(left, right, third);
+    return split(drawing, right, third);
   }
   return (
     <div className="grid gap-4 @3xl/shell:grid-cols-2">
-      <div className="flex min-w-0 flex-col gap-3 self-start">{left}</div>
+      <div className="flex min-w-0 flex-col gap-3 self-start">{drawing}</div>
       <div className="min-w-0 self-start">{right}</div>
     </div>
   );

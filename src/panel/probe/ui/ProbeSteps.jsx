@@ -51,8 +51,8 @@ const EDITORS = {
   paper: PaperParams,
   'height-map': HeightMapSetup,
   // A size's, the centre's moves ending in the size, by the shape chosen.
-  // A distance's: each end's, one at a time (`DistanceSetup`).
-  measure: (props) => <DistanceSetup chosen={props.chosen} render={(shape, head) => <CentreParams cycle={sizeCycle('measure', shape)} head={head} {...props} />} />,
+  // A pair's: one drawing of both (`DistanceSetup`).
+  measure: (props) => <DistanceSetup chosen={props.chosen} render={(shape) => <CentreParams cycle={sizeCycle('measure', shape)} {...props} />} />,
 };
 // Sonda 3D's tile is the server's same method: its Setup the same.
 EDITORS.probe3d = EDITORS.measure;

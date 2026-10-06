@@ -18,11 +18,20 @@ const SCENES = {
   end: { run: 2600, titleKey: 'probe2.pair.move.end', code: 'probe2.pair.endCode' },
 };
 const SCENE = { kind: 'scene', uses: [] };
-// Each feature's last stage is its middle, not its size: a distance is between the middles (Mateusz, 2026-10-06).
-const CENTRE = {
-  a: 'probe2.pair.move.centreA', b: 'probe2.pair.move.centreB',
-};
+/*
+ * Each feature's last stage is what the distance is measured from (Mateusz,
+ * 2026-10-06: *"czy odległość ma mierzyć size czy środek"*): a hole's or a
+ * stud's middle, not its size; an edge's line, not its angle.
+ */
 const LAST = 'zero';
+const ENDS_SAID = {
+  round: {
+    a: 'probe2.pair.move.centreA', b: 'probe2.pair.move.centreB', bar: 'probe2.pair.bar.centre', code: 'probe2.pair.centreCode',
+  },
+  edge: {
+    a: 'probe2.pair.move.edgeA', b: 'probe2.pair.move.edgeB', bar: 'probe2.pair.bar.edge', code: 'probe2.pair.edgeCode',
+  },
+};
 
 /** One film of `pair`'s two ends, `first` and `second` their own cycles. */
 export const pairCycleOf = (pair, first, second) => {
@@ -95,7 +104,7 @@ export const pairCycleOf = (pair, first, second) => {
       id: end,
       key,
       subs: cycle.groups(passes).map((group) => ({
-        name: group.name, key: group.id === LAST ? 'probe2.pair.bar.centre' : group.key, moves: group.subs.flatMap((sub) => sub.moves).map((name) => named(end, name)),
+        name: group.name, key: group.id === LAST ? saidOf(end).bar : group.key, moves: group.subs.flatMap((sub) => sub.moves).map((name) => named(end, name)),
       })),
     });
     return [
@@ -112,9 +121,11 @@ export const pairCycleOf = (pair, first, second) => {
     const one = own(name);
     return one ? ask(one.cycle, one.name) : scene;
   };
-  // A feature's last stage: its middle marked where the ball ends, no size across it, no ball's diameter.
+  // A feature's last stage: a round one's middle marked where the ball ends, no size across it, no ball's
+  // diameter; an edge's touches, no angle.
   const last = (name) => own(name)?.name === LAST;
   const endOf = (name) => String(name).split(':')[0];
+  const saidOf = (end) => ENDS_SAID[pair[end].startsWith('circle') ? 'round' : 'edge'];
 
   return {
     pair,
@@ -131,14 +142,17 @@ export const pairCycleOf = (pair, first, second) => {
     timeline,
     playAt,
     moveOf: (name) => by(name, (cycle, one) => cycle.moveOf(one), SCENE),
-    titleOf: (name) => (last(name) ? [CENTRE[endOf(name)]] : by(name, (cycle, one) => cycle.titleOf(one), [SCENES[name]?.titleKey])),
+    titleOf: (name) => (last(name) ? [saidOf(endOf(name))[endOf(name)]] : by(name, (cycle, one) => cycle.titleOf(one), [SCENES[name]?.titleKey])),
     scene: (name, p, how) => by(name, (cycle, one) => {
       const drawn = cycle.scene(one, p, how);
-      return last(name) ? {
+      if (!last(name)) {
+        return drawn;
+      }
+      return pair[endOf(name)].startsWith('circle') ? {
         ...drawn, dims: [], dia: null, centre: drawn.tool,
-      } : drawn;
+      } : { ...drawn, angle: null };
     }, null),
-    code: (name, texts) => (last(name) ? ['probe2.pair.centreCode'] : by(name, (cycle, one) => cycle.code(one, texts), [SCENES[name]?.code])),
+    code: (name, texts) => (last(name) ? [saidOf(endOf(name)).code] : by(name, (cycle, one) => cycle.code(one, texts), [SCENES[name]?.code])),
     explain: (name, texts, say) => by(name, (cycle, one) => (cycle.explain ? cycle.explain(one, texts, say) : null), null),
     usesAt: (name, p) => (last(name) ? [] : by(name, (cycle, one) => cycle.usesAt(one, p), [])),
     positionAt: first.positionAt,

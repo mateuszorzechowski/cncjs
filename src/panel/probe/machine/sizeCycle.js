@@ -44,11 +44,11 @@ const CYCLES = {
   ])),
 };
 /*
- * A pair played as one film, both features in the scenes between their own
- * cycles (`pairCycle`) — for now two holes, the example Mateusz asked for
- * first (2026-10-06: *"zrób na jednym przykładzie, a potem zobaczymy"*).
+ * A distance played as one film, both features in the scenes between their
+ * own cycles (`pairCycle`; Mateusz, 2026-10-06: two holes first, then
+ * *"jest ok, daj dla reszty"*).
  */
-export const filmed = (pair) => pair.shape === 'distance' && pair.a === 'circle-inside' && pair.b === 'circle-inside';
+export const filmed = (pair) => pair.shape === 'distance';
 
 // Two surfaces with the lower being measured: into place over it, the server's steps its.
 const LOWER = bossCycleOf({ layout: 'surface', second: true });
