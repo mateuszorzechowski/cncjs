@@ -26,8 +26,13 @@ export const move = (phase, to) => ({ kind: 'move', phase, to });
  */
 export const SETTLE_SECONDS = 0.5;
 
-/** Up to `lift` over the top a touch kept as `key` found — the last move of a plate method. */
-export const liftOver = (key, lift) => move('lift', (here, seen) => ({ z: seen[key].z + lift }));
+/**
+ * Up to `lift` over the top a touch kept as `key` found — the last move of a
+ * plate method. Up, never down: a lift set lower than the back-off the touch
+ * already made would have taken the tool back down onto the plate (audit
+ * 2026-10-05, I5).
+ */
+export const liftOver = (key, lift) => move('lift', (here, seen) => ({ z: Math.max(here.z, seen[key].z + lift) }));
 
 /**
  * Stand still until the operator says so (`probe:resume`): hands under the
