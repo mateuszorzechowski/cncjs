@@ -44,12 +44,16 @@ const toWork = (target, wco) => Object.fromEntries(
   Object.entries(target).map(([axis, value]) => [axis, value - (wco[axis] || 0)]),
 );
 
-/** The line for each kind of step. */
+/**
+ * The line for each kind of step. A probing line says `G94` as well: in
+ * inverse time (`G93`), left on by a program, its `F` would be how fast the
+ * whole move ends rather than millimetres a minute (audit 2026-10-05, K13).
+ */
 const LINE = {
   move: (step, target) => `G90 G21 G53 G0 ${words(target)}`,
   dwell: (step) => `G4 P${fmt(step.seconds)}`,
-  touch: (step, target, wco) => `G90 G21 G38.2 ${words(toWork(target, wco))} F${fmt(step.feed)}`,
-  clear: (step, target, wco) => `G90 G21 G38.3 ${words(toWork(target, wco))} F${fmt(step.feed)}`,
+  touch: (step, target, wco) => `G90 G21 G94 G38.2 ${words(toWork(target, wco))} F${fmt(step.feed)}`,
+  clear: (step, target, wco) => `G90 G21 G94 G38.3 ${words(toWork(target, wco))} F${fmt(step.feed)}`,
 };
 
 /** Why a step's answer is a failure, or null. `prb` is the report, if one came. */

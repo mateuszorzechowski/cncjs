@@ -59,7 +59,7 @@ describe('probe:start', () => {
 
     controller.command('probe:start', { method: 'z' });
     // Work coordinates: machine Z-15 is work Z15 with the zero 30 mm down.
-    expect(sent()).toEqual(['G90 G21 G38.2 Z15 F100']);
+    expect(sent()).toEqual(['G90 G21 G94 G38.2 Z15 F100']);
 
     controller.runner.parse('[PRB:0.000,0.000,-7.000:1]');
     controller.runner.parse('ok');
@@ -72,7 +72,7 @@ describe('probe:start', () => {
       'G90 G21 G53 G0 Z-5',
       // A clip still touching as the tool backs off would fail the slow touch.
       'G4 P0.5',
-      'G90 G21 G38.2 Z21 F25',
+      'G90 G21 G94 G38.2 Z21 F25',
       // Off the touch and up clear of the plate, so it can come out from under the tool: two rapids the same
       // way, one move.
       'G90 G21 G53 G0 Z2.9',
@@ -173,6 +173,18 @@ describe('probe:start', () => {
     ['probe-triggered', { method: 'z' }, (controller) => {
       controller.runner.state.status.pinState = 'P';
     }],
+    // A program left without M5, or an M3 typed in: Grbl says it in the status report (audit K1)…
+    ['spindle-on', { method: 'z' }, (controller) => {
+      controller.runner.state.status.accessoryState = 'SF';
+    }],
+    // …and the other way round, in the parser state, which can be the first to know.
+    ['spindle-on', { method: 'z' }, (controller) => {
+      controller.runner.state.parserstate.modal.spindle = 'M4';
+    }],
+    // A touch faster than it was set (K13).
+    ['feed-override', { method: 'z' }, (controller) => {
+      controller.runner.state.status.ov = [150, 100, 100];
+    }],
   ])('refuses with %s, and nothing goes out', (reason, request, arrange) => {
     const { controller, sent, refusals } = setup();
     arrange(controller);
@@ -181,6 +193,28 @@ describe('probe:start', () => {
 
     expect(sent()).toEqual([]);
     expect(refusals.map(({ reason: said }) => said)).toEqual([reason]);
+  });
+
+  test('the paper is felt for by hand: refused with the spindle on, not for an override it never uses', () => {
+    const { controller, sent, refusals } = setup();
+    controller.runner.state.status.ov = [150, 100, 100];
+    controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
+    expect(refusals).toEqual([]);
+    expect(sent()).toEqual(['G90 G21 G53 G0 Z2']);
+
+    const other = setup();
+    other.controller.runner.state.status.accessoryState = 'S';
+    other.controller.command('probe:start', { method: 'paper', options: { edge: 'z' } });
+    expect(other.refusals.map(({ reason }) => reason)).toEqual(['spindle-on']);
+    expect(other.sent()).toEqual([]);
+  });
+
+  test('a slower override is a slower touch, and goes', () => {
+    const { controller, sent, refusals } = setup();
+    controller.runner.state.status.ov = [50, 100, 100];
+    controller.command('probe:start', { method: 'z' });
+    expect(refusals).toEqual([]);
+    expect(sent()).toEqual(['G90 G21 G94 G38.2 Z15 F100']);
   });
 
   test('the paper needs no probe input, so a lit one does not stop it', () => {
@@ -233,7 +267,7 @@ describe('the runner', () => {
     run.prb({ x: 0, y: 0, z: -4, result: 1 });
     run.ok();
 
-    expect(lines).toEqual(['G90 G21 G38.2 Z-10 F50', 'G90 G21 G53 G0 Z-2']);
+    expect(lines).toEqual(['G90 G21 G94 G38.2 Z-10 F50', 'G90 G21 G53 G0 Z-2']);
   });
 
   test('joins rapids in a row along one axis the same way, and nothing else', () => {
@@ -255,7 +289,7 @@ describe('the runner', () => {
     run.ok();
     run.ok();
     run.ok();
-    expect(lines).toEqual(['G90 G21 G53 G0 X10', 'G90 G21 G53 G0 X9', 'G90 G21 G53 G0 Z5', 'G90 G21 G38.2 Z6 F50']);
+    expect(lines).toEqual(['G90 G21 G53 G0 X10', 'G90 G21 G53 G0 X9', 'G90 G21 G53 G0 Z5', 'G90 G21 G94 G38.2 Z6 F50']);
   });
 });
 
@@ -550,7 +584,7 @@ describe('the height map', () => {
     controller.runner.state.status.pinState = '';
 
     controller.command('probe:resume');
-    expect(sent().at(-1)).toMatch(/^G90 G21 G38\.2 Z/);
+    expect(sent().at(-1)).toMatch(/^G90 G21 G94 G38\.2 Z/);
     // Only while it stands.
     controller.command('probe:resume');
     expect(refusals.pop()).toMatchObject({ cmd: 'probe:resume', reason: 'not-waiting' });

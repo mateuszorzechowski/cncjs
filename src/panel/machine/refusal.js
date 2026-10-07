@@ -77,6 +77,9 @@ const KEYS = {
   // the one worth a sentence: Grbl would alarm at once.
   'probe-triggered': 'refusal.probeTriggered',
   probing: 'refusal.probing',
+  // The machine in no state for a probe to move: the spindle turning, a feed override above 100 %.
+  'spindle-on': 'refusal.spindleOn',
+  'feed-override': 'refusal.feedOverride',
   'no-result': 'refusal.noResult',
   'bad-method': 'refusal.badMethod',
   'bad-corner': 'refusal.badCorner',

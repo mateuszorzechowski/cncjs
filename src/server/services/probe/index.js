@@ -62,7 +62,9 @@ export const FIELDS = {
   // A height map: up over the last touch before going on to the next point (Mateusz, 2026-10-02:
   // quicker than back to the start's height, and nothing in the area may stand higher).
   mapLift: { value: 2, min: 0.5, max: 50 },
-  fast: { value: 100, min: 10, max: 2000 },
+  // The fast touch: the probe travels on past the contact while the machine slows, so it is capped well short
+  // of what a hobby Z stops from inside a 3D probe's few millimetres (audit 2026-10-05, K13; it was 2000).
+  fast: { value: 100, min: 10, max: 500 },
   slow: { value: 25, min: 1, max: 500 },
 };
 
@@ -115,9 +117,14 @@ class Probe {
   own = {};
 
   open(saved = {}) {
-    // What `.cncrc` holds is trusted no further than a request would be.
-    const { own } = paramsPatch(saved ?? null);
-    this.own = own || {};
+    // What `.cncrc` holds is trusted no further than a request would be — figure by figure, so one a newer
+    // limit no longer takes (a `fast` of 2000) goes back to its default without taking the others with it.
+    // In the fields' order, `fast` before `slow`, which is checked against it.
+    let kept = {};
+    for (const name of fieldNames.filter((one) => Object.hasOwn(saved ?? {}, one))) {
+      kept = paramsPatch({ [name]: saved[name] }, undefined, kept).own ?? kept;
+    }
+    this.own = kept;
   }
 
   params() {

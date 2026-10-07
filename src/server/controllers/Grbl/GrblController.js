@@ -58,6 +58,7 @@ import { JOURNALED, changesWorkOffsets, offsetChange } from './offsets';
 import { machineEnvelope, programOverrun } from './envelope';
 import { checkLines, createCheckRun } from './check-run';
 import { createProbeRun, offsetFor, offsetLine } from './probe-run';
+import { probeMachineRefusal } from './probe-guard';
 import probeSettings from '../../services/probe';
 import { STRATEGIES } from '../../services/probe/strategies';
 import heightMap from '../../services/height-map';
@@ -2643,6 +2644,20 @@ class GrblController {
     }
 
     /**
+     * Refused, said to the asker, when the machine itself is in no state for
+     * a probe to move: the spindle turning, or — for a method that touches —
+     * the feed override above 100 % (`probe-guard`).
+     */
+    refuseProbeMachine(cmd, touches = true) {
+      const reason = probeMachineRefusal({ status: this.runner.state?.status, modal: this.runner.getModalGroup() });
+      if (reason && (touches || reason === 'spindle-on')) {
+        this.refuse(cmd, reason);
+        return true;
+      }
+      return false;
+    }
+
+    /**
      * A zero at `zero` (machine coordinates, the axes it has) in system
      * `wcs`: the offset `G10 L2` would write, and how far that moves the
      * zero from where it is now.
@@ -3312,6 +3327,9 @@ class GrblController {
             this.refuse(cmd, 'probe-triggered');
             return;
           }
+          if (this.refuseProbeMachine(cmd, strategy.touches)) {
+            return;
+          }
           if (!this.claimMotion(cmd)) {
             return;
           }
@@ -3344,6 +3362,9 @@ class GrblController {
             this.refuse(cmd, 'probe-triggered');
             return;
           }
+          if (this.refuseProbeMachine(cmd)) {
+            return;
+          }
           if (!this.claimMotion(cmd)) {
             return;
           }
@@ -3366,6 +3387,9 @@ class GrblController {
           }
           if (String(this.runner.state?.status?.pinState || '').includes('P')) {
             this.refuse(cmd, 'probe-triggered');
+            return;
+          }
+          if (this.refuseProbeMachine(cmd)) {
             return;
           }
           this.probe.run.resume();

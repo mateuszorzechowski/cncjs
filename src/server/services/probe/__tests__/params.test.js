@@ -74,6 +74,19 @@ describe('the probe figures', () => {
 
     expect(probe.params().maxZ).toBe(FIELDS.maxZ.value);
   });
+
+  test('a figure a newer limit refuses goes back to its default alone, the others kept', () => {
+    // Kept when the fast touch could still be 2000 mm/min (audit 2026-10-05, K13).
+    probe.open({ fast: 2000, slow: 40, plateThickness: 5 });
+
+    expect(probe.params()).toMatchObject({ fast: FIELDS.fast.value, slow: 40, plateThickness: 5 });
+    expect(probe.saved()).toEqual({ slow: 40, plateThickness: 5 });
+  });
+
+  test('the fast touch is capped at 500 mm/min', () => {
+    expect(paramsPatch({ fast: 600 }, 'mm')).toMatchObject({ name: 'fast' });
+    expect(paramsPatch({ fast: 500 }, 'mm')).toEqual({ own: { fast: 500 } });
+  });
 });
 
 describe('the probe figures, over the API', () => {
