@@ -137,6 +137,28 @@ describe('probe:start', () => {
     expect(sent().pop()).toBe('G21 G10 L2 P1 Z-17');
   });
 
+  test.each([
+    ['a limit alarm', (controller) => controller.runner.parse('ALARM:1')],
+    ['a homing cycle', (controller) => {
+      controller.homing.pending = true;
+      controller.runner.parse('ok');
+    }],
+  ])('a zero waiting for Zapisz is void after %s: the machine\'s coordinates may have moved (audit K12)', (_why, happen) => {
+    const { controller, sent, probeStates, refusals } = setup();
+    controller.command('probe:start', { method: 'z' });
+    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok']) {
+      controller.runner.parse(line);
+    }
+    const before = sent().length;
+
+    happen(controller);
+    expect(probeStates().pop()).toMatchObject({ state: 'failed', failure: { code: 'position-lost' }, result: null });
+
+    controller.command('probe:apply');
+    expect(refusals.map(({ reason }) => reason)).toContain('no-result');
+    expect(sent()).toHaveLength(before);
+  });
+
   test('a plate not found is said, and the zero stays where it was', () => {
     const { controller, sent, probeStates } = setup();
     controller.command('probe:start', { method: 'z' });

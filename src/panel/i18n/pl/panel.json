@@ -1620,6 +1620,7 @@
       "softLimit": "Ruch wyszedłby poza zakres maszyny (soft limity). Nic nie zapisano. Zresetuj, potem przestaw frez albo zbazuj maszynę.",
       "touched": "{{axis}}: frez zjechał na płytkę zamiast obok niej. Nic nie zapisano. Zwiększ „Odsunięcie za ściankę” albo zacznij bliżej narożnika.",
       "reset": "Pomiar przerwany. Nic nie zapisano.",
+      "positionLost": "Od pomiaru maszyna mogła zgubić pozycję albo została zbazowana, więc wynik jest nieważny. Nic nie zapisano. Zmierz ponownie.",
       "other": "Pomiar nie udał się ({{code}}). Nic nie zapisano."
     },
     "result": {

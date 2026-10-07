@@ -1620,6 +1620,7 @@
       "softLimit": "The move would leave the machine travel (soft limits). Nothing was written. Reset, then move the tool or home the machine.",
       "touched": "{{axis}}: the tool came down on the plate instead of beside it. Nothing was written. Increase “Out past the wall” or start closer to the corner.",
       "reset": "The measurement was stopped. Nothing was written.",
+      "positionLost": "Since the measurement the machine may have lost its position, or was homed, so the result no longer holds. Nothing was saved. Measure again.",
       "other": "The measurement failed ({{code}}). Nothing was written."
     },
     "result": {
