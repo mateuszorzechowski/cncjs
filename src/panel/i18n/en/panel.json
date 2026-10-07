@@ -480,13 +480,11 @@
     "g92": "The program moves the zero by G92 (line {{line}}).",
     "arcPlane": "An arc outside the XY plane (line {{line}}).",
     "badArc": "An arc that cannot be drawn (line {{line}}).",
-    "spacingTooWide": "The points' spacing is no less than the rough size: a point would meet the next wall, or the way to it run into one. Make the spacing smaller.",
     "badShape": "Unknown shape to measure.",
     "badPasses": "Measuring passes: 1 or 2.",
     "badPart": "A distance is measured between holes, studs or edges.",
     "edgesCrossing": "These edges are square to each other: they meet in a corner, there is no distance between them.",
-    "notBetween": "No first feature of a distance has been measured.",
-    "edgesParallel": "These edges run the same way: they never meet in a corner."
+    "notBetween": "No first feature of a distance has been measured."
   },
   "notice": {
     "warning": "Warning",

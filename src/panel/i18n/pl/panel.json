@@ -480,13 +480,11 @@
     "g92": "Program przesuwa zero przez G92 (linia {{line}}).",
     "arcPlane": "Łuk poza płaszczyzną XY (linia {{line}}).",
     "badArc": "Łuk, którego nie da się narysować (linia {{line}}).",
-    "spacingTooWide": "Odstęp punktów jest nie mniejszy niż przybliżony rozmiar: punkt trafiłby w sąsiednią ściankę albo dojazd do niego w nią wjechał. Zmniejsz odstęp.",
     "badShape": "Nieznany kształt pomiaru.",
     "badPasses": "Liczba przejść pomiaru: 1 albo 2.",
     "badPart": "Odległość mierzy się między otworami, czopami albo krawędziami.",
     "edgesCrossing": "Te krawędzie są do siebie prostopadłe: spotykają się w narożniku, nie ma między nimi odległości.",
-    "notBetween": "Nie ma zmierzonego pierwszego elementu odległości.",
-    "edgesParallel": "Te krawędzie biegną w tę samą stronę: nie spotykają się w narożniku."
+    "notBetween": "Nie ma zmierzonego pierwszego elementu odległości."
   },
   "notice": {
     "warning": "Ostrzeżenie",
