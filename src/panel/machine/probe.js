@@ -272,8 +272,16 @@ export const fetchProbe = async () => {
 /**
  * The figures as the operator confirmed them, typed in the server's units —
  * `{ name: text }`. A refusal names the figure the server would not take.
+ *
+ * A figure left empty is refused here, named as the server names one: as a
+ * number it would be 0, and 0 is a wall the L plate does not have or a lift
+ * that never lifts (audit 2026-10-05, K7).
  */
 export const saveProbe = async (texts, rule) => {
+  const empty = Object.keys(texts).find((name) => String(texts[name] ?? '').trim() === '');
+  if (empty) {
+    throw Object.assign(new Error(empty), { name: empty });
+  }
   const params = Object.fromEntries(Object.entries(texts).map(([name, text]) => [name, Number(String(text).replace(',', '.'))]));
   const res = await fetch('/api/probe', {
     method: 'PUT',
@@ -297,9 +305,15 @@ export const sayProbeStage = (stage, own = false) => {
   controller.command('probe:stage', stage && own ? { ...stage, own: true } : stage);
 };
 
-/** `units`, what the options' figures are in — a height map's area. */
-export const startProbe = (method, options = {}, units = undefined) => {
-  controller.command('probe:start', { method, options, units });
+/**
+ * `units`, what the options' figures are in — a height map's area.
+ * `figures`, if given, the server's figures (mm) as the operator confirmed
+ * them: the start is refused if they have changed since (audit K8).
+ */
+export const startProbe = (method, options = {}, units = undefined, figures = undefined) => {
+  controller.command('probe:start', {
+    method, options, units, ...(figures ? { figures } : {}),
+  });
 };
 
 /**

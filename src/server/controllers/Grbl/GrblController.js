@@ -2615,7 +2615,8 @@ class GrblController {
     runProbe() {
       const { method, options, part } = this.probe;
       const strategy = STRATEGIES[method];
-      const params = probeSettings.params();
+      // A pair's second feature with the figures its first was measured with, whatever was changed between (K8).
+      const params = this.probe.params ?? probeSettings.params();
       const mpos = this.reportedMm(this.runner.getMachinePosition());
       const wpos = this.reportedMm(this.runner.getWorkPosition());
       const modal = this.runner.getModalGroup();
@@ -3439,7 +3440,9 @@ class GrblController {
          * `probe:apply` or `probe:discard`.
          */
         'probe:start': () => {
-          const [{ method, options: asked = {}, units: given } = {}] = args;
+          const [{
+            method, options: asked = {}, units: given, figures,
+          } = {}] = args;
           const strategy = STRATEGIES[method];
           let options = asked;
 
@@ -3464,6 +3467,20 @@ class GrblController {
           if (wrong) {
             this.refuse(cmd, wrong);
             return;
+          }
+          /*
+           * The figures the operator confirmed, if the panel says which: the
+           * server's are shared by every device, and one changed on another
+           * since — a different plate typed on the tablet — is not what this
+           * operator saw (audit 2026-10-05, K8). Only the method's own.
+           */
+          if (figures && typeof figures === 'object') {
+            const now = probeSettings.params();
+            const changed = strategy.fields.find((name) => name in figures && !(Math.abs(Number(figures[name]) - now[name]) < 1e-6));
+            if (changed) {
+              this.refuse(cmd, 'figures-changed', undefined, { name: changed });
+              return;
+            }
           }
           if (this.probe?.run || this.probeDeferred) {
             this.refuse(cmd, 'probing');

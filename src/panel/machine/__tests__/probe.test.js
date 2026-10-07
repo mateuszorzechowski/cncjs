@@ -1,5 +1,5 @@
 import {
-  METHODS, choiceOf, failureKey, mapAsk, methodOf, optionsFor, pairOf, phaseWords, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
+  METHODS, choiceOf, failureKey, mapAsk, methodOf, optionsFor, pairOf, phaseWords, saveProbe, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -159,5 +159,24 @@ describe('the height map, asked for', () => {
     expect(optionsFor(map, 'probe', undefined, mapAsk(texts, 'program'))).toEqual({ ...mapAsk(texts, 'program'), tool: 'probe' });
     expect(wireOf(map, 'probe')).toMatchObject({ plate: 'probe', stuck: 'probe.wire.normallyClosed' });
     expect(wireOf(methodOf('z'), undefined)).toEqual({ plate: undefined, how: undefined, stuck: undefined });
+  });
+});
+
+describe('the figures, confirmed', () => {
+  afterEach(() => {
+    delete global.fetch;
+  });
+
+  test('an empty one is refused here, named, and nothing is sent: as a number it would be 0 (audit K7)', async () => {
+    global.fetch = jest.fn();
+    await expect(saveProbe({ wallX: '', wallY: '10' }, MM)).rejects.toMatchObject({ name: 'wallX' });
+    await expect(saveProbe({ lift: '  ' }, MM)).rejects.toMatchObject({ name: 'lift' });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('the rest go as numbers, a comma read as a point', async () => {
+    global.fetch = jest.fn(async () => ({ ok: true, json: async () => ({ params: {} }) }));
+    await saveProbe({ wallX: '7,5' }, MM);
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ params: { wallX: 7.5 }, units: 'mm' });
   });
 });
