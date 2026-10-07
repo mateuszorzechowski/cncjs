@@ -2626,8 +2626,9 @@ class GrblController {
     runProbe() {
       const { method, options, part } = this.probe;
       const strategy = STRATEGIES[method];
-      // A pair's second feature with the figures its first was measured with, whatever was changed between (K8).
-      const params = this.probe.params ?? probeSettings.params();
+      // A pair's second feature with the figures its first was measured with, whatever was changed between (K8);
+      // a figure the measurement asked for over the one kept (`runParams`).
+      const params = this.probe.params ?? (strategy.runParams?.(probeSettings.params(), options) ?? probeSettings.params());
       const mpos = this.reportedMm(this.runner.getMachinePosition());
       const wpos = this.reportedMm(this.runner.getWorkPosition());
       const modal = this.runner.getModalGroup();

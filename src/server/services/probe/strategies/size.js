@@ -74,6 +74,9 @@ export const SHAPES = {
   height: { kind: 'height', pair: heightOf },
 };
 
+// The passes a measurement may ask for (`runParams`), as the figure kept allows.
+const PASSES = [1, 2];
+
 // Every pass, the ones that count last.
 const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
@@ -225,8 +228,17 @@ const partOf = (shape, params, seen) => {
 export default {
   // An inside shape's figures are a hole's, an outside one's a part's; the panel shows the ones for the shape chosen.
   fields: ['holeSize', 'bossSize', 'spacing', 'holePasses', 'repeats', 'ballDiameter', 'clear', 'overTop', 'depth', 'maxZ', 'retract', 'fast', 'slow'],
-  options: { shape: Object.keys(SHAPES), a: PARTS.distance, b: PARTS.distance },
+  options: {
+    shape: Object.keys(SHAPES), a: PARTS.distance, b: PARTS.distance, holePasses: PASSES,
+  },
   touches: true,
+  /*
+   * The passes asked with the measurement, over the ones kept (Sonda v2,
+   * 2026-10-06): a rectangle's walls are square to the axes, so a second
+   * pass finds the same size and middle — the panel asks for one there and
+   * leaves the figure kept, shared by every method, as it is.
+   */
+  runParams: (params, options) => (options?.holePasses ? { ...params, holePasses: options.holePasses } : params),
   /*
    * A shape touched at two points a side needs them on the side: further apart
    * than the rough size, a point meets the next wall, or — inside — a way to it
@@ -238,6 +250,9 @@ export default {
     const shape = SHAPES[options.shape];
     if (!shape) {
       return 'bad-shape';
+    }
+    if (options.holePasses !== undefined && !PASSES.includes(options.holePasses)) {
+      return 'bad-passes';
     }
     if (shape.pair) {
       return pairRefusal(options.shape, options.a, options.b);

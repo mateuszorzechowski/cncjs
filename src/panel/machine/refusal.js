@@ -93,6 +93,8 @@ const KEYS = {
   // Pomiar's points a side further apart than the rough size: one would meet the next wall.
   'spacing-too-wide': 'refusal.spacingTooWide',
   'bad-shape': 'refusal.badShape',
+  // Pomiar's passes asked with it: one or two.
+  'bad-passes': 'refusal.badPasses',
   // A distance: an end that is not a hole, a stud or an edge; two edges square to each other; its second end with no first.
   'bad-part': 'refusal.badPart',
   'edges-crossing': 'refusal.edgesCrossing',
