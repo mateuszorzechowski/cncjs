@@ -28,14 +28,12 @@ import HomingScreen from './screens/HomingScreen';
 import JournalScreen from './screens/JournalScreen';
 import MdiScreen from './screens/MdiScreen';
 import PathScreen from './screens/PathScreen';
-import ProbeScreen from './screens/ProbeScreen';
-import ProbeScreenV2 from './probe2/screens/ProbeScreen';
+import ProbeScreen from './probe/screens/ProbeScreen';
 import SettingsScreen, { showSettingsTab } from './screens/SettingsScreen';
 import ZeroScreen from './screens/ZeroScreen';
 import { useMachine } from './machine/useMachine';
 import useKept from './ui/useKept';
-import { WIZARD_STEP } from './ui/useProbeWizard';
-import { WIZARD_STEP as WIZARD_STEP_V2 } from './probe2/ui/useProbeWizard';
+import { WIZARD_STEP } from './probe/ui/useProbeWizard';
 import { adviceFor } from './machine/advice';
 import { emergencyStop } from './machine/commands';
 
@@ -59,13 +57,6 @@ const DESTINATIONS = [
   { id: 'files', key: 'nav.files', ready: true },
   { id: 'path', key: 'nav.path', ready: true },
   { id: 'probe', key: 'nav.probe', ready: true },
-  /*
-   * Sonda v2: an independent copy of the wizard with the audit's fixes and
-   * its set of options, beside the first so the two can be compared on the
-   * machine; one of them is kept (Mateusz, 2026-10-05: *"v2 to osobna
-   * zakładka równoległa … wybierzemy jedną"*).
-   */
-  { id: 'probe2', key: 'nav.probe2', ready: true },
   { id: 'diag', key: 'nav.diag', ready: true },
   // What happened, in place of the alarm list it was drawn as (2026-09-24).
   { id: 'journal', key: 'nav.journal', ready: true },
@@ -138,7 +129,6 @@ const SCREENS = {
   mdi: MdiScreen,
   path: PathScreen,
   probe: ProbeScreen,
-  probe2: ProbeScreenV2,
   zero: ZeroScreen,
   settings: SettingsScreen,
 };
@@ -191,10 +181,8 @@ const Panel = ({ machine, screen, onScreen }) => {
    * at Sonda in the menu (Mateusz, 2026-10-03).
    */
   const [wizardStep] = useKept(WIZARD_STEP, 'method');
-  const [wizardStepV2] = useKept(WIZARD_STEP_V2, 'method');
   const marks = {
     probe: wizardStep !== 'method' || probeWaits || Boolean(machine.probe),
-    probe2: wizardStepV2 !== 'method' || probeWaits || Boolean(machine.probe),
   };
   const Screen = SCREENS[screen];
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchBentProgram } from '../machine/probe';
+import { fetchBentProgram } from '../probe/machine/probe';
 
 /**
  * The loaded program as the machine will cut it with a height map (Mateusz,

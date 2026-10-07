@@ -1,4 +1,4 @@
-import { failureKey, methodOf, phaseWords } from '../machine/probe';
+import { failureKey, methodOfRun, phaseWords } from '../probe/machine/probe';
 import { degrees } from '../machine/units';
 import { t } from '../i18n';
 
@@ -25,9 +25,9 @@ const figureOf = (key, value, units) => (ANGLES.includes(key) ? `${degrees(value
 // A distance mixes lengths and angles: each said with its own unit.
 const unitOf = (key, value, units) => (ANGLES.includes(key) ? figureOf(key, value) : `${units.figure(value)} ${units.length}`);
 
-// The method by its name, and its one choice where it has one: "Szerokość · listwa X".
+// The method by its name — the tile it was measured on — and its one choice where it has one: "Sonda 3D · Kieszeń".
 const methodName = (data) => {
-  const method = methodOf(data?.method);
+  const method = methodOfRun(data?.method, data);
   if (!method) {
     return data?.method ?? '';
   }

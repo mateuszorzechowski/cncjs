@@ -24,9 +24,9 @@ const useProbeJoin = ({
 }) => {
   const shared = machine.probeStage;
   // Kept while the screen is away, as the rest of the wizard is (`useProbeWizard`).
-  const [mode, setMode] = useKept('probe2-mode', null);
-  const [takenBy, setTakenBy] = useKept('probe2-takenBy', null);
-  const [declined, setDeclined] = useKept('probe2-declined', false);
+  const [mode, setMode] = useKept('probe-mode', null);
+  const [takenBy, setTakenBy] = useKept('probe-takenBy', null);
+  const [declined, setDeclined] = useKept('probe-declined', false);
   const { mine } = useProbeStage({
     machine, method, choice, surface, area, step, feeling, mode, onFollow: setLocal,
     onTakenOver: (name) => {

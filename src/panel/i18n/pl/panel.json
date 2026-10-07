@@ -9,7 +9,6 @@
     "files": "Pliki",
     "path": "Ścieżka",
     "probe": "Sonda",
-    "probe2": "Sonda v2",
     "diagShort": "Diag",
     "diag": "Diagnostyka",
     "settings": "Ustawienia",
@@ -1456,9 +1455,7 @@
       "paper": "Kartka",
       "paperNote": "Ręcznie, kartką papieru: wierzch albo dowolny bok, bez sondy.",
       "map": "Mapa wysokości",
-      "mapNote": "Siatka punktów sondą: program pójdzie za krzywą płytką. Zero bez zmian.",
-      "measure": "Pomiar",
-      "measureNote": "Okrąg, prostokąt albo szerokość, sondą: wymiar i środek — a w środku, jeśli chcesz, zero."
+      "mapNote": "Siatka punktów sondą: program pójdzie za krzywą płytką. Zero bez zmian."
     },
     "how": {
       "paper": "Trzymaj kartkę papieru między frezem a wybraną powierzchnią. Nic nie przypinasz — maszyna rusza się tylko, gdy joggujesz."
@@ -1479,7 +1476,6 @@
       "bar": "Ustaw kulkę sondy nad środkiem listwy, kilka milimetrów nad jej wierzchem — mniej niż limit dojazdu Z.",
       "pocket": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, mniej więcej na środek — nie dotykając ścianek.",
       "edge": "Ustaw kulkę sondy nad detalem, kilka milimetrów od wybranej krawędzi i nad wierzchem — mniej niż odsunięcie za bok i limit dojazdu Z.",
-      "slot": "Opuść kulkę sondy do fasolki, kilka milimetrów pod jej krawędź, mniej więcej na środek. Odstęp punktów musi być wyraźnie mniejszy niż szerokość fasolki.",
       "wall": "Opuść kulkę sondy do kieszeni, kilka milimetrów pod jej krawędź, z dala od ścianek — dotknie wybranej ścianki od środka w dwóch punktach.",
       "surface": "Ustaw kulkę sondy nad powierzchnią, kilka milimetrów nad nią — mniej niż limit dojazdu Z."
     },
@@ -1550,11 +1546,7 @@
       "grooveSize": "Szerokość rowka (w przybliżeniu)",
       "barSize": "Szerokość listwy (w przybliżeniu)",
       "spacing": "Odstęp punktów na krawędzi",
-      "ovalStudSize": "Dłuższa oś czopu (w przybliżeniu)",
-      "ovalHoleSize": "Dłuższa oś otworu (w przybliżeniu)",
-      "overTop": "Przejazd nad wierzchem",
-      "slotHoleSize": "Długość fasolki (w przybliżeniu)",
-      "slotStudSize": "Długość fasolki (w przybliżeniu)"
+      "overTop": "Przejazd nad wierzchem"
     },
     "step": {
       "method": "Metoda",
@@ -1578,7 +1570,6 @@
       "touching": "Dotyk",
       "ok": "Działa",
       "unknown": "Sterownik nie podaje stanu wejść, więc przewodu nie da się tu sprawdzić.",
-      "untested": "Przewód nie sprawdzony. Jeśli płytka albo sonda nie jest wpięta, maszyna przy pomiarze dojedzie aż do limitu dojazdu i dopiero wtedy stanie z ALARM:5.",
       "picture": "Krokodylek na frezie, płytka z dala od niego i dotykająca go",
       "open": "SONDA · otwarta",
       "closed": "SONDA · zwarta",
@@ -1740,8 +1731,7 @@
       "stud": "Czop",
       "pocket": "Kieszeń",
       "groove": "Rowek",
-      "bar": "Listwa",
-      "slot": "Fasolka"
+      "bar": "Listwa"
     },
     "play": {
       "pause": "Pauza",
@@ -1918,27 +1908,15 @@
       "circleOutside": "Czop",
       "rectInside": "Kieszeń",
       "rectOutside": "Detal",
-      "grooveX": "Rowek X",
-      "grooveY": "Rowek Y",
-      "barX": "Listwa X",
-      "barY": "Listwa Y",
       "edgeFront": "Przód",
       "edgeBack": "Tył",
       "edgeLeft": "Lewy bok",
       "edgeRight": "Prawy bok",
-      "rectInsideTurned": "Kieszeń pod kątem",
-      "rectOutsideTurned": "Detal pod kątem",
-      "ovalInside": "Otwór — owalizacja",
-      "ovalOutside": "Czop — owalizacja",
-      "slotInside": "Fasolka wycięta",
-      "slotOutside": "Fasolka wystająca",
       "distance": "Odległość",
-      "angle": "Kąt i narożnik",
       "wallFront": "Ścianka przód",
       "wallBack": "Ścianka tył",
       "wallLeft": "Ścianka lewa",
       "wallRight": "Ścianka prawa",
-      "surface": "Jedna powierzchnia",
       "height": "Dwie powierzchnie"
     },
     "shapeLabel": "Jak leży",
@@ -1946,8 +1924,6 @@
       "move": {
         "size": "Rozmiar: odstęp dotyków i kulka",
         "edge": "Kąt: z dwóch dotyków i ich odstępu",
-        "oval": "Owal: elipsa przez osiem dotyków",
-        "slot": "Fasolka: kształt przez osiem dotyków",
         "surface": "Z: dotyk najniższym punktem kulki"
       },
       "codeHole": "rozmiar = odstęp dotyków + Ø kulki",
@@ -1971,41 +1947,14 @@
       "angleWhy": "Kąt od osi, przeciwnie do ruchu wskazówek zegara. Grbl nie obraca układu współrzędnych (nie ma G68): wyrównaj detal albo uwzględnij kąt w programie.",
       "edgeIn": "Krawędź w układzie",
       "edgeAt": "Krawędź {{axis}}",
-      "codeTurned": "boki i kąt = z prostych przez dotyki każdego boku",
       "square": "Odchyłka od kąta prostego",
-      "squareWhy": "Różnica kątów boków poprzecznych i podłużnych. Blisko zera — narożniki proste; więcej — romb albo dotyk, który trafił w sąsiednią ściankę (zmniejsz odstęp punktów).",
-      "turnAngle": "Kąt obrotu",
-      "codeOval": "osie, kąt i środek = elipsa dopasowana do dotyków, kulka odjęta",
-      "major": "Oś długa",
-      "minor": "Oś krótka",
-      "majorAngle": "Kąt osi długiej",
-      "offOval": "Odchyłka od elipsy",
-      "offOvalWhy": "Owalizacja: osie wzdłuż X i Y — luz albo kroki/mm jednej osi; osie pod ok. 45° — osie X i Y nie są prostopadłe. Odchyłka mówi, jak daleko dotyki są od elipsy.",
-      "codeSlot": "długość, szerokość, kąt i środek = fasolka dopasowana do dotyków, kulka odjęta",
-      "length": "Długość",
-      "across": "Szerokość",
-      "offSlot": "Odchyłka od fasolki",
-      "offSlotWhy": "Odchyłka: najdalszy dotyk od dopasowanej fasolki minus najbliższy. Blisko zera — to fasolka; więcej — inny kształt, wada albo punkt za blisko końca.",
       "codeSurface": "Z = dotyk wierzchu"
     },
     "kindLabel": "Co mierzysz",
     "kind": {
-      "circle": "Okrąg",
-      "circleNote": "Otwór albo czop: średnica, środek i odchyłka od okręgu — albo owalizacja: obie osie elipsy i ich kąt.",
-      "rect": "Prostokąt",
-      "rectNote": "Kieszeń albo detal, boki wzdłuż X i Y: wymiary i środek.",
-      "width": "Szerokość",
-      "widthNote": "Rowek albo listwa, w jednej osi: szerokość i środek.",
       "edge": "Krawędź i kąt",
-      "edgeNote": "Bok detalu w dwóch punktach: kąt do osi i gdzie leży krawędź.",
-      "slot": "Fasolka",
-      "slotNote": "Rowek z zaokrąglonymi końcami, wycięty albo wystający, w osiach albo obrócony: długość, szerokość, kąt i środek.",
       "distance": "Odległość",
-      "distanceNote": "Między dwoma elementami — otworami, czopami albo krawędziami: odległość, a dla dwóch środków też w X i Y oraz kąt.",
-      "angle": "Kąt i narożnik",
-      "angleNote": "Dwie krawędzie, które się spotykają: kąt między nimi, odchyłka od kąta prostego i gdzie jest narożnik.",
-      "height": "Wysokość i głębokość",
-      "heightNote": "Powierzchnia dotykana z góry: jej Z — albo dwie: o ile druga jest wyżej lub niżej, np. wysokość stopnia, głębokość kieszeni."
+      "height": "Wysokość i głębokość"
     },
     "distance": {
       "first": "Pierwszy",
@@ -2035,7 +1984,6 @@
       "dz": "Drugi względem pierwszego",
       "dzWhy": "Różnica Z maszyny między dotykami: nie zależy od długości narzędzia ani od kulki. Ujemna — druga powierzchnia niżej (głębokość kieszeni), dodatnia — wyżej (wysokość stopnia).",
       "at": "Z w układzie",
-      "z": "Powierzchnia Z",
       "zOf": "{{end}} · Z",
       "zWhy": "Z najniższego punktu kulki w układzie — prawdziwe, jeśli Z0 ustawiono tą samą sondą. Zera z tego nie zapisuję: dla narzędzia o innej długości byłoby złe.",
       "note": "Zero się nie zmienia. Wynik jest zapisany w Dzienniku."

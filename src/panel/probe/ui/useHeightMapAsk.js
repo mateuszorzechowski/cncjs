@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import useKept from './useKept';
+import useKept from '../../ui/useKept';
 import { askGrid, mapAsk } from '../machine/probe';
-import { readToolpath } from '../machine/toolpath';
-import { settingFigure } from '../machine/units';
+import { readToolpath } from '../../machine/toolpath';
+import { settingFigure } from '../../machine/units';
 
 const MAP = 'height-map';
 
