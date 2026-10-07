@@ -759,6 +759,63 @@ describe('Pomiar: an edge and its angle', () => {
   });
 });
 
+describe('Pomiar: a corner with the 3D probe, both edges from one start', () => {
+  const params = {
+    ...probeParams(), ballDiameter: 4, clear: 10, depth: 5, spacing: 15, holeSize: 40,
+  };
+  const radius = params.ballDiameter / 2;
+  const z = [-80, -50];
+  const [cx, cy, w, h] = [-120, -70, 60, 40];
+  // Where a corner of the rectangle is, turned by `angle` about its middle, and a point `by` in from it.
+  const turnedPoint = (angle, sx, sy, by = 0) => {
+    const a = (angle * Math.PI) / 180;
+    const [u, v] = [sx * (w / 2 - by), sy * (h / 2 - by)];
+    return { x: cx + u * Math.cos(a) - v * Math.sin(a), y: cy + u * Math.sin(a) + v * Math.cos(a) };
+  };
+  const SIGNS = {
+    'front-left': [-1, -1], 'front-right': [1, -1], 'back-left': [-1, 1], 'back-right': [1, 1],
+  };
+
+  test.each(Object.keys(SIGNS).flatMap((corner) => [[corner, 0], [corner, 3]]))('a part\'s %s corner at %s°: where its edges meet, the angle between them', (corner, angle) => {
+    const options = { shape: `corner-out-${corner}` };
+    const turned = [{ x: cx, y: cy, w, h, angle, z }];
+    const start = { ...turnedPoint(angle, ...SIGNS[corner], 4), z: -45 };
+    const { outcome } = measure({
+      method: 'measure', options, params, radius, turned, start,
+    });
+    const found = STRATEGIES.measure.size(params, options, outcome.seen);
+
+    expect(outcome.failure).toBeUndefined();
+    expect(found.kind).toBe('angle');
+    expect(found.size.a).toBeCloseTo(90, 6);
+    close(found.centre, turnedPoint(angle, ...SIGNS[corner]));
+    expect(found.parts.map((one) => one.kind)).toEqual(['edge', 'edge']);
+  });
+
+  test.each([['front-left', 0], ['back-right', -4]])('a pocket\'s %s corner at %s°, from inside: its walls guarded on the way along them', (corner, angle) => {
+    const options = { shape: `corner-in-${corner}` };
+    const turned = [{ x: cx, y: cy, w, h, angle, z, inside: true }];
+    const start = { ...turnedPoint(angle, ...SIGNS[corner], 6), z: -60 };
+    const { outcome, sent, pos } = measure({
+      method: 'measure', options, params, radius, turned, start,
+    });
+    const found = STRATEGIES.measure.size(params, options, outcome.seen);
+
+    expect(outcome.failure).toBeUndefined();
+    expect(found.size.a).toBeCloseTo(90, 6);
+    close(found.centre, turnedPoint(angle, ...SIGNS[corner]));
+    // No probing move to where the ball already stands (Grbl: error:33).
+    expect(sent.filter((line) => line.includes('G38.3')).length).toBe(2);
+    // Back where it started, as the lines write it: to the micron.
+    ['x', 'y'].forEach((axis) => expect(pos[axis]).toBeCloseTo(start[axis], 3));
+  });
+
+  test('no pair: one start, nothing jogged between', () => {
+    expect(STRATEGIES.measure.paired({ shape: 'corner-out-front-left' })).toBe(false);
+    expect(STRATEGIES.measure.check({ shape: 'corner-in-back-left' }, probeParams())).toBeNull();
+  });
+});
+
 describe('Pomiar: a distance, one feature to another', () => {
   const params = {
     ...probeParams(), ballDiameter: 4, clear: 10, depth: 5, spacing: 20, holeSize: 30, holePasses: 1,

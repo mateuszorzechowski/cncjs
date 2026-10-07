@@ -7,6 +7,8 @@ import {
   EDGES, edgeLine, edgeOf, edgeSteps, wallSteps,
 } from './edge';
 import { ovalOf } from './oval';
+import { CORNERS } from './corner';
+import { CORNER_SIDES, cornerSize, cornerSteps } from './corner3d';
 import { slotOf } from './slot';
 import { turnedOf, turnedSteps } from './turned';
 import { across as holeAcross } from './hole';
@@ -63,6 +65,10 @@ export const SHAPES = {
   distance: { kind: 'distance', pair: distanceOf },
   // Two edges that meet: the angle between them, and the corner (`distance`).
   angle: { kind: 'angle', pair: cornerOf },
+  // A corner, both its edges from one start (`corner3d`): a part's from outside, a pocket's from inside.
+  ...Object.fromEntries(Object.entries(CORNER_SIDES).flatMap(([short, side]) => Object.keys(CORNERS).map((corner) => [
+    `corner-${short}-${corner}`, { kind: 'angle', corner, side },
+  ]))),
   // A surface touched from above: where it is in Z; two of them, how far one stands over the other.
   surface: { kind: 'surface', surface: true },
   height: { kind: 'height', pair: heightOf },
@@ -73,8 +79,11 @@ const passCount = (params) => params.holePasses - 1 + params.repeats;
 const counted = (params) => Array.from({ length: params.repeats }, (_, k) => params.holePasses + k);
 
 const passes = ({
-  axes, side, edge, wall, turned, surface,
+  axes, side, edge, wall, turned, surface, corner,
 }, params, { start } = {}) => {
+  if (corner) {
+    return cornerSteps(corner, side, params, start);
+  }
   if (surface) {
     return touch('z', -1, params.maxZ, 'z', params);
   }
@@ -150,8 +159,11 @@ const spreadOf = (values) => Math.max(...values) - Math.min(...values);
  */
 const sizeOf = (shape, params, seen) => {
   const {
-    kind, axes, side, edge, wall, turned, surface,
+    kind, axes, side, edge, wall, turned, surface, corner,
   } = SHAPES[shape];
+  if (corner) {
+    return cornerSize(corner, side, params, seen);
+  }
   /*
    * A surface's Z, where the ball's lowest point met it: no zero from it —
    * a Z0 the probe sets is wrong by the difference in length for the tool

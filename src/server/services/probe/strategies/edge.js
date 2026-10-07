@@ -31,12 +31,20 @@ export const EDGES = {
 // The two touches, kept by name: the axis, the point (1 the first along the edge, 2 the second), the side.
 const keyOf = ({ axis, sign }, n) => `${axis}${n}${sign > 0 ? 'a' : 'b'}`;
 
-/** The moves: the top, then each point — out past the edge, down, the touch, up. */
-export const edgeSteps = (edge, params) => {
+// The two points along an edge or a wall, from where the ball started: half the spacing each way.
+const aroundStart = (params) => [-params.spacing / 2, params.spacing / 2];
+
+/**
+ * The moves: the top, then each point — out past the edge, down, the touch,
+ * up. `shifts`, where along the edge the two points are from the start;
+ * `top`, whether the top is touched first — a corner touches it once for
+ * both its edges (`cornerSteps`).
+ */
+export const edgeSteps = (edge, params, { shifts = aroundStart(params), top = true } = {}) => {
   const { axis, along, sign } = EDGES[edge];
   const point = (n) => {
     const key = keyOf(EDGES[edge], n);
-    const shift = (n === 1 ? -1 : 1) * params.spacing / 2;
+    const shift = shifts[n - 1];
     return [
       // Along the edge, then out past it: one axis a move, as every move of the probe's (rule, 2026-10-02).
       move(`${key}-along`, (here, seen) => ({ [along]: seen.z[along] + shift })),
@@ -48,8 +56,7 @@ export const edgeSteps = (edge, params) => {
     ];
   };
   return [
-    ...touch('z', -1, params.maxZ, 'z', params),
-    overTheTop(params),
+    ...(top ? [...touch('z', -1, params.maxZ, 'z', params), overTheTop(params)] : []),
     ...point(1),
     ...point(2),
   ];
@@ -65,14 +72,16 @@ export const edgeSteps = (edge, params) => {
  * the wall first, away from it. `wall` names it as an edge is named: the
  * front wall is towards −Y, touched moving −Y.
  */
-export const wallSteps = (wall, params, start) => {
+export const wallSteps = (wall, params, start, shifts = aroundStart(params)) => {
   const { axis, along, sign } = EDGES[wall];
   // Off the wall straight back the way it came, and only then along it — that move guarded (audit K4, `turned`).
   const point = (n) => {
     const key = keyOf(EDGES[wall], n);
+    const to = () => ({ [along]: start[along] + shifts[n - 1] });
     return [
       move(`${key}-in`, () => ({ [axis]: start[axis] })),
-      guarded(`${key}-along`, () => ({ [along]: start[along] + (n === 1 ? -1 : 1) * params.spacing / 2 }), params.fast),
+      // Nowhere to go at a point where the ball stands — Grbl refuses a probing move to its own position.
+      shifts[n - 1] ? guarded(`${key}-along`, to, params.fast) : move(`${key}-along`, to),
       ...touch(axis, sign, params.holeSize, key, params),
       move(`${key}-back`, () => ({ [axis]: start[axis] })),
     ];
