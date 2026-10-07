@@ -1,11 +1,12 @@
 import { useId } from 'react';
 import {
-  AxisPair, Contact, axisRects, DASH, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, WorkHatch, kit,
+  AxisPair, Contact, axisRects, DIM_TICK, Dimension, FACE, Head, MOTION_TICK, Motion, NS, ReachDimension, Tag, WorkHatch, kit,
 } from './probeDraw';
 import { shownView } from './probeLabels';
 import { placePaired, usePairLayer, usePairView } from './probePair';
 import useViewScale from './useViewScale';
 import { t } from '../i18n';
+import AngleMark, { angleLine, angleRects } from './AngleMark';
 
 /**
  * A hole, or a part touched from outside, from above, drawn by the probe
@@ -29,8 +30,6 @@ const ASIDE = 22;
 const ACROSS = 'h';
 const ALONG = 'v';
 const WAY = { left: 'left', right: 'right' };
-// SVG's word for text ending at its x.
-const END = 'end';
 // The diameter's ticks under the ball, half their length.
 const DIA_TICK = 5;
 
@@ -40,7 +39,7 @@ const sy = (y) => -y;
 const BOSS = 'boss';
 
 const CentreScene = ({
-  part, tool, level = 0, motion = null, way = motion, limit = null, dims = [], reach = null, touched = [], contact = null, centre = null, zero = 0, dia = null, focus = null,
+  part, tool, level = 0, motion = null, way = motion, limit = null, dims = [], reach = null, touched = [], contact = null, centre = null, dia = null, angle = null, focus = null,
   bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
@@ -60,7 +59,8 @@ const CentreScene = ({
   const [x0, x1] = [Math.min(...path.map(([x]) => x)), Math.max(...path.map(([x]) => x))];
   const [y0, y1] = [Math.min(...path.map(([, y]) => y)), Math.max(...path.map(([, y]) => y))];
   const sweep = [x0 - r, y0 - r, x1 - x0 + 2 * r, y1 - y0 + 2 * r];
-  const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep, ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]], [VIEW[0], -1, VIEW[2], 2]] : [])];
+  // Nor on an angle's arms (L15's rule for lines that say something).
+  const avoid = [...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), sweep, ...(angle ? angleRects(angle) : [])];
   const place = (line) => (bare ? [] : placePaired(line, { view: shownView(VIEW, k, box), avoid, size }, other));
   const tags = (line, face) => place(line).map((tag) => {
     const drawn = <Tag key={`${tag.text}${tag.x}`} x={tag.x} y={tag.y} text={tag.text} face={face} ext={tag.ext} size={size} />;
@@ -144,27 +144,43 @@ const CentreScene = ({
   }
 
   const boss = part.kind === BOSS;
+  // The part's outline from above: round, square for a rectangle, or a groove's or a bar's strip across the drawing, `strip` its width's axis.
+  let outline = { r: part.r };
+  if (part.strip === 'x') {
+    outline = { x: -part.r, y: VIEW[1] - 2, width: 2 * part.r, height: VIEW[3] + 4 };
+  } else if (part.strip === 'y') {
+    outline = { x: VIEW[0] - 2, y: -part.r, width: VIEW[2] + 4, height: 2 * part.r };
+  } else if (part.square) {
+    outline = {
+      x: -part.r, y: -part.r, width: 2 * part.r, height: 2 * part.r,
+    };
+  } else if (part.oval) {
+    outline = { rx: part.oval[0], ry: part.oval[1] };
+  } else if (part.slot) {
+    // A slot: a rectangle whose ends are its width round.
+    const [half, r] = part.slot;
+    outline = {
+      x: -half - r, y: -r, width: 2 * (half + r), height: 2 * r, rx: r,
+    };
+  }
+  const Outline = { true: 'rect', false: part.oval ? 'ellipse' : 'circle' }[Boolean(part.strip || part.square || part.slot)];
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />
       {/* The work round the hole, or the part alone — no table under it, as no other drawing has (review note, 2026-10-01). */}
       {boss ? (
-        <circle r={part.r} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+        // An edge's part turned by its angle, anticlockwise: Y is up, so against the SVG's turn.
+        <Outline {...outline} transform={part.turn ? `rotate(${-part.turn})` : undefined} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0]} y={VIEW[1]} width={VIEW[2]} height={VIEW[3]} fill={`url(#${id})`} />
           {/* Its bottom further back, as its far wall from the front (review note, 2026-10-01). */}
-          <circle r={part.r} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+          <Outline {...outline} transform={part.turn ? `rotate(${-part.turn})` : undefined} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
         </>
       )}
-      {zero > 0 ? (
-        <g opacity={zero}>
-          <path d={`M0 ${VIEW[1]} V${VIEW[1] + VIEW[3]} M${VIEW[0]} 0 H${VIEW[0] + VIEW[2]}`} className="stroke-acc" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
-          <text x={6} y={VIEW[1] + size.fs + 4} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.corner.zeroX')}</text>
-          <text x={VIEW[0] + VIEW[2] - 6} y={-6} textAnchor={END} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.corner.zeroY')}</text>
-        </g>
-      ) : null}
       {/* The walls touched before, still: the one under way beats. */}
+      {angle ? <AngleMark angle={angle} /> : null}
+      {angle ? tags(angleLine(angle), angle.lit ? FACE.hot : FACE.plain) : null}
       {touched.map(([x, y]) => <circle key={`${x} ${y}`} cx={x} cy={sy(y)} r={3 / k} className="fill-grn" opacity={0.6} />)}
       {centre ? <path d={`M${centre[0] - 6} ${sy(centre[1])} H${centre[0] + 6} M${centre[0]} ${sy(centre[1]) - 6} V${sy(centre[1]) + 6}`} className="stroke-mut" strokeWidth={1} vectorEffect={NS} /> : null}
       <circle cx={cx} cy={cy} r={r} className="fill-surf stroke-ink" strokeWidth={2} vectorEffect={NS} />
@@ -175,7 +191,7 @@ const CentreScene = ({
       {reaching}
       {arrow}
       {dia && !bare ? (
-        <g opacity={dia.lit ? 1 : dia.fade * fade('dim')}>
+        <g opacity={dia.lit ? 1 : fade('dim')}>
           <path d={`M${cx - r} ${cy + r + 9 - DIA_TICK} V${cy + r + 9 + DIA_TICK} M${cx + r} ${cy + r + 9 - DIA_TICK} V${cy + r + 9 + DIA_TICK}`} className={dia.lit ? 'stroke-acc' : 'stroke-mut'} strokeWidth={1} vectorEffect={NS} />
           <Head x={cx - r} y={cy + r + 9} dir={WAY.right} size={size} className={dia.lit ? 'fill-acc' : 'fill-mut'} />
           <Head x={cx + r} y={cy + r + 9} dir={WAY.left} size={size} className={dia.lit ? 'fill-acc' : 'fill-mut'} />

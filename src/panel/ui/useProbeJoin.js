@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import useKept from './useKept';
 import useProbeStage from './useProbeStage';
-import { SURFACE, methodOf } from '../machine/probe';
+import { SURFACE, choiceOf, methodOf } from '../machine/probe';
 import { t } from '../i18n';
 
 /**
@@ -45,7 +45,7 @@ const useProbeJoin = ({
     setTakenBy(null);
     setPicked(shared.method);
     if (joined?.choice) {
-      setChosen((now) => ({ ...now, [shared.method]: shared.options?.[joined.choice.option] }));
+      setChosen((now) => ({ ...now, [shared.method]: choiceOf(joined, shared.options) }));
     }
     // The height map's area and grid, as the device it was begun on asked for them.
     if (joined?.asks) {

@@ -1,21 +1,23 @@
-import {
-  BOSS_CYCLE, BOSS_PARAMS, bossCode, bossGroups, bossOrder, bossReadout, bossScene, bossTimeline, bossWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, usesAt,
-} from '../bossCycle';
+import { bossCycleOf } from '../bossCycle';
 import { BOSS_R, toolAt } from '../bossMoves';
-import { methodOf, stepsOf } from '../probe';
 import { segmentsOf } from '../timeline';
 
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
 
+const BOSS_CYCLE = bossCycleOf();
+const {
+  params: BOSS_PARAMS, code: bossCode, groups: bossGroups, order: bossOrder, scene: bossScene, timeline: bossTimeline, words: bossWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, usesAt,
+} = BOSS_CYCLE;
+
 const TEXTS = {
-  bossSize: '30', clear: '10', depth: '5', maxZ: '15', ballDiameter: '2', retract: '2', fast: '100', slow: '20',
+  bossSize: '30', clear: '10', overTop: '10', depth: '5', maxZ: '15', ballDiameter: '2', retract: '2', fast: '100', slow: '20',
 };
 
 const STEPS = ['Out', 'Down', 'Fast', 'Back', 'Slow', 'Off', 'Up'];
 const sideSteps = (side) => STEPS.map((step) => `${side}${step}`);
 
-describe('the centre from outside cycle', () => {
-  test('the top\'s steps as the corner\'s, then each side\'s, the middle after each pair, the zero last', () => {
+describe('a part measured from outside', () => {
+  test('the top\'s steps as the corner\'s, then each side\'s, the middle after each pair, the size last', () => {
     expect(bossOrder(1)).toEqual([
       'zFast', 'zBack', 'zSlow', 'zOff', ...sideSteps('x1p'), ...sideSteps('x1m'), 'x1c', ...sideSteps('y1p'), ...sideSteps('y1m'), 'y1c', 'zero',
     ]);
@@ -27,11 +29,11 @@ describe('the centre from outside cycle', () => {
       const barred = bossGroups(passes).flatMap((group) => group.subs.flatMap((sub) => sub.moves));
       expect(barred).toEqual(bossOrder(passes));
     });
-    expect(bossGroups(1).map((group) => group.name || group.key)).toEqual(['Z', 'X', 'Y', 'probe.bar.zero']);
+    expect(bossGroups(1).map((group) => group.name || group.key)).toEqual(['Z', 'X', 'Y', 'probe.bar.size']);
     expect(segmentsOf(bossTimeline(1)).filter((one) => one.name === 'x1pOut')).toHaveLength(1);
     expect(segmentsOf(bossTimeline(1)).filter((one) => one.name === 'x1pDown')).toHaveLength(1);
-    const grouped = BOSS_PARAMS.flatMap((group) => (group.passes ? [...group.fields, 'holePasses'] : group.fields)).sort();
-    expect(grouped).toEqual(['ballDiameter', 'bossSize', 'clear', 'depth', 'fast', 'holePasses', 'maxZ', 'retract', 'slow']);
+    const grouped = BOSS_PARAMS.flatMap((group) => (group.passes ? [...group.fields, 'holePasses', 'repeats'] : group.fields)).sort();
+    expect(grouped).toEqual(['ballDiameter', 'bossSize', 'clear', 'depth', 'fast', 'holePasses', 'maxZ', 'overTop', 'repeats', 'retract', 'slow']);
   });
 
   test('a side: set up out over the top and down beside it, the touches, up again', () => {
@@ -69,9 +71,9 @@ describe('the centre from outside cycle', () => {
     // Where it comes from, said under the drawing (review note #9, 2026-10-02).
     expect(BOSS_CYCLE.explain('x1pFast', TEXTS)).toEqual(['probe.boss.reachWhy', { reach: '25', clear: '10', size: '30' }]);
     expect(BOSS_CYCLE.explain('x1pBack', TEXTS)).toBeNull();
-    // Down beside a side and up again: the back-off and the depth, said as their sum (rule 1, 2026-10-02).
-    expect(BOSS_CYCLE.explain('x1pDown', TEXTS)).toEqual(['probe.sum.retractDepth', expect.objectContaining({ retract: TEXTS.retract, depth: TEXTS.depth })]);
-    expect(BOSS_CYCLE.explain('x1pUp', TEXTS)[0]).toBe('probe.sum.retractDepth');
+    // Down beside a side and up again: the way over the top and the depth, said as their sum (rule 1, 2026-10-02).
+    expect(BOSS_CYCLE.explain('x1pDown', TEXTS)).toEqual(['probe.sum.overTopDepth', expect.objectContaining({ over: TEXTS.overTop, depth: TEXTS.depth })]);
+    expect(BOSS_CYCLE.explain('x1pUp', TEXTS)[0]).toBe('probe.sum.overTopDepth');
   });
 
   test('a segment\'s end frame is its own move\'s', () => {
@@ -96,21 +98,23 @@ describe('the centre from outside cycle', () => {
     expect(bossCode('zFast', TEXTS)).toBe('G38.2 Z-15 F100');
     expect(bossCode('zBack', TEXTS)).toBe('G0 Z+2');
     expect(bossCode('zSlow', TEXTS)).toBe('G38.2 Z-4 F20');
-    expect(bossCode('x1pOut', TEXTS, 1)).toEqual(['probe.boss.outCode']);
-    expect(bossCode('x1pDown', TEXTS, 1)).toBe('G38.3 Z-7 F100');
+    expect(bossCode('x1pOut', TEXTS)).toEqual(['probe.boss.outCode']);
+    expect(bossCode('x1pDown', TEXTS)).toBe('G38.3 Z-15 F100');
     expect(bossCode('x1pFast', TEXTS)).toBe('G38.2 X-25 F100');
     expect(bossCode('y1mFast', TEXTS)).toBe('G38.2 Y+25 F100');
     expect(bossCode('x1pBack', TEXTS)).toBe('G0 X+2');
     expect(bossCode('x1pSlow', TEXTS)).toBe('G38.2 X-4 F20');
-    expect(bossCode('x1pUp', TEXTS)).toBe('G0 Z+7');
-    expect(bossCode('zero', TEXTS, 2)).toBe('G10 L20 P2 X0 Y0');
-    expect(usesAt('x1pDown')).toEqual(['depth', 'retract']);
+    expect(bossCode('x1pUp', TEXTS)).toBe('G0 Z+15');
+    // Off the top, on up over it in the one move the runner joins: over the vice's jaws before going sideways.
+    expect(bossCode('zOff', TEXTS)).toBe('G0 Z+10');
+    expect(bossCode('zBack', TEXTS)).toBe('G0 Z+2');
+    expect(bossCode('zero', TEXTS)).toEqual(['probe.size.codeBoss']);
+    expect(usesAt('x1pDown')).toEqual(['depth', 'overTop']);
     expect(usesAt('zFast', 0.5)).toEqual(['maxZ', 'fast']);
   });
 
-  test('names each step, reads X and Y, plays the server\'s step with its words', () => {
+  test('names each step, plays the server\'s step with its words', () => {
     expect(titleOf('y2mUp')).toEqual(['probe.boss.move.up', { pass: 2, axis: 'Y−' }]);
-    expect(bossReadout('zero').after).toBe(true);
     expect(moveOfPhase('z-fast')).toBe('zFast');
     expect(moveOfPhase('z-settle')).toBe('zBack');
     expect(moveOfPhase('z')).toBe('zSlow');
@@ -129,11 +133,5 @@ describe('the centre from outside cycle', () => {
   test('comes into place across, then down to just over the top', () => {
     expect(positionAt(0).level).toBe(2);
     expect(positionAt(5900).level).toBe(1);
-  });
-});
-
-describe('the centre from outside\'s steps', () => {
-  test('through the probe, nothing chosen first', () => {
-    expect(stepsOf(methodOf('boss')).map((s) => s.id)).toEqual(['method', 'prepare', 'wire', 'position', 'measure', 'result']);
   });
 });

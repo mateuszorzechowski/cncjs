@@ -269,6 +269,134 @@ describe('the offset it writes', () => {
   });
 });
 
+describe('a size', () => {
+  /** Answer every line until the run is done: a probe touches X ±`half` from the machine's X0, anything else is ok. */
+  const across = (controller, sent, half) => {
+    let answered = 0;
+    while (answered < sent().length) {
+      const line = sent()[answered];
+      answered += 1;
+      const x = Number(line.match(/G38\.2 X(-?[\d.]+)/)?.[1]);
+      if (!Number.isNaN(x)) {
+        controller.runner.parse(`[PRB:${x > 0 ? half : -half},0.000,0.000:1]`);
+      }
+      controller.runner.parse('ok');
+    }
+  };
+
+  test('is shown and journalled, the zero not written unless asked: closed, nothing sent', () => {
+    const { controller, sent, refusals, probeStates } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 1 });
+    const recorded = jest.spyOn(controller, 'note');
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'groove-x' } });
+    across(controller, sent, 9);
+
+    // The middle in the system measured in: the machine's X0 less the work offset.
+    const centre = { x: 0 - controller.probe.wco.x };
+    expect(probeStates().pop()).toMatchObject({ state: 'measured', result: { size: { size: { x: 20 }, spread: null, centre } } });
+    expect(recorded).toHaveBeenCalledWith(expect.objectContaining({
+      event: 'probe', code: 'size', data: expect.objectContaining({ method: 'measure', shape: 'groove-x', size: { x: 20 }, spread: null, centre, passes: 1, ball: 2 }),
+    }));
+    controller.command('probe:discard');
+    expect(sent().some((line) => line.includes('G10'))).toBe(false);
+    expect(controller.probe).toBeNull();
+    expect(refusals).toHaveLength(0);
+  });
+
+  test('asked, its middle is the zero — one axis only for a width (Mateusz, 2026-10-05: the centres are in Pomiar)', () => {
+    const { controller, sent } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 1 });
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'groove-x' } });
+    across(controller, sent, 9);
+    controller.command('probe:apply');
+
+    const written = sent().find((line) => line.includes('G10'));
+    expect(written).toMatch(/G10 L2 P\d X-?0(\.0+)?$/);
+    expect(controller.probe).toBeNull();
+  });
+
+  test('no shape is refused before anything moves', () => {
+    const { controller, sent, refusals } = setup();
+
+    controller.command('probe:start', { method: 'measure', options: {} });
+    expect(refusals.pop()).toMatchObject({ reason: 'bad-shape' });
+    expect(sent()).toHaveLength(0);
+  });
+});
+
+describe('a distance', () => {
+  /** Answer every line until the run stops: a probe touches X and Y ±`half` from the machine's origin, anything else is ok. */
+  const round = (controller, sent, half, from = 0) => {
+    let answered = from;
+    while (answered < sent().length) {
+      const line = sent()[answered];
+      answered += 1;
+      const [, axis, value] = line.match(/G38\.2 ([XY])(-?[\d.]+)/) ?? [];
+      if (axis) {
+        const at = Number(value) > 0 ? half : -half;
+        controller.runner.parse(axis === 'X' ? `[PRB:${at},0.000,0.000:1]` : `[PRB:0.000,${at},0.000:1]`);
+      }
+      controller.runner.parse('ok');
+    }
+    return answered;
+  };
+
+  test('the first feature kept while the operator jogs, the second on probe:next; no zero to write', () => {
+    const {
+      controller, sent, refusals, probeStates,
+    } = setup();
+    probeSettings.set({ ballDiameter: 2, holePasses: 1 });
+    const recorded = jest.spyOn(controller, 'note');
+
+    controller.command('probe:next');
+    expect(refusals.pop()).toMatchObject({ reason: 'not-between' });
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'distance', a: 'circle-inside', b: 'circle-inside' } });
+    const done = round(controller, sent, 9);
+
+    expect(probeStates().pop()).toMatchObject({ state: 'between', part: 'b', first: { kind: 'circle', size: { d: 20 } } });
+    expect(recorded).toHaveBeenCalledWith(expect.objectContaining({ event: 'probe', code: 'first' }));
+    // Between the two the machine is the operator's: nothing runs.
+    expect(controller.probe.run).toBeNull();
+
+    controller.command('probe:next');
+    round(controller, sent, 11, done);
+
+    const last = probeStates().pop();
+    expect(last).toMatchObject({ state: 'measured', result: { size: { kind: 'distance', size: { dist: 0 }, parts: [{ size: { d: 20 } }, { size: { d: 24 } }] } } });
+    expect(last.result.offset).toBeUndefined();
+    controller.command('probe:apply');
+    expect(refusals.pop()).toMatchObject({ reason: 'no-result' });
+    expect(sent().some((line) => line.includes('G10'))).toBe(false);
+  });
+
+  test('the Z of a surface is shown in the system measured in, with no zero to write', () => {
+    const { controller, sent, probeStates } = setup();
+    controller.command('probe:start', { method: 'measure', options: { shape: 'surface' } });
+    for (let answered = 0; answered < sent().length; answered++) {
+      if (sent()[answered].includes('G38.2')) {
+        controller.runner.parse('[PRB:0.000,0.000,-30.000:1]');
+      }
+      controller.runner.parse('ok');
+    }
+
+    const last = probeStates().pop();
+    expect(last).toMatchObject({ state: 'measured', result: { size: { kind: 'surface', centre: { z: -30 - controller.probe.wco.z } } } });
+    expect(last.result.offset).toBeUndefined();
+    expect(last.result.size.zero).toBeUndefined();
+  });
+
+  test('two edges square to each other are refused before anything moves', () => {
+    const { controller, sent, refusals } = setup();
+
+    controller.command('probe:start', { method: 'measure', options: { shape: 'distance', a: 'edge-front', b: 'edge-left' } });
+    expect(refusals.pop()).toMatchObject({ reason: 'edges-crossing' });
+    expect(sent()).toHaveLength(0);
+  });
+});
+
 describe('probe:stage', () => {
   const stages = (controller) => controller.__events.filter(({ event }) => event === 'probe:stage').map(({ args }) => args[0]);
 

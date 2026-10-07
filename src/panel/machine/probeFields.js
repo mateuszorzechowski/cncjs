@@ -16,13 +16,16 @@ export const FIELDS = {
   toolDiameter: { key: 'probe.field.toolDiameter', kind: 'length' },
   holeSize: { key: 'probe.field.holeSize', kind: 'length' },
   bossSize: { key: 'probe.field.bossSize', kind: 'length' },
+  spacing: { key: 'probe.field.spacing', kind: 'length' },
   // A count: said as it is, in no unit.
   holePasses: { key: 'probe.field.holePasses', kind: 'count' },
+  repeats: { key: 'probe.field.repeats', kind: 'count' },
   ballDiameter: { key: 'probe.field.ballDiameter', kind: 'length' },
   paperThickness: { key: 'probe.field.paperThickness', kind: 'length' },
   stockThickness: { key: 'probe.field.stockThickness', kind: 'length' },
   paperLift: { key: 'probe.field.paperLift', kind: 'length' },
   clear: { key: 'probe.field.clear', kind: 'length' },
+  overTop: { key: 'probe.field.overTop', kind: 'length' },
   travel: { key: 'probe.field.travel', kind: 'length' },
   depth: { key: 'probe.field.depth', kind: 'length' },
   maxZ: { key: 'probe.field.maxZ', kind: 'length' },
@@ -54,7 +57,7 @@ export const fieldUnit = (name, rule) => settingFigure(0, FIELDS[name].kind, rul
 
 // A decimal point as the language writes it: `0,1 mm` in Polish, as the titles say it (Mateusz, 2026-10-02).
 // G-code and the readout keep the point: that is the controller's.
-const decimal = (text) => (currentLanguage() === 'pl' ? String(text).replace('.', ',') : String(text));
+export const decimal = (text) => (currentLanguage() === 'pl' ? String(text).replace('.', ',') : String(text));
 
 /** A figure as a drawing's badge says it: a rate as `F100`, a length with its unit. */
 export const figureSaid = (name, text, rule) => (FIELDS[name].kind === 'feed' ? `F${text}` : `${decimal(text)} ${fieldUnit(name, rule)}`);

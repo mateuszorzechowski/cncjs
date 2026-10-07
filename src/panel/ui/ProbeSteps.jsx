@@ -13,6 +13,10 @@ import { AREA_MODES } from './useHeightMapAsk';
 import CornerChooser from './CornerChooser';
 import MapToolChooser from './MapToolChooser';
 import PaperChooser from './PaperChooser';
+import { KindChooser, LieChooser, SizeResult } from './SizeSteps';
+import {
+  CornerResult, DistanceResult, DistanceSetup, HeightResult, PairChooser,
+} from './DistanceSteps';
 import HeightMapSetup from './HeightMapSetup';
 import { HeightMapCycle, HeightMapResult } from './HeightMapSteps';
 import PaperParams from './PaperParams';
@@ -20,10 +24,11 @@ import PaperScene from './PaperScene';
 import ZPlateCycle from './ZPlateCycle';
 import ZPlateParams from './ZPlateParams';
 import ZPlateScene from './ZPlateScene';
-import { METHODS, SURFACE, failureKey, phaseWords } from '../machine/probe';
-import { BOSS_CYCLE } from '../machine/bossCycle';
-import { HOLE_CYCLE } from '../machine/holeCycle';
+import {
+  METHODS, PAIRS, SURFACE, failureKey, pairOf, phaseWords,
+} from '../machine/probe';
 import { paperScene } from '../machine/paperCycle';
+import { drawnPasses, sizeCycle } from '../machine/sizeCycle';
 import { NO_READING } from '../machine/readings';
 import { useUnits } from './units';
 import { t } from '../i18n';
@@ -43,17 +48,23 @@ const signed = (text) => (text.startsWith('-') || text === NO_READING ? text : `
 const EDITORS = {
   z: ZPlateParams,
   corner: CornerParams,
-  hole: (props) => <CentreParams cycle={HOLE_CYCLE} {...props} />,
-  boss: (props) => <CentreParams cycle={BOSS_CYCLE} {...props} />,
   paper: PaperParams,
   'height-map': HeightMapSetup,
+  // A size's, the centre's moves ending in the size, by the shape chosen.
+  // A distance's: each end's, one at a time (`DistanceSetup`).
+  measure: (props) => <DistanceSetup chosen={props.chosen} render={(shape, head) => <CentreParams cycle={sizeCycle('measure', shape)} head={head} {...props} />} />,
+};
+// A size measured, as the centre's: its passes those it was asked for.
+const SizeCycle = ({ phase, probe }) => {
+  // A pair's feature being measured.
+  const cycle = sizeCycle(probe?.method, probe?.part ? probe.options[probe.part] : probe?.options?.shape);
+  return <CentreCycle cycle={cycle} phase={phase} passes={drawnPasses(probe?.params?.holePasses, probe?.params?.repeats)} />;
 };
 const CYCLES = {
   z: ZPlateCycle,
   corner: ({ phase, words, probe }) => <CornerCycle corner={probe?.options?.corner} phase={phase} words={words} />,
-  hole: ({ phase, probe }) => <CentreCycle cycle={HOLE_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
-  boss: ({ phase, probe }) => <CentreCycle cycle={BOSS_CYCLE} phase={phase} passes={probe?.params?.holePasses} />,
   'height-map': HeightMapCycle,
+  measure: SizeCycle,
 };
 // Which dimension the zero is shown with.
 const THICKNESS = 'plateThickness';
@@ -68,10 +79,6 @@ const OUTCOMES = {
   ),
   // The last frame of 1f: X0 Y0 from above, Z0 and X0 from the side.
   corner: ({ probe }) => <CornerCycle corner={probe?.options?.corner} done className="mx-auto w-full max-w-md" />,
-  // X0 Y0 from above, at the middle of the hole.
-  hole: () => <CentreCycle cycle={HOLE_CYCLE} done className="mx-auto w-full max-w-md" />,
-  // X0 Y0 from above, at the middle of the part.
-  boss: () => <CentreCycle cycle={BOSS_CYCLE} done className="mx-auto w-full max-w-md" />,
   // The paper's zero written: the sheet flat under the tool, the zero's line on the surface.
   paper: ({ probe }) => (
     <PaperScene {...paperScene('zero', 1, { edge: probe?.options?.edge || 'z', surface: surfaceOf(probe) })} dim={null} dia={null} stock={null} label={t('probe.method.paper')} className="mx-auto w-full max-w-md" />
@@ -85,6 +92,29 @@ export const Foot = ({ back, backLabel = null, children }) => (
     <div className="flex gap-2">{children}</div>
   </div>
 );
+
+/**
+ * The foot of a measurement failed, or of a size (Mateusz, 2026-10-03): closed, or measured again — and a
+ * size's middle may become the zero, X0 Y0 or a width's one axis (2026-10-05: the centres are in Pomiar).
+ */
+export const AfterFoot = ({
+  probe, connected, onClose, onAgain, onZero,
+}) => {
+  const size = probe?.state !== 'failed' && probe?.result?.size;
+  // Only where the server found a zero to put: a distance has no middle, a surface's Z is the probe's (`zero: false`).
+  const zero = Boolean(size && probe.result.offset);
+  return (
+    <Foot>
+      <Button tone="outline" onClick={onClose} className="h-ctl">{t('probe.result.close')}</Button>
+      <Button tone={zero ? 'outline' : 'primary'} onClick={onAgain} className="h-ctl">{t(size ? 'probe.size.again' : 'probe.result.again')}</Button>
+      {zero ? (
+        <Button tone="primary" disabled={!connected} onClick={onZero} className="h-ctl">
+          {t('probe.size.zero', { axes: Object.keys(size.centre).map((axis) => `${axis.toUpperCase()}0`).join(' ') })}
+        </Button>
+      ) : null}
+    </Foot>
+  );
+};
 
 const MethodTile = ({ method, onPick }) => (
   <button
@@ -100,23 +130,35 @@ const MethodTile = ({ method, onPick }) => (
 
 // The methods that find a zero; under them, in a row of their own, the height map (Mateusz, 2026-10-02).
 // The methods whose one choice is a step of its own, and what it is picked on.
-const CHOOSERS = { corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser };
-
-export const ChooseStep = ({ method, value, onChange }) => {
-  const Chooser = CHOOSERS[method.id];
-  return <Chooser value={value} onChange={onChange} />;
+const CHOOSERS = {
+  corner: CornerChooser, paper: PaperChooser, 'height-map': MapToolChooser, measure: KindChooser,
 };
 
-// How the height map's area is given, a step of its own before its figures (review note, 2026-10-02).
-export const AreaWayStep = ({ map }) => (
-  <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />
-);
+/**
+ * A step that chooses (`step`): what the method chooses; Pomiar's second
+ * choice, how what is measured lies — the same choice, the shape (Mateusz,
+ * 2026-10-03); or how the height map's area is given, a step of its own
+ * before its figures (review note, 2026-10-02).
+ */
+export const ChoiceStep = ({
+  step, method, value, onChange, map,
+}) => {
+  if (step === 'areaWay') {
+    return <AreaModeChooser modes={AREA_MODES.filter((one) => one !== 'program' || map.outline)} value={map.mode} onChange={map.setMode} />;
+  }
+  // A distance lies as its two ends: each picked on this step — unless there is nothing to pick (a height's).
+  const pair = pairOf(value);
+  const lie = pair && !PAIRS[pair.shape].fixed ? PairChooser : LieChooser;
+  const Chooser = step === 'lie' ? lie : CHOOSERS[method.id];
+  return <Chooser value={value} onChange={onChange} />;
+};
 
 export const MethodStep = ({ onPick }) => (
   <div className="flex flex-col gap-3">
     <div className="grid gap-3 @3xl/shell:grid-cols-3">
       {METHODS.filter((method) => !method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
+    {/* The height map and Pomiar, in a row of their own: no zero. */}
     <div className="grid gap-3 @3xl/shell:grid-cols-3">
       {METHODS.filter((method) => method.apart).map((method) => <MethodTile key={method.id} method={method} onPick={onPick} />)}
     </div>
@@ -205,6 +247,13 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
   if (probe?.state !== 'failed' && probe?.result?.map) {
     return <HeightMapResult probe={probe} machine={machine} />;
   }
+  // A size: what it came out at, nothing to write.
+  if (probe?.state !== 'failed' && probe?.result?.size) {
+    const Result = {
+      distance: DistanceResult, angle: CornerResult, height: HeightResult, surface: HeightResult,
+    }[probe.result.size.kind] ?? SizeResult;
+    return <Result probe={probe} />;
+  }
   if (probe?.state === 'failed') {
     const { code, phase } = probe.failure || {};
     const at = phaseWords(phase);
@@ -215,8 +264,6 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
     );
   }
   const shift = probe?.result?.shift || {};
-  // What else the touches told, for the operator to check: a hole's size each way.
-  const found = probe?.result?.found || {};
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -230,14 +277,6 @@ export const ResultStep = ({ probe, plate, machine = null }) => {
             key={axis}
             label={t('probe.result.shift', { axis: axis.toUpperCase() })}
             value={signed(units.figure(shift[axis]))}
-            unit={units.length}
-          />
-        ))}
-        {['x', 'y'].filter((axis) => axis in found).map((axis) => (
-          <StatTile
-            key={`found${axis}`}
-            label={t('probe.result.found', { axis: axis.toUpperCase() })}
-            value={units.figure(found[axis])}
             unit={units.length}
           />
         ))}

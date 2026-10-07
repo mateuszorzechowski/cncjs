@@ -1,10 +1,13 @@
-import {
-  HOLE_CYCLE, HOLE_PARAMS, HOLE_R, holeCode, holeGroups, holeOrder, holeReadout, holeScene, holeTimeline, holeWords, moveOf, moveOfPhase, playAt, positionAt, titleOf, toolAt,
-} from '../holeCycle';
-import { methodOf, phaseWords, stepsOf } from '../probe';
+import { HOLE_R, holeCycleOf, toolAt } from '../holeCycle';
+import { phaseWords } from '../probe';
 import { segmentsOf } from '../timeline';
 
 jest.mock('../controller', () => ({ __esModule: true, default: { command: jest.fn() } }));
+
+const HOLE_CYCLE = holeCycleOf();
+const {
+  params: HOLE_PARAMS, code: holeCode, groups: holeGroups, order: holeOrder, scene: holeScene, timeline: holeTimeline, words: holeWords, moveOf, moveOfPhase, playAt, positionAt, titleOf,
+} = HOLE_CYCLE;
 
 const TEXTS = {
   holeSize: '20', ballDiameter: '6', retract: '2', fast: '100', slow: '20',
@@ -13,8 +16,8 @@ const TEXTS = {
 const STEPS = ['Fast', 'Back', 'Slow', 'Off'];
 const sideSteps = (side) => STEPS.map((step) => `${side}${step}`);
 
-describe('the hole centre cycle', () => {
-  test('each wall in the corner\'s steps — fast, back, slow, off — the middle after each pair, the zero last', () => {
+describe('a hole measured', () => {
+  test('each wall in the corner\'s steps — fast, back, slow, off — the middle after each pair, the size last', () => {
     // Off the second wall straight on to the middle: one rapid, no back-off of its own (rule, 2026-10-02).
     const second = (side) => sideSteps(side).filter((step) => !step.endsWith('Off'));
     expect(holeOrder(1)).toEqual([
@@ -28,11 +31,11 @@ describe('the hole centre cycle', () => {
       const barred = holeGroups(passes).flatMap((group) => group.subs.flatMap((sub) => sub.moves));
       expect(barred).toEqual(holeOrder(passes));
     });
-    expect(holeGroups(1).map((group) => group.name || group.key)).toEqual(['X', 'Y', 'probe.bar.zero']);
-    expect(holeGroups(2).map((group) => group.name || group.key)).toEqual(['X · 1', 'Y · 1', 'X · 2', 'Y · 2', 'probe.bar.zero']);
+    expect(holeGroups(1).map((group) => group.name || group.key)).toEqual(['X', 'Y', 'probe.bar.size']);
+    expect(holeGroups(2).map((group) => group.name || group.key)).toEqual(['X · 1', 'Y · 1', 'X · 2', 'Y · 2', 'probe.bar.size']);
     expect(holeGroups(1)[0].subs.map((sub) => sub.name || sub.key)).toEqual(['X+', 'X−', 'probe.hole.middle']);
-    const grouped = HOLE_PARAMS.flatMap((group) => (group.passes ? [...group.fields, 'holePasses'] : group.fields)).sort();
-    expect(grouped).toEqual(['ballDiameter', 'fast', 'holePasses', 'holeSize', 'retract', 'slow']);
+    const grouped = HOLE_PARAMS.flatMap((group) => (group.passes ? [...group.fields, 'holePasses', 'repeats'] : group.fields)).sort();
+    expect(grouped).toEqual(['ballDiameter', 'fast', 'holePasses', 'holeSize', 'repeats', 'retract', 'slow']);
   });
 
   test('the fast touch ends at the wall, the back off it, the slow one at it again and off', () => {
@@ -75,7 +78,6 @@ describe('the hole centre cycle', () => {
         expect(playAt(one.b - 1, { passes }).name).toBe(one.name);
       });
     });
-    expect(holeScene('zero', moveOf('zero').end).zero).toBe(1);
   });
 
   test('a figure being set loops the step it changes, its part lit', () => {
@@ -94,17 +96,12 @@ describe('the hole centre cycle', () => {
     expect(holeCode('x1pSlow', TEXTS)).toBe('G38.2 X+4 F20');
     expect(holeCode('y2mFast', TEXTS)).toBe('G38.2 Y-20 F100');
     expect(holeCode('x1c', TEXTS)).toEqual(['probe.hole.centreCode']);
-    expect(holeCode('zero', TEXTS, 2)).toBe('G10 L20 P2 X0 Y0');
+    expect(holeCode('zero', TEXTS)).toEqual(['probe.size.codeHole']);
   });
 
   test('names each step with its pass and way', () => {
     expect(titleOf('y2mSlow')).toEqual(['probe.hole.move.slow', { pass: 2, axis: 'Y−' }]);
     expect(titleOf('x1c')).toEqual(['probe.hole.move.centre', { pass: 1, axis: 'X' }]);
-  });
-
-  test('reads X and Y against the old zero, then 0 0', () => {
-    expect(holeReadout('y2c').after).toBe(false);
-    expect(holeReadout('zero')).toEqual({ axes: [['x', 0], ['y', 0]], after: true });
   });
 
   test('plays the step of the server\'s on the measurement screen, with its words', () => {
@@ -125,11 +122,5 @@ describe('the hole centre cycle', () => {
   test('comes into place across, then down into the hole', () => {
     expect(positionAt(0).level).toBe(1);
     expect(positionAt(5900).level).toBe(0);
-  });
-});
-
-describe('the hole\'s steps', () => {
-  test('through the probe, nothing chosen first', () => {
-    expect(stepsOf(methodOf('hole')).map((s) => s.id)).toEqual(['method', 'prepare', 'wire', 'position', 'measure', 'result']);
   });
 });

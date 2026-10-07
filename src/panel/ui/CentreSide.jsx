@@ -37,7 +37,7 @@ const BOSS = 'boss';
 const ASIDE = 16;
 
 const CentreSide = ({
-  part, along, r, hidden = false, h, motion = null, way = motion, gap = null, vdims = [], contact = null, zero = 0, focus = null, bare = false, label, className = '',
+  part, along, r, hidden = false, h, motion = null, way = motion, gap = null, vdims = [], contact = null, focus = null, bare = false, label, className = '',
 }) => {
   const id = useId().replace(/:/g, '');
   const [measure, k, box, node] = useViewScale(VIEW[2], VIEW[3]);
@@ -58,7 +58,7 @@ const CentreSide = ({
     gap && { at: gap.at, rect: lineRect(ALONG, gap.at, -gap.from, -gap.to, DIM_TICK) },
   ].filter(Boolean);
   const lowest = Math.max(cy + r, ...(way ? [-way.from, -way.to] : []));
-  const fixed = [[along - r, VIEW[1], 2 * r, lowest - VIEW[1]], ...axisRects(VIEW[0], VIEW[1] + VIEW[3], size), ...(zero > 0 ? [[-1, VIEW[1], 2, VIEW[3]]] : [])];
+  const fixed = [[along - r, VIEW[1], 2 * r, lowest - VIEW[1]], ...axisRects(VIEW[0], VIEW[1] + VIEW[3], size)];
   const taken = [];
   // A line's figures up and down the drawing, placed by the one rule (`placeTags`); the lines in its own column
   // are its own (a split way's parts), the rest it keeps off.
@@ -88,24 +88,20 @@ const CentreSide = ({
   }
 
   const boss = part.kind === BOSS;
+  // A groove or a bar along X runs across the whole of this view: no side of it to see.
+  const half = part.strip === 'y' ? -VIEW[0] + 2 : part.r;
   return (
     <svg ref={measure} viewBox={VIEW.join(' ')} role="img" aria-label={label} className={`block ${className}`}>
       <WorkHatch id={id} />
       {boss ? (
-        <path d={`M${-part.r} ${FOOT} V0 H${part.r} V${FOOT}`} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+        <path d={`M${-half} ${FOOT} V0 H${half} V${FOOT}`} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
       ) : (
         <>
           <rect x={VIEW[0] - 2} y={0} width={VIEW[2] + 4} height={FOOT + 2} fill={`url(#${id})`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
           {/* The hole cut through, its far wall further back (review note, 2026-10-01: *"otwór jest w przekroju i narzędzie jest widoczne"*). */}
-          <path d={`M${-part.r} 0 V${HOLE_DEPTH} H${part.r} V0 Z`} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
+          <path d={`M${-half} 0 V${HOLE_DEPTH} H${half} V0 Z`} fill={`url(#${id}far)`} className="stroke-line" strokeWidth={1.5} vectorEffect={NS} />
         </>
       )}
-      {zero > 0 ? (
-        <g opacity={zero}>
-          <path d={`M0 ${VIEW[1]} V${FOOT}`} className="stroke-acc" strokeWidth={1.5} vectorEffect={NS} strokeDasharray={DASH} />
-          <text x={4} y={VIEW[1] + size.fs + 4} fontSize={size.fs} className="fill-acc font-num font-semibold">{t('probe.corner.zeroX')}</text>
-        </g>
-      ) : null}
       {/* What hides the ball dashes the stylus under the top and the ball, seen through it. */}
       <path d={`M${along} ${VIEW[1]} V${hidden ? Math.min(0, cy - r) : cy - r}`} className="stroke-ink" strokeWidth={2} vectorEffect={NS} />
       {hidden ? (

@@ -1,5 +1,5 @@
 import {
-  METHODS, failureKey, mapAsk, methodOf, optionsFor, phaseWords, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
+  METHODS, choiceOf, failureKey, mapAsk, methodOf, optionsFor, pairOf, phaseWords, shapeOfKind, stepBeside, stepsOf, surfaceShifts, wireOf, wizardStep,
 } from '../probe';
 import { FIELDS, fieldText, fieldUnit } from '../probeFields';
 
@@ -93,8 +93,52 @@ describe('a kept figure in a field', () => {
   });
 
   test('every method the server may name has words, and every figure a kind', () => {
-    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'hole', 'boss', 'paper', 'height-map']);
+    expect(METHODS.map((m) => m.id)).toEqual(['z', 'corner', 'paper', 'height-map', 'measure']);
     expect(Object.values(FIELDS).every((f) => ['length', 'feed', 'count'].includes(f.kind))).toBe(true);
+  });
+});
+
+describe('Pomiar: what is measured, then how it lies', () => {
+  test('two steps of one choice, the shape', () => {
+    const measure = methodOf('measure');
+    expect(stepsOf(measure).map((step) => step.id)).toEqual(['method', 'choose', 'lie', 'prepare', 'wire', 'position', 'measure', 'result']);
+    expect(optionsFor(measure, 'rect-outside')).toEqual({ shape: 'rect-outside' });
+  });
+
+  test('a kind picked keeps how it lay where it can', () => {
+    expect(shapeOfKind('rect', 'circle-outside')).toBe('rect-outside');
+    expect(shapeOfKind('width', 'circle-outside')).toBe('bar-x');
+    expect(shapeOfKind('circle', 'groove-y')).toBe('circle-inside');
+    expect(shapeOfKind('width', 'groove-y')).toBe('groove-y');
+  });
+});
+
+describe('a distance', () => {
+  const measure = methodOf('measure');
+
+  test('its two ends in the one choice, asked for apart, and back again', () => {
+    const choice = shapeOfKind('distance', 'circle-inside');
+    expect(pairOf(choice)).toEqual({ shape: 'distance', a: 'circle-inside', b: 'circle-inside' });
+    const options = optionsFor(measure, 'distance:edge-front:circle-outside');
+    expect(options).toEqual({ shape: 'distance', a: 'edge-front', b: 'circle-outside' });
+    expect(choiceOf(measure, options)).toBe('distance:edge-front:circle-outside');
+    expect(pairOf('circle-inside')).toBeNull();
+  });
+
+  test('a corner: two edges that meet, first the front and the left', () => {
+    expect(pairOf(shapeOfKind('angle', 'circle-inside'))).toEqual({ shape: 'angle', a: 'edge-front', b: 'edge-left' });
+    expect(optionsFor(measure, 'angle:edge-back:edge-right')).toEqual({ shape: 'angle', a: 'edge-back', b: 'edge-right' });
+    expect(choiceOf(measure, { shape: 'angle', a: 'edge-back', b: 'edge-right' })).toBe('angle:edge-back:edge-right');
+  });
+
+  test('a height: one surface first; two, a pair with nothing to pick', () => {
+    expect(shapeOfKind('height', 'circle-inside')).toBe('surface');
+    expect(optionsFor(measure, 'height')).toEqual({ shape: 'height', a: 'surface', b: 'surface' });
+    expect(optionsFor(measure, 'surface')).toEqual({ shape: 'surface' });
+  });
+
+  test('its first end measured, the wizard goes into place over the second', () => {
+    expect(wizardStep('result', { state: 'between' })).toBe('position');
   });
 });
 

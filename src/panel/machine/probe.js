@@ -1,8 +1,12 @@
 import controller from './controller';
 import { currentToken } from './session';
+import { SHAPES, choiceOf as measureChoiceOf, pairOf } from './measureShapes';
 import { SURFACE } from './surface';
 
 export { SURFACE, surfaceShifts } from './surface';
+export {
+  KINDS, PAIRS, SHAPES, pairChoice, pairFits, pairOf, partShape, shapeOf, shapeOfKind,
+} from './measureShapes';
 
 /**
  * The probe, from the panel — the server's half is `services/probe` and the
@@ -74,6 +78,9 @@ export const MAP_TOOLS = [
  * the measurement is asked with an area and grid as well as its choice, so a
  * device that joins it measures the same.
  */
+// What is measured, then how it lies.
+const MEASURE_STEPS = ['method', 'choose', 'lie', 'prepare', 'wire', 'position', 'measure', 'result'];
+
 export const METHODS = [
   {
     id: 'z', key: 'probe.method.z', note: 'probe.method.zNote', lay: 'probe.lay.z', place: 'probe.place.z',
@@ -85,14 +92,6 @@ export const METHODS = [
     choice: { option: 'corner', key: 'probe.cornerLabel', list: CORNERS, first: 'front-left', step: 'probe.step.corner' },
   },
   {
-    id: 'hole', key: 'probe.method.hole', note: 'probe.method.holeNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
-    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe',
-  },
-  {
-    id: 'boss', key: 'probe.method.boss', note: 'probe.method.bossNote', lay: 'probe.lay.hole', place: 'probe.place.boss',
-    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: THROUGH_PROBE, touches: true, plate: 'probe',
-  },
-  {
     id: 'paper', key: 'probe.method.paper', note: 'probe.method.paperNote', how: 'probe.how.paper', place: 'probe.place.paper',
     start: 'probe.position.here', steps: BY_HAND, touches: false,
     choice: { option: 'edge', key: 'probe.edgeLabel', list: EDGES, first: 'z', step: 'probe.step.surface' },
@@ -101,6 +100,12 @@ export const METHODS = [
     id: 'height-map', key: 'probe.method.map', note: 'probe.method.mapNote', place: 'probe.place.map', position: 'probe.step.startHeight',
     start: 'probe.position.start', steps: MAP_STEPS, touches: true, apart: true, asks: true,
     choice: { option: 'tool', key: 'probe.map.toolLabel', list: MAP_TOOLS, first: 'board', step: 'probe.step.tool' },
+  },
+  // A size, not a zero (Mateusz, 2026-10-03): in the height map's row, the zero left as it is. `size` says so.
+  {
+    id: 'measure', key: 'probe.method.measure', note: 'probe.method.measureNote', lay: 'probe.lay.hole', place: 'probe.place.hole',
+    wire: 'probe.wire.howHole', stuck: 'probe.wire.normallyClosed', start: 'probe.position.start', steps: MEASURE_STEPS, touches: true, plate: 'probe', apart: true, size: true,
+    choice: { option: 'shape', key: 'probe.shapeLabel', list: SHAPES, first: 'circle-inside', step: 'probe.step.kind' },
   },
 ];
 
@@ -139,11 +144,18 @@ export const optionsFor = (method, chosen, surface = SURFACE, area = null) => {
   if (method?.asks) {
     return { ...area, [method.choice.option]: chosen };
   }
+  const pair = pairOf(chosen);
+  if (pair) {
+    return { [method.choice.option]: pair.shape, a: pair.a, b: pair.b };
+  }
   return {
     ...(method?.choice ? { [method.choice.option]: chosen } : {}),
     ...(usesSurface(method, chosen) ? { on: surface.on, z0: surface.z0 } : {}),
   };
 };
+
+/** The wizard's choice back from what a measurement was asked with: a distance's two ends in one. */
+export const choiceOf = (method, options = {}) => measureChoiceOf(options?.[method?.choice?.option], options);
 
 /*
  * Where the wizard is. The first four are the operator's own, one after
@@ -154,6 +166,7 @@ const STEPS = [
   { id: 'method', key: 'probe.step.method' },
   { id: 'prepare', key: 'probe.step.prepare' },
   { id: 'areaWay', key: 'probe.step.areaWay' },
+  { id: 'lie', key: 'probe.step.lie' },
   { id: 'area', key: 'probe.step.area' },
   { id: 'wire', key: 'probe.step.wire' },
   { id: 'position', key: 'probe.step.position' },
@@ -185,6 +198,10 @@ export const stepBeside = (method, id, by) => {
 export const wizardStep = (local, probe) => {
   if (probe?.state === 'running') {
     return 'measure';
+  }
+  // A distance's first end measured: into place over the second.
+  if (probe?.state === 'between') {
+    return 'position';
   }
   if (probe?.state === 'measured' || probe?.state === 'failed') {
     return 'result';
@@ -315,6 +332,11 @@ export const fetchBentProgram = async (port, of) => {
 /** The loaded program bent to the height map, or as written. */
 export const bendProgram = (on) => {
   controller.command('height-map:use', Boolean(on));
+};
+
+/** A distance's second end: measured from where the tool was jogged to. */
+export const nextProbe = () => {
+  controller.command('probe:next');
 };
 
 /** The Z plate is under the tool: the measurement standing for it goes on. */

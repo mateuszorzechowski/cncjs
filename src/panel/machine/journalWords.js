@@ -151,6 +151,7 @@ export const EVENT_KEYS = {
   file: 'journal.event.file',
   setting: 'journal.event.setting',
   offset: 'journal.event.offset',
+  probe: 'journal.event.probe',
 };
 
 export const LEVEL_KEYS = {

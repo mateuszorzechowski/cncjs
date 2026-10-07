@@ -12,13 +12,13 @@ import ProbeJoin from '../ui/ProbeJoin';
 import Notice from '../ui/Notice';
 import ProbeMoveStep from '../ui/ProbeMoveStep';
 import {
-  AreaWayStep, ChooseStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
+  AfterFoot, ChoiceStep, Foot, MeasureStep, MethodStep, PrepareStep, ResultStep, WireStep,
 } from '../ui/ProbeSteps';
 import StepTrack from '../ui/StepTrack';
 import controller from '../machine/controller';
 import { controlledStop } from '../machine/commands';
 import {
-  applyProbe, discardProbe, fetchProbe, methodOf, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
+  applyProbe, choiceOf, discardProbe, fetchProbe, methodOf, nextProbe, optionsFor, saveProbe, startProbe, stepBeside, stepsOf, wireOf, wizardStep,
 } from '../machine/probe';
 import { fieldText } from '../machine/probeFields';
 import { useIsPhone } from '../ui/shell';
@@ -104,7 +104,11 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
       .catch((error) => setBad(error.name || fields[0]));
   };
 
-  const measure = () => startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name);
+  // A distance's first end measured, the second goes on from it (`between`).
+  const between = probe?.state === 'between';
+  // Back from over a distance's second end: the first measured again, from its own place (`again`, below).
+  const backFromPlace = () => (between ? again() : go(-1));
+  const measure = () => (between ? nextProbe() : startProbe(method.id, optionsFor(method, choice, surface, heightMap.area), units.rule?.name));
 
   const again = () => {
     if (machine.status?.word === 'Alarm') {
@@ -115,7 +119,7 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
     setMode('own');
     setPicked(again?.id ?? null);
     if (again?.choice && probe?.options?.[again.choice.option]) {
-      setChosen((now) => ({ ...now, [again.id]: probe.options[again.choice.option] }));
+      setChosen((now) => ({ ...now, [again.id]: choiceOf(again, probe.options) }));
     }
     discardProbe();
     setLocal('position');
@@ -165,11 +169,12 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
             lit={lit}
             jogging={jogging}
             onJogging={setJogging}
-            onBack={mode === 'joined' ? leave : () => go(-1)}
+            onBack={mode === 'joined' ? leave : backFromPlace}
             leaving={mode === 'joined' ? shared?.owner?.name || t('probe.join.elsewhere') : null}
             onNext={() => go(1)}
             onMeasure={measure}
             texts={texts}
+            part={probe?.part}
           />
         )}
       </div>
@@ -194,9 +199,8 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
         <MethodStep onPick={pick} />
       </>
     );
-  } else if (step === 'choose' || step === 'areaWay') {
-    // What the method chooses — or, the height map's own step, how its area is given.
-    body = step === 'areaWay' ? <AreaWayStep map={heightMap} /> : <ChooseStep method={method} value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} />;
+  } else if (step === 'choose' || step === 'areaWay' || step === 'lie') {
+    body = <ChoiceStep step={step} method={method} value={choice} onChange={(id) => setChosen((now) => ({ ...now, [method.id]: id }))} map={heightMap} />;
     foot = (
       <Foot back={() => go(-1)}>
         <Button tone="primary" onClick={() => go(1)} className="h-ctl">{t('probe.next')}</Button>
@@ -254,14 +258,9 @@ const ProbeScreen = ({ machine, ask = null, onAsked = () => {} }) => {
         <Button tone="stop" onClick={() => controlledStop(machine.type)} className="h-ctl">{t('probe.measure.abort')}</Button>
       </Foot>
     );
-  } else if (probe?.state === 'failed') {
+  } else if (probe?.state === 'failed' || probe?.result?.size) {
     body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
-    foot = (
-      <Foot>
-        <Button tone="outline" onClick={() => finish(false)} className="h-ctl">{t('probe.result.close')}</Button>
-        <Button tone="primary" onClick={again} className="h-ctl">{t('probe.result.again')}</Button>
-      </Foot>
-    );
+    foot = <AfterFoot probe={probe} connected={machine.connected} onClose={() => finish(false)} onAgain={again} onZero={() => finish(true)} />;
   } else {
     body = <ResultStep probe={probe} machine={machine} plate={fieldText(kept?.params?.plateThickness, 'plateThickness', units.rule)} />;
     foot = (

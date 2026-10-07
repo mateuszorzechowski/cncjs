@@ -28,6 +28,9 @@ export const FIELDS = {
   // The L plate: how far sideways from where it starts the tool goes before it comes down — out past
   // the wall only if it started near enough (Mateusz, 2026-10-02: a name says what happens).
   travel: { value: 20, min: 1, max: 100 },
+  // A part touched from outside: how high over its top the ball goes from side to side — above the vice's jaws and
+  // the clamps, which a few millimetres over the top would run into (Mateusz, 2026-10-05: *"czy ruchy są bezpieczne"*).
+  overTop: { value: 10, min: 1, max: 100 },
   // How far down beside the wall or the side.
   depth: { value: 5, min: 0.5, max: 50 },
   toolDiameter: { value: 6, min: 0.1, max: 50 },
@@ -37,8 +40,12 @@ export const FIELDS = {
   holeSize: { value: 20, min: 1, max: 300 },
   // A part's rough width, touched from outside: how far out the probe goes.
   bossSize: { value: 30, min: 1, max: 300 },
+  // An edge's two touches, this far apart along it (Pomiar, its angle).
+  spacing: { value: 20, min: 2, max: 500 },
   // Across a hole or a part once or twice: a count, never converted (`count`).
   holePasses: { value: 2, min: 1, max: 2, count: true },
+  // A size measured: how many passes count, after the ones that find the centre (Mateusz, 2026-10-03).
+  repeats: { value: 1, min: 1, max: 5, count: true },
   // The work's thickness, between its top and the table, for a zero on the other one (`surface`).
   stockThickness: { value: 18, min: 0.1, max: 500 },
   // Paper by hand: an office sheet is a tenth of a millimetre; off it by a little once measured.

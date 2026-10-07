@@ -61,8 +61,8 @@ const arrowOf = (move, p, x, said, lit) => {
 /*
  * Each Z step's distances beside the ball, on the other side from its arrow:
  * the top's search reach, its back-off, the slow touch's way to the top and
- * its margin past it; down beside a side and up again, the back-off over the
- * top and the depth under it — one dimension with their sum (`down`), a short
+ * its margin past it, and up off it to the way over it; down beside a side and
+ * up again, the way over the top and the depth under it — one dimension with their sum (`down`), a short
  * tick at the top where they meet (rule 1, Mateusz 2026-10-02).
  */
 const distancesOf = (move, p, beside, said, upTo, lit, down, slow) => {
@@ -71,11 +71,11 @@ const distancesOf = (move, p, beside, said, upTo, lit, down, slow) => {
   });
   // Lit with either of its figures; named for the lit one, so it does not fade with it.
   const sum = () => [{
-    ...one(lit('depth') ? 'depth' : 'retract', heightOf(ABOVE), heightOf(0), down, lit('retract') || lit('depth')), split: 0,
+    ...one(lit('depth') ? 'depth' : 'overTop', heightOf(ABOVE), heightOf(0), down, lit('overTop') || lit('depth')), split: 0,
   }];
   switch (move.kind) {
     case 'topFast': return [one('reach', heightOf(1), -14, upTo(said('maxZ')), lit('dim'), true)];
-    case 'topBack': return [one('retract', 0, heightOf(ABOVE), said('retract'), lit('retract'))];
+    case 'topBack': return [move.lift ? one('overTop', 0, heightOf(ABOVE), said('overTop'), lit('overTop')) : one('retract', 0, heightOf(ABOVE), said('retract'), lit('retract'))];
     case 'topSlow': return [{
       id: 'reach', at: beside, from: heightOf(ABOVE), mid: 0, to: -heightOf(ABOVE), text: slow, lit: lit('retract'),
     }];
@@ -132,6 +132,5 @@ export const bossSide = (move, p, {
     gap,
     vdims,
     contact,
-    zero: move.zeroAt ? Math.max(0, Math.min(1, (p - move.zeroAt[0]) / (move.zeroAt[1] - move.zeroAt[0]))) : 0,
   };
 };

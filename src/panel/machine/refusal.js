@@ -81,6 +81,15 @@ const KEYS = {
   'bad-method': 'refusal.badMethod',
   'bad-corner': 'refusal.badCorner',
   'bad-edge': 'refusal.badEdge',
+  // Pomiar's points a side further apart than the rough size: one would meet the next wall.
+  'spacing-too-wide': 'refusal.spacingTooWide',
+  'bad-shape': 'refusal.badShape',
+  // A distance: an end that is not a hole, a stud or an edge; two edges square to each other; its second end with no first.
+  'bad-part': 'refusal.badPart',
+  'edges-crossing': 'refusal.edgesCrossing',
+  // A corner of two edges that run the same way: they never meet.
+  'edges-parallel': 'refusal.edgesParallel',
+  'not-between': 'refusal.notBetween',
   // The height map: its grid, and a program it cannot bend — said with the file's line.
   'bad-area': 'refusal.badArea',
   'bad-grid': 'refusal.badGrid',

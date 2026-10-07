@@ -1,0 +1,125 @@
+import { clearDown, move, touch } from '../moves';
+import { overTheTop } from './boss';
+
+/**
+ * Pomiar: an edge and its angle (Mateusz, 2026-10-03: *"krawędź i kąt"*,
+ * the first of the shapes that do not lie along the axes). Grbl has no
+ * rotated coordinates (no G68), so the angle is said, not applied: to square
+ * the work in the vice, or to know how far off it lies.
+ *
+ * The 3D probe's ball starts over the part, a few millimetres inside the
+ * edge and above the top, as for a part touched from outside. The top is
+ * touched first; then twice, `spacing` apart along the edge — half of it
+ * each way from the start — the ball goes along the edge to the point, out
+ * past the edge by `clear` from the start,
+ * down by `depth` under the top, touches the edge moving in, and rises
+ * again. It ends there, over the second point: a way back over the start
+ * would go along both axes at once, one move the drawing cannot show.
+ *
+ * `EDGES` say which side of the part, by the way the edge faces: `front`
+ * faces −Y, and is touched moving +Y.
+ */
+export const EDGES = {
+  front: { axis: 'y', along: 'x', sign: -1 },
+  back: { axis: 'y', along: 'x', sign: 1 },
+  left: { axis: 'x', along: 'y', sign: -1 },
+  right: { axis: 'x', along: 'y', sign: 1 },
+};
+
+// The two touches, kept by name: the axis, the point (1 the first along the edge, 2 the second), the side.
+const keyOf = ({ axis, sign }, n) => `${axis}${n}${sign > 0 ? 'a' : 'b'}`;
+
+/** The moves: the top, then each point — out past the edge, down, the touch, up. */
+export const edgeSteps = (edge, params) => {
+  const { axis, along, sign } = EDGES[edge];
+  const point = (n) => {
+    const key = keyOf(EDGES[edge], n);
+    const shift = (n === 1 ? -1 : 1) * params.spacing / 2;
+    return [
+      // Along the edge, then out past it: one axis a move, as every move of the probe's (rule, 2026-10-02).
+      move(`${key}-along`, (here, seen) => ({ [along]: seen.z[along] + shift })),
+      move(`${key}-out`, (here, seen) => ({ [axis]: seen.z[axis] + sign * params.clear })),
+      clearDown(`${key}-down`, params.overTop + params.depth, params.fast),
+      // In no further than back to where the ball started: the edge is between there and here.
+      ...touch(axis, -sign, params.clear, key, params),
+      move(`${key}-up`, (here, seen) => ({ z: seen.z.z + params.overTop })),
+    ];
+  };
+  return [
+    ...touch('z', -1, params.maxZ, 'z', params),
+    overTheTop(params),
+    ...point(1),
+    ...point(2),
+  ];
+};
+
+/**
+ * A pocket's wall from inside (Mateusz, 2026-10-05: *"a angle i corner
+ * działa w środku?"*), for a distance or a corner (`distance`): the ball
+ * starts in the pocket under its edge, as for a hole. At each of two points,
+ * `spacing` apart along the wall — half of it each way from the start — it
+ * goes back to the start across the wall, along it to the point, and
+ * touches the wall moving out to it; at the end back to the start, across
+ * the wall first, away from it. `wall` names it as an edge is named: the
+ * front wall is towards −Y, touched moving −Y.
+ */
+export const wallSteps = (wall, params, start) => {
+  const { axis, along, sign } = EDGES[wall];
+  const point = (n) => {
+    const key = keyOf(EDGES[wall], n);
+    return [
+      move(`${key}-in`, () => ({ [axis]: start[axis] })),
+      move(`${key}-along`, () => ({ [along]: start[along] + (n === 1 ? -1 : 1) * params.spacing / 2 })),
+      ...touch(axis, sign, params.holeSize, key, params),
+    ];
+  };
+  return [
+    ...point(1),
+    ...point(2),
+    move(`return-${axis}`, () => ({ [axis]: start[axis] })),
+    move(`return-${along}`, () => ({ [along]: start[along] })),
+  ];
+};
+
+/**
+ * The edge from its two touches: `{ kind, size: { a }, spread, each, centre }`
+ * — `a` its angle in degrees, anticlockwise from the axis it runs along (X
+ * for the front and back, Y for the sides); `centre` where it crosses the
+ * line through the start, on its own axis, machine coordinates. The ball's
+ * centres run parallel to the edge, its radius off it square to it — into
+ * the part, or out into the wall for a pocket's wall (`inside`).
+ */
+export const edgeOf = (edge, params, seen, inside = false) => {
+  const { axis, along } = EDGES[edge];
+  // The way it faces, off the material: a wall faces back into its pocket.
+  const sign = inside ? -EDGES[edge].sign : EDGES[edge].sign;
+  const [a, b] = [1, 2].map((n) => seen[keyOf(EDGES[edge], n)]);
+  const runs = b[along] - a[along];
+  const off = b[axis] - a[axis];
+  const tilt = Math.atan2(off, runs);
+  // Along Y anticlockwise is towards −X: the same tilt, the other sign.
+  const angle = (axis === 'y' ? tilt : -tilt) * (180 / Math.PI);
+  const middle = (a[axis] + b[axis]) / 2 - sign * (params.ballDiameter / 2) / Math.cos(tilt);
+  return {
+    kind: 'edge', size: { a: angle }, spread: null, each: [{ a: angle }], centre: { [axis]: middle },
+  };
+};
+
+/**
+ * The edge itself as a line, for a distance to it (`distance`): `at` its
+ * point between the two touches, `dir` along it, of length one — machine
+ * coordinates, the ball's radius taken off square to it; `out` the way it
+ * faces, off the part.
+ */
+export const edgeLine = (edge, params, seen, inside = false) => {
+  const { axis, along } = EDGES[edge];
+  const sign = inside ? -EDGES[edge].sign : EDGES[edge].sign;
+  const [a, b] = [1, 2].map((n) => seen[keyOf(EDGES[edge], n)]);
+  const middle = edgeOf(edge, params, seen, inside).centre[axis];
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  return {
+    at: { [axis]: middle, [along]: (a[along] + b[along]) / 2 },
+    dir: { x: (b.x - a.x) / length, y: (b.y - a.y) / length },
+    out: { [axis]: sign, [along]: 0 },
+  };
+};

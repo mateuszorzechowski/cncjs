@@ -42,13 +42,17 @@ export const along = (axis, at, by) => (axis === 'x' ? [at[0] + by, at[1]] : [at
  * goes straight on to the middle: the back-off and the way there, two rapids
  * the same way, are one move (rule, Mateusz 2026-10-02; the server's runner
  * joins them).
+ *
+ * `axes` the ones measured — one for a groove's width. The last move says
+ * the size (Pomiar, Mateusz 2026-10-03); a zero, if wanted, is written from
+ * the result.
  */
-export const build = () => {
+export const build = ({ axes = AXES } = {}) => {
   const moves = {};
   const order = [];
   let at = START;
   [1, 2].forEach((pass) => {
-    AXES.forEach((axis) => {
+    axes.forEach((axis) => {
       const walls = [];
       [1, -1].forEach((sign) => {
         const wall = wallFrom(at, axis, sign);
@@ -95,7 +99,7 @@ export const build = () => {
     });
   });
   moves.zero = {
-    kind: 'zero', from: at, frames: [[0, at], [1, at]], zeroAt: [0.1, 0.35], titleKey: 'probe.hole.move.zero', uses: ['ballDiameter'], end: 0.35, after: true,
+    kind: 'zero', from: at, frames: [[0, at], [1, at]], titleKey: 'probe.size.move.size', uses: ['ballDiameter'], end: 0.35,
   };
   order.push('zero');
   return { moves, order };

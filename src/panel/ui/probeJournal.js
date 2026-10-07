@@ -1,0 +1,121 @@
+import { failureKey, methodOf, phaseWords } from '../machine/probe';
+import { degrees } from '../machine/units';
+import { t } from '../i18n';
+
+/**
+ * A probe's journal entries in words (Mateusz, 2026-10-03): the server keeps
+ * the method, its choice and the figures in millimetres; here they become a
+ * sentence in the panel's language and units — `units` is `useUnits()`.
+ */
+
+const AXES = ['x', 'y', 'z'];
+// A size's figures: a circle's diameter, an edge's angle, or each axis.
+// A distance's (`dist`, `dx`, `dy`, `par`) too.
+const SIZES = ['dist', 'd', 'a', 'square', 'major', 'minor', 'length', 'width', 'dx', 'dy', 'dz', 'par', ...AXES];
+const sizeName = (key) => ({
+  d: 'Ø', a: t('journal.detail.angle'), major: t('journal.detail.major'), minor: t('journal.detail.minor'), length: t('journal.detail.length'), width: t('journal.detail.across'),
+  dist: t('journal.detail.dist'), dx: 'ΔX', dy: 'ΔY', dz: 'ΔZ', par: t('journal.detail.par'), square: t('journal.detail.square'),
+}[key] ?? key.toUpperCase());
+const ANGLES = ['a', 'par', 'square'];
+// A pair's figures, each with its own unit.
+const MIXED = ['distance', 'angle', 'height'];
+const _isEmpty = (values) => !values || Object.keys(values).length === 0;
+// An angle in degrees, never converted; a length as `units` says it.
+const figureOf = (key, value, units) => (ANGLES.includes(key) ? `${degrees(value)}°` : units.figure(value));
+// A distance mixes lengths and angles: each said with its own unit.
+const unitOf = (key, value, units) => (ANGLES.includes(key) ? figureOf(key, value) : `${units.figure(value)} ${units.length}`);
+
+// The method by its name, and its one choice where it has one: "Szerokość · listwa X".
+const methodName = (data) => {
+  const method = methodOf(data?.method);
+  if (!method) {
+    return data?.method ?? '';
+  }
+  const choice = method.choice && method.choice.list.find((one) => one.id === data?.[method.choice.option]);
+  return choice ? `${t(method.key)} · ${t(choice.key)}` : t(method.key);
+};
+
+const signed = (text) => (text.startsWith('-') ? text : `+${text}`);
+
+// "X 24.012 · Y 18.003" (or "Ø 24.012"): each axis there is, as `say` puts its figure.
+const axesSaid = (values, say) => SIZES.filter((axis) => Number.isFinite(values?.[axis]))
+  .map((axis) => `${sizeName(axis)} ${say(axis)}`).join(' · ');
+
+const zeroSaid = (data, units) => {
+  // Entries before 2026-10-03 kept the offset's axes bare in `data`.
+  const offset = data.offset ?? data;
+  return axesSaid(offset, (axis) => {
+    const shift = data.shift?.[axis];
+    const at = units.figure(offset[axis]);
+    return Number.isFinite(shift) ? `${at} (${t('journal.probe.by', { shift: signed(units.figure(shift)) })})` : at;
+  });
+};
+
+const SAID = {
+  start: (data) => t('journal.probe.start', { method: methodName(data) }),
+  measured: (data, units) => (Number.isFinite(data.points)
+    ? t('journal.probe.mapped', { method: methodName(data), points: data.points })
+    : t('journal.probe.measured', { method: methodName(data), axes: zeroSaid(data, units), unit: units.length })),
+  applied: (data) => (data.method === 'height-map'
+    ? t('journal.probe.mapSaved')
+    : t('journal.probe.applied', { method: methodName(data), wcs: data.wcs ?? '' })),
+  // A distance's first end measured, the operator jogging to the second.
+  first: (data, units) => t('journal.probe.first', { method: methodName(data), sizes: axesSaid(data.size, (axis) => unitOf(axis, data.size[axis], units)) }),
+  size: (data, units) => t('journal.probe.size', {
+    method: methodName(data),
+    // A surface has no size, only where it is: its Z.
+    sizes: _isEmpty(data.size) ? axesSaid(data.centre, (axis) => units.figure(data.centre[axis])) : axesSaid(data.size, (axis) => (MIXED.includes(data.shape) ? unitOf : figureOf)(axis, data.size[axis], units)),
+    // An angle carries its own degrees, and so does each of a pair's figures.
+    unit: Number.isFinite(data.size?.a) || MIXED.includes(data.shape) ? '' : units.length,
+    spread: data.spread ? t('journal.probe.spread', { list: axesSaid(data.spread, (axis) => units.figure(data.spread[axis])), n: data.passes ?? '' }) : '',
+    ball: units.figure(data.ball),
+  }),
+};
+
+/** The line a probe entry reads as; null for any other entry. */
+export const probeLine = (entry, units) => {
+  if (entry.event !== 'probe') {
+    return null;
+  }
+  const data = entry.data || {};
+  const said = SAID[entry.code];
+  if (said) {
+    return said(data, units);
+  }
+  // Anything else is how a measurement failed: the code, as the result screen says it.
+  const why = t(failureKey(entry.code), { code: entry.code, axis: phaseWords(data.phase).axis });
+  return t('journal.probe.failed', { method: methodName(data), why });
+};
+
+/** A probe entry's fields when opened, `[label, value]`: the method, and a size's figures. */
+export const probeDetails = (entry, units) => {
+  if (entry.event !== 'probe') {
+    return [];
+  }
+  const data = entry.data || {};
+  const rows = [[t('journal.detail.method'), methodName(data)]];
+  if (entry.code === 'size' && data.size) {
+    const mm = (value) => `${units.figure(value)} ${units.length}`;
+    SIZES.filter((axis) => Number.isFinite(data.size[axis])).forEach((axis) => rows.push([sizeName(axis), ANGLES.includes(axis) ? figureOf(axis, data.size[axis]) : mm(data.size[axis])]));
+    if (data.spread) {
+      rows.push([t('journal.detail.spread'), `${axesSaid(data.spread, (axis) => units.figure(data.spread[axis]))} ${units.length}`]);
+    }
+    if (Number.isFinite(data.off)) {
+      rows.push([t('journal.detail.off'), mm(data.off)]);
+    }
+    if (data.turn) {
+      rows.push([t('journal.detail.angle'), `${degrees(data.turn.a)}°`]);
+    }
+    if (Number.isFinite(data.turn?.square)) {
+      rows.push([t('journal.detail.square'), `${degrees(data.turn.square)}°`]);
+    }
+    if (data.centre && Object.keys(data.centre).length) {
+      rows.push([t('journal.detail.centre', { wcs: data.wcs ?? '' }), `${axesSaid(data.centre, (axis) => units.figure(data.centre[axis]))} ${units.length}`]);
+    }
+    if (data.passes) {
+      rows.push([t('journal.detail.passes'), String(data.passes)]);
+    }
+    rows.push([t('journal.detail.ball'), mm(data.ball)]);
+  }
+  return rows;
+};

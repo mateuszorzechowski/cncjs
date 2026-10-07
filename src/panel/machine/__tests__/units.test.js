@@ -1,4 +1,6 @@
-import { feedLabel, figure, lengthLabel } from '../units';
+import {
+  degrees, feedLabel, figure, lengthLabel,
+} from '../units';
 import { NO_READING } from '../readings';
 import i18next from '../../i18n';
 
@@ -58,5 +60,14 @@ describe('a length as an operator reads it', () => {
     expect(feedLabel(MM)).toBe('mm/min');
     expect(lengthLabel(INCH)).toBe('in');
     expect(feedLabel(INCH)).toBe('in/min');
+  });
+});
+
+describe('an angle', () => {
+  test('in degrees, three places, never converted; a hair under zero is no turn', () => {
+    expect(degrees(2.9971)).toBe('2.997');
+    expect(degrees(-0.0000004)).toBe('0.000');
+    expect(degrees(-3.5)).toBe('-3.500');
+    expect(degrees(null)).toBe(NO_READING);
   });
 });
