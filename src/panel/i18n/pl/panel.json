@@ -461,6 +461,8 @@
     "probing": "Pomiar już trwa.",
     "spindleOn": "Wrzeciono się kręci, więc pomiar nie ruszył. Zatrzymaj je (M5) i spróbuj ponownie.",
     "feedOverride": "Korekta posuwu jest powyżej 100 %, więc dotyk byłby szybszy niż ustawiony. Przywróć 100 % i spróbuj ponownie.",
+    "resultWaiting": "Poprzedni pomiar czeka na Zapisz albo Odrzuć, więc nowy nie ruszył.",
+    "busy": "Maszyna nie odpowiedziała jeszcze na poprzednią linię, więc pomiar nie ruszył. Poczekaj chwilę i spróbuj ponownie.",
     "noResult": "Nie ma pomiaru do zapisania.",
     "badMethod": "Serwer nie zna tej metody sondowania.",
     "badCorner": "Serwer nie zna takiego narożnika.",

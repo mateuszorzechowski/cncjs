@@ -461,6 +461,8 @@
     "probing": "A measurement is already running.",
     "spindleOn": "The spindle is turning, so the measurement did not start. Stop it (M5) and try again.",
     "feedOverride": "The feed override is above 100 %, so the touch would be faster than set. Put it back to 100 % and try again.",
+    "resultWaiting": "The last measurement is waiting for Save or Discard, so a new one did not start.",
+    "busy": "The machine has not answered the line before yet, so the measurement did not start. Wait a moment and try again.",
     "noResult": "There is no measurement to save.",
     "badMethod": "The server does not know that probing method.",
     "badCorner": "That is not a corner the server knows.",

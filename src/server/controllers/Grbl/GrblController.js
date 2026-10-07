@@ -105,6 +105,9 @@ const CONNECTION_TIMEOUT = 10000;
 // How long a probe wizard's step waits, its owner gone, for a device in it to take it on.
 const STAGE_ORPHAN_MS = 5000;
 
+// How long a probe's start waits for the machine to settle — see `probeSettled` — before it is said why not.
+const SETTLE_WAIT_MS = 3000;
+
 // https://github.com/gnea/grbl/blob/master/doc/markdown/commands.md#grbl-v11-realtime-commands
 const isRealtimeCommand = (data) => (
   _.includes(GRBL_REALTIME_COMMANDS, data) || Boolean(String(data).match(/[\x80-\xff]/))
@@ -261,6 +264,28 @@ class GrblController {
     probeStageSocket = null;
 
     probeStageTimer = null;
+
+    /*
+     * Whether the machine has settled since the last line went out, for a
+     * probe's start (audit 2026-10-05, K11). `fedAt` is when the feeder's last
+     * line went out, null once Grbl has answered it: a jog step tapped just
+     * before "Mierz" is still waiting for its `ok`, and that `ok` would be
+     * taken for the measurement's first answer. `heard` counts status reports
+     * and answers in the order they arrive, so `reportHeard > answerHeard` is
+     * "a report came after the last answer" — Grbl sends in order, so that
+     * report saw whatever the answered line set going. Until both hold, a
+     * start waits (`probeDeferred`) rather than reading a position the
+     * machine has already left.
+     */
+    fedAt = null;
+
+    heard = 0;
+
+    reportHeard = 0;
+
+    answerHeard = -1;
+
+    probeDeferred = null;
 
     // Message Slot
     messageSlot = null;
@@ -499,6 +524,7 @@ class GrblController {
         });
 
         this.noteOffsetChange(line);
+        this.fedAt = Date.now();
         this.connection.write(line + '\n');
         log.silly(`> ${line}`);
       });
@@ -816,6 +842,7 @@ class GrblController {
       this.runner.on('raw', noop);
 
       this.runner.on('status', (res) => {
+        this.reportHeard = ++this.heard;
         if (this.alarmCode !== null && res.activeState && res.activeState !== GRBL_ACTIVE_STATE_ALARM) {
           this.setAlarm(null);
         }
@@ -871,6 +898,9 @@ class GrblController {
         if (holder && this.isInMotion()) {
           this.holdMotion(holder);
         }
+
+        // A probe's start waiting for this report (`probeSettled`).
+        this.settleProbe();
 
         if (this.actionMask.replyStatusReport) {
           this.actionMask.replyStatusReport = false;
@@ -991,6 +1021,7 @@ class GrblController {
          */
         if (this.jogging.inFlight > 0) {
           this.jogging.inFlight -= 1;
+          this.answered();
           this.noteJogAnswer(res.raw);
 
           /*
@@ -1016,6 +1047,7 @@ class GrblController {
         }
 
         this.emit('serialport:read', res.raw);
+        this.answered();
 
         // Feeder
         this.feeder.next();
@@ -1130,6 +1162,7 @@ class GrblController {
          */
         if (this.jogging.inFlight > 0) {
           this.jogging.inFlight -= 1;
+          this.answered();
           log.debug(`Jog segment refused: ${res.raw}`);
           this.noteJogAnswer(res.raw);
 
@@ -1151,6 +1184,7 @@ class GrblController {
           // Grbl v0.9
           this.emit('serialport:read', res.raw);
         }
+        this.answered();
         // A line from the console or a macro: the one the feeder sent last.
         const fed = this.fedLine;
         this.noteError({
@@ -1397,6 +1431,7 @@ class GrblController {
       this.runner.on('startup', (res) => {
         this.fileCheck?.run?.startup();
         this.probe?.run?.startup();
+        this.fedAt = null;
         this.settingWrite = null;
         // A reset ends a homing cycle too, with no `ok` and no alarm to say so.
         this.setHoming(false);
@@ -1822,6 +1857,8 @@ class GrblController {
       this.probe = null;
       this.probeStage = null;
       clearTimeout(this.probeStageTimer);
+      clearTimeout(this.probeDeferred?.timer);
+      this.probeDeferred = null;
       this.settingWrite = null;
       clearTimeout(this.settingsReadTimer);
 
@@ -2643,6 +2680,63 @@ class GrblController {
       this.emit('probe:state', this.probeReport());
     }
 
+    /** Grbl answered the line the feeder sent — an `ok` or an `error` that fell through to it, or a jog segment's. */
+    answered() {
+      this.fedAt = null;
+      this.answerHeard = ++this.heard;
+    }
+
+    /**
+     * Whether a probe may read where the machine is and start from there: no
+     * line of the feeder's is still waiting for its answer, and a status
+     * report has come since the last answer (see `fedAt`).
+     */
+    probeSettled() {
+      return this.fedAt === null && this.reportHeard > this.answerHeard;
+    }
+
+    /**
+     * Hold `cmd` until the machine has settled, then ask it again as the same
+     * socket — every check it makes then made on a fresh report. While the
+     * machine is still under way (a jog step, a travel) it waits on; after
+     * `SETTLE_WAIT_MS` it is asked anyway, and refused for whatever still
+     * stands in the way, or `busy` while a line is still unanswered.
+     */
+    deferProbe(cmd, args) {
+      if (this.probeDeferred) {
+        this.refuse(cmd, 'probing');
+        return;
+      }
+      const socket = this.commandSocket;
+      const timer = setTimeout(() => this.settleProbe(true), SETTLE_WAIT_MS);
+      this.probeDeferred = { cmd, args, socket, timer };
+    }
+
+    settleProbe(timedOut = false) {
+      const deferred = this.probeDeferred;
+      if (!deferred) {
+        return;
+      }
+      const settled = this.probeSettled();
+      const moving = this.isInMotion() || this.runner.state?.status?.activeState === 'Run';
+      if (!timedOut && (!settled || moving)) {
+        return;
+      }
+      clearTimeout(deferred.timer);
+      this.probeDeferred = null;
+      if (!settled) {
+        this.refuse(deferred.cmd, 'busy', deferred.socket);
+        return;
+      }
+      const before = this.commandSocket;
+      this.commandSocket = deferred.socket;
+      try {
+        this.command(deferred.cmd, ...deferred.args);
+      } finally {
+        this.commandSocket = before;
+      }
+    }
+
     /**
      * Refused, said to the asker, when the machine itself is in no state for
      * a probe to move: the spindle turning, or — for a method that touches —
@@ -3306,8 +3400,17 @@ class GrblController {
             this.refuse(cmd, wrong);
             return;
           }
-          if (this.probe?.run) {
+          if (this.probe?.run || this.probeDeferred) {
             this.refuse(cmd, 'probing');
+            return;
+          }
+          /*
+           * A zero, a map or a pair's first feature waiting for the operator is not
+           * overwritten by another start — from a second tap, or another device
+           * (audit K11): Zapisz or Odrzuć first. A failure is only read, and goes.
+           */
+          if (this.probe && (this.probe.result || (this.probe.first && !this.probe.failure))) {
+            this.refuse(cmd, 'result-waiting');
             return;
           }
           if (!activeWcsNumber(this.runner.getModalGroup())) {
@@ -3316,6 +3419,11 @@ class GrblController {
           }
           if (this.jogging.dir) {
             this.refuse(cmd, 'jogging');
+            return;
+          }
+          // Where the tool stands, read only once the line before has been answered and reported on.
+          if (!this.probeSettled()) {
+            this.deferProbe(cmd, args);
             return;
           }
           if (!this.runner.isIdle()) {
@@ -3346,12 +3454,21 @@ class GrblController {
             this.refuse(cmd, 'not-between');
             return;
           }
+          if (this.probeDeferred) {
+            this.refuse(cmd, 'probing');
+            return;
+          }
           if (this.runner.isAlarm()) {
             this.refuse(cmd, 'alarm');
             return;
           }
           if (this.jogging.dir) {
             this.refuse(cmd, 'jogging');
+            return;
+          }
+          // The second feature is jogged to: its start read once the last jog step is answered and reported on.
+          if (!this.probeSettled()) {
+            this.deferProbe(cmd, args);
             return;
           }
           if (!this.runner.isIdle()) {
