@@ -24,11 +24,13 @@ const CentreViews = ({
   const phone = useIsPhone();
   const [chosen, setChosen] = useState(null);
   const pair = usePair();
-  const topView = <CentreScene part={cycle.part} {...top} bare={bare} label={label} className={side ? `h-auto w-full ${className}` : `aspect-[404/188] h-auto w-full ${className}`} />;
+  // A film of two features draws each with its own part (`pairCycle`).
+  const part = cycle.partOf ? cycle.partOf(name) : cycle.part;
+  const topView = <CentreScene part={part} {...top} bare={bare} label={label} className={side ? `h-auto w-full ${className}` : `aspect-[404/188] h-auto w-full ${className}`} />;
   if (!side) {
     return topView;
   }
-  const sideView = <CentreSide part={cycle.part} {...side} focus={top.focus} bare={bare} label={label} className={`h-auto w-full ${className}`} />;
+  const sideView = <CentreSide part={part} {...side} focus={top.focus} bare={bare} label={label} className={`h-auto w-full ${className}`} />;
   if (!phone) {
     // One drawing in two views, a line between them; a label short of room in one may stand in the other's free edge.
     return (

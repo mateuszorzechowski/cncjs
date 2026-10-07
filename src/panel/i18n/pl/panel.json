@@ -1957,7 +1957,6 @@
     "distance": {
       "first": "Pierwszy",
       "second": "Drugi",
-      "setupLabel": "Ruchy którego elementu",
       "toFirst": "Pierwszy: {{what}}",
       "toSecond": "Pierwszy zmierzony. Drugi: {{what}} — podjedź do niego jogiem.",
       "startSecond": "Mierz drugi",
@@ -2073,6 +2072,27 @@
     },
     "cycle": {
       "onSave": "po „Zapisz zero” w {{wcs}} tu:"
+    },
+    "pair": {
+      "move": {
+        "start": "Dwa elementy: najpierw pierwszy",
+        "jog": "Do drugiego — jogiem",
+        "end": "Odległość między nimi",
+        "centreA": "Środek pierwszego",
+        "centreB": "Środek drugiego",
+        "edgeA": "Pierwszy: linia krawędzi",
+        "edgeB": "Drugi: linia krawędzi"
+      },
+      "startCode": "kulka nad pierwszym, „Mierz”",
+      "endCode": "odległość = od pierwszego do drugiego: środki, krawędzie",
+      "bar": {
+        "start": "start",
+        "end": "wynik",
+        "centre": "środek",
+        "edge": "krawędź"
+      },
+      "centreCode": "środek = środek okręgu przez dotyki",
+      "edgeCode": "krawędź = prosta przez dwa dotyki"
     }
   }
 }

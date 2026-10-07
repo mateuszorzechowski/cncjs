@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import DistanceDrawing from './DistanceDrawing';
 import HeightDrawing from './HeightDrawing';
-import SegmentedChoice from '../../ui/SegmentedChoice';
 import StatTile from '../../ui/StatTile';
 import WcsBadge from '../../ui/WcsBadge';
 import { Tiles } from './SizeSteps';
@@ -60,27 +58,13 @@ export const PairChooser = ({ value, onChange }) => {
 };
 
 /**
- * A distance's Setup: each end's moves, one at a time, picked above the
- * drawing (`render(shape, head)`) — the figures are one set for both. Any
- * other shape as it is.
+ * A pair's Setup is one drawing (`render(shape)`), the figures one set for
+ * both: two surfaces a step with both touches on it, a distance a film of
+ * both features (`pairCycle`). Any other shape as it is.
  */
 export const DistanceSetup = ({ chosen, render }) => {
   const pair = pairOf(chosen);
-  const [end, setEnd] = useState('a');
-  // Two surfaces are one drawing, a step with both touches on it: nothing to pick.
-  if (!pair || PAIRS[pair.shape].fixed) {
-    return render(pair ? pair.a : chosen, null);
-  }
-  return render(pair[end], (
-    <SegmentedChoice
-      options={ENDS}
-      value={end}
-      onChange={setEnd}
-      format={(one) => `${t(END_KEYS[one])} · ${t(shapeOf(pair[one]).key)}`}
-      label={t('probe.distance.setupLabel')}
-      joined
-    />
-  ));
+  return render(pair && PAIRS[pair.shape].fixed ? pair.a : chosen);
 };
 
 // Which pair it was: two centres, a centre and an edge, or two edges.

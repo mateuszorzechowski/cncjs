@@ -1957,7 +1957,6 @@
     "distance": {
       "first": "First",
       "second": "Second",
-      "setupLabel": "Moves of which feature",
       "toFirst": "First: {{what}}",
       "toSecond": "First measured. Second: {{what}} — jog over to it.",
       "startSecond": "Measure second",
@@ -2073,6 +2072,27 @@
     },
     "cycle": {
       "onSave": "after Save zero, in {{wcs}} here:"
+    },
+    "pair": {
+      "move": {
+        "start": "Two features: the first one first",
+        "jog": "To the second — by the jog",
+        "end": "The distance between them",
+        "centreA": "The first one's middle",
+        "centreB": "The second one's middle",
+        "edgeA": "The first: the edge's line",
+        "edgeB": "The second: the edge's line"
+      },
+      "startCode": "ball over the first, \"Measure\"",
+      "endCode": "distance = from the first to the second: middles, edges",
+      "bar": {
+        "start": "start",
+        "end": "result",
+        "centre": "middle",
+        "edge": "edge"
+      },
+      "centreCode": "middle = the circle through the touches",
+      "edgeCode": "edge = the line through two touches"
     }
   }
 }
