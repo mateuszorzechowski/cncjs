@@ -82,6 +82,8 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
   let prb = null;
   let failure = null;
   let phase = 'idle';
+  // When the last line went out, for a watch on an answer that never comes.
+  let sentAt = Date.now();
 
   const finish = (result) => {
     if (phase === 'done') {
@@ -95,6 +97,7 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
 
   const putBack = () => {
     phase = 'restoring';
+    sentAt = Date.now();
     write(restore);
   };
 
@@ -133,6 +136,7 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
       phase = 'waiting';
       return;
     }
+    sentAt = Date.now();
     write(LINE[step.kind](step, target, wco));
   };
 
@@ -214,6 +218,10 @@ export const createProbeRun = ({ steps, start, wco, restore, write, done, progre
 
     get waiting() {
       return phase === 'waiting';
+    },
+
+    get sentAt() {
+      return sentAt;
     },
   };
 };

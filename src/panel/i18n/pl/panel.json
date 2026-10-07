@@ -1622,6 +1622,7 @@
       "touched": "{{axis}}: frez zjechał na płytkę zamiast obok niej. Nic nie zapisano. Zwiększ „Odsunięcie za ściankę” albo zacznij bliżej narożnika.",
       "reset": "Pomiar przerwany. Nic nie zapisano.",
       "positionLost": "Od pomiaru maszyna mogła zgubić pozycję albo została zbazowana, więc wynik jest nieważny. Nic nie zapisano. Zmierz ponownie.",
+      "noAnswer": "Maszyna stoi, a nie odpowiedziała na linię pomiaru — odpowiedź mogła zginąć na kablu. Nic nie zapisano. Sprawdź połączenie i zmierz ponownie.",
       "other": "Pomiar nie udał się ({{code}}). Nic nie zapisano."
     },
     "result": {

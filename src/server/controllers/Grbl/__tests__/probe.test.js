@@ -202,6 +202,35 @@ describe('probe:start', () => {
     expect(sent()).toEqual(['G90 G21 G94 G38.2 Z15 F100']);
   });
 
+  test('an answer lost on the cable is given up after a while standing Idle, not waited for until STOP (audit I1)', () => {
+    let now = 1000000;
+    const clock = jest.spyOn(Date, 'now').mockImplementation(() => now);
+    try {
+      const { controller, sent, probeStates } = setup();
+      Object.assign(controller, { ready: true, initialized: true });
+      controller.command('probe:start', { method: 'z' });
+      const idle = '<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>';
+      controller.runner.parse(idle);
+      // Moving is not silence: the count starts again.
+      now += 6000;
+      controller.runner.parse('<Run|MPos:0.000,0.000,-3.000|FS:100,0|WCO:0.000,0.000,-30.000>');
+      now += 1000;
+      controller.runner.parse(idle);
+      now += 7000;
+      controller.runner.parse(idle);
+      expect(sent()).toHaveLength(1);
+
+      now += 1000;
+      controller.runner.parse(idle);
+      // Given up: the modes put back, as after any error.
+      expect(sent().pop()).toBe('G1 G94 G91 G21 F500');
+      controller.runner.parse('ok');
+      expect(probeStates().pop()).toMatchObject({ state: 'failed', failure: { code: 'no-answer' } });
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
   test('a plate not found is said, and the zero stays where it was', () => {
     const { controller, sent, probeStates } = setup();
     controller.command('probe:start', { method: 'z' });
