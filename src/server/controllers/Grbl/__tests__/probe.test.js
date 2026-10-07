@@ -91,7 +91,7 @@ describe('probe:start', () => {
   test('writes nothing to the offsets until the operator confirms', () => {
     const { controller, sent } = setup();
     controller.command('probe:start', { method: 'z' });
-    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', 'ok']) {
+    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok']) {
       controller.runner.parse(line);
     }
 
@@ -100,6 +100,41 @@ describe('probe:start', () => {
     controller.command('probe:apply');
     expect(sent().pop()).toBe('G21 G10 L2 P1 Z-17');
     expect(controller.probe).toBeNull();
+  });
+
+  test('the offset is worked out again when written, from G92 and the tool length as they are then (audit K3)', () => {
+    const { controller, sent } = setup();
+    controller.command('probe:start', { method: 'z' });
+    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok']) {
+      controller.runner.parse(line);
+    }
+    // A tool length offset set since — the old application's tool change, a G43.1 typed in.
+    controller.runner.settings.parameters.TLO = '4.000';
+
+    controller.command('probe:apply');
+    expect(sent().pop()).toBe('G21 G10 L2 P1 Z-21');
+  });
+
+  test('after a reset the offsets are asked again before a zero is written: G92 and the tool length are gone with it', () => {
+    const { controller, sent } = setup();
+    Object.assign(controller, { ready: true, initialized: true });
+    controller.runner.settings.parameters.G92 = { x: '0.000', y: '0.000', z: '5.000' };
+    controller.command('probe:start', { method: 'z' });
+    for (const line of ['[PRB:0,0,-7:1]', 'ok', 'ok', 'ok', '[PRB:0,0,-7:1]', 'ok', 'ok', 'ok']) {
+      controller.runner.parse(line);
+    }
+    controller.runner.parse(BANNER);
+    const before = sent().length;
+
+    controller.command('probe:apply');
+    expect(sent()).toHaveLength(before);
+    expect(controller.offsetsStale).toBe(true);
+
+    // `$#` answered: G92 cleared by the reset.
+    controller.runner.settings.parameters.G92 = { x: '0.000', y: '0.000', z: '0.000' };
+    controller.offsetsStale = false;
+    controller.runner.parse('<Idle|MPos:0.000,0.000,0.000|FS:0,0|WCO:0.000,0.000,-30.000>');
+    expect(sent().pop()).toBe('G21 G10 L2 P1 Z-17');
   });
 
   test('a plate not found is said, and the zero stays where it was', () => {

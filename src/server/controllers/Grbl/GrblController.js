@@ -1445,6 +1445,9 @@ class GrblController {
         // the port, after a STOP, after an alarm. The server's units are owed
         // again, and paid once the machine stands Idle — see `restoreUnits`.
         this.unitsOwed = true;
+        // And it clears G92 and the tool length offset (Grbl's `gc_init`): the
+        // `$#` held here is out of date until asked again (audit 2026-10-05, K3).
+        this.offsetsStale = true;
 
         if (!this.ready) {
           // The startup message always prints upon startup, after a reset, or at program end.
@@ -2656,7 +2659,7 @@ class GrblController {
           ..._.omit(found, 'zero'), centre: inWcs(found.centre), ...(found.parts ? { parts: found.parts.map((one) => ({ ...one, centre: inWcs(one.centre) })) } : {}),
         };
         // A distance is between two features, a height between two surfaces: no middle to put a zero at; a surface's Z, none either.
-        const zero = _.isEmpty(found.centre) || found.zero === false ? {} : this.zeroAt(found.centre, wcs);
+        const zero = _.isEmpty(found.centre) || found.zero === false ? {} : { ...this.zeroAt(found.centre, wcs), at: found.centre };
         this.probe.result = { size, ...zero };
         this.note({
           level: 'info',
@@ -2670,7 +2673,10 @@ class GrblController {
       } else {
         const zero = strategy.zero(params, options, outcome.seen, start);
         const { offset, shift } = this.zeroAt(zero, wcs);
-        this.probe.result = { zero, offset, shift };
+        // `at`, the zero in machine coordinates: what is written is worked out from it again then (`probe:apply`).
+        this.probe.result = {
+          zero, offset, shift, at: zero,
+        };
         this.note({
           level: 'info', source: 'server', event: 'probe', code: 'measured', data: {
             method, wcs, offset, shift,
@@ -2692,7 +2698,17 @@ class GrblController {
      * report has come since the last answer (see `fedAt`).
      */
     probeSettled() {
-      return this.fedAt === null && this.reportHeard > this.answerHeard;
+      return this.fedAt === null && this.reportHeard > this.answerHeard && !this.offsetsAwaited();
+    }
+
+    /**
+     * Whether the offsets held here are out of date, or being asked for again:
+     * a zero is written net of G92 and the tool length offset, so it waits for
+     * them (audit K3).
+     */
+    offsetsAwaited() {
+      const { state, reply } = this.actionMask.queryParameters;
+      return this.offsetsStale || state || reply;
     }
 
     /**
@@ -3555,6 +3571,11 @@ class GrblController {
             this.refuse(cmd, 'alarm');
             return;
           }
+          // The offset from G92 and the tool length offset as they are now: asked again first if out of date.
+          if (result.offset && !this.probeSettled()) {
+            this.deferProbe(cmd, args);
+            return;
+          }
 
           if (result.map) {
             heightMap.set(result.map, this.options.port);
@@ -3567,7 +3588,8 @@ class GrblController {
             this.emit('sender:status', this.senderStatus());
           } else {
             const p = activeWcsNumber({ wcs: this.probe.wcs });
-            this.command('gcode', [offsetLine(p, result.offset), this.runner.getModalGroup().units || 'G21']);
+            const { offset } = this.zeroAt(result.at, this.probe.wcs);
+            this.command('gcode', [offsetLine(p, offset), this.runner.getModalGroup().units || 'G21']);
           }
           this.note({ level: 'info', source: 'server', event: 'probe', code: 'applied', data: { method: this.probe.method, wcs: this.probe.wcs } });
           this.probe = null;

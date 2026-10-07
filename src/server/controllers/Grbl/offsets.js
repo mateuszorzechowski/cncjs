@@ -30,8 +30,14 @@
  *
  * `$RST=#` wipes every offset back to zero, which is the one operator action
  * that changes all of them at once.
+ *
+ * **`G43.1` and `G49` too.** They set and clear the tool length offset, which
+ * `$#` reports as `TLO` and a probe's zero is written net of (audit
+ * 2026-10-05, K3: the tool-change routine sends `G43.1`, and the zero then came
+ * out off by the whole offset). Matched with or without a space after the
+ * word — Grbl takes `G10L2P1` as readily as `G10 L2 P1`.
  */
-const CHANGES_OFFSETS = /\bG10\b|\bG92\b|\$RST\s*=\s*#/i;
+const CHANGES_OFFSETS = /\bG(?:10|92(?:\.[12])?|43\.1|49)(?![\d.])|\$RST\s*=\s*#/i;
 
 /**
  * Whether a line about to go on the wire changes a work offset.

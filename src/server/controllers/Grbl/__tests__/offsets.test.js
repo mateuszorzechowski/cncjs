@@ -11,6 +11,20 @@ describe('which lines make the work offsets stale', () => {
     expect(changesWorkOffsets('$RST=#')).toBe(true);
   });
 
+  test('the tool length offset, which a probe\'s zero is written net of (audit K3)', () => {
+    expect(changesWorkOffsets('G43.1 Z-12.5')).toBe(true);
+    expect(changesWorkOffsets('G43.1Z-12.5')).toBe(true);
+    expect(changesWorkOffsets('G49')).toBe(true);
+    expect(changesWorkOffsets('G4 P0.5')).toBe(false);
+    expect(changesWorkOffsets('G43 H1')).toBe(false);
+  });
+
+  test('with no space after the word, as Grbl takes it', () => {
+    expect(changesWorkOffsets('G10L20P1Z0')).toBe(true);
+    expect(changesWorkOffsets('G92X0')).toBe(true);
+    expect(changesWorkOffsets('G92.1')).toBe(true);
+  });
+
   test('lowercase counts, because nothing upper-cases a console line', () => {
     expect(changesWorkOffsets('g10 l20 p1 z0')).toBe(true);
   });
