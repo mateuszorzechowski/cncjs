@@ -1,4 +1,6 @@
-import { clearDown, move, touch } from '../moves';
+import {
+  clearDown, guarded, move, touch,
+} from '../moves';
 import { overTheTop } from './boss';
 
 /**
@@ -65,12 +67,14 @@ export const edgeSteps = (edge, params) => {
  */
 export const wallSteps = (wall, params, start) => {
   const { axis, along, sign } = EDGES[wall];
+  // Off the wall straight back the way it came, and only then along it — that move guarded (audit K4, `turned`).
   const point = (n) => {
     const key = keyOf(EDGES[wall], n);
     return [
       move(`${key}-in`, () => ({ [axis]: start[axis] })),
-      move(`${key}-along`, () => ({ [along]: start[along] + (n === 1 ? -1 : 1) * params.spacing / 2 })),
+      guarded(`${key}-along`, () => ({ [along]: start[along] + (n === 1 ? -1 : 1) * params.spacing / 2 }), params.fast),
       ...touch(axis, sign, params.holeSize, key, params),
+      move(`${key}-back`, () => ({ [axis]: start[axis] })),
     ];
   };
   return [

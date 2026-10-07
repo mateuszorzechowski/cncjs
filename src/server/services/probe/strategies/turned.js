@@ -1,4 +1,6 @@
-import { clearDown, move, touch } from '../moves';
+import {
+  clearDown, guarded, move, touch,
+} from '../moves';
 import { overTheTop } from './boss';
 import { EDGES } from './edge';
 
@@ -47,22 +49,31 @@ const outside = (params) => {
   ];
 };
 
-// From inside, `start` is the middle: where the ball stood when the measurement began, machine coordinates.
+/*
+ * From inside, `start` is the middle: where the ball stood when the measurement began, machine coordinates.
+ *
+ * The ball keeps to the two lines through the middle (audit 2026-10-05, K4). After each touch it goes straight
+ * back the way it came, square off the wall to the middle line (`back`) — never along a wall it has just left,
+ * which a pocket turned more than atan(2·retract/spacing), about 11° by default, brings into its way. Every
+ * rapid then retraces a way already gone; the only moves into new ground, along the middle line to the next
+ * point, are guarded, so a pocket or a slot narrower than `spacing` stops the ball on its wall, said as a
+ * failure, rather than running it in.
+ */
 const inside = (params, start) => {
   const point = (side, n) => {
     const { axis, along, sign } = EDGES[side];
     const key = keyOf(EDGES[side], n);
     const shift = (n === 1 ? -1 : 1) * params.spacing / 2;
     return [
-      // Back to the middle across the side, then along it to the point: away from every wall first.
+      // Onto the middle line across the side: back along the way the last point's `along` came.
       move(`${key}-in`, () => ({ [axis]: start[axis] })),
-      move(`${key}-along`, () => ({ [along]: start[along] + shift })),
+      guarded(`${key}-along`, () => ({ [along]: start[along] + shift }), params.fast),
       // From inside the ball goes out to the side, the way it faces: the front's wall is towards −Y.
       ...touch(axis, sign, params.holeSize, key, params),
+      move(`${key}-back`, () => ({ [axis]: start[axis] })),
     ];
   };
-  // Back to the middle at the end, one axis at a time: across the last side first — the left, so X — away from
-  // its wall, then along it; along it first would run beside the wall, nearer it the more the pocket is turned.
+  // Back to the middle at the end, along the last point's way out.
   return [
     ...SIDES.flatMap((side) => [...point(side, 1), ...point(side, 2)]),
     move('return-x', () => ({ x: start.x })),

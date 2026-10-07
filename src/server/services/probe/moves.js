@@ -51,6 +51,18 @@ export const clearDown = (phase, distance, feed) => ({
 });
 
 /**
+ * A move into ground the ball has not been over, guarded: `G38.3`, which
+ * stops on contact without an alarm — and contact here is a wall where none
+ * was looked for, a `touched` failure rather than a probe driven into it at
+ * rapid speed (audit 2026-10-05, K4). Inside a pocket the only such moves are
+ * the ones along a wall to the next point; everything else retraces a way
+ * the ball has already gone.
+ */
+export const guarded = (phase, to, feed) => ({
+  kind: 'clear', phase, feed, to,
+});
+
+/**
  * One touch along one axis, the way every probe routine does it: fast to
  * find the surface, back off, let the contact open, slow for the figure that
  * counts, back off again. `sign` is the direction of travel; `max` the furthest the fast
