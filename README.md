@@ -243,6 +243,18 @@ Plain HTTP is still there when TLS is in the way rather than the point
 (`bash scripts/serve-panel.sh --no-tls`), at the cost of the phone refusing to
 install anything.
 
+**When the network already has a certificate.** Behind a reverse proxy that
+presents a certificate every device on the network already trusts (say
+`cnc.home.lan`, with the network's own authority on every phone), there is
+nothing to carry across. Say so in `.cncrc`:
+
+```json
+{ "certificate": { "trusted": true } }
+```
+
+The server then hands out no authority of its own, and **Settings →
+Application** marks the certificate step done, with nothing to download.
+
 
 ### Configuration File
 

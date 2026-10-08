@@ -416,6 +416,8 @@
     },
     "step1Title": "Trust the panel’s certificate",
     "step1Done": "This device trusts the panel’s certificate: the connection is secure.",
+    "step1Network": "Your network provides the certificate and this device already trusts it — nothing to download.",
+    "step1NetworkTodo": "Your network provides the certificate, but this device does not trust it. Open the panel at its network address, or install the network’s certificate in the device’s settings.",
     "step2Title": "Install the app",
     "step2Blocked": "Step 1 first: a browser installs the app only over a connection it trusts.",
     "step2Done": "Installed on this device.",

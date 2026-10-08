@@ -59,6 +59,13 @@ const HOW = {
   linux: 'app.certHow.linux',
 };
 
+// What step 1 says, by whose certificate it is and where it stands. Not done
+// with this server's own, it is the trust problem's own text.
+const STEP1_NOTES = {
+  own: { done: 'app.step1Done' },
+  network: { done: 'app.step1Network', todo: 'app.step1NetworkTodo' },
+};
+
 // What step 2 says, by where it stands.
 const INSTALL_NOTES = {
   blocked: 'app.step2Blocked',
@@ -137,6 +144,9 @@ const AppScreen = () => {
     secure: window.isSecureContext,
   });
 
+  // The server hands out no certificate of its own: the network's is in use.
+  const network = Boolean(authority?.trusted);
+
   const installed = isInstalled();
   const ready = canInstall();
   const steps = installSteps({ trust, installed, ready });
@@ -162,59 +172,69 @@ const AppScreen = () => {
       <StepRow
         number={1}
         title={t('app.step1Title')}
-        note={steps.cert === 'done' ? t('app.step1Done') : t(trust.key)}
+        note={t(STEP1_NOTES[network ? 'network' : 'own'][steps.cert] || trust.key)}
         state={steps.cert}
       >
         {/*
-          * The instructions for this device's system, chosen for it where it
-          * can be told (`machine/platform`) and changeable — the file may be
-          * going to another device than the one reading this.
+          * Nothing to hand over when the network provides the certificate
+          * (Mateusz, 2026-10-08: *"certyfikat już jest i nie musi być
+          * dostarczany"*): no download, no warning about an authority the
+          * phone never sees, no facts about it.
           */}
-        <SegmentedChoice
-          joined
-          fitWide
-          label={t('app.certPlatform')}
-          options={PLATFORMS}
-          value={platform}
-          onChange={setPicked}
-          format={(id) => t(PLATFORM_NAMES[id])}
-        />
-        {platform ? <p className="m-0 text-note text-ink">{t(HOW[platform])}</p> : null}
-        {/*
-          * "Download", not "install". Tapping this saves a file; installing
-          * it is a separate trip into the device's own settings.
-          */}
-        <Button href={AUTHORITY_URL} className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start">
-          {t('app.certDownload')}
-        </Button>
-        {/*
-          * The warning is not a formality. Installing a certificate authority
-          * is normally the worst thing a web page can talk somebody into;
-          * this one is name-constrained — see scripts/make-certs.sh — so it
-          * can only vouch for `.lan` and private addresses, and the warning
-          * says that rather than one everybody learns to tap through. In
-          * sight under the download, not behind a `?` (review note,
-          * 2026-09-28: *"ten pomarańczowy warning zawsze może być tutaj
-          * widoczny"*).
-          */}
-        <Notice>
-          <span>{t('app.certWarning')}</span>
-        </Notice>
-        {authority ? (
+        {network ? null : (
           <>
-            <Fact label={t('app.certName')}>{authority.name}</Fact>
-            {authority.validTo ? (
-              <Fact label={t('app.certValidTo')}>{validTo.format(authority.validTo)}</Fact>
-            ) : null}
             {/*
-              * Long, and deliberately not shortened. Half a fingerprint
-              * compared against half a fingerprint is a habit that reads as
-              * checking without being it.
+              * The instructions for this device's system, chosen for it where it
+              * can be told (`machine/platform`) and changeable — the file may be
+              * going to another device than the one reading this.
               */}
-            <Fact label={t('app.certFingerprint')}>{authority.fingerprint}</Fact>
-            <p className="m-0 text-note text-mut">{t('app.certLife')}</p>
+            <SegmentedChoice
+              joined
+              fitWide
+              label={t('app.certPlatform')}
+              options={PLATFORMS}
+              value={platform}
+              onChange={setPicked}
+              format={(id) => t(PLATFORM_NAMES[id])}
+            />
+            {platform ? <p className="m-0 text-note text-ink">{t(HOW[platform])}</p> : null}
+            {/*
+              * "Download", not "install". Tapping this saves a file; installing
+              * it is a separate trip into the device's own settings.
+              */}
+            <Button href={AUTHORITY_URL} className="h-ctl w-full @3xl/shell:w-auto @3xl/shell:self-start">
+              {t('app.certDownload')}
+            </Button>
+            {/*
+              * The warning is not a formality. Installing a certificate authority
+              * is normally the worst thing a web page can talk somebody into;
+              * this one is name-constrained — see scripts/make-certs.sh — so it
+              * can only vouch for `.lan` and private addresses, and the warning
+              * says that rather than one everybody learns to tap through. In
+              * sight under the download, not behind a `?` (review note,
+              * 2026-09-28: *"ten pomarańczowy warning zawsze może być tutaj
+              * widoczny"*).
+              */}
+            <Notice>
+              <span>{t('app.certWarning')}</span>
+            </Notice>
+            {authority ? (
+              <>
+                <Fact label={t('app.certName')}>{authority.name}</Fact>
+                {authority.validTo ? (
+                  <Fact label={t('app.certValidTo')}>{validTo.format(authority.validTo)}</Fact>
+                ) : null}
+                {/*
+                  * Long, and deliberately not shortened. Half a fingerprint
+                  * compared against half a fingerprint is a habit that reads as
+                  * checking without being it.
+                  */}
+                <Fact label={t('app.certFingerprint')}>{authority.fingerprint}</Fact>
+                <p className="m-0 text-note text-mut">{t('app.certLife')}</p>
+              </>
+            ) : null}
           </>
-        ) : null}
+        )}
       </StepRow>
 
       {/*

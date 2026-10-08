@@ -38,6 +38,9 @@ export const readAuthority = (payload) => {
     name: payload?.subject?.replace(/^CN=/, '') ?? null,
     fingerprint: payload?.fingerprint ?? null,
     validTo: usable,
+    // The server hands out no certificate: the network's is the one in use
+    // (`certificate.trusted` in its `.cncrc`).
+    trusted: payload?.trusted === true,
   };
 };
 
