@@ -19,6 +19,10 @@ yarn dev          # or: yarn win-dev on Windows
 yarn test:e2e     # in another shell
 ```
 
+The suite and `yarn dev` use **:8010**. :8000 and :8001 are the instances
+behind `cnc.home.lan` and `sim.home.lan` — someone's machine and simulator,
+not test servers — so nothing here starts on them or runs against them.
+
 Point it at a different instance with `CNCJS_URL`:
 
 ```bash
@@ -107,7 +111,7 @@ yarn test:e2e --project=electron
 ```
 
 The client-mode specs also need a cncjs server to point at — `CNCJS_URL`,
-defaulting to `http://localhost:8000`, the same as the smoke tier.
+defaulting to `http://localhost:8010`, the same as the smoke tier.
 
 What it locks in:
 
@@ -177,7 +181,7 @@ keeps a lot alive. Restart it occasionally rather than wondering where the RAM
 went.
 
 `win-dev` is a tree — `yarn` → `concurrently` → `npm` → `cross-env` → the
-server and the webpack watcher. Killing whatever is listening on :8000 and
+server and the webpack watcher. Killing whatever is listening on :8010 and
 :8080 kills the leaves and orphans everything above them, and the orphaned
 watcher keeps running and keeps growing. Kill the tree:
 

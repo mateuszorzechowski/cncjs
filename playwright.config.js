@@ -2,7 +2,7 @@ const { defineConfig, devices } = require('@playwright/test');
 
 // The suite runs against an already-running cncjs instance. Point it elsewhere
 // with CNCJS_URL, e.g. when testing a production build on a different port.
-const baseURL = process.env.CNCJS_URL || 'http://localhost:8000';
+const baseURL = process.env.CNCJS_URL || 'http://localhost:8010';
 
 module.exports = defineConfig({
   testDir: './e2e',

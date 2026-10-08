@@ -173,8 +173,13 @@ const nodeProcesses = () => {
  */
 const WRAPPER = /npx-cli\.js|npm-cli\.js|cross-env/;
 
+/*
+ * Servers count per port. :8000 and :8001 are Mateusz's own instances behind
+ * his home domains (2026-10-08) and stay up while a test server runs on
+ * another port, so only two servers on the *same* port are a finding.
+ */
 const ROLES = [
-  { id: 'the dev server', pattern: /bin[/\\]cncjs/ },
+  { id: 'the dev server', pattern: /bin[/\\]cncjs/, perPort: true },
   { id: 'the panel watcher', pattern: /webpack\.config\.panel/ },
   { id: 'the workspace watcher', pattern: /webpack\.config\.development/ },
 ];
@@ -212,11 +217,24 @@ const TIER_OPENS_AS = { controllerType: 'Grbl', baudrate: Number(process.env.CNC
  * command line — so it is worth a case rather than another reading of the
  * regex.
  */
+/** The port a server was started on: `--port`/`-p`, or cncjs's default 8000. */
+const portOf = (one) => {
+  const match = one.command.match(/(?:--port|-p)[\s=]+"?(\d+)/);
+  return match ? match[1] : '8000';
+};
+
 const duplicateRoles = (all) => {
   const named = all.filter((one) => !WRAPPER.test(one.command));
 
   return ROLES
-    .map(({ id, pattern }) => ({ id, running: named.filter((one) => pattern.test(one.command)) }))
+    .flatMap(({ id, pattern, perPort }) => {
+      const running = named.filter((one) => pattern.test(one.command));
+      if (!perPort) {
+        return [{ id, running }];
+      }
+      const ports = [...new Set(running.map(portOf))];
+      return ports.map((port) => ({ id: `${id} on :${port}`, running: running.filter((one) => portOf(one) === port) }));
+    })
     .filter(({ running }) => running.length > 1);
 };
 
@@ -346,7 +364,7 @@ const checks = {
       '    Run this tier over plain HTTP — it has no business with certificates:\n' +
       '      bash scripts/serve-panel.sh --no-tls\n' +
       '    Or point it somewhere that already is:\n' +
-      '      CNCJS_URL=http://localhost:8000 yarn test:e2e --project=smoke\n' +
+      '      CNCJS_URL=http://localhost:8010 yarn test:e2e --project=smoke\n' +
       '    If the authority is installed in the Windows store, this check is the one that is wrong:\n' +
       '    node does not read that store, Chromium does.';
   },

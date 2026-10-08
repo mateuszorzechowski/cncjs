@@ -16,7 +16,7 @@ const { describeSettings, groupSummaries } = require('../output/cncjs/server/con
 const { machineGeometry } = require('../output/cncjs/server/controllers/Grbl/geometry.js');
 const { machineEnvelope } = require('../output/cncjs/server/controllers/Grbl/envelope.js');
 
-const BASE = process.argv[2] || 'http://localhost:8001';
+const BASE = process.argv[2] || 'http://localhost:8010';
 const OUT = process.argv[3] || path.join(__dirname, '.cache', 'screens');
 fs.mkdirSync(OUT, { recursive: true });
 

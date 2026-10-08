@@ -12,7 +12,7 @@ const ELECTRON_APP_DIR = path.join(REPO_ROOT, 'dist', 'cncjs', 'electron-app');
 const hasBuild = () => fs.existsSync(MAIN);
 
 // Where client mode should point. Same default as the smoke tier.
-const REMOTE_URL = process.env.CNCJS_URL || 'http://localhost:8000';
+const REMOTE_URL = process.env.CNCJS_URL || 'http://localhost:8010';
 
 /**
  * Launch the packaged app, hand it to the test, and always shut it down.

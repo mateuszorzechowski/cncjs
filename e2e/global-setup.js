@@ -14,7 +14,7 @@
 
 const { preflight } = require('./preflight');
 
-const BASE_URL = process.env.CNCJS_URL || 'http://localhost:8000';
+const BASE_URL = process.env.CNCJS_URL || 'http://localhost:8010';
 
 /*
  * The server may be the one a phone can actually use.
