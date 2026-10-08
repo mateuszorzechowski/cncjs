@@ -61,7 +61,7 @@ const reachable = async () => {
     }
 
     const html = await res.text();
-    const match = html.match(/src="([^"]*main[^"]*\.js)"/);
+    const match = html.match(/src="([^"]*panel[^"]*\.js)"/);
     if (!match) {
       // No bundle referenced yet: the shell is up but the build is not.
       return false;

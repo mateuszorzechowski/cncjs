@@ -26,7 +26,6 @@ const tls = require('tls');
 const ROOT = path.resolve(__dirname, '..');
 const PANEL_SOURCE = path.join(ROOT, 'src', 'panel');
 const PANEL_BUNDLE = path.join(ROOT, 'output', 'cncjs', 'panel', 'panel.bundle.js');
-const APP_OUTPUT = path.join(ROOT, 'output', 'cncjs', 'app');
 
 /**
  * What the panel bundle is actually built from.
@@ -193,20 +192,15 @@ const ROLES = [
 const BLOATED_MB = 2048;
 
 /**
- * What the hardware tier asks the server for when it opens the port.
+ * What the hardware tier asks the server for when it opens the port: the
+ * fixture's own `open` (`e2e/hardware/fixtures.js`), Grbl at
+ * `CNCJS_TEST_BAUD`.
  *
- * Stated here rather than read from anywhere, because there is nowhere to
- * read it from: the tier drives the old application's Connection widget, and
- * a Playwright profile is new on every run, so the widget has nothing
- * remembered and sends `src/app/store/defaultState.js`'s Grbl at 115200.
- * `CNCJS_TEST_BAUD` does not reach it either — the widget is never told a
- * baud rate, only clicked.
- *
- * If these ever stop being what the tier asks for, the tier stops working,
+ * If a port is already open with something else, the tier stops working,
  * because its specs are Grbl to the letter — `$X`, `$23`, the alarm it comes
  * up in. So a disagreement here is the finding rather than a false alarm.
  */
-const TIER_OPENS_AS = { controllerType: 'Grbl', baudrate: 115200 };
+const TIER_OPENS_AS = { controllerType: 'Grbl', baudrate: Number(process.env.CNCJS_TEST_BAUD || 115200) };
 
 /**
  * Which roles are running more than once, given every node process there is.
@@ -274,61 +268,6 @@ const checks = {
   },
 
   /**
-   * The old application's bundle runs, rather than merely being served.
-   *
-   * A webpack build with a poisoned resolver cache emits a bundle that is 200
-   * OK and throws `Cannot find module` on the first line it evaluates. Nothing
-   * rebuilds it, so it stays that way; the page answers, the bundle answers,
-   * and every spec sits on "Loading..." until it times out. It happened on
-   * 2026-09-22 with a module that had existed for weeks.
-   */
-  async appBundleRuns(baseUrl) {
-    const { error, text } = await bundleOf(baseUrl, '/');
-    if (error) {
-      return `the workspace is not servable: ${error}`;
-    }
-
-    /*
-     * The literal form only, not webpack's own runtime helper.
-     *
-     * Every bundle carries `Cannot find module '" + req + "'` — the template
-     * `require.resolve` throws from when a *runtime* lookup misses. Matching
-     * that flags a healthy build, which this check did on its first run: it
-     * reported the workspace as broken on a workspace that boots. Excluding
-     * quotes and `+` from the captured path is what tells a baked-in failure
-     * (`'../../../lib/toolpath/palette'`) from the template around it.
-     */
-    const broken = text.match(/Cannot find module '([^'"+]+)'/);
-    return broken
-      ? `the workspace bundle carries \`Cannot find module '${broken[1]}'\` and will not boot.\n` +
-        '    Rebuild it — and only it:\n' +
-        '      npx cross-env NODE_ENV=development npx webpack-cli --config webpack.config.development.js\n' +
-        '    then put back what that step does not emit (it runs with output.clean):\n' +
-        '      Copy-Item src/app/favicon.ico output/cncjs/app -Force\n' +
-        "      foreach ($d in 'i18n','images','assets') { Copy-Item \"src/app/$d\" output/cncjs/app -Recurse -Force }"
-      : null;
-  },
-
-  /**
-   * The files the webpack step does not emit are present.
-   *
-   * `output.clean` empties `output/cncjs/app`, and `build-dev` copies these in
-   * as a separate step. A server already running never notices; the *next*
-   * start dies on `ENOENT ... favicon.ico` and does not come up at all, which
-   * is a confusing thing to discover from a test run.
-   */
-  appAssetsPresent() {
-    const missing = ['favicon.ico', 'i18n', 'images']
-      .filter((name) => !fs.existsSync(path.join(APP_OUTPUT, name)));
-
-    return missing.length
-      ? `output/cncjs/app is missing ${missing.join(', ')} — the next server start will die on ENOENT.\n` +
-        '    Copy-Item src/app/favicon.ico output/cncjs/app -Force\n' +
-        "    foreach ($d in 'i18n','images','assets') { Copy-Item \"src/app/$d\" output/cncjs/app -Recurse -Force }"
-      : null;
-  },
-
-  /**
    * The panel bundle is servable, and is newer than the panel's source.
    *
    * The watcher can be dead, wedged, or several gigabytes deep in its own heap
@@ -341,7 +280,7 @@ const checks = {
    * build has no source tree to be older than.
    */
   async panelBundleFresh(baseUrl) {
-    const { error } = await bundleOf(baseUrl, '/panel/');
+    const { error } = await bundleOf(baseUrl, '/');
     if (error) {
       return `the panel is not servable: ${error}`;
     }
@@ -492,7 +431,7 @@ const checks = {
       const [preposition, asked, actual] = clash;
       return `${wanted} is already open ${preposition} ${actual}, and this tier opens it ${preposition} ${asked}.\n` +
         '    A port open with other settings is refused rather than attached to, so every case here\n' +
-        '    would sit out its whole timeout waiting for the Connection widget to say "Close".\n' +
+        '    would sit out its whole timeout waiting for the controller to report ready.\n' +
         '    Close it where it was opened — the panel has a Connection screen — and start again.\n' +
         '    The tier\'s own teardown cannot do it for you: it closes the port by clicking the same\n' +
         '    button, so it is refused in exactly the same way.';
@@ -575,8 +514,8 @@ const openPorts = async (baseUrl) => {
  * business being told that a dev watcher is behind.
  */
 const FOR_PROJECT = {
-  smoke: ['processes', 'appBundleRuns', 'appAssetsPresent', 'panelBundleFresh', 'browserTrustsServer', 'noPortOpen'],
-  hardware: ['processes', 'appBundleRuns', 'appAssetsPresent', 'panelBundleFresh', 'testPortUsable'],
+  smoke: ['processes', 'panelBundleFresh', 'browserTrustsServer', 'noPortOpen'],
+  hardware: ['processes', 'panelBundleFresh', 'testPortUsable'],
   // Nothing. This is the step that cleans up after a tier, and a cleanup that
   // refuses to run because the machine it is cleaning up is untidy is no
   // cleanup at all.

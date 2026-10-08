@@ -62,7 +62,7 @@ module.exports = ({ mode, outputPath }) => ({
     /*
      * The worker keeps its name; everything else gets a content hash in
      * production. A hashed service worker is one the browser can never find
-     * again: the page registers `/panel/sw.js` by that literal path, and a
+     * again: the page registers `/sw.js` by that literal path, and a
      * registration that 404s is a registration that silently does nothing.
      */
     filename: (pathData) => (
@@ -70,9 +70,9 @@ module.exports = ({ mode, outputPath }) => ({
         ? 'sw.js'
         : (mode === 'production' ? '[name].[contenthash].bundle.js' : '[name].bundle.js')
     ),
-    // Served from a subdirectory, so every asset reference has to be
-    // absolute from the site root rather than relative to the page.
-    publicPath: '/panel/',
+    // Absolute from the site root rather than relative to the page, so an
+    // address like `/settings/controller` still finds its bundle.
+    publicPath: '/',
   },
   resolve: {
     alias: {

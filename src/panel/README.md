@@ -1,8 +1,10 @@
 # The panel
 
 A second application in the same repository, built from the design mockup
-rather than migrated out of `src/app`. Served at `/panel` by the same Express
-server; the old application keeps `/` and is not touched.
+rather than migrated out of `src/app`. Served at the site root `/` by the same
+Express server since 2026-10-08; the old application is no longer served, and
+its sources stay in `src/app` for reference. Old `/panel/…` addresses are
+redirected to the root.
 
 Decided by Mateusz on 2026-09-20, after three screens of migrating in place
 showed that changing the contents of panels does not bring the layout closer to
@@ -42,7 +44,7 @@ goes back to the drawing.
 **To render it locally:** put the project's `support.js` beside
 `CNC Panel.dc.html`, add global UMD React and ReactDOM plus a `createRoot` →
 `render` shim, and open it. Navigation works, so any of the eleven screens can
-be photographed and placed beside a shot of `/panel` — `scripts/design-diff.js`
+be photographed and placed beside a shot of the panel — `scripts/design-diff.js`
 does exactly that.
 
 `yarn design-check` changed meaning with all this. It no longer asks "do we

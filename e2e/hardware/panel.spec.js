@@ -14,10 +14,8 @@ const { test, expect, TEST_PORT } = require('./fixtures');
  * the controller mid-tier would leave every case after it looking at a machine
  * that had just rebooted.
  *
- * The port is opened through the old application. The panel has had a
- * connection screen of its own since 2026-09-23 and could now open it
- * itself — worth changing, but not in the same breath as adding cases that
- * depend on the port already being open.
+ * The port is opened underneath the page, by the fixture's own socket, so the
+ * panel always loads against a machine that is already connected.
  */
 test.describe('panel, connected', () => {
   test.skip(!TEST_PORT, 'set CNCJS_TEST_PORT to run the hardware tier');
@@ -34,7 +32,7 @@ test.describe('panel, connected', () => {
     await grbl.connect();
     const panel = await context.newPage();
     // Polish outright: the browser is `en-US` and these cases read the words.
-    await panel.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+    await panel.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
     await expect(bar(panel)).toBeVisible({ timeout: 45000 });
     return panel;
   };
@@ -64,10 +62,6 @@ test.describe('panel, connected', () => {
     // hears it — so a client that only listens shows "Disconnected" beside a
     // running spindle, for as long as it stays up. The panel asks
     // `/api/controllers` once on startup instead.
-    //
-    // The old application does *not* do this and has the defect: load it
-    // against an already-open port and its Connection widget still offers
-    // "Open".
     await expect(bar(panel)).not.toContainText(/disconnected/i);
     await expect(bar(panel)).toContainText(TEST_PORT);
   });

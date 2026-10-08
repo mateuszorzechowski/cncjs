@@ -56,7 +56,16 @@ syncThemeColor();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/panel/sw.js', { scope: '/panel/' })
+      .register('/sw.js', { scope: '/' })
+      .catch(() => undefined);
+
+    // The worker from when the panel lived at `/panel/`. Its scope is the
+    // more specific one, so left alone it would go on answering the old
+    // addresses from its cache whenever the server is down.
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => registrations
+        .filter((registration) => new URL(registration.scope).pathname === '/panel/')
+        .forEach((registration) => registration.unregister()))
       .catch(() => undefined);
   });
 }

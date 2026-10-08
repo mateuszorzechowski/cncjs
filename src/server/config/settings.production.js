@@ -1,36 +1,18 @@
-import crypto from 'crypto';
 import os from 'os';
 import path from 'path';
-import pkg from '../../package.json';
-import urljoin from '../lib/urljoin';
-
-const publicPath = ((payload) => {
-  const algorithm = 'sha1';
-  const buf = String(payload);
-  const hash = crypto.createHash(algorithm).update(buf).digest('hex');
-  return '/' + hash.substring(0, 8) + '/'; // 8 digits
-})(pkg.version);
 
 const maxAge = (365 * 24 * 60 * 60 * 1000); // one year
 
 export default {
   route: '/', // with trailing slash
   assets: {
-    // Registered before the application, which serves from the site root.
+    // The panel, at the site root. The old application is no longer served
+    // (Mateusz, 2026-10-08); its sources stay in `src/app` for reference.
     panel: {
       routes: [
-        urljoin(publicPath, '/panel'),
-        '/panel' // fallback
+        '/'
       ],
       path: path.resolve(__dirname, '..', '..', 'panel'),
-      maxAge: maxAge
-    },
-    app: {
-      routes: [ // with trailing slash
-        urljoin(publicPath, '/'),
-        '/' // fallback
-      ],
-      path: path.resolve(__dirname, '..', '..', 'app'),
       maxAge: maxAge
     }
   },

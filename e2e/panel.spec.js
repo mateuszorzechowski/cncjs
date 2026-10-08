@@ -3,7 +3,7 @@ const { test, expect } = require('./fixtures');
 /**
  * The panel, with no machine on the other end.
  *
- * A second application in the same repository, served at `/panel` and built
+ * A second application in the same repository, served at the site root and built
  * from the design mockup rather than migrated out of `src/app`. It shares one
  * thing with the old application — the socket client — and one server.
  *
@@ -20,15 +20,15 @@ test.describe('panel, disconnected', () => {
   const rail = (page) => page.getByRole('navigation', { name: 'Nawigacja' });
 
   const openPanel = async (page, lng = 'pl') => {
-    await page.goto(`/panel/?lng=${lng}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`/?lng=${lng}`, { waitUntil: 'domcontentloaded' });
     await expect(bar(page)).toBeVisible({ timeout: 45000 });
   };
 
   test('loads, and is not the old application', async ({ cncjs }) => {
     await openPanel(cncjs.page);
 
-    // The old workspace is not in here. If a build ever pointed `/panel` at
-    // the wrong output this is what would notice.
+    // The old workspace is not in here. If a build ever pointed the site
+    // root at the wrong output this is what would notice.
     await expect(cncjs.page.locator('[data-widget-id]')).toHaveCount(0);
     await expect(rail(cncjs.page)).toBeVisible();
 
@@ -414,7 +414,7 @@ test.describe('panel, disconnected', () => {
     }
 
     await cncjs.page.getByRole('button', { name: 'Ustawienia bazowania' }).click();
-    await expect(cncjs.page).toHaveURL(/\/panel\/settings\/controller/);
+    await expect(cncjs.page).toHaveURL(/\/settings\/controller/);
 
     cncjs.expectNoPageErrors();
   });
@@ -438,7 +438,7 @@ test.describe('panel, disconnected', () => {
      * The pendant is meant to live on a phone's home screen, which means the
      * operating system reads files no part of the panel's code ever touches:
      * a manifest, three PNGs and an `apple-touch-icon`. Webpack emits them
-     * only because `src/panel/assets.js` imports them, and the rule that
+     * only because `src/assets.js` imports them, and the rule that
      * matches them is a regular expression over an absolute path — one that
      * was written with `[/]` instead of `[\/]` first and therefore matched
      * nothing at all on Windows.
@@ -457,11 +457,10 @@ test.describe('panel, disconnected', () => {
     expect(manifestRes.status(), 'the manifest is served').toBe(200);
 
     const manifest = await manifestRes.json();
-    // Both, and both ending in a slash: `scope` decides what counts as being
-    // "in" the application, and a scope of `/panel` would let a link to
-    // `/panelling` open inside it while `/panel/` would not.
-    expect(manifest.scope).toBe('/panel/');
-    expect(manifest.start_url).toBe('/panel/');
+    // Both the site root: `scope` decides what counts as being "in" the
+    // application, and the panel is the whole site.
+    expect(manifest.scope).toBe('/');
+    expect(manifest.start_url).toBe('/');
 
     /*
      * `standalone`, and it is a decision rather than a default.
@@ -607,7 +606,7 @@ test.describe('the 3D view\'s options on a phone', () => {
   // Mateusz, 2026-09-29: on a phone a sheet, on a tablet bigger buttons.
   test('are one button on the drawing that opens them, named, in a sheet', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.goto('/panel/path?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/path?lng=pl', { waitUntil: 'domcontentloaded' });
 
     // No column of glyphs: the views are not on the drawing itself.
     await expect(page.getByRole('button', { name: 'GÓRA', exact: true })).toHaveCount(0);
@@ -631,7 +630,7 @@ test.describe('MDI on a phone', () => {
   // to type at, so the field that opens it is dead.
   test('the line is a field that opens a sheet, dead with no machine', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.goto('/panel/mdi?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/mdi?lng=pl', { waitUntil: 'domcontentloaded' });
     const field = page.getByRole('button', { name: 'Linia do wysłania' });
     await expect(field).toBeDisabled();
     await expect(page.getByRole('textbox', { name: 'Linia do wysłania' })).toHaveCount(0);

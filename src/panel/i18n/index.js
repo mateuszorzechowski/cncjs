@@ -37,7 +37,7 @@ i18next
     ns: ['panel'],
     defaultNS: 'panel',
     detection: {
-      // The querystring first so `/panel/?lng=en` can be pointed at a
+      // The querystring first so `/?lng=en` can be pointed at a
       // language without touching the browser's own setting — which is how
       // the end-to-end tier checks that this is a translation and not a file
       // of constants. No caches: a language picked once for a test would

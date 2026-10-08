@@ -16,11 +16,9 @@ import i18nextBackend from 'i18next-fs-backend';
 import jwt from 'jsonwebtoken';
 import methodOverride from 'method-override';
 import morgan from 'morgan';
-import favicon from 'serve-favicon';
 import serveStatic from 'serve-static';
 import sessionFileStore from 'session-file-store';
 import _get from 'lodash/get';
-import _noop from 'lodash/noop';
 import rimraf from 'rimraf';
 import {
   LanguageDetector as i18nextLanguageDetector,
@@ -47,15 +45,6 @@ import {
 } from './constants';
 
 const log = logger('app');
-
-const renderPage = (view = 'index', cb = _noop) => (req, res, next) => {
-  // Override IE's Compatibility View Settings
-  // http://stackoverflow.com/questions/6156639/x-ua-compatible-is-set-to-ie-edge-but-it-still-doesnt-stop-compatibility-mode
-  res.set({ 'X-UA-Compatible': 'IE=edge' });
-
-  const locals = { ...cb(req, res) };
-  res.render(view, locals);
-};
 
 const appMain = () => {
   const app = express();
@@ -94,7 +83,6 @@ const appMain = () => {
     }
     app.set('view engine', settings.view.defaultExtension); // The default engine extension to use when omitted
     app.set('views', [
-      path.resolve(__dirname, '../app'),
       path.resolve(__dirname, 'views')
     ]); // The view directory path
 
@@ -195,7 +183,6 @@ const appMain = () => {
     log.error(err);
   }
 
-  app.use(favicon(path.join(_get(settings, 'assets.app.path', ''), 'favicon.ico')));
   app.use(cookieParser());
 
   // Connect's body parsing middleware. This only handles urlencoded and json bodies.
@@ -324,6 +311,17 @@ const appMain = () => {
     });
   }
 
+  /*
+   * The panel lived at `/panel/` until 2026-10-08 and moved to the site root
+   * (Mateusz: *"panel serwuj od tej pory na roocie"*). Bookmarks, the README's
+   * certificate link and an installed copy's start address still say
+   * `/panel/…`, so they are sent to the same place without the prefix —
+   * permanently, since the old address is not coming back.
+   */
+  app.use(urljoin(settings.route || '/', 'panel'), (req, res) => {
+    res.redirect(301, urljoin(settings.route || '/', req.url));
+  });
+
   Object.keys(settings.assets).forEach((name) => {
     const asset = settings.assets[name];
 
@@ -339,25 +337,6 @@ const appMain = () => {
       app.use(route, serveStatic(asset.path, {
         maxAge: asset.maxAge
       }));
-
-      /*
-       * The panel's own addresses — `/panel/jog`, `/panel/settings/controller`
-       * — are screens, not files: each is the panel's page, which reads the
-       * address and opens that screen. So a reload, a bookmark or a link
-       * lands where it points, and the browser's back button has somewhere
-       * to go (Mateusz, 2026-09-28: *"nawigując nie zmienia się adres URL …
-       * przycisk wstecz, gest cofnij nie działają"*). Only a page asked for:
-       * anything with an extension is a file, found above or not at all.
-       */
-      if (name === 'panel') {
-        app.get(urljoin(route, '*'), (req, res, next) => {
-          if (path.extname(req.path) || !req.accepts('html')) {
-            next();
-            return;
-          }
-          res.sendFile(path.join(asset.path, 'index.html'));
-        });
-      }
     });
   });
 
@@ -536,19 +515,26 @@ const appMain = () => {
     app.put(urljoin(settings.route, 'api/watch/file'), api.watch.writeFile);
   }
 
-  // page
-  app.get(urljoin(settings.route, '/'), renderPage('index.hbs', (req, res) => {
-    const webroot = _get(settings, 'assets.app.routes[0]', ''); // with trailing slash
-    const lng = req.language;
-    const t = req.t;
-
-    return {
-      webroot: webroot,
-      lang: lng,
-      title: `${t('title')} ${settings.version}`,
-      loading: t('loading')
-    };
-  }));
+  /*
+   * The panel's own addresses — `/jog`, `/settings/controller` — are screens,
+   * not files: each is the panel's page, which reads the address and opens
+   * that screen. So a reload, a bookmark or a link lands where it points, and
+   * the browser's back button has somewhere to go (Mateusz, 2026-09-28:
+   * *"nawigując nie zmienia się adres URL … przycisk wstecz, gest cofnij nie
+   * działają"*). Only a page asked for: anything with an extension is a file,
+   * found above or not at all.
+   *
+   * Last of the routes, because at the site root it would otherwise answer
+   * for the API too: a `fetch` accepts anything, HTML included. An address
+   * under `api/` that nothing above took is a 404, not the panel.
+   */
+  app.get(urljoin(settings.route, '*'), (req, res, next) => {
+    if (path.extname(req.path) || !req.accepts('html') || req.path.startsWith(urljoin(settings.route, 'api/'))) {
+      next();
+      return;
+    }
+    res.sendFile(path.join(settings.assets.panel.path, 'index.html'));
+  });
 
   { // Error handling
     app.use(errlog());

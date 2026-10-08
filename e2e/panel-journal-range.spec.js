@@ -10,7 +10,7 @@ const { test, expect } = require('./fixtures');
  * the device's own pickers.
  */
 const openJournal = async (page) => {
-  await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+  await page.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
   await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Dziennik' }).click();
 };
 
@@ -51,7 +51,7 @@ test.describe('this device\'s name', () => {
 
   test('is set in the device tab, beside the language and the theme, not with the connection or the preferences', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
     await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Ustawienia' }).click();
 
     await page.getByText('Połączenie', { exact: true }).first().click();

@@ -64,7 +64,7 @@ const open = async (page, view = VIEW) => {
   await page.route('**/api/controllers', (route) => route.fulfill({
     json: [{ port: 'COM9', baudrate: 115200, rtscts: false, controller: { type: 'Grbl', state: state('Idle'), settings: { settings: REPORTED } } }],
   }));
-  await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+  await page.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('banner')).not.toContainText(/brak portu|przypinanie/i, { timeout: 45000 });
   await expect.poll(() => page.evaluate(() => Boolean(window.__panelController?.port))).toBe(true);
   await page.evaluate(({ reported, v, st }) => {

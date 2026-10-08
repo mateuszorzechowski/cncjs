@@ -122,7 +122,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     }
   };
 
-  const check = () => fetch('/panel/version.json', { cache: 'no-store' })
+  const check = () => fetch('/version.json', { cache: 'no-store' })
     .then((response) => (response.ok ? response.json() : null))
     .then((build) => {
       if (build?.id && build.id !== served?.id) {

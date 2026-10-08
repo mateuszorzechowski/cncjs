@@ -27,7 +27,12 @@
  * file it has never been given.
  */
 
-const CACHE = 'panel-shell-v1';
+/*
+ * v2 since the panel moved from `/panel/` to the site root. Caches belong to
+ * the origin, not to a worker, so the old worker's copies of `/panel/…` would
+ * otherwise sit beside these for good; a new name lets `activate` drop them.
+ */
+const CACHE = 'panel-shell-v2';
 
 /**
  * What is worth keeping, and what must never be kept.
@@ -39,8 +44,8 @@ const CACHE = 'panel-shell-v1';
  */
 const isShell = (url) => (
   url.origin === self.location.origin &&
-  url.pathname.startsWith('/panel/') &&
-  !url.pathname.startsWith('/panel/api/')
+  !url.pathname.startsWith('/api/') &&
+  !url.pathname.startsWith('/socket.io/')
 );
 
 self.addEventListener('install', (event) => {
@@ -49,7 +54,7 @@ self.addEventListener('install', (event) => {
   // as it is fetched.
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(['/panel/', '/panel/index.html']))
+      .then((cache) => cache.addAll(['/', '/index.html']))
       // A failed precache must not fail the install — the worker is still
       // useful for everything it caches later, and a server that is already
       // down at install time is exactly when it is needed most.
@@ -106,13 +111,13 @@ self.addEventListener('fetch', (event) => {
          * shell.
          *
          * The panel is one page that decides what to show from its own
-         * state, so `/panel/?lng=pl` and `/panel/` are the same document with
+         * state, so `/?lng=pl` and `/` are the same document with
          * a different query — and a cache keyed on the whole URL would miss
          * on the one that was not visited last. Falling back to the shell is
          * what makes the installed app open at all.
          */
         if (navigating) {
-          const shell = await caches.match('/panel/index.html') || await caches.match('/panel/');
+          const shell = await caches.match('/index.html') || await caches.match('/');
           if (shell) {
             return shell;
           }

@@ -16,9 +16,9 @@
  * certificate — anybody who could tamper with the download could tamper with
  * this too — only about which file is which.
  */
-export const AUTHORITY_URL = '/panel/cnc-ca.crt';
+export const AUTHORITY_URL = '/cnc-ca.crt';
 
-const AUTHORITY_INFO_URL = '/panel/cnc-ca.json';
+const AUTHORITY_INFO_URL = '/cnc-ca.json';
 
 /**
  * The server's answer, in the shape a screen wants.
