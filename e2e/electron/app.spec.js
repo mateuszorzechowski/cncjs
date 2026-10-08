@@ -16,7 +16,7 @@ test.describe('desktop app', () => {
       // With no server configured the app serves itself on a random loopback
       // port, which is what keeps two instances from fighting over one.
       expect(win.url()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\//);
-      await expect(win).toHaveTitle(/CNCjs/i);
+      await expect(win).toHaveTitle(/CNC Panel/);
 
       await waitForPanel(win);
 

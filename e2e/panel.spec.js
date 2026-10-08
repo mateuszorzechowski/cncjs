@@ -461,6 +461,9 @@ test.describe('panel, disconnected', () => {
     // application, and the panel is the whole site.
     expect(manifest.scope).toBe('/');
     expect(manifest.start_url).toBe('/');
+    // The name under the icon, in the same convention as the simulator's
+    // "CNC Sim" beside it (Mateusz, 2026-10-08).
+    expect(manifest.short_name).toBe('CNC Panel');
 
     /*
      * `standalone`, and it is a decision rather than a default.
