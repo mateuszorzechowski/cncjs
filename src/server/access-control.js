@@ -11,9 +11,15 @@ const whitelist = [
   '172.16.0.0/12', // Used for local communications within a private network
   '192.168.0.0/16', // Used for local communications within a private network
   '169.254.0.0/16', // Link-local address
+  // Tailscale hands its devices addresses from the shared address space
+  // (RFC 6598), so a phone on the tailnet reaches the server from outside the
+  // house without opening it to the internet (Mateusz, 2026-10-09). Its IPv6
+  // addresses are unique local ones, already covered by fc00::/7 below.
+  '100.64.0.0/10',
 
   // IPv4 mapped IPv6 address
   '::ffff:10.0.0.0/8',
+  '::ffff:100.64.0.0/10',
   '::ffff:127.0.0.0/8',
   '::ffff:172.16.0.0/12',
   '::ffff:192.168.0.0/16',
