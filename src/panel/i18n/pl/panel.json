@@ -416,6 +416,8 @@
     },
     "step1Title": "Zaufaj certyfikatowi panelu",
     "step1Done": "To urządzenie ufa certyfikatowi panelu: połączenie jest bezpieczne.",
+    "step1Network": "Certyfikat zapewnia Twoja sieć i to urządzenie już mu ufa — nie trzeba niczego pobierać.",
+    "step1NetworkTodo": "Certyfikat zapewnia Twoja sieć, ale to urządzenie mu nie ufa. Otwórz panel pod jego adresem w sieci albo zainstaluj certyfikat sieci w ustawieniach urządzenia.",
     "step2Title": "Zainstaluj aplikację",
     "step2Blocked": "Najpierw krok 1: przeglądarka instaluje aplikację tylko przez połączenie, któremu ufa.",
     "step2Done": "Zainstalowana na tym urządzeniu.",

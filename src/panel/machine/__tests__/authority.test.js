@@ -28,6 +28,16 @@ describe('readAuthority', () => {
       name: null,
       fingerprint: null,
       validTo: null,
+      trusted: false,
+    });
+  });
+
+  it('hears that the network provides the certificate', () => {
+    expect(readAuthority({ trusted: true })).toEqual({
+      name: null,
+      fingerprint: null,
+      validTo: null,
+      trusted: true,
     });
   });
 

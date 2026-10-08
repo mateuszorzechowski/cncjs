@@ -247,12 +247,34 @@ const appMain = () => {
    * extension: it is the type Android recognises as something to install
    * rather than something to open.
    */
+  /*
+   * `"certificate": { "trusted": true }` in `.cncrc`: the devices already
+   * trust the certificate they are served, so this server hands none out.
+   *
+   * The case it is for is a network with its own: a reverse proxy in front
+   * presenting a certificate every phone on the network was given already
+   * (Mateusz, 2026-10-08: *"certyfikat dla home.lan jest w sieci i na
+   * telefonie, więc zakładka w ustawieniach to musi uwzględniać, że
+   * certyfikat już jest i nie musi być dostarczany"*). Offering this server's
+   * own authority there would be offering the wrong one — the phone never
+   * sees it. A setting rather than a guess from proxy headers: he chose it.
+   *
+   * Read per request, like the file below: `.cncrc` is watched, so turning it
+   * on needs no restart.
+   */
+  const certificateTrusted = () => config.get('certificate.trusted') === true;
+
   if (settings.tlsCa) {
     _get(settings, 'assets.panel.routes', []).forEach((assetRoute) => {
       const route = urljoin(settings.route || '/', assetRoute || '', 'cnc-ca.crt');
       log.debug('> authority certificate at %s', route);
 
       app.get(route, (req, res) => {
+        if (certificateTrusted()) {
+          res.status(ERR_NOT_FOUND).end('The network provides the certificate; this server hands none out');
+          return;
+        }
+
         // Checked per request rather than at boot. The certificate is
         // reissued underneath a running server -- that is the point of it
         // being short-lived -- and a path cached at startup would go on
@@ -288,6 +310,11 @@ const appMain = () => {
       const describeRoute = urljoin(settings.route || '/', assetRoute || '', 'cnc-ca.json');
 
       app.get(describeRoute, (req, res) => {
+        if (certificateTrusted()) {
+          res.json({ trusted: true });
+          return;
+        }
+
         fs.readFile(settings.tlsCa, (err, data) => {
           if (err) {
             log.error('Could not read the authority certificate: %s', err.message);
@@ -307,6 +334,18 @@ const appMain = () => {
             res.status(ERR_NOT_FOUND).end('The authority certificate could not be read');
           }
         });
+      });
+    });
+  } else {
+    // No authority of its own, but the panel still has to hear that the
+    // network's certificate is the one in use.
+    _get(settings, 'assets.panel.routes', []).forEach((assetRoute) => {
+      app.get(urljoin(settings.route || '/', assetRoute || '', 'cnc-ca.json'), (req, res, next) => {
+        if (certificateTrusted()) {
+          res.json({ trusted: true });
+          return;
+        }
+        next();
       });
     });
   }
