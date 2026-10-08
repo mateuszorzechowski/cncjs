@@ -66,13 +66,32 @@ describe('duplicateRoles', () => {
     expect(found).toEqual([]);
   });
 
-  it('reports a second dev server', () => {
+  it('reports a second dev server on the same port', () => {
     const found = duplicateRoles([
-      process_(1, `${NODE} ./bin/cncjs --port 8000`),
-      process_(2, `${NODE} ./bin/cncjs --port 8001`),
+      process_(1, `${NODE} ./bin/cncjs --port 8010`),
+      process_(2, `${NODE} ./bin/cncjs --port 8010`),
     ]);
 
-    expect(found.map((one) => one.id)).toEqual(['the dev server']);
+    expect(found.map((one) => one.id)).toEqual(['the dev server on :8010']);
+  });
+
+  // :8000 and :8001 are Mateusz's own servers and stay up beside a test
+  // server; the command lines are his, from 2026-10-08.
+  it('lets servers on different ports run side by side', () => {
+    expect(duplicateRoles([
+      process_(1, `${NODE} ./bin/cncjs --port 8000 --tls-key certs/cnc.key --tls-cert certs/cnc.crt --tls-ca certs/cnc-ca.crt`),
+      process_(2, `${NODE} ./bin/cncjs --port 8001 --config C:/x/cncrc-sim.json`),
+      process_(3, `${NODE} ./bin/cncjs --port 8010`),
+    ])).toEqual([]);
+  });
+
+  it('takes a server with no port for the default, 8000', () => {
+    const found = duplicateRoles([
+      process_(1, `${NODE} ./bin/cncjs`),
+      process_(2, `${NODE} ./bin/cncjs --port 8000`),
+    ]);
+
+    expect(found.map((one) => one.id)).toEqual(['the dev server on :8000']);
   });
 
   it('says nothing about a machine with nothing running', () => {

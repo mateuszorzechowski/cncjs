@@ -36,7 +36,7 @@ const arg = (name, fallback) => {
 
 const MOCKUP_DIR = arg('mockup', '');
 const OUT = path.resolve(arg('out', path.join('output', 'design-diff')));
-const URL = arg('url', 'http://localhost:8000/');
+const URL = arg('url', 'http://localhost:8010/');
 const FRAME = { width: 1024, height: 768 };
 
 // Only the screens that exist on both sides. The mockup draws eleven; adding

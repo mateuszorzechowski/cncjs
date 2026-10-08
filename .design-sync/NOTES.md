@@ -148,8 +148,8 @@ JavaScript only), so:
   `guidelines/src/panel/DESIGN.md`; `conventions.md` points agents at it.
 - Screenshots of the whole screens are NOT produced by the converter. After
   every build (the converter wipes `ds-bundle/`), and before uploading:
-  1. with the panel server on :8001 (never :8000):
-     `node .design-sync/capture-screens.cjs http://localhost:8001`
+  1. with a panel server of your own on :8010 (never :8000/:8001, his):
+     `node .design-sync/capture-screens.cjs http://localhost:8010`
      (needs `output/cncjs/server` built; 45 PNGs in `.design-sync/.cache/screens`,
      incl. four Sonda shots: method, Z plate setup, corner setup, wire);
   2. `mkdir -p ds-bundle/guidelines/screens && cp .design-sync/.cache/screens/*.png ds-bundle/guidelines/screens/`;
