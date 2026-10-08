@@ -3,11 +3,11 @@ const {
   expect,
   withApp,
   firstWindow,
-  waitForWorkspace,
+  waitForPanel,
 } = require('./fixtures');
 
 test.describe('desktop app', () => {
-  test('starts its own server and mounts the workspace', async () => {
+  test('starts its own server and mounts the panel', async () => {
     await withApp([], async (app) => {
       const win = await firstWindow(app);
       const errors = [];
@@ -18,8 +18,7 @@ test.describe('desktop app', () => {
       expect(win.url()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\//);
       await expect(win).toHaveTitle(/CNCjs/i);
 
-      await waitForWorkspace(win);
-      expect(await win.locator('[data-widget-id]').count()).toBeGreaterThanOrEqual(15);
+      await waitForPanel(win);
 
       expect(errors, `uncaught exceptions:\n${errors.join('\n')}`).toEqual([]);
     });
@@ -28,7 +27,7 @@ test.describe('desktop app', () => {
   test('gives the renderer no way into Node', async () => {
     await withApp([], async (app) => {
       const win = await firstWindow(app);
-      await waitForWorkspace(win);
+      await waitForPanel(win);
 
       // The window loads its content over HTTP — from another machine once a
       // server is configured. Anything reachable here is reachable by whoever
@@ -52,7 +51,7 @@ test.describe('desktop app', () => {
   test('exposes exactly the two bridge methods the app needs', async () => {
     await withApp([], async (app) => {
       const win = await firstWindow(app);
-      await waitForWorkspace(win);
+      await waitForPanel(win);
 
       const methods = await win.evaluate(() => (window.cncjs ? Object.keys(window.cncjs).sort() : null));
 
@@ -64,7 +63,7 @@ test.describe('desktop app', () => {
   test('round-trips the user config over IPC', async () => {
     await withApp([], async (app) => {
       const win = await firstWindow(app);
-      await waitForWorkspace(win);
+      await waitForPanel(win);
 
       const result = await win.evaluate(async () => {
         const original = await window.cncjs.readUserConfig();

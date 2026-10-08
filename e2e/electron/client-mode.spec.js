@@ -5,7 +5,7 @@ const {
   withApp,
   resetServer,
   firstWindow,
-  waitForWorkspace,
+  waitForPanel,
   ELECTRON_APP_DIR,
   REMOTE_URL,
 } = require('./fixtures');
@@ -24,7 +24,7 @@ test.describe('client mode', () => {
       win.on('pageerror', (e) => errors.push(e.message));
 
       expect(win.url().startsWith(REMOTE_URL)).toBe(true);
-      await waitForWorkspace(win);
+      await waitForPanel(win);
 
       expect(errors, `uncaught exceptions:\n${errors.join('\n')}`).toEqual([]);
     });
@@ -33,15 +33,14 @@ test.describe('client mode', () => {
   test('talks to the configured server, not a local stand-in', async () => {
     await withApp([`--server-url=${REMOTE_URL}`], async (app) => {
       const win = await firstWindow(app);
-      await waitForWorkspace(win);
+      await waitForPanel(win);
 
       // A serial port can only be held by one process. If this instance had
       // quietly started its own server, that server could not have opened a
       // port the real one already has — so any controller reported here came
       // from the machine we meant to reach.
       const result = await win.evaluate(async () => {
-        const raw = window.localStorage.getItem('cnc');
-        const token = raw ? (JSON.parse(raw)?.state?.session?.token || '') : '';
+        const { token } = await (await fetch('/api/signin', { method: 'POST' })).json();
         const res = await fetch('/api/controllers', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

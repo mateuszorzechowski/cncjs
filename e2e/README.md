@@ -1,12 +1,12 @@
 # End-to-end smoke tests
 
 These specs exist to catch regressions that the Jest suite structurally cannot
-see: `jest.testMatch` only covers `src/server/**` and `grbl-simulator/**`, so
-every one of the ~41k lines under `src/app` is otherwise unverified.
+see: a page in a real browser, the server's routes, and a controller on a
+serial port.
 
-They are deliberately shallow. The goal is to notice when a dependency upgrade
-stops a widget from mounting, blanks a settings pane, or starts throwing in the
-console — not to assert on business logic.
+The server serves the panel (`src/panel`) at the site root. The old
+application in `src/app` is no longer served (2026-10-08), and its specs went
+with it.
 
 ## Running
 
@@ -32,112 +32,23 @@ npx playwright install chromium
 ```
 
 The project pins the `chromium` channel rather than the default headless
-shell, because the shell ships without WebGL and the Visualizer widget needs it
-to produce a canvas.
+shell, because the shell ships without WebGL and the panel's previews need it.
 
 ## What is covered
 
-- **workspace.spec.js** — the app boots, all 15 widgets in the default layout
-  mount, the axes readout renders, the Three.js canvas is drawn, the
-  xterm-backed console constructs, the connection widget lists every supported
-  controller.
-- **settings.spec.js** — each of the 8 settings sections resolves and paints,
-  and navigation between them stays client-side.
-- **visualizer.spec.js** — what the Three.js scene actually draws, compared
-  against committed screenshots: the default view, each of the five preset
-  viewpoints, and that a preset restores the same framing after the view has
-  been dragged away from it. See "Screenshot baselines" below.
-- **interaction.spec.js** — whether the app still answers a click, as opposed
-  to merely painting. A dialog opens, takes input and closes; a dropdown menu
-  opens, stays open, closes from its own toggle, from a press outside it and
-  from Escape; and a choice made in one arrives in the editor underneath. The
-  dropdowns are here because every one of them was dead for a while and no
-  tier could tell: React 17 delivers a click to the root container before
-  document, so the root-close listener react-dropdown attaches when a menu
-  opens was still standing in the path of the click that opened it. Nothing
-  in this suite had ever clicked a menu. It also checks that a click takes the
-  button's tooltip with it, measured two frames afterwards rather than polled
-  — that is the moment the visualizer baselines are recorded at, and the only
-  one at which the answer is the same in every run.
-- **configured-widgets.spec.js** — the two widgets that render nothing in a
-  default install and had therefore never been covered at all. It seeds the
-  custom widget with a URL and asserts the frame it builds still carries the
-  sandbox, width and height that @trendmicro/react-iframe used to supply,
-  and it switches the webcam on and watches the image element's src being
-  cleared and restored by Refresh. Both reach the DOM through a ref that
-  used to be a findDOMNode call, which is why they are worth the seeding.
+- **panel*.spec.js** — the panel with no machine: it loads, says there is no
+  machine, its screens are addresses, back goes home, its manifest and icons
+  are served, files and previews draw, it updates itself.
+- **error-pages.spec.js** — the server's 404 view, for a file that is not
+  there.
+- **api-upload.spec.js** — the multipart parser accepts text fields and
+  refuses files.
 
 ## What is not covered
 
 Anything requiring a machine: jogging, G-code streaming, probing, homing. Those
 need a controller on a serial port and, more importantly, they move real
 hardware — they belong in a separate, explicitly opt-in tier.
-
-## Screenshot baselines
-
-`workspace.spec.js` asserts that a canvas appears and has a non-zero box. That
-is worth having, but a renderer drawing nothing at all satisfies it just as
-well — the element is there either way. `visualizer.spec.js` closes that gap
-with `toHaveScreenshot()` against baselines committed under
-`*.spec.js-snapshots/`.
-
-Three things reach the canvas and none of them is pinned by default, so
-`visualizer-fixtures.js` seeds all three before the first navigation: the
-machine profile (the grid bounds, axis extents and limits cuboid are all
-derived from it), the widget's own persisted projection/camera/visibility
-state, and the device pixel ratio. `app/store` reads localStorage once at
-module evaluation, which is why the seed goes in through `addInitScript`
-rather than after the page has loaded.
-
-Two caveats are deliberate rather than sloppy:
-
-- **The allowance is measured, not guessed.** The first version of this used a
-  2% `maxDiffPixelRatio`, which sounded conservative and was in fact loose
-  enough that recolouring every rapid motion from green to red still passed —
-  thin, half-transparent lines cover very little of a mostly-white canvas, so a
-  ratio of the whole image is the wrong unit. The numbers on this machine, in
-  pixels of a ~500x565 canvas: re-running the same build differs by **0**,
-  recolouring every rapid by **~1250**, and the whole `three` 0.103 → 0.186
-  port by **799** on the toolpath image and **140** on the grid-only one. So
-  the allowance is an absolute `maxDiffPixels: 50` — an order of magnitude
-  below the smallest change worth calling a regression, with room for the
-  antialiasing jitter a driver or Chromium update may bring. If an update ever
-  moves more than that, re-record rather than raising the allowance. Those
-  figures were taken while the toolpath was still drawn as one-pixel lines;
-  the fat lines that replaced them cover far more of the canvas, so the same
-  allowance is if anything stricter now.
-- **The baselines belong to this machine.** That is acceptable because there is
-  only one, but it does mean a baseline is re-recorded on purpose (delete the
-  PNG and re-run) rather than whenever it goes red.
-
-The preset views are the case where a photograph beats an assertion. The unit
-tests in `camera-fit` prove a bounding box ends up on screen, but not that
-"front" faces the front; five images of an envelope that is 80 wide, 60 deep
-and 20 tall do, because it looks different from every side and a view wired to
-the wrong direction cannot match any baseline but its own.
-
-A screenshot spec that only ever photographs one scene proves very little, so
-each tier also owns a control: the smoke tier photographs the same scene with
-the grid, numbers and limits switched off, and the hardware tier photographs
-the scene after the loaded file is closed again. If those came out looking like
-the positive cases, none of the assertions would be measuring anything.
-
-An element screenshot clips the composited page, not the WebGL buffer, so DOM
-chrome overlapping the canvas lands in the image too. The workflow toolbar and
-the loaded file's name are masked out — the toolbar because its buttons change
-with the connection state, the name because its antialiasing is a font concern.
-
-## Selector conventions
-
-- Widgets are addressed through `[data-widget-id="..."]`, which the widget
-  containers already render.
-- Settings content is scoped through `settingsSection()` in `fixtures.js`. This
-  matters: `containers/App.jsx` keeps the workspace mounted under
-  `display: none` while settings are open, so an unscoped `table` or `form`
-  selector silently matches hidden workspace nodes.
-- CSS module class names are built as `[path][name]__[local]--[hash]` in both
-  the development and production webpack configs, so matching on the path
-  prefix is stable across builds even though the hash is not.
 
 ## Console assertions
 
@@ -164,55 +75,17 @@ machine with nothing plugged in.
 CNCJS_TEST_PORT=COM3 yarn test:e2e --project=hardware
 ```
 
-### What each spec in this tier needs
+The fixture (`hardware/fixtures.js`) opens the port itself, through the
+socket protocol and a token from `/api/signin`, and unlocks a Grbl that comes
+up in alarm. The panel then loads against a machine already connected.
 
-An open port is the price of admission for all of them, but three specs need
-something the smoke tier cannot give them at all, which is why they live here
-rather than there:
-
-- `console.spec.js` — the line editor only holds real content once a
-  controller has written to the terminal. xterm 3.8 renders to a canvas, so
-  the assertions read the buffer through the React instance rather than the
-  DOM.
-- `dashboard.spec.js` — the G-code list replaces the 3D scene only when there
-  is no WebGL, and only renders rows once a file is loaded. The spec deletes
-  `window.WebGLRenderingContext` before the bundle runs; loading a file needs
-  a port, because `POST /api/gcode` answers `Controller not found` without
-  one.
-- `watch-directory.spec.js` — needs **both** a port (the menu item that opens
-  the dialog is disabled without one) **and** a watch directory on the server.
-  `watchDirectory` is read once at server start, so it cannot be attached to a
-  running instance. The spec skips with an explanatory message when the server
-  under test reports `{"configured": false}`; start the dev server with
-  `--watch-directory <path>` to run it.
-
-**These specs move the machine.** Each jog is symmetric — every test returns
-the axis to where it started, and nothing touches the work coordinate system
-(no `G10`, no `G92`) — but with a controller wired to a powered machine, the
-axes physically move by the jog step currently selected in the keypad. Check
-your clearances before running it, and remember that a Grbl with `$20=0`,
-`$21=0` and `$22=0` has no soft limits, no hard limits and no homing, so
-nothing in firmware will stop an over-travel.
-
-That symmetry depends entirely on `jog()` waiting for the move to land rather
-than for the controller to report Idle. Right after the click the command has
-not left the browser, so the controller is still Idle and a state-based wait
-returns immediately — the spec then ends, the page is torn down mid-move, and
-the return leg never reaches the machine. An early version of this helper did
-exactly that and left X a millimetre off origin. If you change `jog()`, verify
-afterwards that the machine is back where it started **and** reports Idle, not
-Run.
-
-`hardware/visualizer.spec.js` is here for a structural reason rather than a
-convenient one. G-code reaches the visualizer only as a `gcode:load` event on a
-connected controller, and `controller.command('gcode:load', ...)` is addressed
-to a port — with nothing open the upload is dropped and the scene stays empty.
-So the smoke tier cannot draw a toolpath at all, and the toolpath baseline has
-to live where a controller exists. **It does not move the machine**: loading
-G-code fills the sender's queue, only Run starts streaming it, and Run is never
-clicked. It does assert the work position is at origin first, because the
-cutting tool is drawn there — that turns "the baseline is only comparable from a
-known position" into a message instead of a mystery pixel diff.
+- `grbl.spec.js` — the port opens, the controller reports Idle, and the
+  firmware settings were read.
+- `panel.spec.js` — the panel with a controller answering. **These cases move
+  the machine**: every jog returns the axis to where it started, and nothing
+  touches the work coordinate system — but with a controller wired to a
+  powered machine, the axes physically move. Check your clearances first.
+- `teardown.spec.js` — closes the port once the whole tier is done.
 
 This tier exists because the smoke tier structurally cannot see a whole class
 of regression: it never opens a serial port, so every code path behind
@@ -239,7 +112,7 @@ defaulting to `http://localhost:8000`, the same as the smoke tier.
 What it locks in:
 
 - the app starts its own server on a random loopback port and mounts the
-  workspace;
+  panel;
 - the renderer has no route into Node — `require`, `process`, `ipcRenderer` and
   `module` are all undefined. This is the assertion that matters most: the
   window loads its content over HTTP, from another machine once a server is
@@ -292,35 +165,6 @@ What it locks in:
 
 The specs assert on `/api/controllers`, which needs no machine attached and
 answers `[]`.
-
-### The sign-in screen lives here too
-
-`login-screen.spec.js` drives the screen in a browser, which is why this tier
-configures one. It is the only tier that can. With no account configured the
-bootstrap sign-in succeeds for everyone, so `ProtectedRoute` mounts the
-workspace, `App` finds `/login` outside its accepted paths and redirects to
-`/workspace` — against the dev server the screen does not render at all, and a
-smoke spec for it would sit waiting for a form that is never there.
-
-It locks in what the screen is for rather than how it is built: an
-unauthenticated visitor lands on it, both fields and the button are reachable
-by accessible name, the password stays masked, the recovery link points at the
-FAQ, no alert is announced before anything has been submitted, a wrong password
-produces one on screen, what was typed is what gets posted, and the right
-password reaches the workspace.
-
-Two of those are worth spelling out. "What was typed is what gets posted" reads
-the request body rather than the outcome, because both fields are uncontrolled
-and read through a ref at submit time: a rewrite that makes one controlled but
-forgets its `onChange` submits an empty string, which the server rejects — so
-the wrong-password case stays green while sign-in is broken for everyone. And
-the "no alert before submission" case exists because rendering the alert
-unconditionally and hiding it with CSS looks identical on screen and announces
-a failure to a screen reader on every page load.
-
-The locators use roles and accessible names rather than classes or DOM shape,
-so rebuilding the screen on another component library is not automatically a
-failure.
 
 ## Running the dev server for long sessions
 

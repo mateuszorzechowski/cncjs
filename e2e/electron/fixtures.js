@@ -51,8 +51,8 @@ const firstWindow = async (app) => {
 };
 
 /** Wait for the React tree, not merely the HTML shell. */
-const waitForWorkspace = async (win) => {
-  await win.locator('[data-widget-id="connection"]').waitFor({
+const waitForPanel = async (win) => {
+  await win.getByRole('banner').waitFor({
     state: 'visible',
     timeout: 90 * 1000,
   });
@@ -68,7 +68,7 @@ module.exports = {
   withApp,
   resetServer,
   firstWindow,
-  waitForWorkspace,
+  waitForPanel,
   MAIN,
   ELECTRON_APP_DIR,
   REMOTE_URL,
