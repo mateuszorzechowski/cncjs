@@ -1,6 +1,6 @@
 {
-  "name": "CNCjs Panel",
-  "short_name": "Panel",
+  "name": "CNC Panel",
+  "short_name": "CNC Panel",
   "id": "/",
   "start_url": "/",
   "scope": "/",

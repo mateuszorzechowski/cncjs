@@ -246,7 +246,7 @@ module.exports = ({ mode, outputPath }) => ({
       failOnError: false,
     }),
     new HtmlWebpackPlugin({
-      title: 'CNCjs Panel',
+      title: 'CNC Panel',
       filename: 'index.html',
       template: path.resolve(__dirname, 'src/panel/index.html'),
       /*
