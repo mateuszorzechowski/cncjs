@@ -1,6 +1,6 @@
 /**
  * The panel's addresses: a screen, and on the settings screen its tab —
- * `/panel/jog`, `/panel/settings/controller` (Mateusz, 2026-09-28:
+ * `/jog`, `/settings/controller` (Mateusz, 2026-09-28:
  * *"nawigując nie zmienia się adres URL … przycisk wstecz, gest cofnij nie
  * działają"*, and *"może być /panel/settings"*). Plain paths rather than a
  * `#`: the server hands the panel's page to any of them (`app.js`), so a
@@ -8,7 +8,7 @@
  *
  * Pure, so Jest reads it without a browser.
  */
-export const BASE = '/panel/';
+export const BASE = '/';
 
 /** `{ screen, tab }` from an address, or null for the panel's bare root and anything outside it. */
 export const routeFrom = (pathname) => {

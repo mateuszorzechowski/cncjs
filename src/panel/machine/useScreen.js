@@ -27,8 +27,8 @@ const rememberedScreen = (isScreen) => {
 };
 
 /*
- * The screen the address names — `/panel/jog`, `/panel/settings/controller`
- * — and at the bare `/panel/` the one kept on this device, as before. A tab
+ * The screen the address names — `/jog`, `/settings/controller` — and at
+ * the bare `/` the one kept on this device, as before. A tab
  * the address names is handed to the settings screen before it opens.
  */
 const firstScreen = (isScreen) => {

@@ -15,7 +15,7 @@
  *
  *   yarn design-review
  *
- * Then, on http://localhost:8000/panel/, click the bookmarklet it prints.
+ * Then, on http://localhost:8000/, click the bookmarklet it prints.
  */
 const fs = require('fs');
 const http = require('http');

@@ -16,32 +16,32 @@ test.describe('the panel\'s addresses', () => {
 
   test('a screen is an address, and back goes home, not to the screen before', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.goto('/panel/dashboard?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/dashboard?lng=pl', { waitUntil: 'domcontentloaded' });
     await rail(page).getByRole('button', { name: 'Jog' }).click();
     await rail(page).getByRole('button', { name: 'Dziennik' }).click();
-    await expect(page).toHaveURL(/\/panel\/journal\?lng=pl$/);
+    await expect(page).toHaveURL(/\/journal\?lng=pl$/);
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/panel\/dashboard\?lng=pl$/);
+    await expect(page).toHaveURL(/\/dashboard\?lng=pl$/);
     await expect(current(page)).toHaveText(/Pulpit/i);
     cncjs.expectNoPageErrors();
   });
 
   test('an address opened cold opens the screen and the tab it names', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.route('**/panel/cnc-ca.json', (route) => route.fulfill({ json: {} }));
-    await page.goto('/panel/settings/install?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.route('**/cnc-ca.json', (route) => route.fulfill({ json: {} }));
+    await page.goto('/settings/install?lng=pl', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('button', { name: 'Instalacja' })).toHaveAttribute('aria-pressed', 'true');
     await expect(current(page)).toHaveText(/Ustawienia/i);
 
     await page.getByRole('button', { name: 'Preferencje' }).click();
-    await expect(page).toHaveURL(/\/panel\/settings\/preferences\?lng=pl$/);
+    await expect(page).toHaveURL(/\/settings\/preferences\?lng=pl$/);
     cncjs.expectNoPageErrors();
   });
 
   test('one back closes one sheet: a sheet from a sheet returns to the first, then the screen goes home', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.goto('/panel/dashboard?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/dashboard?lng=pl', { waitUntil: 'domcontentloaded' });
     await rail(page).getByRole('button', { name: 'Jog' }).click();
 
     // The state sheet, and its help opened over it.
@@ -51,26 +51,26 @@ test.describe('the panel\'s addresses', () => {
 
     await page.goBack();
     await expect(page.getByRole('dialog')).toHaveCount(1);
-    await expect(page).toHaveURL(/\/panel\/jog\?lng=pl$/);
+    await expect(page).toHaveURL(/\/jog\?lng=pl$/);
 
     await page.goBack();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page).toHaveURL(/\/panel\/jog\?lng=pl$/);
+    await expect(page).toHaveURL(/\/jog\?lng=pl$/);
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/panel\/dashboard\?lng=pl$/);
+    await expect(page).toHaveURL(/\/dashboard\?lng=pl$/);
     cncjs.expectNoPageErrors();
   });
 
   test('a sheet closed by hand leaves nothing for back but the way home', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.goto('/panel/jog?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/jog?lng=pl', { waitUntil: 'domcontentloaded' });
     await page.getByRole('banner').getByRole('button').first().click();
     await page.getByRole('dialog').getByRole('button', { name: 'Gotowe' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/panel\/dashboard\?lng=pl$/);
+    await expect(page).toHaveURL(/\/dashboard\?lng=pl$/);
     cncjs.expectNoPageErrors();
   });
 });
@@ -80,14 +80,14 @@ test.describe('the phone menu and back', () => {
 
   test('back lowers the raised menu and stays on the screen', async ({ cncjs }) => {
     const { page } = cncjs;
-    await page.goto('/panel/jog?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/jog?lng=pl', { waitUntil: 'domcontentloaded' });
     const more = page.getByRole('button', { name: 'Więcej' });
     await more.click();
     await expect(more).toHaveAttribute('aria-expanded', 'true');
 
     await page.goBack();
     await expect(more).toHaveAttribute('aria-expanded', 'false');
-    await expect(page).toHaveURL(/\/panel\/jog\?lng=pl$/);
+    await expect(page).toHaveURL(/\/jog\?lng=pl$/);
     cncjs.expectNoPageErrors();
   });
 });
@@ -113,7 +113,7 @@ test.describe('back on a phone\'s Chrome', () => {
         return push(...args);
       };
     });
-    await page.goto('/panel/settings/preferences?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/settings/preferences?lng=pl', { waitUntil: 'domcontentloaded' });
     await page.getByRole('banner').getByRole('button').first().click();
     await page.getByRole('dialog').getByRole('button', { name: 'Co znaczą stany' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(2);
@@ -123,11 +123,29 @@ test.describe('back on a phone\'s Chrome', () => {
     await page.goBack();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.goBack();
-    await expect(page).toHaveURL(/\/panel\/dashboard\?lng=pl$/);
+    await expect(page).toHaveURL(/\/dashboard\?lng=pl$/);
 
     const pushes = await page.evaluate(() => window.__pushes);
     expect(pushes.length).toBeGreaterThan(0);
     expect(pushes.every(Boolean)).toBe(true);
     cncjs.expectNoPageErrors();
+  });
+});
+
+test.describe('the site root is the panel\'s', () => {
+  // The panel lived at `/panel/` until 2026-10-08. Bookmarks, an installed
+  // copy's start address and the README's certificate link still say so.
+  test('an old /panel/ address is sent to the same screen at the root', async ({ request }) => {
+    const res = await request.get('/panel/jog?lng=pl', { maxRedirects: 0 });
+    expect(res.status()).toBe(301);
+    expect(res.headers().location).toBe('/jog?lng=pl');
+  });
+
+  // Any page address is a screen, so the API is the one place the panel's
+  // page must not answer: a `fetch` accepts HTML too.
+  test('an API address nothing answers is not the panel', async ({ request }) => {
+    const res = await request.get('/api/no-such-thing', { headers: { Accept: 'text/html' } });
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+    expect(await res.text()).not.toContain('panel-root');
   });
 });

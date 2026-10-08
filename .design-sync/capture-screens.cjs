@@ -98,7 +98,7 @@ const open = async (browser, device, shot) => {
   await page.route('**/api/controllers', (route) => route.fulfill({
     json: [{ port: 'COM3', baudrate: 115200, rtscts: false, controller: { type: 'Grbl', state: state('Idle'), settings: { settings: REPORTED } } }],
   }));
-  await page.goto(`${BASE}/panel/?lng=pl`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/?lng=pl`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => Boolean(window.__panelController?.port), null, { timeout: 45000 });
   await page.evaluate(({ reported, view, envelope, st, program }) => {
     window.__fire('controller:state', 'Grbl', st);

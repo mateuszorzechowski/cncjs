@@ -6,17 +6,17 @@ const { test, expect } = require('./fixtures');
  * reload to it — by itself when nobody is using the panel, unless this
  * device switched that off.
  *
- * The server's build is `/panel/version.json`, written by the build beside
+ * The server's build is `/version.json`, written by the build beside
  * the panel. A case that needs another build there answers it here.
  */
 const OTHER = { label: 'panel-2099.01.01', tag: 'panel-2099.01.01', commit: 'abcdef0', dirty: false, id: 'abcdef0' };
 
-const serveBuild = (page, build) => page.route('**/panel/version.json', (route) => route.fulfill({ json: build }));
+const serveBuild = (page, build) => page.route('**/version.json', (route) => route.fulfill({ json: build }));
 
 const openInstall = async (page) => {
   // This tier's server runs without TLS, so it has no authority to describe, and says 404 — answered here, as empty.
-  await page.route('**/panel/cnc-ca.json', (route) => route.fulfill({ json: {} }));
-  await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+  await page.route('**/cnc-ca.json', (route) => route.fulfill({ json: {} }));
+  await page.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
   await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Ustawienia' }).click();
   await page.getByText('Instalacja', { exact: true }).click();
 };
@@ -26,7 +26,7 @@ test.describe('the panel version', () => {
   test.use({ viewport: { width: 1024, height: 768 }, serviceWorkers: 'block' });
 
   test('names this fork\'s build, and says when nothing newer is available', async ({ cncjs }) => {
-    const served = await (await cncjs.page.request.get('/panel/version.json')).json();
+    const served = await (await cncjs.page.request.get('/version.json')).json();
     expect(served.id).toBeTruthy();
     await openInstall(cncjs.page);
 
@@ -44,8 +44,8 @@ test.describe('the panel version', () => {
     const { page } = cncjs;
     await page.addInitScript(() => window.localStorage.setItem('panel.autoUpdate', 'off'));
     await serveBuild(page, OTHER);
-    await page.route('**/panel/cnc-ca.json', (route) => route.fulfill({ json: {} }));
-    await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.route('**/cnc-ca.json', (route) => route.fulfill({ json: {} }));
+    await page.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
 
     // In the bar: an icon naming the version, and a way to the settings, not a reload.
     const offer = page.getByRole('banner').getByRole('button', { name: /^Dostępna nowa wersja panelu: panel-2099\.01\.01/ });

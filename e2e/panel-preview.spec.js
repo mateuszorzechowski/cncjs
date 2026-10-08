@@ -100,7 +100,7 @@ test.describe('the toolpath, as drawn', () => {
       }],
     }));
 
-    await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
     await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: screen }).click();
 
     // Attached: the chip has stopped saying which rung is missing.

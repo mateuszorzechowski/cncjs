@@ -14,10 +14,14 @@ const { test, expect } = require('./fixtures');
  * code alone. A broken view engine still yields 404 — Express catches the
  * render error and falls through to its own handler — so a status check on its
  * own would pass while serving a stack trace.
+ *
+ * The address asked for names a file. Since the panel moved to the site root
+ * (2026-10-08) any page address without an extension is one of its screens
+ * and is answered with the panel, so a missing *file* is what reaches 404.
  */
 test.describe('error pages', () => {
   test('renders the 404 view for a route that does not exist', async ({ request }) => {
-    const res = await request.get('no/such/route/at/all');
+    const res = await request.get('no/such/file.txt');
 
     expect(res.status()).toBe(404);
 
@@ -35,7 +39,7 @@ test.describe('error pages', () => {
   });
 
   test('answers a stack-free page, not an exception, for an unknown route', async ({ request }) => {
-    const res = await request.get('no/such/route/at/all');
+    const res = await request.get('no/such/file.txt');
 
     const body = await res.text();
 
@@ -47,7 +51,7 @@ test.describe('error pages', () => {
   });
 
   test('answers JSON rather than the page when JSON is what was asked for', async ({ request }) => {
-    const res = await request.get('no/such/route/at/all', {
+    const res = await request.get('no/such/file.txt', {
       headers: { Accept: 'application/json' },
     });
 

@@ -91,7 +91,7 @@ const open = async (page) => {
       (window.__panelController.listeners[name] || []).slice().forEach((listener) => listener(...args));
     };
   });
-  await page.goto('/panel/?lng=pl', { waitUntil: 'domcontentloaded' });
+  await page.goto('/?lng=pl', { waitUntil: 'domcontentloaded' });
   await page.getByRole('navigation', { name: 'Nawigacja' }).getByRole('button', { name: 'Pliki', exact: true }).click();
 };
 

@@ -6,22 +6,13 @@ const maxAge = 0;
 export default {
   route: '/', // with trailing slash
   assets: {
-    // The panel is registered before the application, which serves from the
-    // site root. Express matches mounts in order, and a root mount that
-    // cannot find a file falls through — but relying on that is relying on a
-    // detail of serve-static rather than saying what is meant.
+    // The panel, at the site root. The old application is no longer served
+    // (Mateusz, 2026-10-08); its sources stay in `src/app` for reference.
     panel: {
       routes: [
-        '/panel'
+        '/'
       ],
       path: path.resolve(__dirname, '..', '..', 'panel'),
-      maxAge: maxAge
-    },
-    app: {
-      routes: [
-        '' // empty path
-      ],
-      path: path.resolve(__dirname, '..', '..', 'app'),
       maxAge: maxAge
     }
   },

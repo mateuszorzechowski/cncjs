@@ -220,7 +220,7 @@
         fail: () => reject(new TypeError('Failed to fetch')),
       }));
     }
-    if (sim.update === 'available' && url.includes('/panel/version.json')) {
+    if (sim.update === 'available' && url.includes('/version.json')) {
       return Promise.resolve(new Response(JSON.stringify(AVAILABLE), { headers: { 'Content-Type': 'application/json' } }));
     }
     return realFetch(input, init);

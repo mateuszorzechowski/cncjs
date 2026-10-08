@@ -105,8 +105,8 @@ fi
 if [ "$TLS" = "1" ]; then
   LAN=$(node -e "const os=require('os');const v=Object.values(os.networkInterfaces()).flat().find(i=>i.family==='IPv4'&&!i.internal);process.stdout.write(v?v.address:'localhost')")
   echo
-  echo "  panel:  https://${LAN}:${PORT}/panel/"
-  echo "  trust:  https://${LAN}:${PORT}/panel/cnc-ca.crt  (open on the phone, install as a CA)"
+  echo "  panel:  https://${LAN}:${PORT}/"
+  echo "  trust:  https://${LAN}:${PORT}/cnc-ca.crt  (open on the phone, install as a CA)"
   echo
   exec env NODE_ENV=development ./bin/cncjs \
     --port "$PORT" \
@@ -118,7 +118,7 @@ if [ "$TLS" = "1" ]; then
 fi
 
 echo
-echo "  panel:  http://localhost:${PORT}/panel/   (no TLS: no install, no worker)"
+echo "  panel:  http://localhost:${PORT}/   (no TLS: no install, no worker)"
 echo
 exec env NODE_ENV=development ./bin/cncjs \
   --port "$PORT" \

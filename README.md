@@ -189,7 +189,7 @@ cncjs -vvv
 
 ### The panel on a phone
 
-The panel (`/panel`) can be installed on a phone as an application — its own
+The panel (served at `/`) can be installed on a phone as an application — its own
 icon, full screen, no address bar. A phone will only do that for a *secure*
 origin, so the server has to speak HTTPS, which on a home network means a
 certificate the phone has been told to trust.
@@ -210,7 +210,7 @@ addresses and writes three files into `certs/`, which git ignores:
 | `cnc.crt` | what the server presents |
 | `cnc.key` | the server's private key, `chmod 600`, never leaves the machine |
 
-Then, on the phone, open `https://<this-machine>:8000/panel/`, go to
+Then, on the phone, open `https://<this-machine>:8000/`, go to
 **Settings → Application**, and install the certificate it offers. On Android
 choose *CA certificate*, not *VPN and app certificate*.
 
